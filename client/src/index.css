@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+
+@theme {
+  --color-primary: #4169E1;
+  --color-secondary: #FFD700;
+  --color-background: #F8FAFC;
+  --font-sans: 'Sarabun', sans-serif;
+}
+
+body {
+  font-family: 'Sarabun', sans-serif;
+  background-color: var(--color-background);
+  color: #111827;
+  /* gray-900 */
+}
+
+/* Explicit selector-based dark mode override */
+:root.dark body {
+  background-color: #0f172a;
+  /* slate-900 */
+  color: #f3f4f6;
+  /* gray-100 */
+}

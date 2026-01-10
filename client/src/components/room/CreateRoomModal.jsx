@@ -1,0 +1,247 @@
+import React, { useState, useEffect } from 'react';
+import { Lock } from 'lucide-react';
+import useUserRole from '../../hooks/useUserRole'; // Updated import path
+import api from '../../services/api';
+
+const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
+    const { isPremium } = useUserRole();
+    const [formData, setFormData] = useState({
+        name: '',
+        mode: 'exam',
+        subject: '',
+        category: '',
+        max_participants: 20,
+        question_count: 20,
+        time_limit: 60,
+        theme: { background_id: null, frame_id: null }
+    });
+
+    const [subjects, setSubjects] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [assets, setAssets] = useState({ backgrounds: [], frames: [] });
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchOptions();
+            fetchAssets();
+        }
+    }, [isOpen]);
+
+    const fetchOptions = async () => {
+        try {
+            const [subjRes, catRes] = await Promise.all([
+                api.get('/questions/subjects').then(r => r.data),
+                api.get('/questions/categories').then(r => r.data)
+            ]);
+            if (subjRes.success) setSubjects(subjRes.data);
+            if (catRes.success) setCategories(catRes.data);
+        } catch (error) {
+            console.error('Error fetching options:', error);
+        }
+    };
+
+    const fetchAssets = async () => {
+        try {
+            const response = await api.get('/assets');
+            const data = response.data;
+            if (data.success) {
+                const bgs = data.data.filter(a => a.type === 'background');
+                const frms = data.data.filter(a => a.type === 'frame');
+                setAssets({ backgrounds: bgs, frames: frms });
+            }
+        } catch (error) {
+            console.error('Error fetching assets:', error);
+        }
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onCreate(formData);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <h2 className="text-2xl font-bold mb-4">Create New Room</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Room Name</label>
+                        <input
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            className="mt-1 w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 placeholder-gray-400"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Mode</label>
+                        <select
+                            value={formData.mode}
+                            onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
+                            className="mt-1 w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900"
+                        >
+                            <option value="exam">Exam Mode (Competitive)</option>
+                            <option value="tutor">Tutor Mode (Interactive)</option>
+                        </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Subject</label>
+                            <select
+                                value={formData.subject}
+                                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                className="mt-1 w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900"
+                            >
+                                <option value="">Select Subject</option>
+                                {subjects.map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Category</label>
+                            <select
+                                value={formData.category || ''}
+                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                className="mt-1 w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900"
+                            >
+                                <option value="">Any Category</option>
+                                {categories.map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Questions</label>
+                        <input
+                            type="number"
+                            value={formData.question_count}
+                            onChange={(e) => setFormData({ ...formData, question_count: e.target.value === '' ? '' : parseInt(e.target.value) })}
+                            className="mt-1 w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900"
+                            min="5"
+                            max="100"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Max Participants (Max 20)</label>
+                            <input
+                                type="number"
+                                value={formData.max_participants}
+                                onChange={(e) => setFormData({ ...formData, max_participants: e.target.value === '' ? '' : parseInt(e.target.value) })}
+                                className="mt-1 w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900"
+                                min="1"
+                                max="20"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Time Limit (Minutes)</label>
+                            <input
+                                type="number"
+                                value={formData.time_limit}
+                                onChange={(e) => setFormData({ ...formData, time_limit: e.target.value === '' ? '' : parseInt(e.target.value) })}
+                                className="mt-1 w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900"
+                                min="5"
+                                max="60"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Theme Selection */}
+                    <div className="border-t pt-4">
+                        <h3 className="text-md font-semibold mb-2">Room Customization (Premium)</h3>
+                        <div className="space-y-4">
+                            {/* Backgrounds */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Background</label>
+                                <div className="flex space-x-2 overflow-x-auto p-1 custom-scrollbar">
+                                    <div
+                                        onClick={() => setFormData(prev => ({ ...prev, theme: { ...prev.theme, background_id: null } }))}
+                                        className={`flex-shrink-0 w-16 h-16 border-2 rounded cursor-pointer flex items-center justify-center bg-gray-100 ${!formData.theme?.background_id ? 'border-primary' : 'border-transparent'}`}
+                                    >
+                                        None
+                                    </div>
+                                    {assets.backgrounds.map(bg => (
+                                        <div
+                                            key={bg.id}
+                                            onClick={() => {
+                                                if (!isPremium) {
+                                                    alert('Premium Feature: Upgrade to customize your room background.');
+                                                    return;
+                                                }
+                                                setFormData(prev => ({ ...prev, theme: { ...prev.theme, background_id: bg.id } }));
+                                            }}
+                                            className={`relative flex-shrink-0 w-16 h-16 border-2 rounded cursor-pointer overflow-hidden group ${formData.theme?.background_id === bg.id ? 'border-primary' : 'border-transparent'}`}
+                                        >
+                                            <img src={bg.url.startsWith('http') ? bg.url : `${window.location.protocol}//${window.location.hostname}:3000${bg.url}`} alt={bg.name} className="w-full h-full object-cover" />
+                                            {!isPremium && (
+                                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                                    <Lock className="text-white w-4 h-4" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Frames */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Frame</label>
+                                <div className="flex space-x-2 overflow-x-auto p-1 custom-scrollbar">
+                                    <div
+                                        onClick={() => setFormData(prev => ({ ...prev, theme: { ...prev.theme, frame_id: null } }))}
+                                        className={`flex-shrink-0 w-16 h-16 border-2 rounded cursor-pointer flex items-center justify-center bg-gray-100 ${!formData.theme?.frame_id ? 'border-primary' : 'border-transparent'}`}
+                                    >
+                                        None
+                                    </div>
+                                    {assets.frames.map(frm => (
+                                        <div
+                                            key={frm.id}
+                                            onClick={() => {
+                                                if (!isPremium) {
+                                                    alert('Premium Feature: Upgrade to customize your room frame.');
+                                                    return;
+                                                }
+                                                setFormData(prev => ({ ...prev, theme: { ...prev.theme, frame_id: frm.id } }));
+                                            }}
+                                            className={`relative flex-shrink-0 w-16 h-16 border-2 rounded cursor-pointer overflow-hidden p-2 ${formData.theme?.frame_id === frm.id ? 'border-primary' : 'border-transparent'}`}
+                                        >
+                                            <div className="absolute inset-0 border-4" style={{ borderImage: `url(${frm.url.startsWith('http') ? frm.url : `${window.location.protocol}//${window.location.hostname}:3000${frm.url}`}) 30 round` }}></div>
+                                            {!isPremium && (
+                                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                                                    <Lock className="text-white w-4 h-4" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-3 mt-6">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-700"
+                        >
+                            Create Room
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export default CreateRoomModal;
