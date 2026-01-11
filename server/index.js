@@ -80,6 +80,14 @@ app.get('/', (req, res) => {
     res.json({ message: 'Welcome to PreExam API' });
 });
 
+// Serve Request static build
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// Handle React Routing, return all requests to React app
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+});
+
 // Error Handling Middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);

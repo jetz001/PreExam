@@ -5,10 +5,10 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import communityService from '../services/communityService';
 import { Plus, Search, TrendingUp } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
-import FeedPost from '../components/community/FeedPost';
+import FeedPost from '../components/Community/FeedPost';
 import CreatePostModal from '../components/Community/CreatePostModal';
 import PostDetailModal from '../components/Community/PostDetailModal';
-import FriendSidebar from '../components/community/FriendSidebar';
+import FriendSidebar from '../components/Community/FriendSidebar';
 import StudyGroupList from '../components/profile/StudyGroupList';
 
 import AdSlot from '../components/ads/AdSlot';
