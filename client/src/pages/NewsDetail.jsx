@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import newsService from '../services/newsService';
 import { ArrowLeft, Calendar, Eye, FileText, ShoppingBag, ExternalLink, MessageCircle } from 'lucide-react';
-import ShareNewsModal from '../components/community/ShareNewsModal';
+import ShareNewsModal from '../components/Community/ShareNewsModal';
 import AdSlot from '../components/ads/AdSlot';
 
 const NewsDetail = () => {

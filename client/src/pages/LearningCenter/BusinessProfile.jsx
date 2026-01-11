@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import businessApi from '../../services/businessApi';
 import { User, MapPin, Link as LinkIcon, Facebook, MessageCircle, Star, Grid, Search, ShoppingBag, Bookmark, BookOpen, Share2, CornerDownRight } from 'lucide-react';
 import toast from 'react-hot-toast';
-import SharePostModal from '../../components/community/SharePostModal';
+import SharePostModal from '../../components/Community/SharePostModal';
 import BusinessChatModal from '../../components/business/BusinessChatModal';
 import ReadMoreText from '../../components/common/ReadMoreText';
 
