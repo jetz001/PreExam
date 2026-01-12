@@ -122,7 +122,7 @@ const FriendList = () => {
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-gray-200 rounded-full overflow-hidden">
                                             <img
-                                                src={user.avatar ? `http://localhost:3000${user.avatar}` : `https://ui-avatars.com/api/?name=${user.display_name}`}
+                                                src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`) : `https://ui-avatars.com/api/?name=${user.display_name}`}
                                                 alt={user.display_name}
                                                 className="w-full h-full object-cover"
                                             />
@@ -201,7 +201,7 @@ const FriendList = () => {
                                 <div className="relative">
                                     <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden shadow-sm">
                                         <img
-                                            src={friend.avatar ? `http://localhost:3000${friend.avatar}` : `https://ui-avatars.com/api/?name=${friend.display_name}`}
+                                            src={friend.avatar ? (friend.avatar.startsWith('http') ? friend.avatar : `${friend.avatar.startsWith('/') ? '' : '/'}${friend.avatar}`) : `https://ui-avatars.com/api/?name=${friend.display_name}`}
                                             alt={friend.display_name}
                                             className="w-full h-full object-cover"
                                         />

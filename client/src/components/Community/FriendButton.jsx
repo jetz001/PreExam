@@ -15,7 +15,7 @@ const FriendButton = ({ targetUserId, className = "" }) => {
         queryKey: ['friendStatus', targetUserId],
         queryFn: async () => {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:3000/api/friends/check/${targetUserId}`, {
+            const res = await axios.get(`/api/friends/check/${targetUserId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return res.data;
@@ -25,7 +25,7 @@ const FriendButton = ({ targetUserId, className = "" }) => {
     const sendRequest = useMutation({
         mutationFn: async () => {
             const token = localStorage.getItem('token');
-            return axios.post('http://localhost:3000/api/friends/request', { friendId: targetUserId }, {
+            return axios.post('/api/friends/request', { friendId: targetUserId }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
         },
@@ -35,7 +35,7 @@ const FriendButton = ({ targetUserId, className = "" }) => {
     const acceptRequest = useMutation({
         mutationFn: async () => {
             const token = localStorage.getItem('token');
-            return axios.post('http://localhost:3000/api/friends/accept', { friendId: targetUserId }, {
+            return axios.post('/api/friends/accept', { friendId: targetUserId }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
         },
@@ -45,7 +45,7 @@ const FriendButton = ({ targetUserId, className = "" }) => {
     const removeFriend = useMutation({
         mutationFn: async () => {
             const token = localStorage.getItem('token');
-            return axios.delete(`http://localhost:3000/api/friends/remove/${targetUserId}`, {
+            return axios.delete(`/api/friends/remove/${targetUserId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
         },

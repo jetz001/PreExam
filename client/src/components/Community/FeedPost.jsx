@@ -55,7 +55,7 @@ const FeedPost = ({ post }) => {
     const getImageUrl = (path) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;
-        return `http://localhost:3000${path.startsWith('/') ? '' : '/'}${path}`;
+        return `${path.startsWith('/') ? '' : '/'}${path}`;
     };
 
     const isVideo = (url) => {

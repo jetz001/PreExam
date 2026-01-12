@@ -53,5 +53,5 @@ export const compressImage = async (file, maxWidth = 1920, quality = 0.8) => {
 export const getImageUrl = (path) => {
     if (!path) return null;
     if (path.startsWith('http')) return path;
-    return `http://localhost:3000${path}`;
+    return `${path.startsWith('/') ? '' : '/'}${path}`;
 };

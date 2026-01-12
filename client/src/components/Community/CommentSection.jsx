@@ -19,13 +19,13 @@ const CommentItem = ({ comment, onReply, depth = 0 }) => {
     const getImageUrl = (path) => {
         if (!path) return `https://ui-avatars.com/api/?name=User&background=random`;
         if (path.startsWith('http')) return path;
-        return `http://localhost:3000${path.startsWith('/') ? '' : '/'}${path}`;
+        return `${path.startsWith('/') ? '' : '/'}${path}`;
     };
 
     const likeMutation = useMutation({
         mutationFn: async () => {
             const token = localStorage.getItem('token');
-            return axios.post(`http://localhost:3000/api/community/comments/${comment.id}/like`, {}, {
+            return axios.post(`/api/community/comments/${comment.id}/like`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
         },
@@ -96,7 +96,7 @@ const CommentSection = ({ threadId }) => {
         queryKey: ['comments', threadId],
         queryFn: async () => {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:3000/api/community/comments/${threadId}`, {
+            const res = await axios.get(`/api/community/comments/${threadId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // Need to structure flat list to nested tree
@@ -107,7 +107,7 @@ const CommentSection = ({ threadId }) => {
     const mutation = useMutation({
         mutationFn: async (content) => {
             const token = localStorage.getItem('token');
-            return axios.post('http://localhost:3000/api/community/comments', {
+            return axios.post('/api/community/comments', {
                 thread_id: threadId,
                 content,
                 parent_id: replyTo ? replyTo.id : null
@@ -152,7 +152,7 @@ const CommentSection = ({ threadId }) => {
     const getImageUrl = (path) => {
         if (!path) return `https://ui-avatars.com/api/?name=User&background=random`;
         if (path.startsWith('http')) return path;
-        return `http://localhost:3000${path.startsWith('/') ? '' : '/'}${path}`;
+        return `${path.startsWith('/') ? '' : '/'}${path}`;
     };
 
     const currentUser = authService.getCurrentUser();

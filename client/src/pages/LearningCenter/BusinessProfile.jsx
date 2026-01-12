@@ -46,7 +46,7 @@ const BusinessProfile = () => {
     const getImageUrl = (path) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;
-        return `http://localhost:3000${path}`;
+        return `${path.startsWith('/') ? '' : '/'}${path}`;
     };
 
     if (isLoading) return <div>Loading...</div>;
@@ -259,7 +259,7 @@ const ReviewsSection = ({ businessId, ownerUid }) => {
     const getImageUrl = (path) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;
-        return `http://localhost:3000${path}`;
+        return `${path.startsWith('/') ? '' : '/'}${path}`;
     };
 
     const handleSubmit = async (e) => {

@@ -10,7 +10,7 @@ const FriendRequests = () => {
         queryKey: ['friendRequests'],
         queryFn: async () => {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:3000/api/friends/pending', {
+            const res = await axios.get('/api/friends/pending', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return res.data.data;
@@ -20,7 +20,7 @@ const FriendRequests = () => {
     const acceptRequest = useMutation({
         mutationFn: async (friendId) => {
             const token = localStorage.getItem('token');
-            return axios.post('http://localhost:3000/api/friends/accept', { friendId }, {
+            return axios.post('/api/friends/accept', { friendId }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
         },
@@ -33,7 +33,7 @@ const FriendRequests = () => {
     const declineRequest = useMutation({
         mutationFn: async (friendId) => {
             const token = localStorage.getItem('token');
-            return axios.delete(`http://localhost:3000/api/friends/remove/${friendId}`, {
+            return axios.delete(`/api/friends/remove/${friendId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
         },

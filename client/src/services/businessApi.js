@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authService from './authService';
 
-const BASE_URL = 'http://localhost:3000/api/business';
+const BASE_URL = (import.meta.env.VITE_API_URL || '/api') + '/business';
 
 // Helper to get auth header (if not using global interceptor, which authService likely handles or we do manually)
 // Assuming authService doesn't auto-inject into axios global, but maybe it does. 

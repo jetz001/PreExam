@@ -23,7 +23,7 @@ const UserSearch = () => {
         queryFn: async () => {
             if (!debouncedTerm) return [];
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:3000/api/users/search?q=${debouncedTerm}`, {
+            const res = await axios.get(`/api/users/search?q=${debouncedTerm}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return res.data.data;

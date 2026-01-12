@@ -75,7 +75,7 @@ const PrivateChatModal = ({ isOpen, onClose, friend }) => {
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full overflow-hidden">
                             <img
-                                src={friend.avatar ? `http://localhost:3000${friend.avatar}` : `https://ui-avatars.com/api/?name=${friend.display_name}`}
+                                src={friend.avatar ? (friend.avatar.startsWith('http') ? friend.avatar : friend.avatar) : `https://ui-avatars.com/api/?name=${friend.display_name}`}
                                 alt={friend.display_name}
                                 className="w-full h-full object-cover"
                             />

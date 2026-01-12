@@ -7,7 +7,7 @@ import authService from '../services/authService';
 const EditProfileModal = ({ user, onClose }) => {
     const [displayName, setDisplayName] = useState(user.display_name || '');
     const [avatar, setAvatar] = useState(null);
-    const [preview, setPreview] = useState(user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:3000${user.avatar}`) : null);
+    const [preview, setPreview] = useState(user.avatar ? (user.avatar.startsWith('http') ? user.avatar : user.avatar) : null);
 
     // Invalidate queries to refresh UI
     const queryClient = useQueryClient();
@@ -15,7 +15,7 @@ const EditProfileModal = ({ user, onClose }) => {
     const mutation = useMutation({
         mutationFn: async (formData) => {
             const token = localStorage.getItem('token');
-            const res = await axios.put('http://localhost:3000/api/users/profile', formData, {
+            const res = await axios.put('/api/users/profile', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}`

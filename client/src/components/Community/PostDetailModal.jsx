@@ -12,7 +12,7 @@ const PostDetailModal = ({ thread: initialThread, onClose }) => {
         queryKey: ['thread', initialThread.id],
         queryFn: async () => {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:3000/api/community/threads/${initialThread.id}`, {
+            const res = await axios.get(`/api/community/threads/${initialThread.id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return res.data;

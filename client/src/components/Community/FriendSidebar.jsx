@@ -21,9 +21,9 @@ const FriendSidebar = () => {
 
     useEffect(() => {
         fetchFriends();
-        
+
         // Refetch everyday 1 minute to update status if not using socket for status
-        const interval = setInterval(fetchFriends, 60000); 
+        const interval = setInterval(fetchFriends, 60000);
         return () => clearInterval(interval);
     }, []);
 
@@ -51,7 +51,7 @@ const FriendSidebar = () => {
         <>
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 sticky top-24">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800 dark:text-white">
-                    <User size={20} className="text-indigo-600" /> 
+                    <User size={20} className="text-indigo-600" />
                     My Friends
                     <span className="text-xs font-normal text-gray-500 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
                         {friends.length}
@@ -67,16 +67,16 @@ const FriendSidebar = () => {
                         friends.map(friend => {
                             const online = isOnline(friend.last_active_at);
                             return (
-                                <div 
-                                    key={friend.id} 
+                                <div
+                                    key={friend.id}
                                     className="group flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
                                     onClick={() => setActiveChatFriend(friend)}
                                 >
                                     <div className="flex items-center gap-3 overflow-hidden">
                                         <div className="relative flex-shrink-0">
                                             <div className="w-9 h-9 bg-gray-200 rounded-full overflow-hidden">
-                                                <img 
-                                                    src={friend.avatar ? `http://localhost:3000${friend.avatar}` : `https://ui-avatars.com/api/?name=${friend.display_name}`} 
+                                                <img
+                                                    src={friend.avatar ? (friend.avatar.startsWith('http') ? friend.avatar : `${friend.avatar.startsWith('/') ? '' : '/'}${friend.avatar}`) : `https://ui-avatars.com/api/?name=${friend.display_name}`}
                                                     alt={friend.display_name}
                                                     className="w-full h-full object-cover"
                                                 />
@@ -93,8 +93,8 @@ const FriendSidebar = () => {
                                             </p>
                                         </div>
                                     </div>
-                                    
-                                    <button 
+
+                                    <button
                                         className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-indigo-600 p-1 rounded-full transition-all"
                                         title="Send Message"
                                     >
@@ -107,7 +107,7 @@ const FriendSidebar = () => {
                 </div>
             </div>
 
-            <PrivateChatModal 
+            <PrivateChatModal
                 isOpen={!!activeChatFriend}
                 friend={activeChatFriend}
                 onClose={() => setActiveChatFriend(null)}

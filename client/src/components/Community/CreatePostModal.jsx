@@ -34,7 +34,7 @@ const CreatePostModal = ({ onClose, initialImage }) => {
     const mutation = useMutation({
         mutationFn: async (formData) => {
             const token = localStorage.getItem('token');
-            const res = await axios.post('http://localhost:3000/api/community/threads', formData, {
+            const res = await axios.post('/api/community/threads', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}`

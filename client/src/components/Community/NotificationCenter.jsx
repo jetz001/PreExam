@@ -15,7 +15,7 @@ const NotificationCenter = () => {
         if (!token) return;
 
         try {
-            const res = await axios.get('http://localhost:3000/api/community/notifications', {
+            const res = await axios.get('/api/community/notifications', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(res.data);
@@ -28,7 +28,7 @@ const NotificationCenter = () => {
     const markAsRead = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.put('http://localhost:3000/api/community/notifications/mark-read', {}, {
+            await axios.put('/api/community/notifications/mark-read', {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUnreadCount(0);

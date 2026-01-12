@@ -13,7 +13,7 @@ const BusinessManager = () => {
         queryFn: async () => {
             // ... existing
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:3000/api/admin/businesses', {
+            const res = await axios.get('/api/admin/businesses', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return res.data;
@@ -24,7 +24,7 @@ const BusinessManager = () => {
         try {
             const token = localStorage.getItem('token');
             // Optimistic update or refetch
-            await axios.put(`http://localhost:3000/api/admin/businesses/${id}/verify`, { is_verified: status }, {
+            await axios.put(`/api/admin/businesses/${id}/verify`, { is_verified: status }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success(status ? 'Business verified!' : 'Verification revoked');
@@ -38,7 +38,7 @@ const BusinessManager = () => {
     const handleDelete = async (id) => {
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:3000/api/admin/businesses/${id}`, {
+            await axios.delete(`/api/admin/businesses/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success('Business deleted');
@@ -52,7 +52,7 @@ const BusinessManager = () => {
     const getImageUrl = (path) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;
-        return `http://localhost:3000${path}`;
+        return `${path.startsWith('/') ? '' : '/'}${path}`;
     };
 
     const filteredBusinesses = businesses?.filter(b =>

@@ -83,7 +83,7 @@ const GroupChatRoom = ({ group, onClose }) => {
                                 <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
                                     <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0 overflow-hidden">
                                         <img
-                                            src={sender.avatar ? `http://localhost:3000${sender.avatar}` : `https://ui-avatars.com/api/?name=${sender.display_name}`}
+                                            src={sender.avatar ? (sender.avatar.startsWith('http') ? sender.avatar : `${sender.avatar.startsWith('/') ? '' : '/'}${sender.avatar}`) : `https://ui-avatars.com/api/?name=${sender.display_name}`}
                                             alt="avatar"
                                             className="w-full h-full object-cover"
                                         />

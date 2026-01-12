@@ -102,17 +102,17 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
                 <div className="relative group">
                     <div className="w-28 h-28 rounded-full border-4 border-white dark:border-slate-800 overflow-hidden shadow-md bg-white">
                         <img
-                            src={user.avatar ? `http://localhost:3000${user.avatar}` : "https://ui-avatars.com/api/?name=" + user.display_name}
+                            src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`) : "https://ui-avatars.com/api/?name=" + user.display_name}
                             alt="Profile"
                             className="w-full h-full object-cover"
                         />
                     </div>
                     {isOwnProfile && (
                         <>
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                className="hidden" 
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
                                 accept="image/*"
                                 onChange={handleAvatarChange}
                             />

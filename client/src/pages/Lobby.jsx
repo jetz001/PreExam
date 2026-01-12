@@ -197,8 +197,8 @@ const Lobby = () => {
                         // Strip localhost:3000 to force relative path resolution (fixes mobile view for legacy assets)
                         const relativeUrl = url.replace(/^http:\/\/localhost:3000/, '');
                         if (relativeUrl.startsWith('http')) return relativeUrl; // External URLs
-                        // Construct full URL dynamically based on current window location
-                        return `${window.location.protocol}//${window.location.hostname}:3000${relativeUrl.startsWith('/') ? '' : '/'}${relativeUrl}`;
+                        // Construct full URL dynamically
+                        return `${window.location.origin}${relativeUrl.startsWith('/') ? '' : '/'}${relativeUrl}`;
                     };
 
                     // Resolve Theme Assets

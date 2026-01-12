@@ -12,7 +12,7 @@ const FriendList = () => {
         queryKey: ['friendsList'],
         queryFn: async () => {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:3000/api/friends/list', {
+            const res = await axios.get('/api/friends/list', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return res.data.data;
@@ -22,7 +22,7 @@ const FriendList = () => {
     const removeFriend = useMutation({
         mutationFn: async (friendId) => {
             const token = localStorage.getItem('token');
-            return axios.delete(`http://localhost:3000/api/friends/remove/${friendId}`, {
+            return axios.delete(`/api/friends/remove/${friendId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
         },
