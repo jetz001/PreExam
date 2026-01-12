@@ -37,10 +37,8 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
         if (!path) return `https://ui-avatars.com/api/?name=User&background=random`;
         if (path.startsWith('http') || path.startsWith('blob:')) return path;
 
-        // Dynamic base URL to match api.js logic
-        const baseUrl = `${window.location.protocol}//${window.location.hostname}:3000`;
-        const cleanPath = path.startsWith('/') ? path : `/${path}`;
-        return `${baseUrl}${cleanPath}`;
+        // Use relative path which works for both dev (proxy) and prod
+        return path.startsWith('/') ? path : `/${path}`;
     };
 
     const handleImageError = (e) => {

@@ -60,7 +60,7 @@ const ThreadList = ({ userId }) => {
                         {thread.image_url && (
                             <div className="w-24 h-24 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
                                 <img
-                                    src={`${window.location.protocol}//${window.location.hostname}:3000${thread.image_url}`}
+                                    src={thread.image_url.startsWith('http') ? thread.image_url : thread.image_url}
                                     onError={(e) => {
                                         e.target.onerror = null;
                                         e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='14' fill='%239ca3af' dy='.3em' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";

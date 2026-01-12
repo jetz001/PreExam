@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 
 exports.createCheckoutSession = async (req, res) => {
     try {
-        const { packageId, amount, type, businessId, metadata } = req.body;
+        const { packageId, amount, type, businessId, planId, metadata } = req.body;
         // Check user
         if (!req.user || !req.user.id) {
             return res.status(401).json({ error: 'User not authenticated' });
@@ -56,6 +56,7 @@ exports.createCheckoutSession = async (req, res) => {
                 userId: userId.toString(),
                 type: type,
                 businessId: businessId ? businessId.toString() : '',
+                planId: planId ? planId.toString() : '',
             }
         });
         console.log('[Payment] Stripe Session created:', session.id);
@@ -154,6 +155,35 @@ exports.handleWebhook = async (req, res) => {
                         const topupAmount = parseFloat(transaction.amount);
                         await user.update({ wallet_balance: currentBalance + topupAmount }, { transaction: t });
                         console.log(`Wallet Top-up User ${user.id}: +${topupAmount}`);
+                    }
+                } else if (metadata.type === 'PLAN_PURCHASE') {
+                    // Handle Premium Plan
+                    const planId = parseInt(metadata.planId);
+                    const plan = await Plan.findByPk(planId, { transaction: t });
+                    const user = await User.findByPk(metadata.userId, { transaction: t });
+
+                    if (user && plan) {
+                        const now = new Date();
+                        // If already premium and not expired, extend
+                        let currentExpiry = user.premium_expiry ? new Date(user.premium_expiry) : now;
+                        if (currentExpiry < now) currentExpiry = now;
+
+                        const addedTime = plan.duration_days * 24 * 60 * 60 * 1000;
+                        const newExpiry = new Date(currentExpiry.getTime() + addedTime);
+
+                        // Set start date only if not currently active premium or expired
+                        let newStartDate = user.premium_start_date;
+                        if (!user.plan_type || user.plan_type === 'free' || (user.premium_expiry && new Date(user.premium_expiry) < now)) {
+                            newStartDate = now;
+                        }
+
+                        await user.update({
+                            plan_type: 'premium',
+                            premium_start_date: newStartDate || now,
+                            premium_expiry: newExpiry
+                        }, { transaction: t });
+
+                        console.log(`Plan Purchase User ${user.id}: Plan ${plan.name}, Expiry: ${newExpiry}`);
                     }
                 }
             });

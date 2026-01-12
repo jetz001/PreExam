@@ -61,6 +61,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: true,
         },
+        premium_start_date: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
         last_announcement_at: {
             type: DataTypes.DATE,
             allowNull: true,

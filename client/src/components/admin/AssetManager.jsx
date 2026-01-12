@@ -219,10 +219,10 @@ const AssetManager = () => {
                                 className="relative bg-white shadow-sm flex items-center justify-center overflow-hidden transition-all duration-300"
                             >
                                 {asset.type === 'background' ? (
-                                    <img src={asset.url.startsWith('http') ? asset.url : `${window.location.protocol}//${window.location.hostname}:3000${asset.url}`} alt={asset.name} className="w-full h-full object-cover" onError={(e) => e.target.src = 'https://ui-avatars.com/api/?name=Asset&background=random'} />
+                                    <img src={asset.url.startsWith('http') ? asset.url : asset.url} alt={asset.name} className="w-full h-full object-cover" onError={(e) => e.target.src = 'https://ui-avatars.com/api/?name=Asset&background=random'} />
                                 ) : (
                                     <div className="relative w-full h-full p-4 flex items-center justify-center bg-gray-50">
-                                        <div className="absolute inset-0 border-8" style={{ borderImage: `url(${asset.url.startsWith('http') ? asset.url : `${window.location.protocol}//${window.location.hostname}:3000${asset.url}`}) 30 round` }}></div>
+                                        <div className="absolute inset-0 border-8" style={{ borderImage: `url(${asset.url.startsWith('http') ? asset.url : asset.url}) 30 round` }}></div>
                                         <span className="text-xs text-gray-400">Frame</span>
                                     </div>
                                 )}

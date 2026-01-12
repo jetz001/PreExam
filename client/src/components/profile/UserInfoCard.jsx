@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Calendar, Flame, Timer, Edit, Crown, Check, X } from 'lucide-react';
+import { Camera, Calendar, Flame, Timer, Edit, Crown, Check, X, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import userService from '../../services/userService';
 import toast from 'react-hot-toast';
@@ -90,6 +90,48 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
         }
     }, [user?.target_exam_date]);
 
+    // Check Premium Expiry
+    useEffect(() => {
+        if (user?.plan_type === 'premium' && user?.premium_expiry) {
+            const now = new Date();
+            const expiry = new Date(user.premium_expiry);
+            const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+
+            if (daysLeft <= 3 && daysLeft > 0) {
+                toast.custom((t) => (
+                    <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-slate-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
+                        <div className="flex-1 w-0 p-4">
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0 pt-0.5">
+                                    <AlertCircle className="h-10 w-10 text-yellow-500" />
+                                </div>
+                                <div className="ml-3 flex-1">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        Premium Expiring Soon
+                                    </p>
+                                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                        Your subscription ends in {daysLeft} days. Renew now to keep access!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex border-l border-gray-200 dark:border-slate-700">
+                            <button
+                                onClick={() => {
+                                    toast.dismiss(t.id);
+                                    navigate('/premium-upgrade');
+                                }}
+                                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                Renew
+                            </button>
+                        </div>
+                    </div>
+                ), { duration: 5000, id: 'premium-alert' }); // ID prevents duplicates
+            }
+        }
+    }, [user]);
+
     if (!user) return null;
 
     return (
@@ -161,6 +203,26 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
                         <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">Status</span>
                     </div>
                 </div>
+
+                {isOwnProfile && user.plan_type === 'premium' && (
+                    <div className="mt-4 w-full bg-purple-50 dark:bg-purple-900/10 p-3 rounded-lg border border-purple-100 dark:border-purple-900 text-center">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Subscription Active</p>
+                        <div className="flex justify-between items-center mt-2 text-xs">
+                            <div className="flex flex-col">
+                                <span className="text-gray-400">Since</span>
+                                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                    {user.premium_start_date ? new Date(user.premium_start_date).toLocaleDateString() : '-'}
+                                </span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-gray-400">Expires</span>
+                                <span className="font-semibold text-purple-600 dark:text-purple-400">
+                                    {user.premium_expiry ? new Date(user.premium_expiry).toLocaleDateString() : '-'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {isOwnProfile && (
                     <div className="mt-6 flex flex-col gap-2 w-full">

@@ -16,7 +16,9 @@ export const SocketProvider = ({ children }) => {
         if (user) {
             // Fix for Windows localhost resolution: force 127.0.0.1 if localhost
             const hostname = window.location.hostname === 'localhost' ? '127.0.0.1' : window.location.hostname;
-            const socketUrl = `${window.location.protocol}//${hostname}:3000`;
+            const socketUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? `${window.location.protocol}//${hostname}:3000`
+                : window.location.origin;
 
             const newSocket = io(socketUrl, {
                 auth: { token: localStorage.getItem('token') },

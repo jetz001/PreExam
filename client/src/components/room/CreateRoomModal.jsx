@@ -177,7 +177,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                                             }}
                                             className={`relative flex-shrink-0 w-16 h-16 border-2 rounded cursor-pointer overflow-hidden group ${formData.theme?.background_id === bg.id ? 'border-primary' : 'border-transparent'}`}
                                         >
-                                            <img src={bg.url.startsWith('http') ? bg.url : `${window.location.protocol}//${window.location.hostname}:3000${bg.url}`} alt={bg.name} className="w-full h-full object-cover" />
+                                            <img src={bg.url.startsWith('http') ? bg.url : bg.url} alt={bg.name} className="w-full h-full object-cover" />
                                             {!isPremium && (
                                                 <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                                                     <Lock className="text-white w-4 h-4" />
@@ -210,7 +210,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                                             }}
                                             className={`relative flex-shrink-0 w-16 h-16 border-2 rounded cursor-pointer overflow-hidden p-2 ${formData.theme?.frame_id === frm.id ? 'border-primary' : 'border-transparent'}`}
                                         >
-                                            <div className="absolute inset-0 border-4" style={{ borderImage: `url(${frm.url.startsWith('http') ? frm.url : `${window.location.protocol}//${window.location.hostname}:3000${frm.url}`}) 30 round` }}></div>
+                                            <div className="absolute inset-0 border-4" style={{ borderImage: `url(${frm.url.startsWith('http') ? frm.url : frm.url}) 30 round` }}></div>
                                             {!isPremium && (
                                                 <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
                                                     <Lock className="text-white w-4 h-4" />

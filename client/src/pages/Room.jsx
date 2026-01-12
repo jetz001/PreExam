@@ -50,7 +50,10 @@ const Room = () => {
                 }
 
                 // Connect Socket
-                const newSocket = io(`${window.location.protocol}//${window.location.hostname}:3000`);
+                const socketUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://127.0.0.1:3000'
+                    : window.location.origin;
+                const newSocket = io(socketUrl);
                 setSocket(newSocket);
 
                 newSocket.emit('join_room', { roomId: id, userId: user.id });

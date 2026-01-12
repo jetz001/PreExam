@@ -84,7 +84,7 @@ app.get('/', (req, res) => {
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // Handle React Routing, return all requests to React app
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
 });
 
@@ -246,17 +246,12 @@ const startServer = async () => {
         } catch (err) {
             // Ignore
         }
+
         try {
-            await sequelize.query("ALTER TABLE ads ADD COLUMN placement VARCHAR(50);");
-            console.log("Added placement column to ads table");
+            await sequelize.query("ALTER TABLE users ADD COLUMN premium_start_date DATETIME;");
+            console.log("Added premium_start_date column to users table");
         } catch (err) {
-            // Ignore
-        }
-        try {
-            await sequelize.query("ALTER TABLE ads ADD COLUMN cpc_bid DECIMAL(10, 2) DEFAULT 5.00;");
-            console.log("Added cpc_bid column to ads table");
-        } catch (err) {
-            // Ignore
+            // Ignore if exists
         }
 
         try {

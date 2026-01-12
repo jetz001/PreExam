@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard,
     FileQuestion,
@@ -22,6 +23,19 @@ import { Toaster } from 'react-hot-toast';
 const AdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const location = useLocation();
+    const navigate = useNavigate();
+    const { user, loading } = useAuth();
+
+    React.useEffect(() => {
+        if (!loading) {
+            if (!user || user.role !== 'admin') {
+                navigate('/login');
+            }
+        }
+    }, [user, loading, navigate]);
+
+    if (loading) return null; // Or a loader
+    if (!user || user.role !== 'admin') return null;
 
     const menuItems = [
         { path: '/admin', label: 'ภาพรวมธุรกิจ', icon: LayoutDashboard },
