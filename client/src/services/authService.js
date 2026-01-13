@@ -19,6 +19,11 @@ const authService = {
         return response.data;
     },
 
+    forgotPassword: async (email) => {
+        const response = await api.post('/auth/forgot-password', { email });
+        return response.data;
+    },
+
     googleLogin: async (token) => {
         const response = await api.post('/auth/google', { token });
         if (response.data.token) {

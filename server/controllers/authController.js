@@ -279,3 +279,21 @@ exports.getMe = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        // In a real application, you would:
+        // 1. Verify user exists
+        // 2. Generate a reset token
+        // 3. Send email with link
+
+        // For now, we simulate success to avoid information leakage and provide UI feedback
+        // as we don't have an email service yet.
+        console.log(`Password reset requested for: ${email}`);
+
+        res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
+    } catch (error) {
+        console.error('Forgot Password Error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};

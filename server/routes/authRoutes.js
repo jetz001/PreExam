@@ -8,6 +8,7 @@ router.post('/login', authController.login);
 router.post('/google', authController.googleLogin);
 router.post('/facebook', authController.facebookLogin);
 router.post('/guest', authController.guestLogin);
+router.post('/forgot-password', authController.forgotPassword);
 router.get('/me', authMiddleware, authController.getMe);
 
 module.exports = router;

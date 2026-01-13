@@ -44,20 +44,7 @@ exports.getMyBusiness = async (req, res) => {
         });
 
         if (!business) {
-            // Auto-create business if not found
-            const newBusiness = await Business.create({
-                owner_uid,
-                name: req.user.display_name || 'My Business',
-                status: 'approved' // Default status changed to approved
-            });
-
-            // Fetch again to include associations match the structure
-            business = await Business.findOne({
-                where: { id: newBusiness.id },
-                include: [
-                    { model: User, as: 'Owner', attributes: ['id', 'display_name', 'avatar'] }
-                ]
-            });
+            return res.status(404).json({ success: false, message: 'Business not found.' });
         }
 
         res.json({ success: true, business });

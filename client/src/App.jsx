@@ -68,6 +68,8 @@ import CookieConsent from './components/common/CookieConsent';
 import { useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 
+import ForgotPassword from './pages/auth/ForgotPassword';
+
 function App() {
   const { user } = useAuth();
 
@@ -126,6 +128,8 @@ function App() {
         <Route path="/auth/business/register" element={<BusinessRegister />} />
         <Route path="/auth/business/login" element={<BusinessLogin />} />
         <Route path="/business/welcome" element={<BusinessWelcome />} />
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
 
 
