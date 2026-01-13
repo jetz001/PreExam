@@ -76,7 +76,7 @@ app.use(['/api/support', '/support'], require('./routes/supportRoutes'));
 app.use(['/api/legal', '/legal'], require('./routes/legalRoutes'));
 
 
-app.get('/', (req, res) => {
+app.get('/api', (req, res) => {
     res.json({ message: 'Welcome to PreExam API' });
 });
 
