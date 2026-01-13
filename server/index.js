@@ -34,7 +34,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 // Stripe Webhook must be parsed as raw buffer BEFORE express.json
-app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+app.use(['/api/payments/webhook', '/payments/webhook'], express.raw({ type: 'application/json' }));
 
 app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ extended: true, limit: '500mb' }));
@@ -54,26 +54,26 @@ const roomRoutes = require('./routes/roomRoutes');
 const assetRoutes = require('./routes/assetRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/questions', questionRoutes);
-app.use('/api/exams', examRoutes);
-app.use('/api/news', newsRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/friends', friendRoutes);
-app.use('/api/rooms', roomRoutes);
-app.use('/api/assets', assetRoutes);
-app.use('/api/bookmarks', require('./routes/bookmarkRoutes'));
-app.use('/api/community', require('./routes/communityRoutes'));
-app.use('/api/groups', require('./routes/studyGroupRoutes'));
-app.use('/api/messages', require('./routes/chatRoutes'));
-app.use('/api/public', publicRoutes);
-app.use('/api/ads', require('./routes/adsRoutes'));
-app.use('/api/business', require('./routes/businessRoutes')); // Learning Center
-app.use('/api/support', require('./routes/supportRoutes'));
-app.use('/api/legal', require('./routes/legalRoutes'));
+app.use(['/api/auth', '/auth'], authRoutes);
+app.use(['/api/users', '/users'], userRoutes);
+app.use(['/api/questions', '/questions'], questionRoutes);
+app.use(['/api/exams', '/exams'], examRoutes);
+app.use(['/api/news', '/news'], newsRoutes);
+app.use(['/api/admin', '/admin'], adminRoutes);
+app.use(['/api/payments', '/payments'], paymentRoutes);
+app.use(['/api/reports', '/reports'], reportRoutes);
+app.use(['/api/friends', '/friends'], friendRoutes);
+app.use(['/api/rooms', '/rooms'], roomRoutes);
+app.use(['/api/assets', '/assets'], assetRoutes);
+app.use(['/api/bookmarks', '/bookmarks'], require('./routes/bookmarkRoutes'));
+app.use(['/api/community', '/community'], require('./routes/communityRoutes'));
+app.use(['/api/groups', '/groups'], require('./routes/studyGroupRoutes'));
+app.use(['/api/messages', '/messages'], require('./routes/chatRoutes'));
+app.use(['/api/public', '/public'], publicRoutes);
+app.use(['/api/ads', '/ads'], require('./routes/adsRoutes'));
+app.use(['/api/business', '/business'], require('./routes/businessRoutes')); // Learning Center
+app.use(['/api/support', '/support'], require('./routes/supportRoutes'));
+app.use(['/api/legal', '/legal'], require('./routes/legalRoutes'));
 
 
 app.get('/', (req, res) => {
