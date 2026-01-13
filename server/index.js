@@ -33,6 +33,10 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
+app.use((req, res, next) => {
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+    next();
+});
 // Stripe Webhook must be parsed as raw buffer BEFORE express.json
 app.use(['/api/payments/webhook', '/payments/webhook'], express.raw({ type: 'application/json' }));
 
