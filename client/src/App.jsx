@@ -69,6 +69,7 @@ import { useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 
 import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 
 function App() {
   const { user } = useAuth();
@@ -130,7 +131,7 @@ function App() {
         <Route path="/business/welcome" element={<BusinessWelcome />} />
 
         <Route path="/forgot-password" element={<ForgotPassword />} />
-
+        <Route path="/reset-password" element={<ResetPassword />} />
 
 
         <Route path="/business" element={<BusinessLayout />}>

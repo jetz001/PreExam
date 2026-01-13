@@ -24,6 +24,11 @@ const authService = {
         return response.data;
     },
 
+    resetPassword: async (token, newPassword) => {
+        const response = await api.post('/auth/reset-password', { token, newPassword });
+        return response.data;
+    },
+
     googleLogin: async (token) => {
         const response = await api.post('/auth/google', { token });
         if (response.data.token) {

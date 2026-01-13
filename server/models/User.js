@@ -165,6 +165,18 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             defaultValue: [],
         },
+        reset_password_token: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        reset_password_expires: {
+            // Check usage in controller: storing Date.now() + 3600000 (number)
+            // If defined as DATE, Sequelize converts number to Date object for DB.
+            // SQLite stores DATE as string or number.
+            // Let's use DATE to be consistent with other date fields.
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
     }, {
         tableName: 'users',
         timestamps: true,

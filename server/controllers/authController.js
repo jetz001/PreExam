@@ -279,21 +279,80 @@ exports.getMe = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+const crypto = require('crypto');
+const { sendResetEmail } = require('../services/emailService');
+const { Op } = require('sequelize'); // Ensure Op is imported if not already, or use Sequelize.Op
+
 exports.forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
-        // In a real application, you would:
-        // 1. Verify user exists
-        // 2. Generate a reset token
-        // 3. Send email with link
+        const user = await User.findOne({ where: { email } });
 
-        // For now, we simulate success to avoid information leakage and provide UI feedback
-        // as we don't have an email service yet.
-        console.log(`Password reset requested for: ${email}`);
+        if (!user) {
+            // Security: Don't reveal if user exists BUT for this use case we might want to be helpful or standard.
+            // Standard: "If an account exists..."
+            return res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
+        }
 
-        res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
+        // Generate Token
+        // 20 bytes hex string
+        const token = crypto.randomBytes(20).toString('hex');
+
+        // Expiry: 1 hour from now
+        // SQLite stores dates as numbers or strings depending on config. User model defined as DATE.
+        // Sequelize usually handles Date objects -> timestamp/ISO string.
+        const expires = Date.now() + 3600000;
+
+        user.reset_password_token = token;
+        user.reset_password_expires = expires;
+        await user.save();
+
+        // Send Email
+        const emailSent = await sendResetEmail(user.email, token);
+
+        if (emailSent) {
+            res.json({ success: true, message: 'Reset link sent to your email.' });
+        } else {
+            console.error('Failed to send email to', user.email);
+            // Rollback token? Not strictly necessary but clean.
+            res.status(500).json({ success: false, message: 'Failed to send email service.' });
+        }
+
     } catch (error) {
         console.error('Forgot Password Error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        const user = await User.findOne({
+            where: {
+                reset_password_token: token,
+                reset_password_expires: { [Op.gt]: Date.now() } // Expires > Now
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'Password reset token is invalid or has expired.' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        user.password_hash = await bcrypt.hash(newPassword, salt);
+
+        // Clear token
+        user.reset_password_token = null;
+        user.reset_password_expires = null;
+
+        await user.save();
+
+        res.json({ success: true, message: 'Password has been reset successfully.' });
+
+    } catch (error) {
+        console.error('Reset Password Error:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
