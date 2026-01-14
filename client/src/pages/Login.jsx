@@ -88,7 +88,7 @@ const Login = () => {
                                     name="email"
                                     type="email"
                                     required
-                                    className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm bg-gray-50 focus:bg-white"
+                                    className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm bg-gray-50 focus:bg-white"
                                     placeholder="name@example.com"
                                     value={formData.email}
                                     onChange={handleChange}
@@ -100,7 +100,7 @@ const Login = () => {
                                     name="password"
                                     type="password"
                                     required
-                                    className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm bg-gray-50 focus:bg-white"
+                                    className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm bg-gray-50 focus:bg-white"
                                     placeholder="••••••••"
                                     value={formData.password}
                                     onChange={handleChange}
@@ -141,9 +141,6 @@ const Login = () => {
                     <div className="relative my-8">
                         <div className="absolute inset-0 flex items-center">
                             <div className="w-full border-t border-gray-200"></div>
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-4 bg-white text-gray-500 font-medium tracking-wide">Or verify with</span>
                         </div>
                     </div>
 

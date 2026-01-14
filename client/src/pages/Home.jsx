@@ -95,11 +95,7 @@ const Home = () => {
                                         ทดลองทำข้อสอบฟรี
                                     </Link>
                                 </div>
-                                <div className="mt-3 sm:mt-0 sm:ml-3">
-                                    <Link to="/courses" className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg">
-                                        ดูคอร์สติว
-                                    </Link>
-                                </div>
+
                             </div>
                         </motion.div>
                         <motion.div
