@@ -40,7 +40,7 @@ const BusinessWelcome = () => {
                             <input
                                 required
                                 type="text"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border text-gray-900"
                                 placeholder="เช่น Kru P'Nan English"
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -50,7 +50,7 @@ const BusinessWelcome = () => {
                             <label className="block text-sm font-medium text-gray-700">สโลแกน / คำอธิบายสั้นๆ</label>
                             <input
                                 type="text"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border text-gray-900"
                                 placeholder="ช่วยให้คุณสอบผ่าน TOEIC"
                                 value={formData.tagline}
                                 onChange={e => setFormData({ ...formData, tagline: e.target.value })}
@@ -59,7 +59,7 @@ const BusinessWelcome = () => {
                         <div>
                             <label className="block text-sm font-medium text-gray-700">หมวดหมู่</label>
                             <select
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border text-gray-900"
                                 value={formData.category}
                                 onChange={e => setFormData({ ...formData, category: e.target.value })}
                             >
@@ -70,7 +70,7 @@ const BusinessWelcome = () => {
                             <label className="block text-sm font-medium text-gray-700">ลิงก์ติดต่อ (Line OA / Facebook)</label>
                             <input
                                 type="url"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border text-gray-900"
                                 placeholder="https://line.me/..."
                                 value={formData.contact_link}
                                 onChange={e => setFormData({ ...formData, contact_link: e.target.value })}
@@ -80,7 +80,7 @@ const BusinessWelcome = () => {
                             <button
                                 type="button"
                                 onClick={() => setIsRegistering(false)}
-                                className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
                             >
                                 ยกเลิก
                             </button>
