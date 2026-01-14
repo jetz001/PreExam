@@ -106,9 +106,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                                 <h3 className="text-xl text-gray-900 font-medium" style={{ fontSize: `${1.25 * fontSizeScale}rem`, lineHeight: '1.5' }}>
                                     <span className="font-bold mr-2">{currentIndex + 1}.</span>
                                     {currentQuestion.question_text}
-                                    <span className="inline-block text-xs text-gray-400 font-normal ml-2 bg-gray-100 px-2 py-0.5 rounded-full align-middle">
-                                        #{currentQuestion.id}
-                                    </span>
+                                    {currentQuestion.question_text}
                                 </h3>
                                 <div className="flex space-x-2">
                                     <button
