@@ -100,19 +100,14 @@ const adminApi = {
     },
 
     // Inbox & Reports
+    // Inbox & Reports
     getMessages: async () => {
-        // const response = await api.get('/contact/messages');
-        return [
-            { id: 1, from: 'user1@example.com', subject: 'Login issue', type: 'Problem', content: 'Cannot login...' },
-            { id: 2, from: 'sponsor@brand.com', subject: 'Partnership', type: 'Sponsor', content: 'We want to sponsor...' }
-        ];
+        const response = await api.get('/admin/messages');
+        return response.data;
     },
     getReports: async () => {
-        // const response = await api.get('/reports');
-        return [
-            { id: 1, type: 'Comment', content: 'Rude words', reporter: 'user3' },
-            { id: 2, type: 'Post', content: 'Spam', reporter: 'user4' }
-        ];
+        const response = await api.get('/admin/reports');
+        return response.data;
     },
 
     // Settings & Assets
