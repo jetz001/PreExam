@@ -190,7 +190,7 @@ const QuestionManager = () => {
                     <span className="font-medium">Filters:</span>
                 </div>
                 <select
-                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900"
                     value={filters.subject}
                     onChange={(e) => setFilters({ ...filters, subject: e.target.value })}
                 >
@@ -201,7 +201,7 @@ const QuestionManager = () => {
                     <option value="Law">Law</option>
                 </select>
                 <select
-                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900"
                     value={filters.category}
                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                 >
@@ -321,6 +321,8 @@ const QuestionManager = () => {
                             <ul className="list-disc pl-5 space-y-1">
                                 <li><strong>Catalogs:</strong> Comma-separated tags (e.g., "Exam A, Local").</li>
                                 <li><strong>Explanation:</strong> Explanation for the answer.</li>
+                                <li><strong>Exam Year:</strong> Buddhist Year (e.g., 2567).</li>
+                                <li><strong>Exam Set:</strong> 'Mock Exam' or 'Past Exam'.</li>
                             </ul>
 
                             <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-700 mt-4">
