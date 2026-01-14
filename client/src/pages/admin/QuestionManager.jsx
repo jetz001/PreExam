@@ -217,6 +217,7 @@ const QuestionManager = () => {
                     <table className="w-full text-left text-sm text-slate-600">
                         <thead className="bg-slate-50 text-slate-700 border-b border-slate-200">
                             <tr>
+                                <th className="px-6 py-4 font-semibold">No.</th>
                                 <th className="px-6 py-4 font-semibold">Question</th>
                                 <th className="px-6 py-4 font-semibold">Skill (Radar)</th>
                                 <th className="px-6 py-4 font-semibold">Subject</th>
@@ -228,15 +229,16 @@ const QuestionManager = () => {
                         <tbody className="divide-y divide-slate-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">Loading questions...</td>
+                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">Loading questions...</td>
                                 </tr>
                             ) : questions.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">No questions found.</td>
+                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">No questions found.</td>
                                 </tr>
                             ) : (
-                                questions.map((q) => (
+                                questions.map((q, index) => (
                                     <tr key={q.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 text-slate-500 font-medium">{index + 1}</td>
                                         <td className="px-6 py-4 max-w-md truncate font-medium text-slate-800">{q.question_text}</td>
                                         <td className="px-6 py-4 text-xs text-slate-500">{q.skill || '-'}</td>
                                         <td className="px-6 py-4">{q.subject}</td>
