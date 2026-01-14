@@ -63,7 +63,7 @@ app.use(['/api/users', '/users'], userRoutes);
 app.use(['/api/questions', '/questions'], questionRoutes);
 app.use(['/api/exams', '/exams'], examRoutes);
 app.use(['/api/news', '/news'], newsRoutes);
-app.use(['/api/admin', '/admin'], adminRoutes);
+app.use('/api/admin', adminRoutes);
 app.use(['/api/payments', '/payments'], paymentRoutes);
 app.use(['/api/reports', '/reports'], reportRoutes);
 app.use(['/api/friends', '/friends'], friendRoutes);
@@ -75,7 +75,7 @@ app.use(['/api/groups', '/groups'], require('./routes/studyGroupRoutes'));
 app.use(['/api/messages', '/messages'], require('./routes/chatRoutes'));
 app.use(['/api/public', '/public'], publicRoutes);
 app.use(['/api/ads', '/ads'], require('./routes/adsRoutes'));
-app.use(['/api/business', '/business'], require('./routes/businessRoutes')); // Learning Center
+app.use('/api/business', require('./routes/businessRoutes')); // Learning Center
 app.use(['/api/support', '/support'], require('./routes/supportRoutes'));
 app.use(['/api/legal', '/legal'], require('./routes/legalRoutes'));
 
