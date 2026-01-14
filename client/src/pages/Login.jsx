@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import authService from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import SocialLogin from '../components/SocialLogin';
 import { GraduationCap, Building2, ArrowRight, User } from 'lucide-react';
 
@@ -12,6 +12,7 @@ const Login = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,7 +22,7 @@ const Login = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            const response = await authService.login(formData);
+            await login(formData);
 
             // Intelligence Redirect:
             // If user has a business role or last visited business page, we could redirect there.

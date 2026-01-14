@@ -43,8 +43,6 @@ import SettingsPage from './pages/user/SettingsPage';
 import ExamResult from './pages/ExamResult';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
-import authService from './services/authService';
-
 // Business & Ads
 import BusinessLayout from './layouts/BusinessLayout';
 import BusinessRegister from './pages/auth/BusinessRegister';
@@ -74,7 +72,6 @@ import ResetPassword from './pages/auth/ResetPassword';
 function App() {
   const { user } = useAuth();
 
-  // Apply Theme
   useEffect(() => {
     const applyTheme = () => {
       const theme = user?.theme_preference || 'system';
@@ -95,32 +92,6 @@ function App() {
     };
     applyTheme();
   }, [user?.theme_preference]);
-
-  useEffect(() => {
-    const checkGuestLogin = async () => {
-      // Logic for guest login relies on authService directly, which is fine.
-      // But since we use useAuth now, we could use user from context, but checkGuestLogin handles ONLY if !user.
-      // Existing logic calls authService.getCurrentUser().
-      // If we use 'user' from context, it might be null initially while loading.
-      // But authService.getCurrentUser() is synchronous (localStorage).
-      // So existing logic is fine.
-
-      const currentUser = authService.getCurrentUser();
-      if (!currentUser) {
-        let deviceId = localStorage.getItem('guest_device_id');
-        if (!deviceId) {
-          deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
-          localStorage.setItem('guest_device_id', deviceId);
-        }
-        try {
-          await authService.guestLogin(deviceId);
-        } catch (error) {
-          console.error('Guest login failed', error);
-        }
-      }
-    };
-    checkGuestLogin();
-  }, []);
 
   return (
     <>

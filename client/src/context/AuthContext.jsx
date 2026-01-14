@@ -8,23 +8,51 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchUser = async () => {
+        const initAuth = async () => {
             try {
-                const currentUser = authService.getCurrentUser();
+                let currentUser = authService.getCurrentUser();
+
+                if (!currentUser) {
+                    try {
+                        const guestConfig = await authService.guestLogin();
+                        currentUser = guestConfig.user;
+                    } catch (guestError) {
+                        console.error("Guest login failed during init", guestError);
+                    }
+                }
+
                 setUser(currentUser);
             } catch (error) {
-                console.error("Error fetching user", error);
+                console.error("Error initializing auth", error);
                 setUser(null);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchUser();
+        initAuth();
     }, []);
 
-    const login = async (email, password) => {
-        const data = await authService.login(email, password);
+    const login = async (userData) => {
+        const data = await authService.login(userData);
+        setUser(data.user);
+        return data;
+    };
+
+    const register = async (userData) => {
+        const data = await authService.register(userData);
+        setUser(data.user);
+        return data;
+    };
+
+    const googleLogin = async (token) => {
+        const data = await authService.googleLogin(token);
+        setUser(data.user);
+        return data;
+    };
+
+    const facebookLogin = async (accessToken, userID) => {
+        const data = await authService.facebookLogin(accessToken, userID);
         setUser(data.user);
         return data;
     };
@@ -43,7 +71,17 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, updateUser, loading, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{
+            user,
+            login,
+            register,
+            googleLogin,
+            facebookLogin,
+            logout,
+            updateUser,
+            loading,
+            isAuthenticated: !!user
+        }}>
             {children}
         </AuthContext.Provider>
     );
