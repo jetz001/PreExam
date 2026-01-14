@@ -15,6 +15,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
     const [answers, setAnswers] = useState({});
     const [flagged, setFlagged] = useState({});
     const [timeLeft, setTimeLeft] = useState(questions.length * 60); // 1 min per question
+    const [startTime] = useState(Date.now()); // Track start time for accurate duration
     const [showReportModal, setShowReportModal] = useState(false);
     const [fontSizeScale, setFontSizeScale] = useState(1);
     const { isPremium } = useUserRole();
@@ -62,7 +63,8 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
     };
 
     const handleSubmit = () => {
-        onSubmit(answers, questions.length * 60 - timeLeft);
+        const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+        onSubmit(answers, timeTaken);
     };
 
     const formatTime = (seconds) => {
