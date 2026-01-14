@@ -20,7 +20,9 @@ const QuestionManager = () => {
         subject: 'General',
         skill: '', // New Skill field
         catalogs: '', // Comma separated string for UI
-        category: '' // Legacy
+        category: '', // Legacy
+        exam_year: '',
+        exam_set: ''
     };
     const [formData, setFormData] = useState(initialFormState);
 
@@ -99,6 +101,8 @@ const QuestionManager = () => {
                 ...question,
                 catalogs: catalogsStr,
                 skill: question.skill || '',
+                exam_year: question.exam_year || '',
+                exam_set: question.exam_set || '',
                 options: {
                     a: question.choice_a || '',
                     b: question.choice_b || '',
@@ -348,7 +352,7 @@ const QuestionManager = () => {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Question Text</label>
                                 <textarea
                                     required
-                                    className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none min-h-[100px]"
+                                    className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none min-h-[100px] text-gray-900"
                                     placeholder="Enter the question here..."
                                     value={formData.question_text}
                                     onChange={(e) => setFormData({ ...formData, question_text: e.target.value })}
@@ -362,7 +366,7 @@ const QuestionManager = () => {
                                         <input
                                             type="text"
                                             required
-                                            className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                            className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                             value={formData.options ? formData.options[opt] : ''}
                                             onChange={(e) => setFormData({
                                                 ...formData,
@@ -377,7 +381,7 @@ const QuestionManager = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Correct Answer</label>
                                     <select
-                                        className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                        className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                         value={formData.correct_answer}
                                         onChange={(e) => setFormData({ ...formData, correct_answer: e.target.value })}
                                     >
@@ -391,7 +395,7 @@ const QuestionManager = () => {
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
                                     <input
                                         type="text"
-                                        className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                        className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                         value={formData.subject}
                                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                                         placeholder="e.g. Math, English"
@@ -401,17 +405,39 @@ const QuestionManager = () => {
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Skill (Radar Chart)</label>
                                     <input
                                         type="text"
-                                        className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                        className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                         value={formData.skill}
                                         onChange={(e) => setFormData({ ...formData, skill: e.target.value })}
                                         placeholder="e.g. Analysis, Critical Thinking"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Exam Year (ปี)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
+                                        value={formData.exam_year}
+                                        onChange={(e) => setFormData({ ...formData, exam_year: e.target.value })}
+                                        placeholder="e.g. 2567"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Exam Set (ชุดข้อสอบ)</label>
+                                    <select
+                                        className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
+                                        value={formData.exam_set}
+                                        onChange={(e) => setFormData({ ...formData, exam_set: e.target.value })}
+                                    >
+                                        <option value="">Select Set...</option>
+                                        <option value="Mock Exam">แนวข้อสอบ (Mock Exam)</option>
+                                        <option value="Past Exam">ข้อสอบจริง (Past Exam)</option>
+                                    </select>
+                                </div>
                                 <div className="col-span-1 sm:col-span-2">
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Catalogs (Tags)</label>
                                     <input
                                         type="text"
-                                        className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                        className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                         value={formData.catalogs}
                                         onChange={(e) => setFormData({ ...formData, catalogs: e.target.value })}
                                         placeholder="e.g. Exam A, Local Gov (Separate with comma)"
@@ -422,7 +448,7 @@ const QuestionManager = () => {
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Explanation</label>
                                 <textarea
-                                    className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none min-h-[80px]"
+                                    className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none min-h-[80px] text-gray-900"
                                     placeholder="Explain why the answer is correct..."
                                     value={formData.explanation}
                                     onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}

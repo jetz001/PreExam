@@ -101,7 +101,7 @@ exports.getQuestionById = async (req, res) => {
 
 exports.createQuestion = async (req, res) => {
     try {
-        const { catalogs, category, skill, ...rest } = req.body;
+        const { catalogs, category, skill, exam_year, exam_set, ...rest } = req.body;
 
         let finalCatalogs = catalogs || [];
         // If legacy category provided and not in catalogs, add it
@@ -118,7 +118,9 @@ exports.createQuestion = async (req, res) => {
             ...rest,
             category: category || (finalCatalogs.length > 0 ? finalCatalogs[0] : 'General'), // Fallback for legacy field checks
             catalogs: finalCatalogs,
-            skill: skill || null // New Skill Field for Radar Chart
+            skill: skill || null, // New Skill Field for Radar Chart
+            exam_year: exam_year || null,
+            exam_set: exam_set || null
         });
         res.status(201).json({ success: true, data: question });
     } catch (error) {
@@ -144,8 +146,11 @@ exports.updateQuestion = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Question not found' });
         }
 
-        const { catalogs, category, skill, ...rest } = req.body;
+        const { catalogs, category, skill, exam_year, exam_set, ...rest } = req.body;
         const updateData = { ...rest };
+
+        if (exam_year !== undefined) updateData.exam_year = exam_year;
+        if (exam_set !== undefined) updateData.exam_set = exam_set;
 
         if (catalogs !== undefined) {
             let finalCatalogs = catalogs;
@@ -214,6 +219,8 @@ exports.importQuestions = async (req, res) => {
             // Default Subject if missing
             const subject = getVal(['subject']) || 'General';
             const skill = getVal(['skill', 'radar', 'radarcategory']) || null;
+            const exam_year = getVal(['year', 'examyear']) || null;
+            const exam_set = getVal(['set', 'examset', 'type']) || null; // e.g. "Mock Exam" or "Past Exam"
 
             // Map correct answer to single letter lowercase 'a', 'b', 'c', 'd'
             let correct = getVal(['correct', 'correctanswer', 'answer']);
@@ -236,6 +243,8 @@ exports.importQuestions = async (req, res) => {
                 catalogs: catalogs,
                 category: catalogs.length > 0 ? catalogs[0] : 'General', // Legacy fallback
                 skill: skill,
+                exam_year: exam_year,
+                exam_set: exam_set,
                 difficulty: 50 // Default
             });
         }

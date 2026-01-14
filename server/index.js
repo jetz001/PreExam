@@ -237,6 +237,24 @@ const startServer = async () => {
             }
         }
 
+        try {
+            await sequelize.query("ALTER TABLE questions ADD COLUMN exam_year INTEGER;");
+            console.log("Added exam_year column to questions table");
+        } catch (err) {
+            if (!err.message.includes('duplicate column name')) {
+                // console.log("Column likely exists:", err.message);
+            }
+        }
+
+        try {
+            await sequelize.query("ALTER TABLE questions ADD COLUMN exam_set VARCHAR(50);");
+            console.log("Added exam_set column to questions table");
+        } catch (err) {
+            if (!err.message.includes('duplicate column name')) {
+                // console.log("Column likely exists:", err.message);
+            }
+        }
+
         // --- Ad System Migrations ---
         try {
             await sequelize.query("ALTER TABLE ads ADD COLUMN link_url VARCHAR(255);");
