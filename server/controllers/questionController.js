@@ -100,7 +100,14 @@ exports.getExamSets = async (req, res) => {
 
 exports.getCategories = async (req, res) => {
     try {
+        const { subject } = req.query;
+        const where = {};
+        if (subject && subject !== 'undefined' && subject !== 'null') {
+            where.subject = { [Op.like]: `%${subject}%` };
+        }
+
         const questions = await Question.findAll({
+            where,
             attributes: ['category', 'catalogs'],
         });
 

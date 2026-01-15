@@ -11,8 +11,8 @@ const examService = {
         return response.data;
     },
 
-    getCategories: async () => {
-        const response = await api.get('/questions/categories');
+    getCategories: async (params) => {
+        const response = await api.get('/questions/categories', { params });
         return response.data;
     },
 

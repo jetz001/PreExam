@@ -19,23 +19,13 @@ const ExamConfig = ({ onStart }) => {
 
     const isPremium = user?.plan_type === 'subscription' || user?.role === 'admin';
 
+    // Initial Load - Subjects
     React.useEffect(() => {
-        const fetchData = async () => {
+        const fetchSubjects = async () => {
             try {
                 const examService = (await import('../services/examService')).default;
-
-                const [subjectsRes, categoriesRes] = await Promise.all([
-                    examService.getSubjects(),
-                    examService.getCategories()
-                ]);
-
+                const subjectsRes = await examService.getSubjects();
                 if (subjectsRes.success) setSubjects(subjectsRes.data);
-                if (categoriesRes.success) {
-                    setCategories(categoriesRes.data);
-                    if (categoriesRes.data.length > 0 && (config.category === 'local_gov' || !config.category)) {
-                        setConfig(prev => ({ ...prev, category: categoriesRes.data[0] }));
-                    }
-                }
 
                 if (isPremium) {
                     const [yearsRes, setsRes] = await Promise.all([
@@ -45,13 +35,44 @@ const ExamConfig = ({ onStart }) => {
                     if (yearsRes.success) setYears(yearsRes.data);
                     if (setsRes.success) setSets(setsRes.data);
                 }
-
             } catch (error) {
-                console.error('Error fetching exam config data:', error);
+                console.error('Error fetching initial data:', error);
             }
         };
-        fetchData();
+        fetchSubjects();
     }, [isPremium]);
+
+    // Dependent Dropdown: Fetch Categories when Subject changes
+    React.useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const examService = (await import('../services/examService')).default;
+                // Fetch categories filtered by selected subject
+                const categoriesRes = await examService.getCategories({ subject: config.subject });
+
+                if (categoriesRes.success) {
+                    setCategories(categoriesRes.data);
+
+                    // Auto-select first category if current selection is invalid for new list
+                    // or if it's empty.
+                    if (categoriesRes.data.length > 0) {
+                        const isCurrentValid = categoriesRes.data.includes(config.category);
+                        if (!config.category || !isCurrentValid) {
+                            // Don't auto-set if "All" concept is desired, but here we enforce selection usually.
+                            // Let's set default to first one to ensure valid state.
+                            setConfig(prev => ({ ...prev, category: categoriesRes.data[0] }));
+                        }
+                    } else {
+                        // No categories for this subject
+                        setConfig(prev => ({ ...prev, category: '' }));
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching dependent categories:', error);
+            }
+        };
+        fetchCategories();
+    }, [config.subject]);
 
     const handleChange = (e) => {
         setConfig({ ...config, [e.target.name]: e.target.value });
