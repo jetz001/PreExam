@@ -8,13 +8,30 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchUser = async () => {
+        const initAuth = async () => {
             try {
+<<<<<<< HEAD
                 const currentUser = authService.getCurrentUser();
                 console.log('[AuthContext] Fetched user from storage:', currentUser);
                 setUser(currentUser);
             } catch (error) {
                 console.error("[AuthContext] Error fetching user", error);
+=======
+                let currentUser = authService.getCurrentUser();
+
+                if (!currentUser) {
+                    try {
+                        const guestConfig = await authService.guestLogin();
+                        currentUser = guestConfig.user;
+                    } catch (guestError) {
+                        console.error("Guest login failed during init", guestError);
+                    }
+                }
+
+                setUser(currentUser);
+            } catch (error) {
+                console.error("Error initializing auth", error);
+>>>>>>> bacce2c141b692c2a538f5cce56dc456713d2cde
                 setUser(null);
             } finally {
                 setLoading(false);
@@ -22,17 +39,33 @@ export const AuthProvider = ({ children }) => {
             }
         };
 
-        fetchUser();
+        initAuth();
     }, []);
 
+<<<<<<< HEAD
     const login = async (email, password) => {
         const data = await authService.login({ email, password });
+=======
+    const login = async (userData) => {
+        const data = await authService.login(userData);
+>>>>>>> bacce2c141b692c2a538f5cce56dc456713d2cde
         setUser(data.user);
         return data;
     };
 
+<<<<<<< HEAD
     const googleLogin = async (credential) => {
         const data = await authService.googleLogin(credential);
+=======
+    const register = async (userData) => {
+        const data = await authService.register(userData);
+        setUser(data.user);
+        return data;
+    };
+
+    const googleLogin = async (token) => {
+        const data = await authService.googleLogin(token);
+>>>>>>> bacce2c141b692c2a538f5cce56dc456713d2cde
         setUser(data.user);
         return data;
     };
@@ -57,7 +90,21 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
+<<<<<<< HEAD
         <AuthContext.Provider value={{ user, login, googleLogin, facebookLogin, logout, updateUser, loading, isAuthenticated: !!user }}>
+=======
+        <AuthContext.Provider value={{
+            user,
+            login,
+            register,
+            googleLogin,
+            facebookLogin,
+            logout,
+            updateUser,
+            loading,
+            isAuthenticated: !!user
+        }}>
+>>>>>>> bacce2c141b692c2a538f5cce56dc456713d2cde
             {children}
         </AuthContext.Provider>
     );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import authService from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import SocialLogin from '../components/SocialLogin';
 import { GraduationCap, Building2, ArrowRight, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,7 @@ const Login = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -29,7 +30,11 @@ const Login = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
+<<<<<<< HEAD
             await login(formData.email, formData.password); // Use context login
+=======
+            await login(formData);
+>>>>>>> bacce2c141b692c2a538f5cce56dc456713d2cde
 
             // Intelligence Redirect:
             // If user has a business role or last visited business page, we could redirect there.
@@ -95,7 +100,10 @@ const Login = () => {
                                     name="email"
                                     type="email"
                                     required
+<<<<<<< HEAD
                                     style={{ color: '#000000' }}
+=======
+>>>>>>> bacce2c141b692c2a538f5cce56dc456713d2cde
                                     className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm bg-gray-50 focus:bg-white"
                                     placeholder="name@example.com"
                                     value={formData.email}
@@ -108,7 +116,10 @@ const Login = () => {
                                     name="password"
                                     type="password"
                                     required
+<<<<<<< HEAD
                                     style={{ color: '#000000' }}
+=======
+>>>>>>> bacce2c141b692c2a538f5cce56dc456713d2cde
                                     className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm bg-gray-50 focus:bg-white"
                                     placeholder="••••••••"
                                     value={formData.password}
@@ -147,7 +158,15 @@ const Login = () => {
                         </button>
                     </form>
 
+<<<<<<< HEAD
 
+=======
+                    <div className="relative my-8">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200"></div>
+                        </div>
+                    </div>
+>>>>>>> bacce2c141b692c2a538f5cce56dc456713d2cde
 
                     <SocialLogin />
 

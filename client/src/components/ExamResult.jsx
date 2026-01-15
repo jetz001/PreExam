@@ -29,12 +29,12 @@ const ExamResult = ({ result, onRetry }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                 <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
-                    <div className="text-sm text-gray-500">เวลาที่ใช้</div>
-                    <div className="text-xl font-bold">{Math.floor(result.time_taken / 60)} นาที {result.time_taken % 60} วินาที</div>
+                    <div className="text-sm text-gray-900">เวลาที่ใช้</div>
+                    <div className="text-xl font-bold text-gray-900">{Math.floor(result.time_taken / 60)} นาที {result.time_taken % 60} วินาที</div>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
-                    <div className="text-sm text-gray-500">ความแม่นยำ</div>
-                    <div className="text-xl font-bold">{percentage.toFixed(1)}%</div>
+                    <div className="text-sm text-gray-900">ความแม่นยำ</div>
+                    <div className="text-xl font-bold text-gray-900">{percentage.toFixed(1)}%</div>
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import authService from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import SocialLogin from '../components/SocialLogin';
 
 const Register = () => {
@@ -12,6 +12,7 @@ const Register = () => {
     });
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { register } = useAuth();
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -24,7 +25,7 @@ const Register = () => {
             return;
         }
         try {
-            await authService.register({
+            await register({
                 display_name: formData.display_name,
                 email: formData.email,
                 password: formData.password,

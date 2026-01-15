@@ -74,6 +74,14 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             defaultValue: 0,
         },
+        exam_year: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        exam_set: {
+            type: DataTypes.STRING, // 'Mock Exam', 'Past Exam'
+            allowNull: true
+        }
     }, {
         tableName: 'questions',
         timestamps: true, // Sequelize adds createdAt, updatedAt by default

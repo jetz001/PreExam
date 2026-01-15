@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X } from 'lucide-react';
+import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
+
+const isGuest = (user) => {
+    return (user.email && user.email.startsWith('guest_') && user.email.includes('@preexam.com')) ||
+        (user.display_name && user.display_name.startsWith('Guest-'));
+};
 
 const PERMISSIONS_LIST = [
     { id: 'view_dashboard', label: 'View Dashboard' },
@@ -207,11 +212,20 @@ const UserManager = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
 
+    // Category Counts
+    const counts = {
+        users: users.filter(u => u.role !== 'admin' && u.role !== 'sponsor' && !isGuest(u)).length,
+        guests: users.filter(u => isGuest(u)).length,
+        sponsors: users.filter(u => u.role === 'sponsor').length,
+        admins: users.filter(u => u.role === 'admin').length
+    };
+
     const filteredUsers = users.filter(user => {
         // Tab Filter
         if (activeTab === 'sponsors' && user.role !== 'sponsor') return false;
         if (activeTab === 'admins' && user.role !== 'admin') return false;
-        if (activeTab === 'users' && (user.role === 'sponsor' || user.role === 'admin')) return false;
+        if (activeTab === 'guests' && !isGuest(user)) return false;
+        if (activeTab === 'users' && (user.role === 'sponsor' || user.role === 'admin' || isGuest(user))) return false;
 
         // Search Filter
         if (searchTerm) {
@@ -277,30 +291,38 @@ const UserManager = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex space-x-4 border-b border-slate-200">
+            <div className="flex space-x-4 border-b border-slate-200 overflow-x-auto">
                 <button
                     onClick={() => setActiveTab('users')}
-                    className={`pb-3 px-1 flex items-center space-x-2 text-sm font-medium transition-colors relative ${activeTab === 'users' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-600 hover:text-slate-900'
+                    className={`pb-3 px-1 flex items-center space-x-2 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === 'users' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-600 hover:text-slate-900'
                         }`}
                 >
                     <GraduationCap size={18} />
-                    <span>นักเรียน & ผู้ใช้งาน</span>
+                    <span>ผู้ใช้งาน ({counts.users})</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('guests')}
+                    className={`pb-3 px-1 flex items-center space-x-2 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === 'guests' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                >
+                    <Smartphone size={18} />
+                    <span>Guest ({counts.guests})</span>
                 </button>
                 <button
                     onClick={() => setActiveTab('sponsors')}
-                    className={`pb-3 px-1 flex items-center space-x-2 text-sm font-medium transition-colors relative ${activeTab === 'sponsors' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-600 hover:text-slate-900'
+                    className={`pb-3 px-1 flex items-center space-x-2 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === 'sponsors' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-600 hover:text-slate-900'
                         }`}
                 >
                     <Briefcase size={18} />
-                    <span>ผู้สนับสนุน (ธุรกิจ)</span>
+                    <span>ผู้สนับสนุน ({counts.sponsors})</span>
                 </button>
                 <button
                     onClick={() => setActiveTab('admins')}
-                    className={`pb-3 px-1 flex items-center space-x-2 text-sm font-medium transition-colors relative ${activeTab === 'admins' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-600 hover:text-slate-900'
+                    className={`pb-3 px-1 flex items-center space-x-2 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === 'admins' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-600 hover:text-slate-900'
                         }`}
                 >
                     <Shield size={18} />
-                    <span>ผู้ดูแลระบบ</span>
+                    <span>ผู้ดูแลระบบ ({counts.admins})</span>
                 </button>
             </div>
 
@@ -332,9 +354,12 @@ const UserManager = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
                                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-slate-500 mr-3 ${activeTab === 'sponsors' ? 'bg-indigo-100 text-indigo-600' :
-                                                    activeTab === 'admins' ? 'bg-purple-100 text-purple-600' : 'bg-slate-200'
+                                                    activeTab === 'admins' ? 'bg-purple-100 text-purple-600' :
+                                                        activeTab === 'guests' ? 'bg-gray-100 text-gray-500' : 'bg-slate-200'
                                                     }`}>
-                                                    {activeTab === 'sponsors' ? <Briefcase size={16} /> : activeTab === 'admins' ? <Shield size={16} /> : <User size={16} />}
+                                                    {activeTab === 'sponsors' ? <Briefcase size={16} /> :
+                                                        activeTab === 'admins' ? <Shield size={16} /> :
+                                                            activeTab === 'guests' ? <Smartphone size={16} /> : <User size={16} />}
                                                 </div>
                                                 <div>
                                                     <p className="font-medium text-slate-800">
@@ -342,6 +367,11 @@ const UserManager = () => {
                                                             ? (user.business_name || user.display_name || 'Unknown Business')
                                                             : (user.name || user.display_name || 'Unknown')}
                                                     </p>
+                                                    {activeTab === 'sponsors' && user.display_name && (
+                                                        <p className="text-xs text-indigo-600 font-medium">
+                                                            Owner: {user.display_name}
+                                                        </p>
+                                                    )}
                                                     <p className="text-xs text-slate-500">{user.email}</p>
                                                 </div>
                                             </div>

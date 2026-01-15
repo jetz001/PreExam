@@ -13,7 +13,7 @@ const Exam = () => {
     const handleStart = async (examConfig) => {
         try {
             setConfig(examConfig);
-            const data = await examService.getQuestions(examConfig);
+            const data = await examService.getQuestions({ ...examConfig, orderBy: 'random' });
             if (data.data && data.data.length > 0) {
                 setQuestions(data.data);
                 setStep('taking');
