@@ -216,7 +216,7 @@ const NewsManager = () => {
                                 <input
                                     type="url"
                                     placeholder="Paste article URL here..."
-                                    className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm"
+                                    className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm text-slate-900 bg-white placeholder:text-slate-400"
                                     value={formData.scrape_url}
                                     onChange={(e) => setFormData({ ...formData, scrape_url: e.target.value })}
                                 />
@@ -240,7 +240,7 @@ const NewsManager = () => {
                                 <LinkIcon size={16} className="absolute left-3 top-3 text-slate-400" />
                                 <input
                                     type="url"
-                                    className="w-full border border-slate-200 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                    className="w-full border border-slate-200 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900 bg-white placeholder:text-slate-400"
                                     placeholder="https://shopee.co.th/..."
                                     value={formData.product_link}
                                     onChange={(e) => setFormData({ ...formData, product_link: e.target.value })}
@@ -252,7 +252,7 @@ const NewsManager = () => {
                             <label className="block text-sm font-medium text-slate-700 mb-1">Source Memo (Internal Use)</label>
                             <input
                                 type="text"
-                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900 bg-white placeholder:text-slate-400"
                                 placeholder="Source URL or Note..."
                                 value={formData.source_memo}
                                 onChange={(e) => setFormData({ ...formData, source_memo: e.target.value })}
@@ -265,7 +265,7 @@ const NewsManager = () => {
                                 <LinkIcon size={16} className="absolute left-3 top-3 text-slate-400" />
                                 <input
                                     type="url"
-                                    className="w-full border border-slate-200 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                    className="w-full border border-slate-200 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900 bg-white placeholder:text-slate-400"
                                     placeholder="https://original-source.com/..."
                                     value={formData.external_link}
                                     onChange={(e) => setFormData({ ...formData, external_link: e.target.value })}
@@ -277,7 +277,7 @@ const NewsManager = () => {
                             <label className="block text-sm font-medium text-slate-700 mb-1">Keywords (Auto & SEO)</label>
                             <input
                                 type="text"
-                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900 bg-white placeholder:text-slate-400"
                                 placeholder="exam, jobs, government..."
                                 value={formData.keywords}
                                 onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
@@ -289,7 +289,7 @@ const NewsManager = () => {
                             <input
                                 required
                                 type="text"
-                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900 bg-white placeholder:text-slate-400"
                                 value={formData.title}
                                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             />
@@ -300,7 +300,7 @@ const NewsManager = () => {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Content / Description</label>
                                 <textarea
                                     required
-                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none h-32 resize-none"
+                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none h-32 resize-none text-slate-900 bg-white placeholder:text-slate-400"
                                     value={formData.content}
                                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                                 />
@@ -311,7 +311,7 @@ const NewsManager = () => {
                                     <ImageIcon size={16} className="absolute left-3 top-3 text-slate-400" />
                                     <input
                                         type="url"
-                                        className="w-full border border-slate-200 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                        className="w-full border border-slate-200 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900 bg-white placeholder:text-slate-400"
                                         placeholder="https://..."
                                         value={formData.image}
                                         onChange={(e) => setFormData({ ...formData, image: e.target.value })}
