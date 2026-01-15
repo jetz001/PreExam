@@ -11,6 +11,9 @@ const QuestionManager = () => {
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState(null);
 
+    const [page, setPage] = useState(1);
+    const limit = 50;
+
     // Initial Form State
     const initialFormState = {
         question_text: '',
@@ -27,10 +30,19 @@ const QuestionManager = () => {
     const [formData, setFormData] = useState(initialFormState);
 
     // Fetch Questions
-    const { data: questions = [], isLoading } = useQuery({
-        queryKey: ['questions', filters],
-        queryFn: () => adminApi.getQuestions({ ...filters, orderBy: 'id' })
+    const { data: queryData, isLoading } = useQuery({
+        queryKey: ['questions', filters, page],
+        queryFn: () => adminApi.getQuestions({ ...filters, page, limit })
     });
+
+    const questions = queryData?.rows || [];
+    const totalPages = queryData?.totalPages || 1;
+    const totalQuestions = queryData?.total || 0;
+
+    // Reset page when filters change
+    React.useEffect(() => {
+        setPage(1);
+    }, [filters]);
 
     // Fetch Filter Options
     const { data: subjects = [] } = useQuery({
@@ -240,11 +252,11 @@ const QuestionManager = () => {
                         <tbody className="divide-y divide-slate-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">Loading questions...</td>
+                                    <td colSpan="7" className="px-6 py-8 text-center text-slate-500">Loading questions...</td>
                                 </tr>
                             ) : questions.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">No questions found.</td>
+                                    <td colSpan="7" className="px-6 py-8 text-center text-slate-500">No questions found.</td>
                                 </tr>
                             ) : (
                                 questions.map((q, index) => (
@@ -256,9 +268,10 @@ const QuestionManager = () => {
                                         <td className="px-6 py-4">
                                             {(q.catalogs && q.catalogs.length > 0) ? (
                                                 <div className="flex flex-wrap gap-1">
-                                                    {q.catalogs.map((cat, idx) => (
+                                                    {q.catalogs.slice(0, 2).map((cat, idx) => (
                                                         <span key={idx} className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-600">{cat}</span>
                                                     ))}
+                                                    {q.catalogs.length > 2 && <span className="text-xs text-slate-400">+{q.catalogs.length - 2}</span>}
                                                 </div>
                                             ) : (
                                                 <span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-600">{q.category}</span>
@@ -291,6 +304,29 @@ const QuestionManager = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50">
+                    <span className="text-sm text-slate-500">
+                        Page <span className="font-medium text-slate-900">{page}</span> of <span className="font-medium text-slate-900">{totalPages}</span> ({totalQuestions} items)
+                    </span>
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className={`px-3 py-1 text-sm rounded-md border ${page === 1 ? 'border-slate-200 text-slate-400 cursor-not-allowed' : 'border-slate-300 text-slate-600 hover:bg-white hover:shadow-sm'}`}
+                        >
+                            Previous
+                        </button>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className={`px-3 py-1 text-sm rounded-md border ${page === totalPages ? 'border-slate-200 text-slate-400 cursor-not-allowed' : 'border-slate-300 text-slate-600 hover:bg-white hover:shadow-sm'}`}
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             </div>
 

@@ -3,14 +3,12 @@ const Op = Sequelize.Op;
 
 exports.getQuestions = async (req, res) => {
     try {
-        const { category, subject, limit, orderBy } = req.query;
+        const { category, subject, limit = 50, page = 1, orderBy } = req.query;
+        const offset = (page - 1) * limit;
         const where = {};
 
         if (category) {
             // Check if 'category' string matches legacy category OR is in catalogs JSON array
-            // SQLite/MySQL JSON handling might differ. simplest text search for now if stored as text stringified array
-            // For robustness using Op.like on text representation: '%"Tag"%'
-            // OR checks
             where[Op.or] = [
                 { category: { [Op.like]: `%${category}%` } },
                 { catalogs: { [Op.like]: `%${category}%` } }
@@ -27,13 +25,22 @@ exports.getQuestions = async (req, res) => {
             order = [['id', 'ASC']];
         }
 
-        const questions = await Question.findAll({
+        const { count, rows } = await Question.findAndCountAll({
             where,
-            limit: limit ? parseInt(limit) : undefined,
+            limit: parseInt(limit),
+            offset: parseInt(offset),
             order,
         });
 
-        res.json({ success: true, count: questions.length, data: questions });
+        res.json({
+            success: true,
+            data: {
+                rows,
+                total: count,
+                page: parseInt(page),
+                totalPages: Math.ceil(count / limit)
+            }
+        });
     } catch (error) {
         console.error('Error fetching questions:', error);
         res.status(500).json({ success: false, message: 'Server error' });
