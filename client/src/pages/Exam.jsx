@@ -14,8 +14,11 @@ const Exam = () => {
         try {
             setConfig(examConfig);
             const data = await examService.getQuestions({ ...examConfig, orderBy: 'random' });
-            if (data.data && data.data.length > 0) {
-                setQuestions(data.data);
+            // Check if data.data is array (legacy) or object (paginated)
+            const questionsList = Array.isArray(data.data) ? data.data : (data.data.rows || []);
+
+            if (questionsList.length > 0) {
+                setQuestions(questionsList);
                 setStep('taking');
             } else {
                 alert('ไม่พบข้อสอบในหมวดหมู่นี้');
