@@ -32,6 +32,17 @@ const QuestionManager = () => {
         queryFn: () => adminApi.getQuestions({ ...filters, orderBy: 'id' })
     });
 
+    // Fetch Filter Options
+    const { data: subjects = [] } = useQuery({
+        queryKey: ['subjects'],
+        queryFn: adminApi.getSubjects
+    });
+
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories'],
+        queryFn: adminApi.getCategories
+    });
+
     // Mutations
     const createMutation = useMutation({
         mutationFn: adminApi.createQuestion,
@@ -195,10 +206,9 @@ const QuestionManager = () => {
                     onChange={(e) => setFilters({ ...filters, subject: e.target.value })}
                 >
                     <option value="">All Subjects</option>
-                    <option value="Math">Math</option>
-                    <option value="English">English</option>
-                    <option value="Thai">Thai</option>
-                    <option value="Law">Law</option>
+                    {subjects.map((sub, idx) => (
+                        <option key={idx} value={sub}>{sub}</option>
+                    ))}
                 </select>
                 <select
                     className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900"
@@ -206,8 +216,9 @@ const QuestionManager = () => {
                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                 >
                     <option value="">All Categories</option>
-                    <option value="Exam A">Exam A (Local)</option>
-                    <option value="Exam B">Exam B (Office)</option>
+                    {categories.map((cat, idx) => (
+                        <option key={idx} value={cat}>{cat}</option>
+                    ))}
                 </select>
             </div>
 

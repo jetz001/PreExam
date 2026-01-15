@@ -6,7 +6,7 @@ import { GraduationCap, Building2, ArrowRight, User } from 'lucide-react';
 
 
 const Login = () => {
-    const { isAuthenticated, login } = useAuth();
+    const { isAuthenticated, login, user } = useAuth();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -17,10 +17,13 @@ const Login = () => {
 
 
     useEffect(() => {
-        if (isAuthenticated) {
+        // Check if user is guest based on email pattern
+        const isGuest = user?.email?.startsWith('guest_');
+
+        if (isAuthenticated && !isGuest) {
             navigate('/profile');
         }
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, navigate, user]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });

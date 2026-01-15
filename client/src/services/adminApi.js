@@ -12,6 +12,14 @@ const adminApi = {
         const response = await api.get('/questions', { params: { ...filters, orderBy: 'id' } });
         return response.data.data;
     },
+    getSubjects: async () => {
+        const response = await api.get('/questions/subjects');
+        return response.data.data;
+    },
+    getCategories: async () => {
+        const response = await api.get('/questions/categories');
+        return response.data.data;
+    },
     importQuestions: async (formData) => {
         const response = await api.post('/questions/import', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
