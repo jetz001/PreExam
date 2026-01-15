@@ -3,7 +3,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import FacebookLogin from 'react-facebook-login/dist/facebook-login-render-props';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+
 
 const SocialLogin = () => {
     const navigate = useNavigate();
