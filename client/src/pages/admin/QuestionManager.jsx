@@ -238,7 +238,7 @@ const QuestionManager = () => {
                             ) : (
                                 questions.map((q, index) => (
                                     <tr key={q.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 text-slate-500 font-medium">{index + 1}</td>
+                                        <td className="px-6 py-4 text-slate-500 font-medium">{q.id}</td>
                                         <td className="px-6 py-4 max-w-md truncate font-medium text-slate-800">{q.question_text}</td>
                                         <td className="px-6 py-4 text-xs text-slate-500">{q.skill || '-'}</td>
                                         <td className="px-6 py-4">{q.subject}</td>

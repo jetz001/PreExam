@@ -20,9 +20,11 @@ exports.getQuestions = async (req, res) => {
             where.subject = { [Op.like]: `%${subject}%` };
         }
 
-        let order = [Sequelize.literal('RANDOM()')];
-        if (orderBy === 'id') {
-            order = [['id', 'DESC']]; // Default to newest first for admin
+        let order = [['id', 'ASC']]; // Default stable sort
+        if (orderBy === 'random') {
+            order = [Sequelize.literal('RANDOM()')];
+        } else if (orderBy === 'id') {
+            order = [['id', 'ASC']];
         }
 
         const questions = await Question.findAll({
