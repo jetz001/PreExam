@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SocialLogin from '../components/SocialLogin';
 import { GraduationCap, Building2, ArrowRight, User } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+
 
 const Login = () => {
     const { isAuthenticated, login } = useAuth();
