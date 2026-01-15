@@ -14,7 +14,7 @@ const Login = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-    const { login } = useAuth();
+
 
     useEffect(() => {
         if (isAuthenticated) {
