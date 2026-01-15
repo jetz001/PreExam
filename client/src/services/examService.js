@@ -16,6 +16,16 @@ const examService = {
         return response.data;
     },
 
+    getExamYears: async () => {
+        const response = await api.get('/questions/years');
+        return response.data;
+    },
+
+    getExamSets: async () => {
+        const response = await api.get('/questions/sets');
+        return response.data;
+    },
+
     getQuestionById: async (id) => {
         const response = await api.get(`/questions/${id}`);
         return response.data;

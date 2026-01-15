@@ -1,15 +1,23 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const ExamConfig = ({ onStart }) => {
+    const { user } = useAuth(); // Assuming useAuth hook exists
     const [config, setConfig] = useState({
         category: 'local_gov',
         subject: '',
+        exam_year: '',
+        exam_set: '',
         limit: 10,
         mode: 'practice',
     });
 
     const [subjects, setSubjects] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [years, setYears] = useState([]);
+    const [sets, setSets] = useState([]);
+
+    const isPremium = user?.plan_type === 'subscription' || user?.role === 'admin';
 
     React.useEffect(() => {
         const fetchData = async () => {
@@ -24,17 +32,26 @@ const ExamConfig = ({ onStart }) => {
                 if (subjectsRes.success) setSubjects(subjectsRes.data);
                 if (categoriesRes.success) {
                     setCategories(categoriesRes.data);
-                    // Set default category if available and current is hardcoded
                     if (categoriesRes.data.length > 0 && (config.category === 'local_gov' || !config.category)) {
                         setConfig(prev => ({ ...prev, category: categoriesRes.data[0] }));
                     }
                 }
+
+                if (isPremium) {
+                    const [yearsRes, setsRes] = await Promise.all([
+                        examService.getExamYears(),
+                        examService.getExamSets()
+                    ]);
+                    if (yearsRes.success) setYears(yearsRes.data);
+                    if (setsRes.success) setSets(setsRes.data);
+                }
+
             } catch (error) {
                 console.error('Error fetching exam config data:', error);
             }
         };
         fetchData();
-    }, []);
+    }, [isPremium]);
 
     const handleChange = (e) => {
         setConfig({ ...config, [e.target.name]: e.target.value });
@@ -76,6 +93,47 @@ const ExamConfig = ({ onStart }) => {
                         ))}
                     </select>
                 </div>
+
+                {/* Premium Filters */}
+                {isPremium && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <label className="block text-sm font-medium text-gray-900">Exam Year</label>
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
+                            </div>
+                            <select
+                                name="exam_year"
+                                value={config.exam_year}
+                                onChange={handleChange}
+                                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white"
+                            >
+                                <option value="">ทั้งหมด</option>
+                                {years.map((y, index) => (
+                                    <option key={index} value={y}>{y}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <label className="block text-sm font-medium text-gray-900">Exam Set</label>
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
+                            </div>
+                            <select
+                                name="exam_set"
+                                value={config.exam_set}
+                                onChange={handleChange}
+                                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white"
+                            >
+                                <option value="">ทั้งหมด</option>
+                                {sets.map((s, index) => (
+                                    <option key={index} value={s}>{s}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                )}
+
                 <div>
                     <label className="block text-sm font-medium text-gray-900">จำนวนข้อ</label>
                     <input

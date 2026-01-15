@@ -3,19 +3,24 @@ const Op = Sequelize.Op;
 
 exports.getQuestions = async (req, res) => {
     try {
-        const { category, subject, limit = 50, page = 1, orderBy } = req.query;
+        const { category, subject, exam_year, exam_set, limit = 50, page = 1, orderBy } = req.query;
         const offset = (page - 1) * limit;
         const where = {};
 
-        if (category) {
-            // Check if 'category' string matches legacy category OR is in catalogs JSON array
+        if (category && category !== 'undefined' && category !== 'null') {
             where[Op.or] = [
                 { category: { [Op.like]: `%${category}%` } },
                 { catalogs: { [Op.like]: `%${category}%` } }
             ];
         }
-        if (subject) {
+        if (subject && subject !== 'undefined' && subject !== 'null') {
             where.subject = { [Op.like]: `%${subject}%` };
+        }
+        if (exam_year && exam_year !== 'undefined' && exam_year !== 'null') {
+            where.exam_year = { [Op.like]: `%${exam_year}%` };
+        }
+        if (exam_set && exam_set !== 'undefined' && exam_set !== 'null') {
+            where.exam_set = { [Op.like]: `%${exam_set}%` };
         }
 
         let order = [['id', 'ASC']]; // Default stable sort
@@ -54,13 +59,41 @@ exports.getSubjects = async (req, res) => {
             group: ['subject'],
             order: [['subject', 'ASC']]
         });
-
         // Extract just the subject strings
         const subjectList = subjects.map(s => s.subject).filter(s => s);
-
         res.json({ success: true, data: subjectList });
     } catch (error) {
         console.error('Error fetching subjects:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+exports.getExamYears = async (req, res) => {
+    try {
+        const years = await Question.findAll({
+            attributes: ['exam_year'],
+            group: ['exam_year'],
+            order: [['exam_year', 'DESC']]
+        });
+        const yearList = years.map(y => y.exam_year).filter(y => y);
+        res.json({ success: true, data: yearList });
+    } catch (error) {
+        console.error('Error fetching exam years:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+exports.getExamSets = async (req, res) => {
+    try {
+        const sets = await Question.findAll({
+            attributes: ['exam_set'],
+            group: ['exam_set'],
+            order: [['exam_set', 'ASC']]
+        });
+        const setList = sets.map(s => s.exam_set).filter(s => s);
+        res.json({ success: true, data: setList });
+    } catch (error) {
+        console.error('Error fetching exam sets:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };

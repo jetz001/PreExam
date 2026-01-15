@@ -5,6 +5,8 @@ const { authMiddleware, adminMiddleware } = require('../middleware/authMiddlewar
 
 router.get('/subjects', questionController.getSubjects);
 router.get('/categories', questionController.getCategories);
+router.get('/years', questionController.getExamYears); // New Route
+router.get('/sets', questionController.getExamSets);   // New Route
 router.get('/', questionController.getQuestions);
 router.get('/:id', questionController.getQuestionById);
 router.post('/bulk', authMiddleware, adminMiddleware, questionController.bulkCreateQuestions);
