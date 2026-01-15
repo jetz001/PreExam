@@ -5,7 +5,13 @@ const dotenv = require('dotenv');
 const path = require('path');
 const { sequelize } = require('./models');
 
-dotenv.config();
+// Explicitly load .env from current directory
+const result = dotenv.config({ path: path.join(__dirname, '.env') });
+if (result.error) {
+    console.error('Error loading .env file:', result.error);
+} else {
+    console.log('.env loaded successfully. Parsing STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? 'Present' : 'Missing');
+}
 
 const http = require('http');
 const { Server } = require('socket.io');

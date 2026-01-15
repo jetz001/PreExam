@@ -126,6 +126,10 @@ const adminApi = {
         });
         return response.data;
     },
+    deleteAsset: async (id) => {
+        const response = await api.delete(`/assets/${id}`);
+        return response.data;
+    },
 
     // Room Manager
     getActiveRooms: async () => {

@@ -25,10 +25,12 @@ const ProfilePage = () => {
 
     useEffect(() => {
         // Wait for auth check to complete
+        console.log('[ProfilePage] Auth Check:', { authLoading, authUser, isOwnProfile });
         if (authLoading) return;
 
         // If trying to view own profile but not logged in, redirect to login
         if (isOwnProfile && !authUser) {
+            console.warn('[ProfilePage] Redirecting to login. User not found.');
             navigate('/login');
             return;
         }

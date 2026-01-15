@@ -11,12 +11,14 @@ export const AuthProvider = ({ children }) => {
         const fetchUser = async () => {
             try {
                 const currentUser = authService.getCurrentUser();
+                console.log('[AuthContext] Fetched user from storage:', currentUser);
                 setUser(currentUser);
             } catch (error) {
-                console.error("Error fetching user", error);
+                console.error("[AuthContext] Error fetching user", error);
                 setUser(null);
             } finally {
                 setLoading(false);
+                console.log('[AuthContext] Initial loading complete');
             }
         };
 
@@ -24,7 +26,19 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        const data = await authService.login(email, password);
+        const data = await authService.login({ email, password });
+        setUser(data.user);
+        return data;
+    };
+
+    const googleLogin = async (credential) => {
+        const data = await authService.googleLogin(credential);
+        setUser(data.user);
+        return data;
+    };
+
+    const facebookLogin = async (accessToken, userID) => {
+        const data = await authService.facebookLogin(accessToken, userID);
         setUser(data.user);
         return data;
     };
@@ -43,7 +57,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, updateUser, loading, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{ user, login, googleLogin, facebookLogin, logout, updateUser, loading, isAuthenticated: !!user }}>
             {children}
         </AuthContext.Provider>
     );

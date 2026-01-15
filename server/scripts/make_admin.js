@@ -1,39 +1,23 @@
-const { sequelize, User } = require('../models');
+require('dotenv').config();
+const { User } = require('../models');
 
-const makeAdmin = async () => {
-    const email = process.argv[2];
-
-    if (!email) {
-        console.error('Please provide an email address.');
-        console.log('Usage: node scripts/make_admin.js <email>');
-        process.exit(1);
-    }
-
+async function makeAdmin(email) {
     try {
-        await sequelize.authenticate();
-        console.log('Database connected.');
-
         const user = await User.findOne({ where: { email } });
-
         if (!user) {
-            console.error(`User with email "${email}" not found.`);
+            console.log(`User with email ${email} not found.`);
             process.exit(1);
         }
 
-        if (user.role === 'admin') {
-            console.log(`User "${user.display_name}" (${email}) is already an ADMIN.`);
-            process.exit(0);
-        }
-
+        const oldRole = user.role;
         user.role = 'admin';
         await user.save();
-
-        console.log(`Successfully updated user "${user.display_name}" (${email}) to ADMIN role.`);
+        console.log(`User ${email} role updated from '${oldRole}' to 'admin'.`);
+        process.exit(0);
     } catch (error) {
         console.error('Error updating user:', error);
-    } finally {
-        await sequelize.close();
+        process.exit(1);
     }
-};
+}
 
-makeAdmin();
+makeAdmin('jimwar02@gmail.com');

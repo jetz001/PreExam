@@ -67,7 +67,10 @@ const Navbar = () => {
                                     <Link to="/profile" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                                         My Profile
                                     </Link>
-                                    <Link to="/business/dashboard" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                                    <Link
+                                        to={user.email?.startsWith('guest_') ? "/login" : "/business/dashboard"}
+                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                                    >
                                         จัดการหน้าเพจ
                                     </Link>
                                     <button
@@ -140,7 +143,10 @@ const Navbar = () => {
                                         <Link to="/profile" className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2">
                                             My Profile
                                         </Link>
-                                        <Link to="/business/dashboard" className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2">
+                                        <Link
+                                            to={user.email?.startsWith('guest_') ? "/login" : "/business/dashboard"}
+                                            className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
+                                        >
                                             จัดการหน้าเพจ
                                         </Link>
                                         <button

@@ -27,7 +27,7 @@ const QuestionManager = () => {
     // Fetch Questions
     const { data: questions = [], isLoading } = useQuery({
         queryKey: ['questions', filters],
-        queryFn: () => adminApi.getQuestions(filters)
+        queryFn: () => adminApi.getQuestions({ ...filters, orderBy: 'id' })
     });
 
     // Mutations
@@ -213,6 +213,7 @@ const QuestionManager = () => {
                     <table className="w-full text-left text-sm text-slate-600">
                         <thead className="bg-slate-50 text-slate-700 border-b border-slate-200">
                             <tr>
+                                <th className="px-6 py-4 font-semibold">No.</th>
                                 <th className="px-6 py-4 font-semibold">Question</th>
                                 <th className="px-6 py-4 font-semibold">Skill (Radar)</th>
                                 <th className="px-6 py-4 font-semibold">Subject</th>
@@ -233,6 +234,7 @@ const QuestionManager = () => {
                             ) : (
                                 questions.map((q) => (
                                     <tr key={q.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 font-medium text-slate-500">#{q.id}</td>
                                         <td className="px-6 py-4 max-w-md truncate font-medium text-slate-800">{q.question_text}</td>
                                         <td className="px-6 py-4 text-xs text-slate-500">{q.skill || '-'}</td>
                                         <td className="px-6 py-4">{q.subject}</td>

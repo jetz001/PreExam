@@ -63,6 +63,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.ENUM('pending', 'approved', 'rejected'),
             defaultValue: 'pending'
         }
+    }, {
+        tableName: 'business_posts',
+        timestamps: true,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at'
     });
 
     return BusinessPost;

@@ -131,20 +131,7 @@ const Register = () => {
                 </form>
                 <SocialLogin />
 
-                <div className="mt-8 border-t border-gray-200 pt-6 text-center">
-                    <p className="text-sm text-gray-600">
-                        สำหรับพาร์ทเนอร์ธุรกิจ (Business Partners)
-                    </p>
-                    <div className="mt-2 space-x-4">
-                        <Link to="/auth/business/login" className="font-medium text-indigo-600 hover:text-indigo-500 text-sm">
-                            เข้าสู่ระบบธุรกิจ
-                        </Link>
-                        <span className="text-gray-300">|</span>
-                        <Link to="/auth/business/register" className="font-medium text-indigo-600 hover:text-indigo-500 text-sm">
-                            ลงทะเบียนธุรกิจ
-                        </Link>
-                    </div>
-                </div>
+
             </div>
         </div>
     );

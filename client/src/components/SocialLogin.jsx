@@ -3,13 +3,15 @@ import { GoogleLogin } from '@react-oauth/google';
 import FacebookLogin from 'react-facebook-login/dist/facebook-login-render-props';
 import authService from '../services/authService';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const SocialLogin = () => {
     const navigate = useNavigate();
+    const { googleLogin, facebookLogin } = useAuth();
 
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
-            await authService.googleLogin(credentialResponse.credential);
+            await googleLogin(credentialResponse.credential);
             navigate('/profile');
         } catch (error) {
             console.error('Google Login Failed', error);
@@ -20,7 +22,7 @@ const SocialLogin = () => {
     const handleFacebookResponse = async (response) => {
         if (response.accessToken) {
             try {
-                await authService.facebookLogin(response.accessToken, response.userID);
+                await facebookLogin(response.accessToken, response.userID);
                 navigate('/profile');
             } catch (error) {
                 console.error('Facebook Login Failed', error);
