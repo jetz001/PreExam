@@ -74,10 +74,7 @@ const ForgotPassword = () => {
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-<<<<<<< HEAD
                             style={{ color: '#000000' }}
-=======
->>>>>>> bacce2c141b692c2a538f5cce56dc456713d2cde
                             className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
                             placeholder="name@example.com"
                         />
