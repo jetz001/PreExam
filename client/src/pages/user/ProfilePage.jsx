@@ -78,7 +78,7 @@ const ProfilePage = () => {
         };
 
         fetchProfileData();
-    }, [id, authUser, isOwnProfile, authLoading, navigate]);
+    }, [id, authUser?.id, isOwnProfile, authLoading, navigate]);
 
     if (loading) return <div className="p-10 text-center">Loading Profile...</div>;
     if (!profileUser) return <div className="p-10 text-center">User not found.</div>;
