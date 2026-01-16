@@ -7,9 +7,20 @@ import adminApi from '../../services/adminApi';
 const QuestionManager = () => {
     const queryClient = useQueryClient();
     const [filters, setFilters] = useState({ subject: '', category: '', search: '' });
+    const [localSearch, setLocalSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState(null);
+
+    const handleSearchCheck = () => {
+        setFilters(prev => ({ ...prev, search: localSearch }));
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSearchCheck();
+        }
+    };
 
     const [page, setPage] = useState(1);
     const limit = 50;
@@ -214,15 +225,25 @@ const QuestionManager = () => {
                 </div>
 
                 {/* Search Input */}
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search questions..."
-                        className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900 w-64"
-                        value={filters.search}
-                        onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                    />
+                <div className="relative flex items-center gap-2">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search questions..."
+                            className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900 w-64"
+                            value={localSearch}
+                            onChange={(e) => setLocalSearch(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                        />
+                    </div>
+                    <button
+                        onClick={handleSearchCheck}
+                        className="px-4 py-2 bg-royal-blue-600 text-white rounded-lg text-sm hover:bg-royal-blue-700 transition-colors"
+                        style={{ backgroundColor: '#2563eb' }}
+                    >
+                        Search
+                    </button>
                 </div>
 
                 <select
