@@ -159,7 +159,7 @@ const CommentSection = ({ threadId }) => {
 
     return (
         <div className="mt-4 pt-4 border-t">
-            <h3 className="text-lg font-bold mb-4">ความคิดเห็น ({comments.length})</h3>
+            <h3 className="text-lg font-bold mb-4 text-gray-900">ความคิดเห็น ({comments.length})</h3>
 
             {isLoading ? <div className="text-center py-4">กำลังโหลด...</div> : (
                 <div className="space-y-4 mb-20">
