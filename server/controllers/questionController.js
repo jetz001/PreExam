@@ -3,9 +3,13 @@ const Op = Sequelize.Op;
 
 exports.getQuestions = async (req, res) => {
     try {
-        const { category, subject, exam_year, exam_set, limit = 50, page = 1, orderBy } = req.query;
+        const { category, subject, exam_year, exam_set, limit = 50, page = 1, orderBy, search } = req.query;
         const offset = (page - 1) * limit;
         const where = {};
+
+        if (search) {
+            where.question_text = { [Op.like]: `%${search}%` };
+        }
 
         if (category && category !== 'undefined' && category !== 'null') {
             where[Op.or] = [

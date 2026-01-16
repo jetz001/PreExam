@@ -6,7 +6,7 @@ import adminApi from '../../services/adminApi';
 
 const QuestionManager = () => {
     const queryClient = useQueryClient();
-    const [filters, setFilters] = useState({ subject: '', category: '' });
+    const [filters, setFilters] = useState({ subject: '', category: '', search: '' });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState(null);
@@ -212,6 +212,19 @@ const QuestionManager = () => {
                     <Filter size={20} className="mr-2" />
                     <span className="font-medium">Filters:</span>
                 </div>
+
+                {/* Search Input */}
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input
+                        type="text"
+                        placeholder="Search questions..."
+                        className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900 w-64"
+                        value={filters.search}
+                        onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                    />
+                </div>
+
                 <select
                     className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900"
                     value={filters.subject}
