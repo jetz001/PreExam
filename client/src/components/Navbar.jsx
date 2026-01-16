@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Bell } from 'lucide-react';
+import { Menu, X, Bell, HelpCircle } from 'lucide-react';
 import authService from '../services/authService';
 import EditProfileModal from './EditProfileModal';
+import { useTour } from '../context/TourContext';
 
 import NotificationCenter from './Community/NotificationCenter';
 
 const Navbar = () => {
+    const { startTour } = useTour();
     const [isOpen, setIsOpen] = useState(false);
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [user, setUser] = useState(null);
@@ -56,6 +58,14 @@ const Navbar = () => {
                             </div>
                         </div>
                         <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+                            <button
+                                id="tour-help-desktop"
+                                onClick={() => startTour('dashboard')}
+                                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700 transition-colors"
+                                title="Start Help Tour"
+                            >
+                                <HelpCircle size={20} />
+                            </button>
                             <NotificationCenter />
 
                             {user ? (
@@ -94,6 +104,14 @@ const Navbar = () => {
                                 </>
                             )}
                         </div>
+                        <button
+                            id="tour-help"
+                            onClick={() => startTour('dashboard')}
+                            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700 transition-colors mr-2"
+                            title="Start Help Tour"
+                        >
+                            <HelpCircle size={20} />
+                        </button>
                         <div className="-mr-2 flex items-center sm:hidden">
                             <div className="sm:hidden flex items-center">
                                 <NotificationCenter />

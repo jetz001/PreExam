@@ -44,7 +44,7 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="md:flex md:items-center md:justify-between mb-8">
                 <div className="flex-1 min-w-0">
-                    <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                    <h2 id="tour-welcome" className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
                         สวัสดี, {user.display_name}
                     </h2>
                     <p className="mt-1 text-sm text-gray-500">
@@ -74,7 +74,7 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Stats Overview */}
-                <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div id="tour-stats" className="bg-white overflow-hidden shadow rounded-lg">
                     <div className="px-4 py-5 sm:p-6">
                         <dt className="text-sm font-medium text-gray-500 truncate">
                             จำนวนข้อสอบที่ทำไป

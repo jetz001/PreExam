@@ -10,6 +10,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SocketProvider } from './context/SocketContext';
 import { AuthProvider } from './context/AuthContext';
+import { TourProvider } from './context/TourContext';
 
 const queryClient = new QueryClient();
 
@@ -19,11 +20,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <SocketProvider>
-            <BrowserRouter>
-              <HelmetProvider>
-                <App />
-              </HelmetProvider>
-            </BrowserRouter>
+            <TourProvider>
+              <BrowserRouter>
+                <HelmetProvider>
+                  <App />
+                </HelmetProvider>
+              </BrowserRouter>
+            </TourProvider>
           </SocketProvider>
         </AuthProvider>
       </QueryClientProvider>

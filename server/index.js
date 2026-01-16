@@ -90,6 +90,23 @@ app.get('/api', (req, res) => {
     res.json({ message: 'Welcome to PreExam API' });
 });
 
+// Health Check Endpoint for Uptime Kuma
+app.get('/api/health', async (req, res) => {
+    try {
+        await sequelize.query('SELECT 1');
+        const memory = process.memoryUsage();
+        res.status(200).json({
+            status: 'ok',
+            uptime: process.uptime(),
+            memory: memory.rss,
+            timestamp: new Date()
+        });
+    } catch (error) {
+        console.error('Health Check Failed:', error);
+        res.status(500).json({ status: 'error', message: 'Database connection failed' });
+    }
+});
+
 // Serve Request static build
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
