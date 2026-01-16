@@ -323,34 +323,47 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
 
             {/* Poll */}
             {
-                thread.Poll && (
-                    <div className="px-4 py-3">
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                            <h4 className="font-bold text-gray-800 mb-3 text-sm">{thread.Poll.question}</h4>
-                            <div className="space-y-2">
-                                {thread.Poll.Options.map(opt => {
-                                    const percent = totalVotes > 0 ? Math.round((opt.vote_count / totalVotes) * 100) : 0;
-                                    return (
-                                        <button
-                                            key={opt.id}
-                                            onClick={() => handleVote(opt.id)}
-                                            className="relative w-full text-left py-2 px-3 rounded-lg border border-gray-200 hover:border-indigo-300 transition-all overflow-hidden group"
-                                        >
-                                            <div className="absolute top-0 left-0 h-full bg-indigo-50 transition-all duration-500" style={{ width: `${percent}%` }}></div>
-                                            <div className="relative flex justify-between items-center z-10">
-                                                <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-700">{opt.option_text}</span>
-                                                <span className="text-xs text-indigo-600 font-bold">{percent}% ({opt.vote_count})</span>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            <div className="mt-3 text-xs text-gray-400 text-right">
-                                {totalVotes} total votes • Ends {new Date(thread.Poll.expires_at).toLocaleDateString()}
+                thread.Poll && (() => {
+                    const isPollExpired = new Date(thread.Poll.expires_at) < new Date();
+                    const hasVoted = thread.Poll.isVoted; // From backend
+                    const showResults = hasVoted || isPollExpired || isOwner;
+
+                    return (
+                        <div className="px-4 py-3">
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                <h4 className="font-bold text-gray-800 mb-3 text-sm">{thread.Poll.question}</h4>
+                                <div className="space-y-2">
+                                    {thread.Poll.Options.map(opt => {
+                                        const percent = totalVotes > 0 ? Math.round((opt.vote_count / totalVotes) * 100) : 0;
+                                        return (
+                                            <button
+                                                key={opt.id}
+                                                onClick={() => !showResults && handleVote(opt.id)}
+                                                disabled={showResults}
+                                                className={`relative w-full text-left py-2 px-3 rounded-lg border transition-all overflow-hidden group ${showResults ? 'border-gray-200 cursor-default' : 'border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer'}`}
+                                            >
+                                                {showResults && (
+                                                    <div className="absolute top-0 left-0 h-full bg-indigo-100 transition-all duration-500" style={{ width: `${percent}%` }}></div>
+                                                )}
+                                                <div className="relative flex justify-between items-center z-10">
+                                                    <span className={`text-sm font-medium ${showResults ? 'text-gray-700' : 'text-indigo-700 font-semibold'}`}>
+                                                        {opt.option_text}
+                                                    </span>
+                                                    {showResults && (
+                                                        <span className="text-xs text-indigo-600 font-bold">{percent}% ({opt.vote_count})</span>
+                                                    )}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <div className="mt-3 text-xs text-gray-400 text-right">
+                                    {totalVotes} total votes • Ends {new Date(thread.Poll.expires_at).toLocaleDateString()}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )
+                    );
+                })()
             }
 
             {/* Stats */}

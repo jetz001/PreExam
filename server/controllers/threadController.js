@@ -195,12 +195,13 @@ exports.getThreads = async (req, res) => {
         // Add 'isLiked' field manually
         const userId = req.user ? req.user.id : null;
         const threadsWithLiked = await Promise.all(threads.map(async t => {
-            const threadJson = t.toJSON();
-            if (userId) {
-                const like = await db.ThreadLike.findOne({ where: { user_id: userId, thread_id: t.id } });
-                threadJson.isLiked = !!like;
-            } else {
-                threadJson.isLiked = false;
+            if (t.Poll && userId) {
+                const vote = await db.PollVote.findOne({ where: { poll_id: t.Poll.id, user_id: userId } });
+                if (threadJson.Poll) {
+                    threadJson.Poll.isVoted = !!vote;
+                }
+            } else if (threadJson.Poll) {
+                threadJson.Poll.isVoted = false;
             }
             return threadJson;
         }));
@@ -250,8 +251,14 @@ exports.getThreadById = async (req, res) => {
             const userId = req.user.id;
             const like = await db.ThreadLike.findOne({ where: { user_id: userId, thread_id: id } });
             threadJson.isLiked = !!like;
+
+            if (threadJson.Poll) {
+                const vote = await db.PollVote.findOne({ where: { poll_id: threadJson.Poll.id, user_id: userId } });
+                threadJson.Poll.isVoted = !!vote;
+            }
         } else {
             threadJson.isLiked = false;
+            if (threadJson.Poll) threadJson.Poll.isVoted = false;
         }
 
         res.json(threadJson);
