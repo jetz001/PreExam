@@ -195,6 +195,16 @@ exports.getThreads = async (req, res) => {
         // Add 'isLiked' field manually
         const userId = req.user ? req.user.id : null;
         const threadsWithLiked = await Promise.all(threads.map(async t => {
+            const threadJson = t.toJSON();
+            // 1. Liked Logic
+            if (userId) {
+                const like = await db.ThreadLike.findOne({ where: { user_id: userId, thread_id: t.id } });
+                threadJson.isLiked = !!like;
+            } else {
+                threadJson.isLiked = false;
+            }
+
+            // 2. Poll Logic
             if (t.Poll && userId) {
                 const vote = await db.PollVote.findOne({ where: { poll_id: t.Poll.id, user_id: userId } });
                 if (threadJson.Poll) {
