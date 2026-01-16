@@ -324,6 +324,7 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
             {/* Poll */}
             {
                 thread.Poll && (() => {
+                    console.log('Poll Data:', thread.Poll); // Debug Log
                     const isPollExpired = new Date(thread.Poll.expires_at) < new Date();
                     const hasVoted = thread.Poll.isVoted; // From backend
                     const showResults = hasVoted || isPollExpired || isOwner;
