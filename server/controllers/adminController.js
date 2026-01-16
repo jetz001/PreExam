@@ -18,7 +18,7 @@ exports.getDashboardStats = async (req, res) => {
         const sumRevenue = async (whereClause) => {
             const slip = await PaymentSlip.sum('amount', { where: { status: 'approved', ...whereClause } }) || 0;
             const topup = await SponsorTransaction.sum('amount', { where: { status: 'completed', ...whereClause } }) || 0;
-            const stripe = await Transaction.sum('amount', { where: { status: 'completed', ...whereClause } }) || 0;
+            const stripe = await Transaction.sum('amount', { where: { status: 'SUCCESS', ...whereClause } }) || 0;
             return slip + topup + stripe;
         };
 
@@ -44,7 +44,7 @@ exports.getDashboardStats = async (req, res) => {
 
         const slips = await getMonthlyData(PaymentSlip, 'approved');
         const topups = await getMonthlyData(SponsorTransaction, 'completed');
-        const stripes = await getMonthlyData(Transaction, 'completed');
+        const stripes = await getMonthlyData(Transaction, 'SUCCESS');
 
         const allRevenueRecords = [...slips, ...topups, ...stripes];
 
