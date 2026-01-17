@@ -145,7 +145,17 @@ const NewsManager = () => {
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-slate-800">News & Affiliate</h2>
                 <button
-                    onClick={() => setIsFormOpen(!isFormOpen)}
+                    onClick={() => {
+                        if (isFormOpen) {
+                            setIsFormOpen(false);
+                            setEditingId(null);
+                            setFormData(initialFormState);
+                        } else {
+                            setIsFormOpen(true);
+                            setEditingId(null);
+                            setFormData(initialFormState);
+                        }
+                    }}
                     className="flex items-center px-4 py-2 bg-royal-blue-600 text-white rounded-lg hover:bg-royal-blue-700 transition-colors shadow-sm"
                     style={{ backgroundColor: '#2563eb' }}
                 >
@@ -201,7 +211,7 @@ const NewsManager = () => {
             {/* Create Form */}
             {isFormOpen && (
                 <div className="bg-white p-6 rounded-xl shadow-md border border-slate-100 animate-in fade-in slide-in-from-top-4">
-                    <h3 className="text-lg font-semibold mb-4 text-slate-700">Create New Post</h3>
+                    <h3 className="text-lg font-semibold mb-4 text-slate-700">{editingId ? 'Edit News' : 'Create New Post'}</h3>
 
                     {/* Scraper Tool */}
                     <div className="flex gap-2 mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
