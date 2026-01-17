@@ -203,107 +203,110 @@ const FeedPost = ({ post }) => {
             {/* Content */}
             <div className="mb-3">
                 <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center">
-                    <span>Poll</span>
-            </div>
+                    {post.Poll && (
+                        <div className="mr-2 inline-flex items-center text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-xs">
+                            <BarChart2 size={16} className="mr-1" />
+                            <span>Poll</span>
+                        </div>
                     )}
-            {post.title}
-        </h3>
-                
-                {
-        post.background_style && BACKGROUND_STYLES[post.background_style] ? (
-            <div className={`${BACKGROUND_STYLES[post.background_style]} p-8 rounded-lg min-h-[250px] flex items-center justify-center text-center shadow-inner mb-3`}>
-                <p className="text-white text-xl font-bold whitespace-pre-line break-words">{post.content}</p>
-            </div>
-        ) : (
-        <ReadMoreText className="text-gray-700 text-sm mb-3">
-            <p className="whitespace-pre-line break-words">{renderContentWithLinks(post.content)}</p>
-        </ReadMoreText>
-    )
-    }
+                    {post.title}
+                </h3>
 
-    {/* Image/Video */ }
-    {
-        post.image_url && (
-            <div className="rounded-lg overflow-hidden bg-black max-h-[500px] flex items-center justify-center mb-3 relative group">
-                {isVideo(post.image_url) ? (
-                    <>
-                        <video
-                            ref={setRefs}
-                            src={getImageUrl(post.image_url)}
-                            className="w-full h-full max-h-[500px] object-contain"
-                            loop
-                            muted={isMuted}
-                            playsInline
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                if (videoRef.current.paused) {
-                                    videoRef.current.play();
-                                } else {
-                                    videoRef.current.pause();
-                                }
-                            }}
-                        />
-                        <button
-                            className="absolute bottom-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-opacity opacity-0 group-hover:opacity-100"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setIsMuted(!isMuted);
-                            }}
-                        >
-                            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                        </button>
-                    </>
-                ) : (
-                    <img
-                        src={getImageUrl(post.image_url)}
-                        alt={post.title}
-                        className="w-full h-full object-contain max-h-[500px]"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            // Could open lightbox here
-                        }}
-                    />
-                )}
-            </div>
-        )
-    }
+                {
+                    post.background_style && BACKGROUND_STYLES[post.background_style] ? (
+                        <div className={`${BACKGROUND_STYLES[post.background_style]} p-8 rounded-lg min-h-[250px] flex items-center justify-center text-center shadow-inner mb-3`}>
+                            <p className="text-white text-xl font-bold whitespace-pre-line break-words">{post.content}</p>
+                        </div>
+                    ) : (
+                        <ReadMoreText className="text-gray-700 text-sm mb-3">
+                            <p className="whitespace-pre-line break-words">{renderContentWithLinks(post.content)}</p>
+                        </ReadMoreText>
+                    )
+                }
+
+                {/* Image/Video */}
+                {
+                    post.image_url && (
+                        <div className="rounded-lg overflow-hidden bg-black max-h-[500px] flex items-center justify-center mb-3 relative group">
+                            {isVideo(post.image_url) ? (
+                                <>
+                                    <video
+                                        ref={setRefs}
+                                        src={getImageUrl(post.image_url)}
+                                        className="w-full h-full max-h-[500px] object-contain"
+                                        loop
+                                        muted={isMuted}
+                                        playsInline
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (videoRef.current.paused) {
+                                                videoRef.current.play();
+                                            } else {
+                                                videoRef.current.pause();
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        className="absolute bottom-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-opacity opacity-0 group-hover:opacity-100"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsMuted(!isMuted);
+                                        }}
+                                    >
+                                        {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                                    </button>
+                                </>
+                            ) : (
+                                <img
+                                    src={getImageUrl(post.image_url)}
+                                    alt={post.title}
+                                    className="w-full h-full object-contain max-h-[500px]"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        // Could open lightbox here
+                                    }}
+                                />
+                            )}
+                        </div>
+                    )
+                }
             </div >
 
-    {/* Attached News (if any) */ }
-{
-    post.SharedNews && (
-        <Link to={`/news/${post.SharedNews.id}`} className="block mb-3 group">
-            <div className="border border-gray-200 rounded-lg overflow-hidden flex bg-gray-50 group-hover:bg-gray-100 transition-colors">
-                {post.SharedNews.image_url && (
-                    <div className="w-24 h-24 flex-shrink-0">
-                        <img src={post.SharedNews.image_url} alt="" className="w-full h-full object-cover" />
-                    </div>
-                )}
-                <div className="p-3">
-                    <div className="text-xs font-bold text-indigo-600 mb-1 uppercase">ข่าวที่เกี่ยวข้อง</div>
-                    <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{post.SharedNews.title}</h4>
-                    <p className="text-xs text-gray-500 line-clamp-2 mt-1">{post.SharedNews.summary}</p>
-                </div>
-            </div>
-        </Link>
-    )
-}
+            {/* Attached News (if any) */}
+            {
+                post.SharedNews && (
+                    <Link to={`/news/${post.SharedNews.id}`} className="block mb-3 group">
+                        <div className="border border-gray-200 rounded-lg overflow-hidden flex bg-gray-50 group-hover:bg-gray-100 transition-colors">
+                            {post.SharedNews.image_url && (
+                                <div className="w-24 h-24 flex-shrink-0">
+                                    <img src={post.SharedNews.image_url} alt="" className="w-full h-full object-cover" />
+                                </div>
+                            )}
+                            <div className="p-3">
+                                <div className="text-xs font-bold text-indigo-600 mb-1 uppercase">ข่าวที่เกี่ยวข้อง</div>
+                                <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{post.SharedNews.title}</h4>
+                                <p className="text-xs text-gray-500 line-clamp-2 mt-1">{post.SharedNews.summary}</p>
+                            </div>
+                        </div>
+                    </Link>
+                )
+            }
 
-{/* Actions */ }
-<div className="flex items-center space-x-4 pt-2 border-t border-gray-100">
-    <button className="flex items-center text-gray-500 hover:text-primary text-sm transition-colors">
-        <MessageCircle className="w-4 h-4 mr-1.5" />
-        <span>{post.reply_count || 0} ความคิดเห็น</span>
-    </button>
-    <button
-        onClick={handleShare}
-        className="flex items-center text-gray-500 hover:text-primary text-sm transition-colors"
-    >
-        <Share2 className="w-4 h-4 mr-1.5" />
-        <span>แชร์</span>
-    </button>
-</div>
+            {/* Actions */}
+            <div className="flex items-center space-x-4 pt-2 border-t border-gray-100">
+                <button className="flex items-center text-gray-500 hover:text-primary text-sm transition-colors">
+                    <MessageCircle className="w-4 h-4 mr-1.5" />
+                    <span>{post.reply_count || 0} ความคิดเห็น</span>
+                </button>
+                <button
+                    onClick={handleShare}
+                    className="flex items-center text-gray-500 hover:text-primary text-sm transition-colors"
+                >
+                    <Share2 className="w-4 h-4 mr-1.5" />
+                    <span>แชร์</span>
+                </button>
+            </div>
         </div >
     );
 };
