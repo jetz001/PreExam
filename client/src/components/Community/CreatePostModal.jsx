@@ -14,6 +14,16 @@ const CreatePostModal = ({ onClose, initialImage }) => {
     const [preview, setPreview] = useState(null);
     const [isPoll, setIsPoll] = useState(false);
     const [pollOptions, setPollOptions] = useState(['', '']);
+    const [backgroundStyle, setBackgroundStyle] = useState(null);
+
+    const BACKGROUND_OPTIONS = [
+        { id: 'none', class: 'bg-white', label: 'ปกติ' },
+        { id: 'c1', class: 'bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500', label: 'ม่วง' },
+        { id: 'c2', class: 'bg-gradient-to-br from-red-500 via-orange-500 to-yellow-500', label: 'ส้ม' },
+        { id: 'c3', class: 'bg-gradient-to-br from-blue-400 via-cyan-500 to-teal-400', label: 'ฟ้า' },
+        { id: 'c4', class: 'bg-gradient-to-br from-green-400 to-emerald-600', label: 'เขียว' },
+        { id: 'c5', class: 'bg-gradient-to-br from-slate-900 to-slate-700', label: 'ดำ' },
+    ];
 
     // Separate refs for separate file pickers
     const imageInputRef = useRef(null);
@@ -64,6 +74,7 @@ const CreatePostModal = ({ onClose, initialImage }) => {
             setPreview(URL.createObjectURL(file));
             setMediaType(type);
             setIsPoll(false);
+            setBackgroundStyle(null); // Clear background if media is added
         }
     };
 
@@ -93,6 +104,9 @@ const CreatePostModal = ({ onClose, initialImage }) => {
         formData.append('title', title);
         formData.append('content', content);
         formData.append('category', category);
+        if (backgroundStyle) {
+            formData.append('background_style', backgroundStyle);
+        }
 
         // Anti-Spam Validation
         if (content.length > 5000) {
@@ -148,14 +162,40 @@ const CreatePostModal = ({ onClose, initialImage }) => {
                         />
 
                         {!isPoll && (
-                            <textarea
-                                placeholder="มีอะไรอยากแชร์ไหม?..."
-                                className="w-full h-32 resize-none border-none focus:ring-0 text-gray-900 placeholder-gray-400"
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                required={!isPoll}
-                                maxLength={5000}
-                            />
+                            <div className={`relative w-full transition-all duration-300 ${backgroundStyle ? `${BACKGROUND_OPTIONS.find(b => b.id === backgroundStyle)?.class} p-8 rounded-lg min-h-[250px] flex items-center justify-center text-center` : ''}`}>
+                                <textarea
+                                    placeholder={backgroundStyle ? "พิมพ์ข้อความของคุณ..." : "มีอะไรอยากแชร์ไหม?..."}
+                                    className={`w-full resize-none border-none focus:ring-0 bg-transparent ${backgroundStyle
+                                            ? 'text-white text-2xl font-bold placeholder-white/70 text-center h-auto overflow-hidden'
+                                            : 'text-gray-900 placeholder-gray-400 h-32'
+                                        }`}
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                    required={!isPoll}
+                                    maxLength={5000}
+                                    rows={backgroundStyle ? 1 : 4}
+                                    onInput={(e) => {
+                                        if (backgroundStyle) {
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = e.target.scrollHeight + 'px';
+                                        }
+                                    }}
+                                />
+                            </div>
+                        )}
+
+                        {!isPoll && !media && (
+                            <div className="flex space-x-2 pb-2 overflow-x-auto">
+                                {BACKGROUND_OPTIONS.map(bg => (
+                                    <button
+                                        key={bg.id}
+                                        type="button"
+                                        onClick={() => setBackgroundStyle(bg.id === 'none' || bg.id === backgroundStyle ? null : bg.id)}
+                                        className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${bg.class} ${backgroundStyle === bg.id ? 'border-gray-900 scale-110 shadow-md' : 'border-transparent'}`}
+                                        title={bg.label}
+                                    />
+                                ))}
+                            </div>
                         )}
 
                         {preview && (
@@ -257,7 +297,7 @@ const CreatePostModal = ({ onClose, initialImage }) => {
 
                             <button
                                 type="button"
-                                onClick={() => { setIsPoll(!isPoll); setMedia(null); setMediaType(null); setPreview(null); }}
+                                onClick={() => { setIsPoll(!isPoll); setMedia(null); setMediaType(null); setPreview(null); setBackgroundStyle(null); }}
                                 className={`p-2 rounded-full transition-colors ${isPoll ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-200 text-gray-600'}`}
                             >
                                 <BarChart2 size={24} />
