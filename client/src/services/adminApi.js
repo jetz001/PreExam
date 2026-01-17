@@ -85,6 +85,10 @@ const adminApi = {
         const response = await api.post('/news', data);
         return response.data;
     },
+    updateNews: async (id, data) => {
+        const response = await api.put(`/news/${id}`, data);
+        return response.data;
+    },
     deleteNews: async (id) => {
         const response = await api.delete(`/news/${id}`);
         return response.data;

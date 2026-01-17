@@ -438,7 +438,7 @@ const NewsManager = () => {
                                                     className="p-1.5 text-royal-blue-600 hover:bg-blue-50 rounded transition-colors"
                                                     title="Edit"
                                                 >
-                                                    <Plus size={16} className="rotate-45" /> {/* Using Plus rotated as Edit placeholder if Edit icon not imported, checking imports... Edit icon IS NOT imported. I will use Plus rotated or just add Edit icon import in next step. Wait, Plus is imported. */}
+                                                    <Edit size={16} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(item.id)}
