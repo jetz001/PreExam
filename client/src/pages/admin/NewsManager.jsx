@@ -11,8 +11,9 @@ const NewsManager = () => {
 
     const initialFormState = {
         title: '',
+        title: '',
         content: '',
-        image: '',
+        image_url: '',
         product_link: '',
         source_memo: '',
         scrape_url: '',
@@ -90,8 +91,9 @@ const NewsManager = () => {
         onSuccess: (data) => {
             setFormData(prev => ({
                 ...prev,
+                ...prev,
                 title: data.title || prev.title,
-                image: data.image_url || data.image || prev.image, // fix image key mismatch
+                image_url: data.image_url || prev.image_url,
                 content: data.summary || data.description || prev.content,
                 keywords: data.keywords || prev.keywords
             }));
@@ -116,8 +118,9 @@ const NewsManager = () => {
     const handleEdit = (item) => {
         setFormData({
             title: item.title,
+            title: item.title,
             content: item.content,
-            image: item.image || item.image_url || '',
+            image_url: item.image_url || '',
             product_link: item.product_link || '',
             source_memo: item.source_memo || '',
             external_link: item.external_link || '',
@@ -308,13 +311,13 @@ const NewsManager = () => {
                                         type="url"
                                         className="w-full border border-slate-200 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-slate-900 bg-white placeholder:text-slate-400"
                                         placeholder="https://..."
-                                        value={formData.image}
-                                        onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                                        value={formData.image_url}
+                                        onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                                     />
                                 </div>
-                                {formData.image && (
+                                {formData.image_url && (
                                     <div className="h-20 w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
-                                        <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                                        <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
                                     </div>
                                 )}
                             </div>
@@ -365,8 +368,8 @@ const NewsManager = () => {
                                         <td className="px-4 py-3 text-center text-slate-400">#{item.id}</td>
                                         <td className="px-4 py-3">
                                             <div className="w-16 h-12 bg-slate-100 rounded overflow-hidden border border-slate-200">
-                                                {item.image ? (
-                                                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                                                {item.image_url ? (
+                                                    <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="flex items-center justify-center h-full text-xs text-slate-400">No Img</div>
                                                 )}

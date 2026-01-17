@@ -126,7 +126,17 @@ const NewsDetail = () => {
                             <div className="text-lg text-gray-600 leading-relaxed mb-8 italic border-l-4 border-primary pl-4">
                                 {news.summary}
                             </div>
+                        {/* Summary / Lead */}
+                        {news.summary && (
+                            <div className="text-lg text-gray-600 leading-relaxed mb-8 italic border-l-4 border-primary pl-4">
+                                {news.summary}
+                            </div>
                         )}
+
+                        {/* Full Content */}
+                        <div className="prose prose-lg max-w-none text-gray-800 mb-10 whitespace-pre-wrap">
+                            {news.content}
+                        </div>
 
                         {/* External Links / PDF / Product */}
                         <div className="flex flex-col space-y-3 mb-8">
