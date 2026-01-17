@@ -13,11 +13,15 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
         max_participants: 20,
         question_count: 20,
         time_limit: 60,
+        exam_year: '',
+        exam_set: '',
         theme: { background_id: null, frame_id: null }
     });
 
     const [subjects, setSubjects] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [years, setYears] = useState([]);
+    const [sets, setSets] = useState([]);
     const [assets, setAssets] = useState({ backgrounds: [], frames: [] });
 
     useEffect(() => {
@@ -35,6 +39,15 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
             ]);
             if (subjRes.success) setSubjects(subjRes.data);
             if (catRes.success) setCategories(catRes.data);
+
+            if (isPremium) {
+                const [yearsRes, setsRes] = await Promise.all([
+                    api.get('/questions/years').then(r => r.data),
+                    api.get('/questions/sets').then(r => r.data)
+                ]);
+                if (yearsRes.success) setYears(yearsRes.data);
+                if (setsRes.success) setSets(setsRes.data);
+            }
         } catch (error) {
             console.error('Error fetching options:', error);
         }
@@ -115,6 +128,44 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                             </select>
                         </div>
                     </div>
+
+                    {isPremium && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700">ปีข้อสอบ</label>
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
+                                </div>
+                                <select
+                                    value={formData.exam_year}
+                                    onChange={(e) => setFormData({ ...formData, exam_year: e.target.value })}
+                                    className="block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900"
+                                >
+                                    <option value="">ทั้งหมด</option>
+                                    {years.map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700">ชุดข้อสอบ</label>
+                                </div>
+                                <select
+                                    value={formData.exam_set}
+                                    onChange={(e) => setFormData({ ...formData, exam_set: e.target.value })}
+                                    className="block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900"
+                                >
+                                    <option value="">ทั้งหมด</option>
+                                    {sets.map(s => (
+                                        <option key={s} value={s}>
+                                            {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    )}
                     <div>
                         <label className="block text-sm font-medium text-gray-700">จำนวนข้อ</label>
                         <input
@@ -153,7 +204,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
 
                     {/* Theme Selection */}
                     <div className="border-t pt-4">
-                        <h3 className="text-md font-semibold mb-2">ปรับแต่งห้อง (Premium)</h3>
+                        <h3 className="text-md font-semibold mb-2 text-gray-900">ปรับแต่งห้อง (Premium)</h3>
                         <div className="space-y-4">
                             {/* Backgrounds */}
                             <div>
