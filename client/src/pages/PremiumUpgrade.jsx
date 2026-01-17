@@ -103,13 +103,13 @@ const PremiumUpgrade = () => {
             <div className="bg-white dark:bg-slate-800 shadow rounded-lg overflow-hidden">
                 <div className="px-6 py-4 bg-primary border-b border-gray-200 dark:border-slate-700">
                     <h2 className="text-xl font-bold text-white flex items-center">
-                        <CreditCard className="mr-2" /> Upgrade to Premium
+                        <CreditCard className="mr-2" /> อัปเกรดเป็น Premium
                     </h2>
                 </div>
 
                 <div className="p-8 flex flex-col items-center">
                     <p className="text-gray-600 dark:text-gray-300 mb-8 text-center max-w-lg">
-                        Choose a plan to unlock premium features. Payment is handled securely via Stripe (Credit Card, PromptPay, etc.). No slip upload required.
+                        เลือกแพ็กเกจเพื่อปลดล็อกฟีเจอร์พรีเมียม ชำระเงินง่ายๆ ผ่านบัตรเครดิตหรือ PromptPay ไม่ต้องแจ้งสลิป
                     </p>
 
                     {/* Plan Selection */}
@@ -131,7 +131,7 @@ const PremiumUpgrade = () => {
 
                     <div className="w-full max-w-md bg-gray-50 dark:bg-slate-700/50 p-6 rounded-2xl text-center">
                         <div className="mb-6">
-                            <p className="text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wide font-semibold">Total Amount</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wide font-semibold">ยอดชำระทั้งหมด</p>
                             <p className="text-4xl font-extrabold text-indigo-600 mt-2">{(amount || 0).toLocaleString()} <span className="text-lg text-gray-400 font-medium">THB</span></p>
                             {selectedPlan && <p className="text-sm text-gray-500 mt-1">{selectedPlan.name}</p>}
                         </div>
@@ -172,12 +172,12 @@ const PremiumUpgrade = () => {
                                         <div className="w-3 h-3 rounded-full bg-yellow-400 border-2 border-indigo-600"></div>
                                         <div className="w-3 h-3 rounded-full bg-green-400 border-2 border-indigo-600"></div>
                                     </div>
-                                    Pay Now
+                                    ชำระเงินทันที
                                 </>
                             )}
                         </button>
                         <p className="mt-4 text-xs text-gray-400">
-                            Secure payment powered by Stripe. Your account will be upgraded instantly upon success.
+                            ชำระเงินปลอดภัยผ่าน Stripe บัญชีของคุณจะได้รับการอัปเกรดอัตโนมัติทันที
                         </p>
                     </div>
                 </div>

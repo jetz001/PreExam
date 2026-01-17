@@ -108,11 +108,11 @@ const SettingsTabs = () => {
     };
 
     const tabs = [
-        { id: 'profile', label: 'Profile', icon: User },
-        { id: 'subscription', label: 'Subscription', icon: Crown },
-        { id: 'privacy', label: 'Privacy', icon: Lock },
-        { id: 'notifications', label: 'Notifications', icon: Bell },
-        { id: 'app', label: 'App', icon: Palette },
+        { id: 'profile', label: 'ข้อมูลส่วนตัว', icon: User },
+        { id: 'subscription', label: 'การสมัครสมาชิก', icon: Crown },
+        { id: 'privacy', label: 'ความเป็นส่วนตัว', icon: Lock },
+        { id: 'notifications', label: 'การแจ้งเตือน', icon: Bell },
+        { id: 'app', label: 'ตั้งค่าแอป', icon: Palette },
     ];
 
     // Status Badge Component
@@ -135,7 +135,7 @@ const SettingsTabs = () => {
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg flex flex-col md:flex-row overflow-hidden min-h-[600px]">
             {/* Sidebar */}
             <div className="w-full md:w-64 bg-gray-50 dark:bg-slate-900/50 p-4 border-r dark:border-slate-700">
-                <h2 className="text-xl font-bold mb-6 px-4">Settings</h2>
+                <h2 className="text-xl font-bold mb-6 px-4">ตั้งค่าบัญชี</h2>
                 <div className="space-y-1">
                     {tabs.map(tab => (
                         <button
@@ -157,9 +157,9 @@ const SettingsTabs = () => {
             <div className="flex-1 p-8 overflow-y-auto max-h-[800px]">
                 {activeTab === 'profile' && (
                     <div className="space-y-6 max-w-lg">
-                        <h3 className="text-lg font-bold border-b pb-2">Public Profile</h3>
+                        <h3 className="text-lg font-bold border-b pb-2">ข้อมูลสาธารณะ</h3>
                         <div>
-                            <label className="block text-sm font-medium mb-1">Display Name</label>
+                            <label className="block text-sm font-medium mb-1">ชื่อที่แสดง</label>
                             <input
                                 name="display_name"
                                 value={formData.display_name}
@@ -168,7 +168,7 @@ const SettingsTabs = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">Bio</label>
+                            <label className="block text-sm font-medium mb-1">แนะนำตัว</label>
                             <textarea
                                 name="bio"
                                 value={formData.bio}
@@ -177,7 +177,7 @@ const SettingsTabs = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">Target Exam</label>
+                            <label className="block text-sm font-medium mb-1">เป้าหมายการสอบ</label>
                             <input
                                 name="target_exam"
                                 value={formData.target_exam}
@@ -187,7 +187,7 @@ const SettingsTabs = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">Target Date</label>
+                            <label className="block text-sm font-medium mb-1">วันที่สอบ</label>
                             <input
                                 type="date"
                                 name="target_exam_date"
@@ -201,14 +201,14 @@ const SettingsTabs = () => {
                             disabled={isSaving}
                             className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
-                            {isSaving ? 'Saving...' : 'Save Changes'}
+                            {isSaving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
                         </button>
                     </div>
                 )}
 
                 {activeTab === 'subscription' && (
                     <div className="space-y-8 max-w-2xl">
-                        <h3 className="text-lg font-bold border-b pb-2">My Subscription</h3>
+                        <h3 className="text-lg font-bold border-b pb-2">การสมัครสมาชิกของฉัน</h3>
 
                         {/* Current Plan Card */}
                         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
@@ -220,14 +220,14 @@ const SettingsTabs = () => {
                                 {user.plan_type === 'premium' ? (
                                     <p className="opacity-90">Valid until: {new Date(user.premium_expiry).toLocaleDateString()}</p>
                                 ) : (
-                                    <p className="opacity-90">Upgrade to unlock full potential.</p>
+                                    <p className="opacity-90">อัปเกรดเพื่อปลดล็อกขีดความสามารถสูงสุด</p>
                                 )}
 
                                 <button
                                     onClick={() => navigate('/premium-upgrade')}
                                     className="mt-6 px-6 py-2 bg-white text-indigo-700 rounded-lg font-bold hover:bg-gray-100 transition shadow-md flex items-center gap-2"
                                 >
-                                    {user.plan_type === 'premium' ? 'Extend Premium' : 'Upgrade Now'} <RefreshCcw size={16} />
+                                    {user.plan_type === 'premium' ? 'ต่ออายุ Premium' : 'อัปเกรดทันที'} <RefreshCcw size={16} />
                                 </button>
                             </div>
                             <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform translate-x-8"></div>
@@ -239,10 +239,10 @@ const SettingsTabs = () => {
                                 <CreditCard size={18} /> Payment History
                             </h4>
                             {loadingTransactions ? (
-                                <p>Loading history...</p>
+                                <p>กำลังโหลดประวัติ...</p>
                             ) : transactions.length === 0 ? (
                                 <div className="text-center py-8 bg-gray-50 dark:bg-slate-700/30 rounded-lg border border-dashed border-gray-300 dark:border-slate-600">
-                                    <p className="text-gray-500">No payment history found.</p>
+                                    <p className="text-gray-500">ไม่พบประวัติการชำระเงิน</p>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
@@ -270,59 +270,59 @@ const SettingsTabs = () => {
 
                 {activeTab === 'privacy' && (
                     <div className="space-y-6 max-w-lg">
-                        <h3 className="text-lg font-bold border-b pb-2">Privacy & Security</h3>
+                        <h3 className="text-lg font-bold border-b pb-2">ความเป็นส่วนตัว & ความปลอดภัย</h3>
                         <div className="flex items-center justify-between">
-                            <span>Public Stats</span>
+                            <span>แสดงสถิติสาธารณะ</span>
                             <input type="checkbox" name="is_public_stats" checked={formData.is_public_stats} onChange={handleChange} className="toggle" />
                         </div>
                         <div className="flex items-center justify-between">
-                            <span>Online Status</span>
+                            <span>สถานะออนไลน์</span>
                             <input type="checkbox" name="is_online_visible" checked={formData.is_online_visible} onChange={handleChange} className="toggle" />
                         </div>
                         <div className="flex items-center justify-between">
-                            <span>Allow Friend Requests</span>
+                            <span>อนุญาตให้ส่งคำขอเป็นเพื่อน</span>
                             <input type="checkbox" name="allow_friend_request" checked={formData.allow_friend_request} onChange={handleChange} className="toggle" />
                         </div>
 
                         {/* Delete Account Section */}
                         <div className="mt-8 pt-8 border-t border-red-200 dark:border-red-900/30">
-                            <h4 className="font-bold text-red-600 mb-2">Delete Account</h4>
+                            <h4 className="font-bold text-red-600 mb-2">ลบบัญชีผู้ใช้</h4>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                Once you delete your account, there is no going back. Please be certain.
+                                เมื่อคุณลบบัญชี ข้อมูลทั้งหมดจะหายไปและไม่สามารถกู้คืนได้ โปรดมั่นใจก่อนดำเนินการ
                             </p>
                             <button onClick={() => setDeleteStep(1)} className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 hover:text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:hover:bg-red-900/30 transition-colors flex items-center gap-2">
-                                <Trash2 size={16} /> Delete Account
+                                <Trash2 size={16} /> ลบบัญชี
                             </button>
                         </div>
 
                         <button onClick={handleSaveSettings} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mt-4">
-                            Save Preferences
+                            บันทึกการตั้งค่า
                         </button>
                     </div>
                 )}
 
                 {activeTab === 'notifications' && (
                     <div className="space-y-6 max-w-lg">
-                        <h3 className="text-lg font-bold border-b pb-2">Notifications</h3>
+                        <h3 className="text-lg font-bold border-b pb-2">การแจ้งเตือน</h3>
                         <div className="flex items-center justify-between">
-                            <span>Study Group Alerts</span>
+                            <span>การเตือนกลุ่มติว</span>
                             <input type="checkbox" name="notify_study_group" checked={formData.notify_study_group} onChange={handleChange} className="toggle" />
                         </div>
                         <button onClick={handleSaveSettings} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mt-4">
-                            Save Preferences
+                            บันทึกการตั้งค่า
                         </button>
                     </div>
                 )}
 
                 {activeTab === 'app' && (
                     <div className="space-y-6 max-w-lg">
-                        <h3 className="text-lg font-bold border-b pb-2">App Preferences</h3>
+                        <h3 className="text-lg font-bold border-b pb-2">ตั้งค่าแอป</h3>
                         <div>
-                            <label className="block text-sm font-medium mb-1">Theme</label>
+                            <label className="block text-sm font-medium mb-1">ธีม</label>
                             <select name="theme_preference" value={formData.theme_preference} onChange={handleChange} className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-slate-700 dark:border-slate-600">
-                                <option value="light">Light</option>
-                                <option value="dark">Dark</option>
-                                <option value="system">System</option>
+                                <option value="light">สว่าง</option>
+                                <option value="dark">มืด</option>
+                                <option value="system">ตามระบบ</option>
                             </select>
                         </div>
                         <button onClick={handleSaveSettings} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mt-4">

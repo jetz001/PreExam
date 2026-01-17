@@ -88,7 +88,7 @@ const ExamConfig = ({ onStart }) => {
             <h2 className="text-2xl font-bold mb-6 text-gray-900">ตั้งค่าการสอบ</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-900">Catalog</label>
+                    <label className="block text-sm font-medium text-gray-900">หมวดหมู่</label>
                     <select
                         name="category"
                         value={config.category}
@@ -96,12 +96,14 @@ const ExamConfig = ({ onStart }) => {
                         className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white"
                     >
                         {categories.map((cat, index) => (
-                            <option key={index} value={cat}>{cat}</option>
+                            <option key={index} value={cat}>
+                                {cat === 'local_gov' ? 'ความรู้พื้นฐานในการปฏิบัติราชการ' : cat}
+                            </option>
                         ))}
                     </select>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-900">Subject</label>
+                    <label className="block text-sm font-medium text-gray-900">วิชา</label>
                     <select
                         name="subject"
                         value={config.subject}
@@ -120,7 +122,7 @@ const ExamConfig = ({ onStart }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                                <label className="block text-sm font-medium text-gray-900">Exam Year</label>
+                                <label className="block text-sm font-medium text-gray-900">ปีข้อสอบ</label>
                                 <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
                             </div>
                             <select
@@ -137,8 +139,7 @@ const ExamConfig = ({ onStart }) => {
                         </div>
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                                <label className="block text-sm font-medium text-gray-900">Exam Set</label>
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
+                                <label className="block text-sm font-medium text-gray-900">ชุดข้อสอบ</label>
                             </div>
                             <select
                                 name="exam_set"
@@ -148,7 +149,9 @@ const ExamConfig = ({ onStart }) => {
                             >
                                 <option value="">ทั้งหมด</option>
                                 {sets.map((s, index) => (
-                                    <option key={index} value={s}>{s}</option>
+                                    <option key={index} value={s}>
+                                        {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}
+                                    </option>
                                 ))}
                             </select>
                         </div>
