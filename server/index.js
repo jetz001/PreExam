@@ -68,7 +68,7 @@ app.use(['/api/auth', '/auth'], authRoutes);
 app.use(['/api/users', '/users'], userRoutes);
 app.use(['/api/questions', '/questions'], questionRoutes);
 app.use(['/api/exams', '/exams'], examRoutes);
-app.use(['/api/news', '/news'], newsRoutes);
+app.use('/api/news', newsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use(['/api/payments', '/payments'], paymentRoutes);
 app.use(['/api/reports', '/reports'], reportRoutes);

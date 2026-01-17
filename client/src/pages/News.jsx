@@ -140,7 +140,7 @@ const News = () => {
 
                             {/* Hero Section - Hide if searching to focus on results, or keep? Let's hide Hero if searching for better list view */}
                             {!searchQuery && heroNews && (
-                                <div className="group relative w-full aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden shadow-xl cursor-pointer" onClick={() => window.location.href = `/news/${heroNews.id}`}>
+                                <div className="group relative w-full aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden shadow-xl cursor-pointer" onClick={() => navigate(`/news/${heroNews.id}`)}>
                                     <div className="absolute inset-0">
                                         <img
                                             src={(heroNews.image_url && !heroNews.image_url.includes('via.placeholder.com')) ? heroNews.image_url : "https://placehold.co/800x400?text=News"}
@@ -179,7 +179,7 @@ const News = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         {(searchQuery ? newsList : subNews).map((news, index) => (
                                             <React.Fragment key={news.id}>
-                                                <div className="group cursor-pointer flex flex-col h-full" onClick={() => window.location.href = `/news/${news.id}`}>
+                                                <div className="group cursor-pointer flex flex-col h-full" onClick={() => navigate(`/news/${news.id}`)}>
                                                     <div className="relative aspect-video rounded-lg overflow-hidden mb-4 shadow-sm">
                                                         <img
                                                             src={(news.image_url && !news.image_url.includes('via.placeholder.com')) ? news.image_url : "https://placehold.co/400x300?text=News"}
@@ -250,7 +250,7 @@ const News = () => {
                                 </h4>
                                 <div className="space-y-6">
                                     {newsList.slice().sort((a, b) => b.views - a.views).slice(0, 5).map((news, idx) => (
-                                        <div key={news.id} className="flex group cursor-pointer" onClick={() => window.location.href = `/news/${news.id}`}>
+                                        <div key={news.id} className="flex group cursor-pointer" onClick={() => navigate(`/news/${news.id}`)}>
                                             <span className="text-3xl font-black text-gray-200 mr-4 leading-none group-hover:text-primary transition-colors">{idx + 1}</span>
                                             <div>
                                                 <h5 className="text-sm font-bold text-gray-900 leading-tight group-hover:underline line-clamp-2 mb-1">
