@@ -27,14 +27,12 @@ const ExamConfig = ({ onStart }) => {
                 const subjectsRes = await examService.getSubjects();
                 if (subjectsRes.success) setSubjects(subjectsRes.data);
 
-                if (isPremium) {
-                    const [yearsRes, setsRes] = await Promise.all([
-                        examService.getExamYears(),
-                        examService.getExamSets()
-                    ]);
-                    if (yearsRes.success) setYears(yearsRes.data);
-                    if (setsRes.success) setSets(setsRes.data);
-                }
+                const [yearsRes, setsRes] = await Promise.all([
+                    examService.getExamYears(),
+                    examService.getExamSets()
+                ]);
+                if (yearsRes.success) setYears(yearsRes.data);
+                if (setsRes.success) setSets(setsRes.data);
             } catch (error) {
                 console.error('Error fetching initial data:', error);
             }
@@ -117,46 +115,46 @@ const ExamConfig = ({ onStart }) => {
                     </select>
                 </div>
 
-                {/* Premium Filters */}
-                {isPremium && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <label className="block text-sm font-medium text-gray-900">ปีข้อสอบ</label>
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
-                            </div>
-                            <select
-                                name="exam_year"
-                                value={config.exam_year}
-                                onChange={handleChange}
-                                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white"
-                            >
-                                <option value="">ทั้งหมด</option>
-                                {years.map((y, index) => (
-                                    <option key={index} value={y}>{y}</option>
-                                ))}
-                            </select>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <label className="block text-sm font-medium text-gray-900">ปีข้อสอบ</label>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <label className="block text-sm font-medium text-gray-900">ชุดข้อสอบ</label>
-                            </div>
-                            <select
-                                name="exam_set"
-                                value={config.exam_set}
-                                onChange={handleChange}
-                                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white"
-                            >
-                                <option value="">ทั้งหมด</option>
-                                {sets.map((s, index) => (
-                                    <option key={index} value={s}>
-                                        {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        <select
+                            name="exam_year"
+                            value={config.exam_year}
+                            onChange={handleChange}
+                            disabled={!isPremium}
+                            className={`block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white ${!isPremium ? 'opacity-60 cursor-not-allowed bg-gray-100' : ''}`}
+                        >
+                            <option value="">ทั้งหมด</option>
+                            {years.map((y, index) => (
+                                <option key={index} value={y}>{y}</option>
+                            ))}
+                        </select>
                     </div>
-                )}
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <label className="block text-sm font-medium text-gray-900">ชุดข้อสอบ</label>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
+                        </div>
+                        <select
+                            name="exam_set"
+                            value={config.exam_set}
+                            onChange={handleChange}
+                            disabled={!isPremium}
+                            className={`block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white ${!isPremium ? 'opacity-60 cursor-not-allowed bg-gray-100' : ''}`}
+                        >
+                            <option value="">ทั้งหมด</option>
+                            {sets.map((s, index) => (
+                                <option key={index} value={s}>
+                                    {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
 
                 <div>
                     <label className="block text-sm font-medium text-gray-900">จำนวนข้อ</label>

@@ -40,14 +40,13 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
             if (subjRes.success) setSubjects(subjRes.data);
             if (catRes.success) setCategories(catRes.data);
 
-            if (isPremium) {
-                const [yearsRes, setsRes] = await Promise.all([
-                    api.get('/questions/years').then(r => r.data),
-                    api.get('/questions/sets').then(r => r.data)
-                ]);
-                if (yearsRes.success) setYears(yearsRes.data);
-                if (setsRes.success) setSets(setsRes.data);
-            }
+            // Always fetch years/sets (to show as disabled options for free users)
+            const [yearsRes, setsRes] = await Promise.all([
+                api.get('/questions/years').then(r => r.data),
+                api.get('/questions/sets').then(r => r.data)
+            ]);
+            if (yearsRes.success) setYears(yearsRes.data);
+            if (setsRes.success) setSets(setsRes.data);
         } catch (error) {
             console.error('Error fetching options:', error);
         }
@@ -129,43 +128,44 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                         </div>
                     </div>
 
-                    {isPremium && (
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <label className="block text-sm font-medium text-gray-700">ปีข้อสอบ</label>
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
-                                </div>
-                                <select
-                                    value={formData.exam_year}
-                                    onChange={(e) => setFormData({ ...formData, exam_year: e.target.value })}
-                                    className="block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900"
-                                >
-                                    <option value="">ทั้งหมด</option>
-                                    {years.map(y => (
-                                        <option key={y} value={y}>{y}</option>
-                                    ))}
-                                </select>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <label className="block text-sm font-medium text-gray-700">ปีข้อสอบ</label>
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
                             </div>
-                            <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <label className="block text-sm font-medium text-gray-700">ชุดข้อสอบ</label>
-                                </div>
-                                <select
-                                    value={formData.exam_set}
-                                    onChange={(e) => setFormData({ ...formData, exam_set: e.target.value })}
-                                    className="block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900"
-                                >
-                                    <option value="">ทั้งหมด</option>
-                                    {sets.map(s => (
-                                        <option key={s} value={s}>
-                                            {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                            <select
+                                value={formData.exam_year}
+                                onChange={(e) => setFormData({ ...formData, exam_year: e.target.value })}
+                                disabled={!isPremium}
+                                className={`block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 ${!isPremium ? 'opacity-60 cursor-not-allowed bg-gray-100' : ''}`}
+                            >
+                                <option value="">ทั้งหมด</option>
+                                {years.map(y => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
                         </div>
-                    )}
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <label className="block text-sm font-medium text-gray-700">ชุดข้อสอบ</label>
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
+                            </div>
+                            <select
+                                value={formData.exam_set}
+                                onChange={(e) => setFormData({ ...formData, exam_set: e.target.value })}
+                                disabled={!isPremium}
+                                className={`block w-full border border-gray-300 rounded-md p-2 bg-white text-gray-900 ${!isPremium ? 'opacity-60 cursor-not-allowed bg-gray-100' : ''}`}
+                            >
+                                <option value="">ทั้งหมด</option>
+                                {sets.map(s => (
+                                    <option key={s} value={s}>
+                                        {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">จำนวนข้อ</label>
                         <input
