@@ -49,17 +49,17 @@ const NewsManager = () => {
         onError: () => toast.error('Failed to remove source')
     });
 
-    const createMutation = useMutation({
+    const mutation = useMutation({
         mutationFn: (data) => {
             if (editingId) {
-                return adminApi.createNews(data);
+                return adminApi.updateNews(editingId, data);
             } else {
                 return adminApi.createNews(data);
             }
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['news']);
-            toast.success(editingId ? 'News updated (created new)' : 'News published successfully!');
+            toast.success(editingId ? 'News updated successfully!' : 'News published successfully!');
             setIsFormOpen(false);
             setFormData(initialFormState);
             setEditingId(null);
@@ -131,12 +131,7 @@ const NewsManager = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Warn if no update API
-        if (editingId) {
-            // Since we don't have update API yet, we might be creating duplicate.
-            // But let's proceed to allow "copy/edit" workflow for "another source".
-        }
-        createMutation.mutate(formData);
+        mutation.mutate(formData);
     };
 
     const handleDelete = (id) => {
