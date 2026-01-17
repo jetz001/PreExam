@@ -4,7 +4,12 @@ import NewsCard from '../components/news/NewsCard';
 import { Search } from 'lucide-react';
 import AdSlot from '../components/ads/AdSlot';
 
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
 const News = () => {
+    const { user } = useAuth();
+    const navigate = useNavigate();
     const [newsList, setNewsList] = useState([]);
     const [popularKeywords, setPopularKeywords] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -260,11 +265,22 @@ const News = () => {
 
 
                             {/* Ad/Banner Placeholder */}
-                            <div className="bg-gradient-to-br from-gray-900 to-black rounded-xl p-8 text-center text-white">
-                                <h5 className="font-bold text-xl mb-2">PreExam Pro</h5>
-                                <p className="text-sm text-gray-300 mb-6">Unlocking all premium features today.</p>
-                                <button className="bg-white text-black px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-200 transition">Upgrade</button>
-                            </div>
+                            {/* Ad/Banner Placeholder - Only for Non-Premium */}
+                            {(!user || user.plan_type !== 'premium') && (
+                                <div className="bg-gradient-to-br from-gray-900 to-black rounded-xl p-8 text-center text-white relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-3 opacity-10">
+                                        <svg width="100" height="100" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
+                                    </div>
+                                    <h5 className="font-bold text-xl mb-2 relative z-10">PreExam Pro</h5>
+                                    <p className="text-sm text-gray-300 mb-6 relative z-10">ปลดล็อกฟีเจอร์พรีเมียมวันนี้ เพื่อความสำเร็จที่รวดเร็วกว่า</p>
+                                    <button
+                                        onClick={() => navigate('/premium-upgrade')}
+                                        className="bg-white text-black px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-200 transition relative z-10 w-full"
+                                    >
+                                        อัปเกรดเลย
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
