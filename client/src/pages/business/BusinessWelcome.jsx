@@ -125,7 +125,10 @@ const BusinessWelcome = () => {
                         >
                             สร้างเพจผู้เชี่ยวชาญ
                         </button>
-                        <button className="px-8 py-3 rounded-lg bg-gray-100 text-gray-700 font-bold text-lg hover:bg-gray-200">
+                        <button
+                            onClick={() => window.location.href = 'https://preexam.online/faq'}
+                            className="px-8 py-3 rounded-lg bg-gray-100 text-gray-700 font-bold text-lg hover:bg-gray-200"
+                        >
                             เรียนรู้เพิ่มเติม
                         </button>
                     </div>
