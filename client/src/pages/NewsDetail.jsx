@@ -126,11 +126,6 @@ const NewsDetail = () => {
                             <div className="text-lg text-gray-600 leading-relaxed mb-8 italic border-l-4 border-primary pl-4">
                                 {news.summary}
                             </div>
-                        {/* Summary / Lead */}
-                        {news.summary && (
-                            <div className="text-lg text-gray-600 leading-relaxed mb-8 italic border-l-4 border-primary pl-4">
-                                {news.summary}
-                            </div>
                         )}
 
                         {/* Full Content */}

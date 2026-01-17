@@ -11,7 +11,6 @@ const NewsManager = () => {
 
     const initialFormState = {
         title: '',
-        title: '',
         content: '',
         image_url: '',
         product_link: '',
@@ -91,7 +90,6 @@ const NewsManager = () => {
         onSuccess: (data) => {
             setFormData(prev => ({
                 ...prev,
-                ...prev,
                 title: data.title || prev.title,
                 image_url: data.image_url || prev.image_url,
                 content: data.summary || data.description || prev.content,
@@ -117,7 +115,6 @@ const NewsManager = () => {
 
     const handleEdit = (item) => {
         setFormData({
-            title: item.title,
             title: item.title,
             content: item.content,
             image_url: item.image_url || '',
