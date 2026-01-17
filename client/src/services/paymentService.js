@@ -30,6 +30,11 @@ const paymentService = {
         return response.data;
     },
 
+    getMyTransactions: async () => {
+        const response = await api.get('/payments/transactions');
+        return response.data;
+    },
+
     uploadSlip: async (formData) => {
         const response = await api.post('/payments/upload-slip', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }

@@ -12,6 +12,7 @@ const { authMiddleware } = require('../middleware/authMiddleware'); // Assuming 
 
 router.post('/create-checkout-session', authMiddleware, paymentController.createCheckoutSession);
 router.get('/plans', paymentController.getPlans);
+router.get('/transactions', authMiddleware, paymentController.getMyTransactions);
 router.post('/webhook', express.raw({ type: 'application/json' }), paymentController.handleWebhook);
 
 module.exports = router;

@@ -30,6 +30,15 @@ const SettingsTabs = () => {
     useEffect(() => {
         if (activeTab === 'subscription') {
             loadTransactions();
+            const refreshProfile = async () => {
+                try {
+                    const res = await userService.getProfile();
+                    if (res.data) updateUser(res.data);
+                } catch (err) {
+                    console.error("Failed to refresh profile", err);
+                }
+            };
+            refreshProfile();
         }
     }, [activeTab]);
 

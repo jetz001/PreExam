@@ -85,6 +85,25 @@ exports.getPlans = async (req, res) => {
     }
 };
 
+exports.getMyTransactions = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+
+        const transactions = await Transaction.findAll({
+            where: { user_id: req.user.id },
+            include: [{ model: Plan, as: 'plan' }],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ success: true, transactions });
+    } catch (error) {
+        console.error('Get My Transactions Error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch transactions' });
+    }
+};
+
 exports.handleWebhook = async (req, res) => {
     const sig = req.headers['stripe-signature'];
     let event;
