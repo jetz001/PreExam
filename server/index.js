@@ -280,6 +280,20 @@ const startServer = async () => {
 
         // --- Ad System Migrations ---
         try {
+            await sequelize.query("ALTER TABLE users ADD COLUMN plan_type VARCHAR(20) DEFAULT 'free';");
+            console.log("Added plan_type column to users table");
+        } catch (err) {
+            // Ignore if exists
+        }
+
+        try {
+            await sequelize.query("ALTER TABLE users ADD COLUMN premium_expiry DATETIME;");
+            console.log("Added premium_expiry column to users table");
+        } catch (err) {
+            // Ignore if exists
+        }
+
+        try {
             await sequelize.query("ALTER TABLE ads ADD COLUMN link_url VARCHAR(255);");
             console.log("Added link_url column to ads table");
         } catch (err) {
