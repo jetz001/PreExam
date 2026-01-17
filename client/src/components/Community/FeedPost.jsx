@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Share2, Clock, Play, Volume2, VolumeX, MoreVertical, Trash2, Flag, PenSquare, Store } from 'lucide-react';
+import { MessageCircle, Share2, Clock, Play, Volume2, VolumeX, MoreVertical, Trash2, Flag, PenSquare, Store, BarChart2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useInView } from 'react-intersection-observer';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -194,7 +194,15 @@ const FeedPost = ({ post }) => {
 
             {/* Content */}
             <div className="mb-3">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">{post.title}</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center">
+                    {post.Poll && (
+                        <div className="mr-2 inline-flex items-center text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-xs">
+                            <BarChart2 size={16} className="mr-1" />
+                            <span>Poll</span>
+                        </div>
+                    )}
+                    {post.title}
+                </h3>
                 <ReadMoreText className="text-gray-700 text-sm mb-3">
                     <p className="whitespace-pre-line break-words">{renderContentWithLinks(post.content)}</p>
                 </ReadMoreText>
