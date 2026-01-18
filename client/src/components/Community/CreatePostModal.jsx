@@ -5,7 +5,7 @@ import { X, Image as ImageIcon, Video, BarChart2, Plus, Trash2 } from 'lucide-re
 import { useSocket } from '../../context/SocketContext';
 import toast from 'react-hot-toast';
 
-const CreatePostModal = ({ onClose, initialImage }) => {
+const CreatePostModal = ({ onClose, initialImage, ...props }) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [category, setCategory] = useState('general');
@@ -29,14 +29,20 @@ const CreatePostModal = ({ onClose, initialImage }) => {
     const imageInputRef = useRef(null);
     const videoInputRef = useRef(null);
 
-    // Set initial image if provided
+    // Set initial data if provided
     React.useEffect(() => {
         if (initialImage) {
             setMedia(initialImage);
             setMediaType('image');
             setPreview(URL.createObjectURL(initialImage));
         }
-    }, [initialImage]);
+
+        // Handle Shared Text/Question
+        if (props.initialTitle) setTitle(props.initialTitle);
+        if (props.initialContent) setContent(props.initialContent);
+        if (props.initialCategory) setCategory(props.initialCategory);
+
+    }, [initialImage, props.initialTitle, props.initialContent, props.initialCategory]);
 
     const queryClient = useQueryClient();
     const socket = useSocket();
@@ -166,8 +172,8 @@ const CreatePostModal = ({ onClose, initialImage }) => {
                                 <textarea
                                     placeholder={backgroundStyle ? "พิมพ์ข้อความของคุณ..." : "มีอะไรอยากแชร์ไหม?..."}
                                     className={`w-full resize-none border-none focus:ring-0 bg-transparent ${backgroundStyle
-                                            ? 'text-white text-2xl font-bold placeholder-white/70 text-center h-auto overflow-hidden'
-                                            : 'text-gray-900 placeholder-gray-400 h-32'
+                                        ? 'text-white text-2xl font-bold placeholder-white/70 text-center h-auto overflow-hidden'
+                                        : 'text-gray-900 placeholder-gray-400 h-32'
                                         }`}
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}

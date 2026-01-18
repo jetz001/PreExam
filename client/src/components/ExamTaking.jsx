@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Flag, ChevronLeft, ChevronRight, AlertTriangle, Bookmark } from 'lucide-react';
+import { Clock, Flag, ChevronLeft, ChevronRight, AlertTriangle, Bookmark, Share2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import ReportModal from './exam/ReportModal';
 import AmbiencePlayer from './exam/AmbiencePlayer';
 import QuestionNote from './exam/QuestionNote';
@@ -12,6 +13,7 @@ import toast from 'react-hot-toast';
 
 const ExamTaking = ({ questions, mode, onSubmit }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const navigate = useNavigate();
     const [answers, setAnswers] = useState({});
     const [flagged, setFlagged] = useState({});
     const [timeLeft, setTimeLeft] = useState(questions.length * 60); // 1 min per question
@@ -60,6 +62,20 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                 toast.error('บันทึกข้อสอบล้มเหลว');
             }
         }
+    };
+
+    const handleShare = () => {
+        const q = questions[currentIndex];
+        const sharedTitle = `ขอคำปรึกษาข้อสอบข้อนี้ครับ #${q.id}`;
+        const sharedContent = `ช่วยอธิบายข้อนี้ให้หน่อยครับ\n\nโจทย์: ${q.question_text}\n\nA. ${q.choice_a}\nB. ${q.choice_b}\nC. ${q.choice_c}\nD. ${q.choice_d}\n\n`;
+
+        navigate('/community', {
+            state: {
+                sharedTitle,
+                sharedContent,
+                initialCategory: 'qa_help'
+            }
+        });
     };
 
     const handleSubmit = () => {
@@ -122,8 +138,19 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                                     >
                                         <AlertTriangle className="h-5 w-5" />
                                     </button>
-                                    <button onClick={toggleFlag} className={`p-2 rounded-full ${flagged[currentQuestion.id] ? 'bg-yellow-100 text-yellow-600' : 'text-gray-400 hover:bg-gray-100'}`}>
+                                    <button
+                                        onClick={toggleFlag}
+                                        className={`p-2 rounded-full ${flagged[currentQuestion.id] ? 'bg-yellow-100 text-yellow-600' : 'text-gray-400 hover:bg-gray-100'}`}
+                                        title="ติดธงไว้ดูภายหลัง"
+                                    >
                                         <Flag className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                        onClick={handleShare}
+                                        className="p-2 rounded-full text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                                        title="แชร์ไปที่ชุมชน"
+                                    >
+                                        <Share2 className="h-5 w-5" />
                                     </button>
                                 </div>
                             </div>

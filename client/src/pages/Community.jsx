@@ -47,7 +47,14 @@ const Community = () => {
         if (location.state?.sharedImage) {
             setSharedImage(location.state.sharedImage);
             setIsModalOpen(true);
-            // Clear state so it doesn't reopen on refresh (optional, but good practice)
+            // Clear state
+            window.history.replaceState({}, document.title);
+        }
+
+        // Handle Shared Question (Text)
+        if (location.state?.sharedTitle || location.state?.sharedContent) {
+            setIsModalOpen(true);
+            // Clear state
             window.history.replaceState({}, document.title);
         }
     }, [searchParams, location]);
@@ -254,7 +261,15 @@ const Community = () => {
                 />
             )}
 
-            {isModalOpen && <CreatePostModal onClose={() => { setIsModalOpen(false); setSharedImage(null); }} initialImage={sharedImage} />}
+            {isModalOpen && (
+                <CreatePostModal
+                    onClose={() => { setIsModalOpen(false); setSharedImage(null); }}
+                    initialImage={sharedImage}
+                    initialTitle={location.state?.sharedTitle}
+                    initialContent={location.state?.sharedContent}
+                    initialCategory={location.state?.initialCategory}
+                />
+            )}
         </div>
     );
 };
