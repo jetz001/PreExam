@@ -3,8 +3,8 @@ import businessApi from '../../services/businessApi';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pin, Trash2, Edit, Image as ImageIcon, Camera, Upload } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
-import ReactQuill, { Quill } from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill, { Quill } from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 // import ImageResize from 'quill-image-resize-module-react';
 import toast from 'react-hot-toast';
 
