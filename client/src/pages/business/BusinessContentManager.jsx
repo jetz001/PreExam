@@ -5,10 +5,10 @@ import { Plus, Pin, Trash2, Edit, Image as ImageIcon, Camera, Upload } from 'luc
 import { compressImage } from '../../utils/imageUtils';
 import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import ImageResize from 'quill-image-resize-module-react';
+// import ImageResize from 'quill-image-resize-module-react';
 import toast from 'react-hot-toast';
 
-Quill.register('modules/imageResize', ImageResize);
+// Quill.register('modules/imageResize', ImageResize);
 
 const BusinessContentManager = () => {
     const queryClient = useQueryClient();
@@ -294,11 +294,13 @@ const BusinessContentManager = () => {
                                                 [{ 'align': [] }],
                                                 ['link', 'image'],
                                                 ['clean']
-                                            ],
+                                            ]
+                                            /*,
                                             imageResize: {
                                                 parchment: Quill.import('parchment'),
                                                 modules: ['Resize', 'DisplaySize']
                                             }
+                                            */
                                         }}
                                         className="h-[500px] mb-12"
                                     />

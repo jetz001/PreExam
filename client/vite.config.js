@@ -26,8 +26,5 @@ export default defineConfig({
     alias: {
       'quill': 'quill/dist/quill.js',
     }
-  },
-  define: {
-    global: 'window',
   }
 })
