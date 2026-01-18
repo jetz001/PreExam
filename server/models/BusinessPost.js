@@ -70,5 +70,10 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: 'updated_at'
     });
 
+    BusinessPost.associate = (models) => {
+        BusinessPost.belongsTo(models.Business, { foreignKey: 'business_id', as: 'Business' });
+        BusinessPost.hasMany(models.BusinessPostLike, { foreignKey: 'post_id', as: 'Likes' });
+    };
+
     return BusinessPost;
 };

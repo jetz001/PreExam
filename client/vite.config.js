@@ -21,5 +21,10 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  resolve: {
+    alias: {
+      'quill': 'quill/dist/quill.js',
+    }
   }
 })
