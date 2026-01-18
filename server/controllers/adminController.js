@@ -591,6 +591,37 @@ exports.rejectAd = async (req, res) => {
     }
 };
 
+// --- Ticket Management ---
+exports.getTickets = async (req, res) => {
+    try {
+        const tickets = await db.Ticket.findAll({
+            include: [
+                { model: db.User, as: 'User', attributes: ['display_name', 'email'] }
+            ],
+            order: [['createdAt', 'ASC']]
+        });
+        res.json({ success: true, tickets });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to fetch tickets' });
+    }
+};
+
+exports.getTransactions = async (req, res) => {
+    try {
+        const transactions = await Transaction.findAll({
+            include: [
+                { model: User, as: 'user', attributes: ['display_name', 'email'] },
+                { model: Plan, as: 'plan', attributes: ['name'] }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
+        res.json({ success: true, transactions });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Error fetching transactions' });
+    }
+};
+
 // --- Business Management ---
 
 exports.getBusinesses = async (req, res) => {

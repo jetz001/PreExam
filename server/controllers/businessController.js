@@ -147,7 +147,7 @@ exports.getAllBusinesses = async (req, res) => {
         const businesses = await Business.findAll({
             where,
             limit: 50,
-            order: [['created_at', 'DESC']] // Default sort
+            order: [['createdAt', 'DESC']] // Default sort
         });
 
         res.json({ success: true, businesses });
@@ -244,7 +244,7 @@ exports.getReviews = async (req, res) => {
         const reviews = await BusinessReview.findAll({
             where: { business_id },
             include: [{ model: User, as: 'Reviewer', attributes: ['id', 'display_name', 'avatar'] }],
-            order: [['created_at', 'DESC']]
+            order: [['createdAt', 'DESC']]
         });
         res.json({ success: true, reviews });
     } catch (error) {
@@ -271,7 +271,7 @@ exports.getFollowingFeed = async (req, res) => {
                     attributes: ['id', 'name', 'logo_image']
                 }
             ],
-            order: [['created_at', 'DESC']],
+            order: [['createdAt', 'DESC']],
             limit: 20
         });
 
