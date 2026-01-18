@@ -15,21 +15,19 @@ import { TourProvider } from './context/TourContext';
 const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <SocketProvider>
-            <TourProvider>
-              <BrowserRouter>
-                <HelmetProvider>
-                  <App />
-                </HelmetProvider>
-              </BrowserRouter>
-            </TourProvider>
-          </SocketProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </GoogleOAuthProvider>
-  </React.StrictMode>,
+  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <SocketProvider>
+          <TourProvider>
+            <BrowserRouter>
+              <HelmetProvider>
+                <App />
+              </HelmetProvider>
+            </BrowserRouter>
+          </TourProvider>
+        </SocketProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </GoogleOAuthProvider>,
 );
