@@ -7,7 +7,7 @@ const NewsCard = ({ news }) => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300">
             <div className="h-48 overflow-hidden bg-gray-100">
                 <img
-                    src={(news.image_url && !news.image_url.includes('via.placeholder.com')) ? news.image_url : "https://placehold.co/300x200?text=News"}
+                    src={(news.image_url && !news.image_url.includes('placehold.co')) ? news.image_url : "https://placehold.co/300x200?text=News"}
                     alt={news.title}
                     className="w-full h-full object-cover"
                     onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/300x200?text=News" }}

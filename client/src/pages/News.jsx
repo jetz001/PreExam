@@ -143,7 +143,7 @@ const News = () => {
                                 <div className="group relative w-full aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden shadow-xl cursor-pointer" onClick={() => navigate(`/news/${heroNews.id}`)}>
                                     <div className="absolute inset-0">
                                         <img
-                                            src={(heroNews.image_url && !heroNews.image_url.includes('via.placeholder.com')) ? heroNews.image_url : "https://placehold.co/800x400?text=News"}
+                                            src={(heroNews.image_url && !heroNews.image_url.includes('placehold.co')) ? heroNews.image_url : "https://placehold.co/800x400?text=News"}
                                             alt={heroNews.title}
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                         />
@@ -182,7 +182,7 @@ const News = () => {
                                                 <div className="group cursor-pointer flex flex-col h-full" onClick={() => navigate(`/news/${news.id}`)}>
                                                     <div className="relative aspect-video rounded-lg overflow-hidden mb-4 shadow-sm">
                                                         <img
-                                                            src={(news.image_url && !news.image_url.includes('via.placeholder.com')) ? news.image_url : "https://placehold.co/400x300?text=News"}
+                                                            src={(news.image_url && !news.image_url.includes('placehold.co')) ? news.image_url : "https://placehold.co/400x300?text=News"}
                                                             alt={news.title}
                                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                                         />
