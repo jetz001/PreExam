@@ -173,7 +173,7 @@ const SettingsManager = () => {
 
                 <div className="max-w-2xl">
                     <textarea
-                        className="w-full h-32 border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm"
+                        className="w-full h-32 border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm text-gray-900"
                         placeholder="badword1, badword2, badword3"
                         value={settings.blacklisted_words}
                         onChange={e => setSettings({ ...settings, blacklisted_words: e.target.value })}
