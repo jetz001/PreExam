@@ -289,70 +289,72 @@ exports.getRadarStats = async (req, res) => {
                     }
 
                     // key is either skill (e.g., 'Finance') or subject (e.g., 'Internal Auditor')
-                    if (!skillStats[key]) skillStats[key] = { score: 0, count: 0 };    // Let's check examController legacy logic: subject_scores[q.subject] = { score: 0, total: 0 }
-                    // Yes, structure is same { score, total }
+                    if (!skillStats[key]) skillStats[key] = { score: 0, count: 0 };
 
-                    const data = scores[key];
-                    skillStats[key].score += (data.score || 0); // Correct answers
-                    skillStats[key].count += (data.total || 0); // Total questions
-                } else {
-                    // Legacy subject_scores might have been saved differently in old versions?
-                    // Current examController saves subject_scores as { score, total } too.
-                    // So logic is consistent.
+                    if (source === 'skill') {
+                        const data = scores[key];
+                        skillStats[key].score += (data.score || 0); // Correct answers
+                        skillStats[key].count += (data.total || 0); // Total questions
+                    } else {
+                        // Legacy subject_scores might have been saved differently in old versions?
+                        // Current examController saves subject_scores as { score, total } too.
+                        // So logic is consistent.
 
-                    // BUT, previous userController logic was:
-                    // skillStats[subject].score += (scores[subject] || 0);
-                    // skillStats[subject].count += 1;
-                    // This implies scores[subject] was just a number (score) and count was 1 exam?
-                    // Let's look at previous code in userController:
-                    // if (scores) ... skillStats[subject].score += (scores[subject] || 0); skillStats[subject].count += 1;
-                    // This suggests existing data might store subject_scores as just INT? 
-                    // "ExamResult model": source code said subject_scores is JSON.
-                    // "examController": subject_scores[q.subject] = { score: 0, total: 0 }.
-                    // This means the previous userController logic was probably WRONG or simplified assuming 1 exam = 1 count?
-                    // "skillStats[subject].count += 1" means it averaged across *exams*, not questions.
-                    // And "skillStats[subject].score += scores[subject]" means it summed the object? {score, total}? That would result in NaN.
+                        // BUT, previous userController logic was:
+                        // skillStats[subject].score += (scores[subject] || 0);
+                        // skillStats[subject].count += 1;
+                        // This implies scores[subject] was just a number (score) and count was 1 exam?
+                        // Let's look at previous code in userController:
+                        // if (scores) ... skillStats[subject].score += (scores[subject] || 0); skillStats[subject].count += 1;
+                        // This suggests existing data might store subject_scores as just INT? 
+                        // "ExamResult model": source code said subject_scores is JSON.
+                        // "examController": subject_scores[q.subject] = { score: 0, total: 0 }.
+                        // This means the previous userController logic was probably WRONG or simplified assuming 1 exam = 1 count?
+                        // "skillStats[subject].count += 1" means it averaged across *exams*, not questions.
+                        // And "skillStats[subject].score += scores[subject]" means it summed the object? {score, total}? That would result in NaN.
 
-                    // Filter out known Categories that are NOT Skills (Fix for "ท้องถิ่น ภาค ก" appearing in Radar)
-                    const EXCLUDED_SKILLS = ['ท้องถิ่น ภาค ก', 'ท้องถิ่น ภาค ข', 'ภาค ก', 'ภาค ข'];
-                    if(EXCLUDED_SKILLS.includes(key)) {
-                    return; // Skip this iteration
-                }
+                        // Robust filter for fallback path too
+                        const normalizedKey = key.trim();
+                        const EXCLUDED_KEYWORDS = ['ท้องถิ่น', 'ภาค ก', 'ภาค ข'];
 
-                // If legacy DB has subject_scores as {score, total}, doing += object is wrong.
-                // Only if legacy DB has subject_scores as "Thai": 5 (int).
+                        if (EXCLUDED_KEYWORDS.some(keyword => normalizedKey.includes(keyword))) {
+                            return; // Skip excluded subjects
+                        }
 
-                // Let's be robust. Check if value is object or number.
-                const val = scores[key];
-                if (typeof val === 'number') {
-                    skillStats[key].score += val;
-                    skillStats[key].count += 1; // Unclear how many questions, assume 1 exam weight? hard to normalize.
-                    // Actually, for radar chart 0-100, if val is score (e.g. 5/10), we can't know % without total.
-                    // Assuming previous logic worked somehow, maybe it was just raw score summation??
-                } else if (typeof val === 'object' && val !== null) {
-                    skillStats[key].score += (val.score || 0);
-                    skillStats[key].count += (val.total || 0);
-                }
+                        // If legacy DB has subject_scores as {score, total}, doing += object is wrong.
+                        // Only if legacy DB has subject_scores as "Thai": 5 (int).
+
+                        // Let's be robust. Check if value is object or number.
+                        const val = scores[key];
+                        if (typeof val === 'number') {
+                            skillStats[key].score += val;
+                            skillStats[key].count += 1; // Unclear how many questions, assume 1 exam weight? hard to normalize.
+                            // Actually, for radar chart 0-100, if val is score (e.g. 5/10), we can't know % without total.
+                            // Assuming previous logic worked somehow, maybe it was just raw score summation??
+                        } else if (typeof val === 'object' && val !== null) {
+                            skillStats[key].score += (val.score || 0);
+                            skillStats[key].count += (val.total || 0);
+                        }
+                    }
+                });
             }
         });
-    }
-        });
 
-const data = Object.keys(skillStats).map(subject => ({
-    subject,
-    fullMark: 100,
-    score: skillStats[subject].count > 0
-        ? Math.round((skillStats[subject].score / skillStats[subject].count) * 100)
-        : 0
-}));
+        const data = Object.keys(skillStats).map(subject => ({
+            subject,
+            fullMark: 100,
+            score: skillStats[subject].count > 0
+                ? Math.round((skillStats[subject].score / skillStats[subject].count) * 100)
+                : 0
+        }));
 
 
 
-res.json({ success: true, data });
+        res.json({ success: true, data });
     } catch (error) {
-    console.error('Radar Error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-}
+        console.error('Radar Error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
 };
 
 exports.searchUsers = async (req, res) => {
