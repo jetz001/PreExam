@@ -223,11 +223,37 @@ exports.getRadarStats = async (req, res) => {
             });
 
             if (rankStats.length > 0) {
-                const data = rankStats.map(s => ({
-                    subject: s.subject,
-                    fullMark: 100,
-                    A: Math.round(s.accuracy_rate * 100) // Assuming accuracy_rate is 0.0-1.0
-                }));
+                const EXCLUDED_SKILLS = ['ท้องถิ่น ภาค ก', 'ท้องถิ่น ภาค ข', 'ภาค ก', 'ภาค ข'];
+                const data = rankStats
+                    .filter(s => !EXCLUDED_SKILLS.includes(s.subject))
+                    .map(s => ({
+                        subject: s.subject,
+                        fullMark: 100,
+                        score: Math.round(s.accuracy_rate * 100) // Changed 'A' to 'score' to match frontend expected prop? Frontend uses 'score'.
+                        // Wait, previous code used 'A'. Let's check frontend.
+                        // AnalyticsDashboard.jsx: <Radar name="Score" dataKey="score" ... />
+                        // The 'A' key in UserRankingStats map seems WRONG if frontend expects 'score'.
+                        // But wait, the fallback logic produces 'score'.
+                        // Let's check if 'A' was working? Maybe Recharts handles it?
+                        // AnalyticsDashboard.jsx Line 90: dataKey="score"
+                        // So if UserRankingStats returns 'A', the chart would be empty/broken unless Recharts defaults?
+                        // But the USER's screenshot SHOWS data.
+                        // This implies either:
+                        // 1. UserRankingStats block was NOT hit, and my previous fix was in the right place but maybe failed string match?
+                        // 2. OR UserRankingStats block WAS hit, and the frontend code I read (Step 781) is different from what's live?
+                        // Let's look at Step 781 again.
+                        // Line 90: <Radar ... dataKey="score" ... />
+                        // If the backend returns { subject, fullMark, A }, then dataKey="score" would find undefined.
+                        // Unless... the user's screenshot is from a state where it hit the fallback logic (which returns 'score')?
+                        // But I modified the fallback logic.
+                        // If the user's screenshot shows data, and I added the filter to fallback, AND it's still showing...
+                        // Possibility 3: The string "ท้องถิ่น ภาค ก" has whitespace differences.
+                        // Possibility 4: It IS hitting UserRankingStats, and the LIVE frontend uses 'A' or 'value'?
+                        // Wait, I am editing `d:\Project\PreExam`.
+                        // Let's play it safe: Fix key to 'score' AND apply filter.
+                    }));
+
+                // If mapping to 'score', we ensure compatibility.
                 return res.json({ success: true, data });
             }
         }
