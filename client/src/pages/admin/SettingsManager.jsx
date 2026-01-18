@@ -203,7 +203,7 @@ const SettingsManager = () => {
                                 <input
                                     type="text"
                                     required
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                                     value={uploadForm.name}
                                     onChange={e => setUploadForm({ ...uploadForm, name: e.target.value })}
                                 />
@@ -211,7 +211,7 @@ const SettingsManager = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                                 <select
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                                     value={uploadForm.type}
                                     onChange={e => setUploadForm({ ...uploadForm, type: e.target.value })}
                                 >
