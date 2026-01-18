@@ -28,6 +28,15 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
     // Separate refs for separate file pickers
     const imageInputRef = useRef(null);
     const videoInputRef = useRef(null);
+    const textareaRef = useRef(null);
+
+    // Auto-resize textarea when content or background style changes
+    React.useEffect(() => {
+        if (backgroundStyle && textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+        }
+    }, [content, backgroundStyle]);
 
     // Set initial data if provided
     React.useEffect(() => {
@@ -170,6 +179,7 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                         {!isPoll && (
                             <div className={`relative w-full transition-all duration-300 ${backgroundStyle ? `${BACKGROUND_OPTIONS.find(b => b.id === backgroundStyle)?.class} p-8 rounded-lg min-h-[250px] flex items-center justify-center text-center` : ''}`}>
                                 <textarea
+                                    ref={textareaRef}
                                     placeholder={backgroundStyle ? "พิมพ์ข้อความของคุณ..." : "มีอะไรอยากแชร์ไหม?..."}
                                     className={`w-full resize-none border-none focus:ring-0 bg-transparent ${backgroundStyle
                                         ? 'text-white text-2xl font-bold placeholder-white/70 text-center h-auto overflow-hidden'
