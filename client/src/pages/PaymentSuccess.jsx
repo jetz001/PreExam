@@ -14,7 +14,7 @@ const PaymentSuccess = () => {
         const timer = setTimeout(() => {
             // Redirect logic based on context (can be improved by passing state or checking user role)
             // For simplicity, go to dashboard
-            navigate('/dashboard');
+            navigate('/profile');
         }, 5000);
         return () => clearTimeout(timer);
     }, [navigate, sessionId]);
@@ -32,10 +32,10 @@ const PaymentSuccess = () => {
                         Thank you for your purchase. Your transaction has been processed successfully.
                     </p>
                     <button
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => navigate('/profile')}
                         className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition"
                     >
-                        Return to Dashboard
+                        Return to Profile
                     </button>
                     <p className="text-sm text-gray-400 mt-4">Redirecting automatically in 5 seconds...</p>
                 </div>
