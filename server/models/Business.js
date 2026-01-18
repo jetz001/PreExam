@@ -71,8 +71,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.ENUM('unverified', 'pending', 'verified', 'rejected'),
             defaultValue: 'unverified'
         }
-    }, {
-        underscored: true
     });
 
     Business.associate = (models) => {
