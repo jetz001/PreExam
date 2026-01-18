@@ -1,0 +1,36 @@
+
+Table: Businesses
+Columns: ["id","owner_uid","name","tagline","about","category","cover_image","logo_image","is_verified","page_layout","contact_line_id","contact_facebook_url","status","stats","ads_config","rating_avg","rating_count","createdAt","updatedAt","verification_documents","verification_status"]
+
+Table: business_messages
+Columns: ["id","business_id","user_id","sender_type","message","is_read","created_at"]
+
+Table: threads
+Columns: ["id","user_id","title","content","category","views","likes","background_style","created_at","updated_at","deleted_at","image_url","shared_news_id","shared_business_post_id"]
+
+Table: threads
+Columns: ["id","user_id","title","content","category","views","likes","background_style","created_at","updated_at","deleted_at","image_url","shared_news_id","shared_business_post_id"]
+
+Table: Businesses
+Columns: ["id","owner_uid","name","tagline","about","category","cover_image","logo_image","is_verified","page_layout","contact_line_id","contact_facebook_url","status","stats","ads_config","rating_avg","rating_count","createdAt","updatedAt","verification_documents","verification_status"]
+
+Table: business_messages
+Columns: ["id","business_id","user_id","sender_type","message","is_read","created_at"]
+
+Table: threads
+Columns: ["id","user_id","title","content","category","views","likes","background_style","created_at","updated_at","deleted_at","image_url","shared_news_id","shared_business_post_id"]
+
+Table: threads
+Columns: ["id","user_id","title","content","category","views","likes","background_style","created_at","updated_at","deleted_at","image_url","shared_news_id","shared_business_post_id"]
+
+Table: Businesses
+Columns: ["id","owner_uid","name","tagline","about","category","cover_image","logo_image","is_verified","page_layout","contact_line_id","contact_facebook_url","status","stats","ads_config","rating_avg","rating_count","createdAt","updatedAt","verification_documents","verification_status"]
+
+Table: business_messages
+Columns: ["id","business_id","user_id","sender_type","message","is_read","created_at"]
+
+Table: threads
+Columns: ["id","user_id","title","content","category","views","likes","background_style","created_at","updated_at","deleted_at","image_url","shared_news_id","shared_business_post_id"]
+
+Table: threads
+Columns: ["id","user_id","title","content","category","views","likes","background_style","created_at","updated_at","deleted_at","image_url","shared_news_id","shared_business_post_id"]
