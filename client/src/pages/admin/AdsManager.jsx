@@ -634,7 +634,7 @@ const AdRequestsTab = () => {
                         <div className="w-1/4 min-w-[200px] border rounded bg-gray-50 p-2">
                             <div className="text-xs text-gray-400 mb-1">Preview</div>
                             <img
-                                src={ad.images && JSON.parse(ad.images)[0] ? JSON.parse(ad.images)[0] : 'https://via.placeholder.com/300x150'}
+                                src={ad.images && JSON.parse(ad.images)[0] ? JSON.parse(ad.images)[0] : 'https://placehold.co/300x150'}
                                 className="w-full h-32 object-cover rounded mb-2"
                             />
                             <h4 className="font-bold text-sm truncate">{ad.title}</h4>

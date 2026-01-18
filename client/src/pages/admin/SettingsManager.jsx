@@ -249,7 +249,7 @@ const SettingsManager = () => {
                                 src={asset.url}
                                 alt={asset.name}
                                 className="w-full h-full object-cover"
-                                onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Error' }}
+                                onError={(e) => { e.target.src = 'https://placehold.co/150?text=Error' }}
                             />
 
                             {/* Overlay Info */}
