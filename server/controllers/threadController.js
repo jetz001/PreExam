@@ -174,7 +174,7 @@ exports.getThreads = async (req, res) => {
         const threads = await Thread.findAll({
             where: whereClause,
             limit: parseInt(limit),
-            order: [['createdAt', 'DESC']],
+            order: [['created_at', 'DESC']],
             include: [
                 {
                     model: User,
@@ -344,7 +344,7 @@ exports.getUserThreads = async (req, res) => {
         const threads = await Thread.findAll({
             where: { user_id: userId },
             limit: threadLimit,
-            order: [['createdAt', 'DESC']],
+            order: [['created_at', 'DESC']],
             include: [
                 { model: User, attributes: ['id', 'display_name', 'avatar'] },
                 { model: db.Comment, attributes: ['id'] },

@@ -348,7 +348,7 @@ exports.getMessages = async (req, res) => {
                 business_id,
                 user_id: targetUserId
             },
-            order: [['createdAt', 'ASC']],
+            order: [['created_at', 'ASC']],
             include: [
                 { model: User, as: 'User', attributes: ['id', 'display_name', 'avatar'] }
             ]
@@ -376,7 +376,7 @@ exports.getInbox = async (req, res) => {
 
         const messages = await BusinessMessage.findAll({
             where: { business_id: business.id },
-            order: [['createdAt', 'DESC']],
+            order: [['created_at', 'DESC']],
             include: [
                 { model: User, as: 'User', attributes: ['id', 'display_name', 'avatar'] }
             ]
