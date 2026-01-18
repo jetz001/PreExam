@@ -271,7 +271,7 @@ exports.getFollowingFeed = async (req, res) => {
                     attributes: ['id', 'name', 'logo_image']
                 }
             ],
-            order: [['createdAt', 'DESC']],
+            order: [['created_at', 'DESC']],
             limit: 20
         });
 

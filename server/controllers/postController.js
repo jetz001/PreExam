@@ -90,7 +90,7 @@ exports.getPosts = async (req, res) => {
             offset: parseInt(offset),
             order: [
                 ['is_pinned', 'DESC'], // Pinned first
-                ['createdAt', 'DESC']
+                ['created_at', 'DESC']
             ],
             include: [
                 { model: Business, as: 'Business', attributes: ['name', 'logo_image', 'id'] }
