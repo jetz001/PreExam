@@ -302,6 +302,12 @@ exports.getRadarStats = async (req, res) => {
                         // "skillStats[subject].count += 1" means it averaged across *exams*, not questions.
                         // And "skillStats[subject].score += scores[subject]" means it summed the object? {score, total}? That would result in NaN.
 
+                        // Filter out known Categories that are NOT Skills (Fix for "ท้องถิ่น ภาค ก" appearing in Radar)
+                        const EXCLUDED_SKILLS = ['ท้องถิ่น ภาค ก', 'ท้องถิ่น ภาค ข', 'ภาค ก', 'ภาค ข'];
+                        if (EXCLUDED_SKILLS.includes(key)) {
+                            return; // Skip this iteration
+                        }
+
                         // If legacy DB has subject_scores as {score, total}, doing += object is wrong.
                         // Only if legacy DB has subject_scores as "Thai": 5 (int).
 
