@@ -150,13 +150,13 @@ const UserManager = () => {
         queryFn: adminApi.getUsers
     });
 
-    const updateRoleMutation = useMutation({
-        mutationFn: ({ id, role }) => adminApi.updateUserRole(id, role),
+    const updateUserMutation = useMutation({
+        mutationFn: ({ id, data }) => adminApi.updateUser(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries(['users']);
-            toast.success('User role updated');
+            toast.success('User updated successfully');
         },
-        onError: () => toast.error('Failed to update role')
+        onError: () => toast.error('Failed to update user')
     });
 
     const updatePermissionsMutation = useMutation({
@@ -169,38 +169,62 @@ const UserManager = () => {
         onError: () => toast.error('Failed to update permissions')
     });
 
-    const banMutation = useMutation({
-        mutationFn: adminApi.banUser,
-        onSuccess: () => {
-            queryClient.invalidateQueries(['users']);
-            toast.success('User banned');
+    const statusMutation = useMutation({
+        mutationFn: ({ id, status }) => adminApi.updateUserStatus(id, status),
+        onMutate: async ({ id, status }) => {
+            await queryClient.cancelQueries(['users']);
+            const previousUsers = queryClient.getQueryData(['users']);
+            queryClient.setQueryData(['users'], (old) =>
+                old ? old.map(u => u.id === id ? { ...u, status } : u) : []
+            );
+            return { previousUsers };
         },
-        onError: () => toast.error('Failed to ban user')
+        onError: (err, variables, context) => {
+            queryClient.setQueryData(['users'], context.previousUsers);
+            toast.error(`Failed to update status: ${err.response?.data?.message || err.message}`);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries(['users']);
+        },
+        onSuccess: (data, variables) => {
+            toast.success(`User ${variables.status === 'banned' ? 'banned' : 'activated'} successfully`);
+        }
     });
 
     const handleUpgrade = (id) => {
         if (window.confirm('Manually upgrade this user to Premium?')) {
-            updateRoleMutation.mutate({ id, role: 'premium' });
+            const oneMonthFromNow = new Date();
+            oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+
+            updateUserMutation.mutate({
+                id,
+                data: {
+                    plan_type: 'premium',
+                    premium_start_date: new Date(),
+                    premium_expiry: oneMonthFromNow
+                }
+            });
         }
     };
 
-    const handleBan = (id) => {
-        if (window.confirm('Are you sure you want to ban this user?')) {
-            banMutation.mutate(id);
+    const handleStatusChange = (id, currentStatus) => {
+        const newStatus = currentStatus === 'banned' ? 'active' : 'banned';
+        const action = newStatus === 'banned' ? 'Ban' : 'Activate';
+
+        if (window.confirm(`Are you sure you want to ${action} this user?`)) {
+            statusMutation.mutate({ id, status: newStatus });
         }
     };
 
     const handleDemote = (id) => {
         if (window.confirm('Are you sure you want to remove Admin privileges from this user?')) {
-            updateRoleMutation.mutate({ id, role: 'user' });
-            // Also clear permissions? Ideally backend handles this, but we can leave permissions object as is or clear it. 
-            // For now just changing role is enough as role check comes first.
+            updateUserMutation.mutate({ id, data: { role: 'user' } });
         }
     };
 
     const handlePromoteAdmin = (id) => {
         if (window.confirm('Promote this user to Admin?')) {
-            updateRoleMutation.mutate({ id, role: 'admin' });
+            updateUserMutation.mutate({ id, data: { role: 'admin' } });
             setIsAddAdminModalOpen(false);
         }
     };
@@ -388,7 +412,7 @@ const UserManager = () => {
                                                         </span>
                                                     )}
                                                 </div>
-                                            ) : user.role === 'premium' ? (
+                                            ) : user.plan_type === 'premium' ? (
                                                 <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center w-fit">
                                                     <CheckCircle size={12} className="mr-1" /> Premium
                                                 </span>
@@ -425,7 +449,7 @@ const UserManager = () => {
                                                     </button>
                                                 </>
                                             )}
-                                            {user.role !== 'admin' && user.role !== 'premium' && user.role !== 'sponsor' && (
+                                            {user.role !== 'admin' && user.plan_type !== 'premium' && user.role !== 'sponsor' && (
                                                 <button
                                                     onClick={() => handleUpgrade(user.id)}
                                                     className="text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded transition-colors text-xs font-medium border border-indigo-200"
@@ -433,14 +457,19 @@ const UserManager = () => {
                                                     Upgrade to Premium
                                                 </button>
                                             )}
-                                            {user.status !== 'banned' && (
-                                                <button
-                                                    onClick={() => handleBan(user.id)}
-                                                    className="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded transition-colors text-xs font-medium border border-red-200 flex items-center inline-flex"
-                                                >
-                                                    <Ban size={12} className="mr-1" /> ระงับใช้งาน
-                                                </button>
-                                            )}
+
+                                            <button
+                                                onClick={() => handleStatusChange(user.id, user.status)}
+                                                className={`${user.status === 'banned'
+                                                    ? 'text-green-600 hover:bg-green-50 border-green-200'
+                                                    : 'text-red-500 hover:bg-red-50 border-red-200'} px-3 py-1.5 rounded transition-colors text-xs font-medium border flex items-center inline-flex`}
+                                            >
+                                                {user.status === 'banned' ? (
+                                                    <><CheckCircle size={12} className="mr-1" /> ปลดแบน</>
+                                                ) : (
+                                                    <><Ban size={12} className="mr-1" /> ระงับใช้งาน</>
+                                                )}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))

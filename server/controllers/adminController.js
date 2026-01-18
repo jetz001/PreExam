@@ -193,6 +193,8 @@ exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const { role, plan_type, status } = req.body;
+        console.log(`[Admin] Update User ${id}:`, req.body);
+
         const user = await User.findByPk(id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -201,9 +203,32 @@ exports.updateUser = async (req, res) => {
         if (status) user.status = status;
 
         await user.save();
+        console.log(`[Admin] User ${id} updated. New Status: ${user.status}, Role: ${user.role}`);
+
         res.json({ message: 'User updated successfully', user });
     } catch (error) {
+        console.error("Error updating user:", error);
         res.status(500).json({ message: 'Error updating user', error });
+    }
+};
+
+exports.updateUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        console.log(`[Admin] Update Status User ${id}:`, status);
+
+        const user = await User.findByPk(id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        user.status = status;
+        await user.save();
+
+        console.log(`[Admin] User ${id} status changed to: ${user.status}`);
+        res.json({ message: 'User status updated successfully', user });
+    } catch (error) {
+        console.error("Error updating user status:", error);
+        res.status(500).json({ message: 'Error updating user status', error });
     }
 };
 

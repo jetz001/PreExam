@@ -13,6 +13,7 @@ router.get('/stats', adminController.getDashboardStats);
 // User Management
 router.get('/users', adminController.getUsers);
 router.put('/users/:id', adminController.updateUser);
+router.put('/users/:id/status', adminController.updateUserStatus);
 router.put('/users/:id/permissions', adminController.updateUserPermissions);
 
 // Payment Management

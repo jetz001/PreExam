@@ -62,6 +62,10 @@ const adminApi = {
         const response = await api.get('/admin/users');
         return response.data;
     },
+    updateUser: async (id, data) => {
+        const response = await api.put(`/admin/users/${id}`, data);
+        return response.data;
+    },
     updateUserRole: async (id, role) => {
         const response = await api.put(`/admin/users/${id}`, { role });
         return response.data;
@@ -70,9 +74,8 @@ const adminApi = {
         const response = await api.put(`/admin/users/${id}/permissions`, { permissions });
         return response.data;
     },
-    banUser: async (id) => {
-        // Warning: banUser route might not exist in adminRoutes yet, assuming updateUser status
-        const response = await api.put(`/admin/users/${id}`, { status: 'banned' });
+    updateUserStatus: async (id, status) => {
+        const response = await api.put(`/admin/users/${id}/status`, { status });
         return response.data;
     },
 
