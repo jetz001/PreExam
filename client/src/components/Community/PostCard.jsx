@@ -35,6 +35,12 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
 
     const getImageUrl = (path) => {
         if (!path) return `https://ui-avatars.com/api/?name=User&background=random`;
+
+        // Fix: Detect and strip localhost URLs to ensure relative path usage in production (prevents Mixed Content)
+        if (path && typeof path === 'string' && path.includes('localhost:3000')) {
+            path = path.replace('http://localhost:3000', '').replace('https://localhost:3000', '');
+        }
+
         if (path.startsWith('http') || path.startsWith('blob:')) return path;
 
         // Use relative path which works for both dev (proxy) and prod
