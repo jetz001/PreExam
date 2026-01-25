@@ -141,7 +141,7 @@ app.get('/community', async (req, res) => {
             const title = thread.title;
             const description = thread.content ? thread.content.substring(0, 150) + '...' : 'PreExam Community Thread';
             // Use thread image, or a default one
-            let imageUrl = "https://preexam.online/logo_new.png"; // Default
+            let imageUrl = "https://preexam.online/favicon.png"; // Default
             if (thread.image_url) {
                 // If it's a relative path, make it absolute. 
                 // Assumes uploads are served at /uploads
