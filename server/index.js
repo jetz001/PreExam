@@ -111,6 +111,86 @@ app.get('/api/health', async (req, res) => {
 // Serve Request static build
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
+// Dynamic OG Image Generator
+const sharp = require('sharp');
+app.get('/api/og/thread/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const thread = await Thread.findByPk(id);
+
+        if (!thread) {
+            return res.status(404).send('Not proper thread');
+        }
+
+        // Determine background image
+        // We need absolute path to the static file on server
+        const bgStyle = thread.background_style || 'c1'; // Default to c1
+        const bgPath = path.join(__dirname, `../client/dist/og/${bgStyle}.png`);
+
+        // Check if bg file exists, fallback if not
+        if (!fs.existsSync(bgPath)) {
+            // Fallback to favicon
+            return res.redirect('https://preexam.online/favicon.png');
+        }
+
+        // Prepare Text SVG
+        // Wrap text logic (simple implementation)
+        const title = thread.title || "PreExam Community";
+        // Simple SVG text wrapping
+        // Width 1200, padding 100?
+        // Let's create an SVG overlay
+        const width = 1200;
+        const height = 630;
+
+        // Escape XML chars
+        const escapeXml = (unsafe) => {
+            return unsafe.replace(/[<>&'"]/g, c => {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        };
+
+        const safeTitle = escapeXml(title);
+
+        // Basic word wrap logic for SVG is hard without measuring text.
+        // We will just assume 40 chars per line for font size 60?
+        // Or cleaner: Use a foreignObject with HTML/CSS (Sharp supports this sometimes but depends on libs).
+        // Safest pure SVG approach:
+        const svgText = `
+        <svg width="${width}" height="${height}">
+            <style>
+                .title { fill: white; font-size: 72px; font-family: sans-serif; font-weight: bold; }
+            </style>
+            <text x="50%" y="40%" text-anchor="middle" dominant-baseline="middle" class="title">
+                ${safeTitle.length > 50 ? safeTitle.substring(0, 47) + '...' : safeTitle}
+            </text>
+            <text x="50%" y="85%" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="30" font-family="sans-serif">
+                PREEXAM.ONLINE
+            </text>
+        </svg>
+        `;
+
+        const buffer = await sharp(bgPath)
+            .composite([
+                { input: Buffer.from(svgText), top: 0, left: 0 }
+            ])
+            .toFormat('png')
+            .toBuffer();
+
+        res.set('Content-Type', 'image/png');
+        res.send(buffer);
+
+    } catch (error) {
+        console.error('OG Image Generation Error:', error);
+        res.status(500).send('Error generating image');
+    }
+});
+
 // Handle Facebook Crawler / Open Graph for Threads
 app.get('/community', async (req, res) => {
     const threadId = req.query.threadId; // e.g. /community?threadId=123
@@ -143,15 +223,6 @@ app.get('/community', async (req, res) => {
             // Use thread image, or a default one
             let imageUrl = "https://preexam.online/favicon.png"; // Default fallback
 
-            // Map keys to local static files
-            const BG_IMAGES = {
-                'c1': 'og/c1.png',
-                'c2': 'og/c2.png',
-                'c3': 'og/c3.png',
-                'c4': 'og/c4.png',
-                'c5': 'og/c5.png'
-            };
-
             if (thread.image_url) {
                 // If it's a relative path, make it absolute. 
                 if (!thread.image_url.startsWith('http')) {
@@ -159,9 +230,9 @@ app.get('/community', async (req, res) => {
                 } else {
                     imageUrl = thread.image_url;
                 }
-            } else if (thread.background_style && BG_IMAGES[thread.background_style]) {
-                // Use local static image
-                imageUrl = `https://preexam.online/${BG_IMAGES[thread.background_style]}`;
+            } else if (thread.background_style) {
+                // Use Dynamic Server-Generated Image for gradients
+                imageUrl = `https://preexam.online/api/og/thread/${thread.id}`;
             } else if (thread.SharedNews && thread.SharedNews.image_url) {
                 imageUrl = thread.SharedNews.image_url;
             }
