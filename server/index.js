@@ -143,12 +143,13 @@ app.get('/community', async (req, res) => {
             // Use thread image, or a default one
             let imageUrl = "https://preexam.online/favicon.png"; // Default fallback
 
-            const BG_COLORS = {
-                'c1': 'ec4899', // Pink-500 (Gradient start/mid approx)
-                'c2': 'f97316', // Orange-500
-                'c3': '06b6d4', // Cyan-500
-                'c4': '10b981', // Emerald-500
-                'c5': '1e293b'  // Slate-800
+            // Map keys to local static files
+            const BG_IMAGES = {
+                'c1': 'og/c1.png',
+                'c2': 'og/c2.png',
+                'c3': 'og/c3.png',
+                'c4': 'og/c4.png',
+                'c5': 'og/c5.png'
             };
 
             if (thread.image_url) {
@@ -158,13 +159,9 @@ app.get('/community', async (req, res) => {
                 } else {
                     imageUrl = thread.image_url;
                 }
-            } else if (thread.background_style && BG_COLORS[thread.background_style]) {
-                // Generate a dynamic colored placeholder for gradient posts
-                // Using placehold.co which supports custom colors and text
-                // Note: Thai text might not render perfectly, so we use a generic "Topic" or try the title encoded?
-                // Text encoding can be tricky. Let's try simple text first to ensure it works.
-                const color = BG_COLORS[thread.background_style];
-                imageUrl = `https://placehold.co/1200x630/${color}/ffffff/png?text=PreExam+Topic`;
+            } else if (thread.background_style && BG_IMAGES[thread.background_style]) {
+                // Use local static image
+                imageUrl = `https://preexam.online/${BG_IMAGES[thread.background_style]}`;
             } else if (thread.SharedNews && thread.SharedNews.image_url) {
                 imageUrl = thread.SharedNews.image_url;
             }
