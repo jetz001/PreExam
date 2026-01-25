@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { MessageCircle, Heart, Share2, MoreVertical, Trash2, Flag, PenSquare, Bookmark } from 'lucide-react';
+import { MessageCircle, Heart, Share2, MoreVertical, Trash2, Flag, PenSquare, Bookmark, Facebook } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import communityService from '../../services/communityService';
@@ -162,6 +162,14 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
         });
     };
 
+    const handleFacebookShare = (e) => {
+        e.stopPropagation();
+        const shareUrl = `https://preexam.online/community?threadId=${thread.id}`;
+        const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+        window.open(facebookUrl, '_blank', 'width=600,height=400');
+        setShowMenu(false);
+    };
+
     const isOwner = user && thread.user_id === user.id;
 
     return (
@@ -226,6 +234,12 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
                                     <Flag size={16} className="mr-2" /> รายงานเนื้อหา
                                 </button>
                             )}
+                            <button
+                                onClick={handleFacebookShare}
+                                className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center"
+                            >
+                                <Facebook size={16} className="mr-2" /> แชร์ไปยัง Facebook
+                            </button>
                         </div>
                     )}
                 </div>

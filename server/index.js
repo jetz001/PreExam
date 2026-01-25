@@ -3,7 +3,8 @@ const cors = require('cors');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 const path = require('path');
-const { sequelize } = require('./models');
+const { sequelize, Thread, User } = require('./models');
+const fs = require('fs');
 
 // Explicitly load .env from current directory
 const result = dotenv.config({ path: path.join(__dirname, '.env') });
@@ -109,6 +110,71 @@ app.get('/api/health', async (req, res) => {
 
 // Serve Request static build
 app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// Handle Facebook Crawler / Open Graph for Threads
+app.get('/community', async (req, res) => {
+    const threadId = req.query.threadId; // e.g. /community?threadId=123
+
+    // If no threadId, just serve index.html (client-side routing handles it)
+    if (!threadId || isNaN(threadId)) {
+        return res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+    }
+
+    try {
+        const thread = await Thread.findByPk(threadId, {
+            include: [{ model: User, attributes: ['display_name'] }]
+        });
+
+        if (!thread) {
+            return res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+        }
+
+        // Read index.html
+        const indexPath = path.join(__dirname, '../client/dist', 'index.html');
+        fs.readFile(indexPath, 'utf8', (err, htmlData) => {
+            if (err) {
+                console.error('Error reading index.html', err);
+                return res.status(500).send('Error loading page');
+            }
+
+            // Construct OG Tags
+            const title = thread.title;
+            const description = thread.content ? thread.content.substring(0, 150) + '...' : 'PreExam Community Thread';
+            // Use thread image, or a default one
+            let imageUrl = "https://preexam.online/logo_new.png"; // Default
+            if (thread.image_url) {
+                // If it's a relative path, make it absolute. 
+                // Assumes uploads are served at /uploads
+                if (!thread.image_url.startsWith('http')) {
+                    imageUrl = `https://preexam.online${thread.image_url}`;
+                } else {
+                    imageUrl = thread.image_url;
+                }
+            } else if (thread.SharedNews && thread.SharedNews.image_url) {
+                imageUrl = thread.SharedNews.image_url;
+            }
+
+            const url = `https://preexam.online/community?threadId=${thread.id}`;
+
+            // Inject into <head>
+            // We replace the placeholder or append to <head>
+            // Assuming index.html has <title>...</title> or just append before </head>
+            const ogTags = `
+                <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
+                <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />
+                <meta property="og:image" content="${imageUrl}" />
+                <meta property="og:url" content="${url}" />
+                <meta property="og:type" content="article" />
+            `;
+
+            const modifiedHtml = htmlData.replace('</head>', `${ogTags}\n</head>`);
+            res.send(modifiedHtml);
+        });
+    } catch (error) {
+        console.error('Error fetching thread for OG tags:', error);
+        res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+    }
+});
 
 // Handle React Routing, return all requests to React app
 app.get(/.*/, (req, res) => {
