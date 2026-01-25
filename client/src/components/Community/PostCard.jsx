@@ -13,6 +13,14 @@ import RichText from './RichText';
 import FriendButton from './FriendButton';
 import toast from 'react-hot-toast';
 
+const BACKGROUND_STYLES = {
+    'c1': 'bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500',
+    'c2': 'bg-gradient-to-br from-red-500 via-orange-500 to-yellow-500',
+    'c3': 'bg-gradient-to-br from-blue-400 via-cyan-500 to-teal-400',
+    'c4': 'bg-gradient-to-br from-green-400 to-emerald-600',
+    'c5': 'bg-gradient-to-br from-slate-900 to-slate-700'
+};
+
 const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
     const [likes, setLikes] = useState(thread.likes);
     const [isLiked, setIsLiked] = useState(thread.isLiked || false);
@@ -254,9 +262,16 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
             {/* Content */}
             <div className="px-4 pb-2">
                 <h2 className="text-xl font-bold text-gray-800 mb-2">{thread.title}</h2>
-                <ReadMoreText content={thread.content} forceExpanded={isDetail} className="text-gray-600 leading-relaxed">
-                    <RichText content={thread.content} />
-                </ReadMoreText>
+
+                {thread.background_style && BACKGROUND_STYLES[thread.background_style] ? (
+                    <div className={`${BACKGROUND_STYLES[thread.background_style]} p-8 rounded-lg min-h-[250px] flex items-center justify-center text-center shadow-inner mb-3`}>
+                        <p className="text-white text-xl font-bold whitespace-pre-line break-words">{thread.content}</p>
+                    </div>
+                ) : (
+                    <ReadMoreText content={thread.content} forceExpanded={isDetail} className="text-gray-600 leading-relaxed">
+                        <RichText content={thread.content} />
+                    </ReadMoreText>
+                )}
             </div>
 
             {/* Image */}
