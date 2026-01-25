@@ -164,7 +164,7 @@ app.get('/api/og/thread/:id', async (req, res) => {
         const svgText = `
         <svg width="${width}" height="${height}">
             <style>
-                .title { fill: white; font-size: 72px; font-family: sans-serif; font-weight: bold; }
+                .title { fill: white; font-size: 72px; font-family: "Noto Sans Thai", "Waree", sans-serif; font-weight: bold; }
             </style>
             <text x="50%" y="40%" text-anchor="middle" dominant-baseline="middle" class="title">
                 ${safeTitle.length > 50 ? safeTitle.substring(0, 47) + '...' : safeTitle}
