@@ -8,7 +8,7 @@ import CommentSection from './CommentSection';
 const PostDetailModal = ({ thread: initialThread, onClose }) => {
 
     // Fetch fresh details (likes, views, isLiked)
-    const { data: thread } = useQuery({
+    const { data: thread, isLoading } = useQuery({
         queryKey: ['thread', initialThread.id],
         queryFn: async () => {
             const token = localStorage.getItem('token');
@@ -17,8 +17,16 @@ const PostDetailModal = ({ thread: initialThread, onClose }) => {
             });
             return res.data;
         },
-        initialData: initialThread // Show stale data while loading fresh
+        initialData: (initialThread && initialThread.User) ? initialThread : undefined
     });
+
+    if (isLoading) {
+        return (
+            <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center backdrop-blur-sm">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+            </div>
+        );
+    }
 
     if (!thread) return null;
 
