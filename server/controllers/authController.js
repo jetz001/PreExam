@@ -172,14 +172,15 @@ exports.facebookLogin = async (req, res) => {
         const { accessToken, userID } = req.body;
 
         // Verify token with Facebook
-        const url = `https://graph.facebook.com/v19.0/me?access_token=${accessToken}&fields=id,name,email`;
+        const url = `https://graph.facebook.com/v19.0/me?access_token=${accessToken}&fields=id,name,email,picture.type(large)`;
         const { data } = await axios.get(url);
 
         if (data.id !== userID) {
             return res.status(400).json({ success: false, message: 'Invalid Facebook token' });
         }
 
-        const { email, name, id: facebookId } = data;
+        const { email, name, id: facebookId, picture } = data;
+        const avatarUrl = picture?.data?.url;
 
         let user = await User.findOne({ where: { facebook_id: facebookId } });
 
@@ -189,6 +190,7 @@ exports.facebookLogin = async (req, res) => {
                 user = await User.findOne({ where: { email } });
                 if (user) {
                     user.facebook_id = facebookId;
+                    if (avatarUrl) user.avatar = avatarUrl; // Update avatar if linking
                     await user.save();
                 }
             }
@@ -199,9 +201,16 @@ exports.facebookLogin = async (req, res) => {
                     email: email || `${facebookId}@facebook.com`, // Fallback email
                     display_name: name,
                     facebook_id: facebookId,
+                    avatar: avatarUrl, // Save avatar
                     role: 'user',
                     password_hash: null,
                 });
+            }
+        } else {
+            // Update existing user's avatar if they log in again
+            if (avatarUrl && user.avatar !== avatarUrl) {
+                user.avatar = avatarUrl;
+                await user.save();
             }
         }
 
