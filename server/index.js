@@ -231,8 +231,9 @@ app.get('/community', async (req, res) => {
                     imageUrl = thread.image_url;
                 }
             } else if (thread.background_style) {
-                // Use Dynamic Server-Generated Image for gradients
-                imageUrl = `https://preexam.online/api/og/thread/${thread.id}`;
+                // Use Static Image with Background Color
+                const style = thread.background_style || 'c1';
+                imageUrl = `https://preexam.online/og/${style}.png`;
             } else if (thread.SharedNews && thread.SharedNews.image_url) {
                 imageUrl = thread.SharedNews.image_url;
             }
