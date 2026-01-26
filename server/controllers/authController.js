@@ -125,7 +125,7 @@ exports.googleLogin = async (req, res) => {
             idToken: token,
             audience: process.env.GOOGLE_CLIENT_ID,
         });
-        const { email, name, sub: googleId } = ticket.getPayload();
+        const { email, name, sub: googleId, picture } = ticket.getPayload();
 
         let user = await User.findOne({ where: { google_id: googleId } });
 
@@ -135,6 +135,7 @@ exports.googleLogin = async (req, res) => {
             if (user) {
                 // Link Google ID to existing user
                 user.google_id = googleId;
+                if (picture) user.avatar = picture; // Update avatar if linking
                 await user.save();
             } else {
                 // Create new user
@@ -142,9 +143,16 @@ exports.googleLogin = async (req, res) => {
                     email,
                     display_name: name,
                     google_id: googleId,
+                    avatar: picture, // Save avatar
                     role: 'user',
                     password_hash: null, // No password for social login
                 });
+            }
+        } else {
+            // Update existing user's avatar if they log in again
+            if (picture && user.avatar !== picture) {
+                user.avatar = picture;
+                await user.save();
             }
         }
 
