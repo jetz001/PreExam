@@ -377,14 +377,22 @@ const UserManager = () => {
                                     <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-slate-500 mr-3 ${activeTab === 'sponsors' ? 'bg-indigo-100 text-indigo-600' :
-                                                    activeTab === 'admins' ? 'bg-purple-100 text-purple-600' :
-                                                        activeTab === 'guests' ? 'bg-gray-100 text-gray-500' : 'bg-slate-200'
-                                                    }`}>
-                                                    {activeTab === 'sponsors' ? <Briefcase size={16} /> :
-                                                        activeTab === 'admins' ? <Shield size={16} /> :
-                                                            activeTab === 'guests' ? <Smartphone size={16} /> : <User size={16} />}
-                                                </div>
+                                                {user.avatar ? (
+                                                    <img
+                                                        src={user.avatar}
+                                                        alt={user.display_name}
+                                                        className="w-8 h-8 rounded-full object-cover mr-3 shadow-sm border border-slate-200"
+                                                    />
+                                                ) : (
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-slate-500 mr-3 ${activeTab === 'sponsors' ? 'bg-indigo-100 text-indigo-600' :
+                                                        activeTab === 'admins' ? 'bg-purple-100 text-purple-600' :
+                                                            activeTab === 'guests' ? 'bg-gray-100 text-gray-500' : 'bg-slate-200'
+                                                        }`}>
+                                                        {activeTab === 'sponsors' ? <Briefcase size={16} /> :
+                                                            activeTab === 'admins' ? <Shield size={16} /> :
+                                                                activeTab === 'guests' ? <Smartphone size={16} /> : <User size={16} />}
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <p className="font-medium text-slate-800">
                                                         {activeTab === 'sponsors'

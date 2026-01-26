@@ -181,7 +181,7 @@ exports.getDashboardStats = async (req, res) => {
 exports.getUsers = async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'email', 'display_name', 'business_name', 'role', 'plan_type', 'status', 'created_at', 'admin_permissions']
+            attributes: ['id', 'email', 'display_name', 'business_name', 'role', 'plan_type', 'status', 'created_at', 'admin_permissions', 'avatar']
         });
         res.json(users);
     } catch (error) {
