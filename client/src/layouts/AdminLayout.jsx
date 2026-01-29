@@ -17,6 +17,7 @@ import {
     LifeBuoy,
     Shield
 } from 'lucide-react';
+import PageLoadTimer from '../components/common/PageLoadTimer';
 
 import { Toaster } from 'react-hot-toast';
 
@@ -124,6 +125,7 @@ const AdminLayout = () => {
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>
+                    <PageLoadTimer />
                 </main>
             </div>
         </div>

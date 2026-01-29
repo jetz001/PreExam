@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, List, LogOut, Wallet, Building2, User, Settings, ArrowLeft, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import PageLoadTimer from '../components/common/PageLoadTimer';
 
 import businessApi from '../services/businessApi';
 
@@ -127,8 +128,8 @@ const BusinessLayout = () => {
                 {/* Broadcast Banner */}
                 {systemSettings?.announcement_active && systemSettings?.announcement_text && (
                     <div className={`w-full py-2 px-6 text-sm font-medium flex items-center justify-center gap-2 ${systemSettings.announcement_type === 'warning' ? 'bg-amber-100 text-amber-800 border-b border-amber-200' :
-                            systemSettings.announcement_type === 'success' ? 'bg-green-100 text-green-800 border-b border-green-200' :
-                                'bg-blue-600 text-white shadow-md'
+                        systemSettings.announcement_type === 'success' ? 'bg-green-100 text-green-800 border-b border-green-200' :
+                            'bg-blue-600 text-white shadow-md'
                         }`}>
                         <span className="flex items-center gap-2">
                             📣 {systemSettings.announcement_text}
@@ -140,6 +141,9 @@ const BusinessLayout = () => {
                 {/* Content Body */}
                 <div className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6 md:p-8">
                     <Outlet />
+                    <div className="mt-8 border-t border-slate-200 pt-4">
+                        <PageLoadTimer />
+                    </div>
                 </div>
             </main>
         </div>

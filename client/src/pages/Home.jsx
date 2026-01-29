@@ -48,6 +48,7 @@ const Home = () => {
     const [newsItems, setNewsItems] = React.useState([]);
     const [isLoadingNews, setIsLoadingNews] = React.useState(true);
 
+
     React.useEffect(() => {
         const fetchNews = async () => {
             const publicService = (await import('../services/publicService')).default;
@@ -336,6 +337,8 @@ const Home = () => {
                     </section>
                 </>
             )}
+
+
         </div>
     );
 };

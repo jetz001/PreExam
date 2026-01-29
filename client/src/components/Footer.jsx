@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import PageLoadTimer from './common/PageLoadTimer';
 
 const Footer = () => {
     return (
@@ -10,6 +11,10 @@ const Footer = () => {
                         <span className="text-2xl font-bold text-primary">PreExam</span>
                         <p className="mt-4 text-sm text-gray-500">
                             ศูนย์กลางการซ้อมทำข้อสอบสำหรับเตรียมสอบราชการที่ครบวงจรที่สุด
+                        </p>
+                        <p className="mt-2 text-xs text-gray-400">
+                            {/* Display the version number defined in vite.config.js */}
+                            PreExam v{__APP_VERSION__}
                         </p>
                     </div>
                     <div>
@@ -40,6 +45,7 @@ const Footer = () => {
                     <p className="text-base text-gray-400 text-center">
                         &copy; 2024 PreExam. All rights reserved.
                     </p>
+                    <PageLoadTimer />
                 </div>
             </div>
         </footer>
