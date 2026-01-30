@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import adminService from '../../services/adminService';
 import examService from '../../services/examService';
 import { Edit, Trash2, Plus, Search, X, Layers } from 'lucide-react';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import BulkQuestionModal from './BulkQuestionModal';
 
 const QuestionManager = () => {
@@ -178,7 +180,7 @@ const QuestionManager = () => {
                         ) : filteredQuestions.map((q) => (
                             <tr key={q.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{q.id}</td>
-                                <td className="px-6 py-4 text-sm text-gray-900 max-w-md truncate">{q.question_text}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 max-w-md truncate" dangerouslySetInnerHTML={{ __html: q.question_text.replace(/<[^>]+>/g, '') }}></td>
                                 <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">{q.skill || '-'}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <div className="flex flex-wrap gap-1">
@@ -216,15 +218,24 @@ const QuestionManager = () => {
                         <h3 className="text-xl font-bold mb-4">{currentQuestion ? 'แก้ไขข้อสอบ' : 'เพิ่มข้อสอบใหม่'}</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">โจทย์</label>
-                                <textarea
-                                    name="question_text"
-                                    value={formData.question_text}
-                                    onChange={handleChange}
-                                    required
-                                    rows="3"
-                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-primary focus:border-primary"
-                                />
+                                <label className="block text-sm font-medium text-gray-700 mb-1">โจทย์</label>
+                                <div className="bg-white">
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={formData.question_text}
+                                        onChange={(content) => setFormData(prev => ({ ...prev, question_text: content }))}
+                                        modules={{
+                                            toolbar: [
+                                                [{ 'header': [1, 2, false] }],
+                                                ['bold', 'italic', 'underline', 'strike'],
+                                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                                ['link', 'image'],
+                                                ['clean']
+                                            ],
+                                        }}
+                                        className="h-40 mb-12"
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

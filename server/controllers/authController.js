@@ -28,6 +28,7 @@ exports.register = async (req, res) => {
         const safeRole = (role === 'sponsor') ? 'sponsor' : 'user';
 
         // Create user
+        const locationData = getLocationFromRequest(req); // Capture location
         const user = await User.create({
             email,
             password_hash,
@@ -35,6 +36,7 @@ exports.register = async (req, res) => {
             role: safeRole,
             business_name: safeRole === 'sponsor' ? business_name : null,
             tax_id: safeRole === 'sponsor' ? tax_id : null,
+            ...locationData // Save location
         });
 
         const token = generateToken(user);
@@ -76,6 +78,7 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const locationData = getLocationFromRequest(req); // Capture location
 
         // Check user
         const user = await User.findOne({ where: { email } });
@@ -92,6 +95,9 @@ exports.login = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ success: false, message: 'Incorrect password' });
         }
+
+        // Update location on successful login
+        await user.update(locationData);
 
         const token = generateToken(user);
 
@@ -120,6 +126,8 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 exports.googleLogin = async (req, res) => {
     try {
         const { token } = req.body;
+        const locationData = getLocationFromRequest(req); // Capture location
+
         console.log('Google Login Attempt with token:', token ? token.substring(0, 20) + '...' : 'No Token');
         const ticket = await client.verifyIdToken({
             idToken: token,
@@ -136,7 +144,7 @@ exports.googleLogin = async (req, res) => {
                 // Link Google ID to existing user
                 user.google_id = googleId;
                 if (picture) user.avatar = picture; // Update avatar if linking
-                await user.save();
+                await user.update({ ...locationData }); // Update location
             } else {
                 // Create new user
                 user = await User.create({
@@ -146,14 +154,16 @@ exports.googleLogin = async (req, res) => {
                     avatar: picture, // Save avatar
                     role: 'user',
                     password_hash: null, // No password for social login
+                    ...locationData // Save location
                 });
             }
         } else {
-            // Update existing user's avatar if they log in again
+            // Update existing user's avatar and location if they log in again
+            const updates = { ...locationData };
             if (picture && user.avatar !== picture) {
-                user.avatar = picture;
-                await user.save();
+                updates.avatar = picture;
             }
+            await user.update(updates);
         }
 
         const jwtToken = generateToken(user);
@@ -175,9 +185,22 @@ exports.googleLogin = async (req, res) => {
     }
 };
 
+// Helper to get location
+const getLocationFromRequest = (req) => {
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.ip;
+    const geo = geoip.lookup(ip);
+    return geo ? {
+        ip_address: ip,
+        country: geo.country,
+        region: geo.region,
+        city: geo.city
+    } : { ip_address: ip };
+};
+
 exports.facebookLogin = async (req, res) => {
     try {
         const { accessToken, userID } = req.body;
+        const locationData = getLocationFromRequest(req); // Capture location
 
         // Verify token with Facebook
         const url = `https://graph.facebook.com/v19.0/me?access_token=${accessToken}&fields=id,name,email,picture.type(large)`;
@@ -199,7 +222,8 @@ exports.facebookLogin = async (req, res) => {
                 if (user) {
                     user.facebook_id = facebookId;
                     if (avatarUrl) user.avatar = avatarUrl; // Update avatar if linking
-                    await user.save();
+                    await user.update({ ...locationData }); // Update location
+                    // await user.save(); // Removed redundant save
                 }
             }
 
@@ -212,14 +236,16 @@ exports.facebookLogin = async (req, res) => {
                     avatar: avatarUrl, // Save avatar
                     role: 'user',
                     password_hash: null,
+                    ...locationData // Save location
                 });
             }
         } else {
-            // Update existing user's avatar if they log in again
+            // Update existing user's avatar and location if they log in again
+            const updates = { ...locationData };
             if (avatarUrl && user.avatar !== avatarUrl) {
-                user.avatar = avatarUrl;
-                await user.save();
+                updates.avatar = avatarUrl;
             }
+            await user.update(updates);
         }
 
         const jwtToken = generateToken(user);
@@ -241,6 +267,8 @@ exports.facebookLogin = async (req, res) => {
     }
 };
 
+const geoip = require('geoip-lite'); // Import for IP Geolocation
+
 exports.guestLogin = async (req, res) => {
     try {
         const { deviceId } = req.body;
@@ -250,6 +278,20 @@ exports.guestLogin = async (req, res) => {
         }
 
         const email = `guest_${deviceId}@preexam.com`;
+
+        // Get IP from request (handle proxy if behind Nginx/Cloudflare)
+        // รับค่า IP จาก Header หรือ Connection
+        const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.ip;
+
+        // Lookup location from IP
+        // ค้นหาตำแหน่งจาก IP
+        const geo = geoip.lookup(ip); // Returns object or null
+        const locationData = geo ? {
+            ip_address: ip,
+            country: geo.country, // e.g. 'TH'
+            region: geo.region,   // e.g. '10' (Bangkok)
+            city: geo.city        // e.g. 'Bangkok'
+        } : { ip_address: ip };
 
         // Robust Find or Create Logic
         let user = await User.findOne({ where: { email } });
@@ -262,8 +304,12 @@ exports.guestLogin = async (req, res) => {
                 display_name: `Guest-${shortId}`,
                 role: 'user',
                 password_hash: null,
-                plan_type: 'free'
+                plan_type: 'free',
+                ...locationData // Save location data (บันทึกข้อมูลตำแหน่ง)
             });
+        } else {
+            // Update location for returning guest (อัปเดตตำแหน่งถ้ากลับมาใช้งานใหม่)
+            await user.update(locationData);
         }
 
         const token = generateToken(user);

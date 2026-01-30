@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Flag, ChevronLeft, ChevronRight, AlertTriangle, Bookmark, Share2 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { useNavigate } from 'react-router-dom';
 import ReportModal from './exam/ReportModal';
 import AmbiencePlayer from './exam/AmbiencePlayer';
@@ -118,12 +119,13 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                 <div className="flex-1 overflow-y-auto p-6">
                     <div className="max-w-3xl mx-auto">
                         <div className="bg-white p-8 rounded-lg shadow mb-6">
-                            <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-xl text-gray-900 font-medium" style={{ fontSize: `${1.25 * fontSizeScale}rem`, lineHeight: '1.5' }}>
-                                    <span className="font-bold mr-2">{currentIndex + 1}.</span>
-                                    {currentQuestion.question_text} <span className="text-gray-400 text-sm ml-2">#{currentQuestion.id}</span>
+                            <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+                                <h3 className="text-xl text-gray-900 font-medium w-full" style={{ fontSize: `${1.25 * fontSizeScale}rem`, lineHeight: '1.5' }}>
+                                    <span className="font-bold mr-2 float-left">{currentIndex + 1}.</span>
+                                    <div className="inline" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentQuestion.question_text) }} />
+                                    <span className="text-gray-400 text-sm ml-2">#{currentQuestion.id}</span>
                                 </h3>
-                                <div className="flex space-x-2">
+                                <div className="flex space-x-2 self-end md:self-start shrink-0">
                                     <button
                                         onClick={handleBookmark}
                                         className="p-2 rounded-full text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"

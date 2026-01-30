@@ -359,6 +359,7 @@ const UserManager = () => {
                                     {activeTab === 'sponsors' ? 'ข้อมูลธุรกิจ' : 'ข้อมูลผู้ใช้'}
                                 </th>
                                 <th className="px-6 py-4 font-semibold">สถานะ/บทบาท</th>
+                                <th className="px-6 py-4 font-semibold">Location</th>
                                 <th className="px-6 py-4 font-semibold">สถานะบัญชี</th>
                                 <th className="px-6 py-4 font-semibold text-right">จัดการ</th>
                             </tr>
@@ -433,6 +434,12 @@ const UserManager = () => {
                                                     Free User
                                                 </span>
                                             )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-slate-800">
+                                                {user.city ? `${user.city}, ${user.country}` : (user.country || '-')}
+                                            </div>
+                                            <div className="text-xs text-slate-400 font-mono">{user.ip_address || ''}</div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs 

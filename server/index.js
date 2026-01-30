@@ -484,6 +484,12 @@ const startServer = async () => {
             // Ignore
         }
 
+        // Location Columns for Users
+        try { await sequelize.query("ALTER TABLE users ADD COLUMN ip_address VARCHAR(255);"); console.log("Added ip_address"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE users ADD COLUMN country VARCHAR(255);"); console.log("Added country"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE users ADD COLUMN region VARCHAR(255);"); console.log("Added region"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE users ADD COLUMN city VARCHAR(255);"); console.log("Added city"); } catch (e) { }
+
         for (const col of newColumns) {
             try {
                 await sequelize.query(`ALTER TABLE users ${col};`);

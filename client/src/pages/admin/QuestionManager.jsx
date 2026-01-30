@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Edit2, Trash2, X, Check, Filter, HelpCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const QuestionManager = () => {
     const queryClient = useQueryClient();
@@ -296,7 +298,7 @@ const QuestionManager = () => {
                                 questions.map((q, index) => (
                                     <tr key={q.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-500">#{q.id}</td>
-                                        <td className="px-6 py-4 max-w-md truncate font-medium text-slate-800">{q.question_text}</td>
+                                        <td className="px-6 py-4 max-w-md truncate font-medium text-slate-800" dangerouslySetInnerHTML={{ __html: q.question_text ? q.question_text.replace(/<[^>]+>/g, '') : '' }}></td>
                                         <td className="px-6 py-4 text-xs text-slate-500">{q.skill || '-'}</td>
                                         <td className="px-6 py-4">{q.subject}</td>
                                         <td className="px-6 py-4">
@@ -435,13 +437,23 @@ const QuestionManager = () => {
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Question Text</label>
-                                <textarea
-                                    required
-                                    className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none min-h-[100px] text-gray-900"
-                                    placeholder="Enter the question here..."
-                                    value={formData.question_text}
-                                    onChange={(e) => setFormData({ ...formData, question_text: e.target.value })}
-                                />
+                                <div className="bg-white text-gray-900">
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={formData.question_text}
+                                        onChange={(content) => setFormData({ ...formData, question_text: content })}
+                                        modules={{
+                                            toolbar: [
+                                                [{ 'header': [1, 2, false] }],
+                                                ['bold', 'italic', 'underline', 'strike'],
+                                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                                ['link', 'image'],
+                                                ['clean']
+                                            ],
+                                        }}
+                                        className="h-40 mb-12"
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

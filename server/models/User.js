@@ -177,6 +177,27 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: true,
         },
+        // Location Info (IP Geolocation)
+        ip_address: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            comment: 'Last known IP address of the user', // บันทึก IP address ล่าสุด
+        },
+        country: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            comment: 'User country from IP', // ประเทศที่ได้จาก IP
+        },
+        region: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            comment: 'User region/province from IP', // จังหวัด/ภาค
+        },
+        city: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            comment: 'User city from IP', // เมือง/อำเภอ
+        },
     }, {
         tableName: 'users',
         timestamps: true,
