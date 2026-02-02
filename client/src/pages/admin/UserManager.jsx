@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone } from 'lucide-react';
+import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
 
 const isGuest = (user) => {
     return (user.email && user.email.startsWith('guest_') && user.email.includes('@preexam.com')) ||
         (user.display_name && user.display_name.startsWith('Guest-'));
+};
+
+const isForeignGuest = (user) => {
+    return isGuest(user) && user.country && user.country !== 'TH';
 };
 
 const PERMISSIONS_LIST = [
@@ -239,7 +243,8 @@ const UserManager = () => {
     // Category Counts
     const counts = {
         users: users.filter(u => u.role !== 'admin' && u.role !== 'sponsor' && !isGuest(u)).length,
-        guests: users.filter(u => isGuest(u)).length,
+        guests: users.filter(u => isGuest(u) && !isForeignGuest(u)).length, // Local/Unknown Guests
+        foreignGuests: users.filter(u => isForeignGuest(u)).length, // Foreign Guests
         sponsors: users.filter(u => u.role === 'sponsor').length,
         admins: users.filter(u => u.role === 'admin').length
     };
@@ -248,7 +253,15 @@ const UserManager = () => {
         // Tab Filter
         if (activeTab === 'sponsors' && user.role !== 'sponsor') return false;
         if (activeTab === 'admins' && user.role !== 'admin') return false;
-        if (activeTab === 'guests' && !isGuest(user)) return false;
+
+        // Split Guests
+        if (activeTab === 'guests') {
+            if (!isGuest(user) || isForeignGuest(user)) return false;
+        }
+        if (activeTab === 'foreign_guests') {
+            if (!isForeignGuest(user)) return false;
+        }
+
         if (activeTab === 'users' && (user.role === 'sponsor' || user.role === 'admin' || isGuest(user))) return false;
 
         // Search Filter
@@ -273,6 +286,7 @@ const UserManager = () => {
 
     return (
         <div className="space-y-6">
+            {/* Search and Filter Controls */}
             {/* Search and Filter Controls */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                 <div className="relative flex-1 max-w-md">
@@ -333,6 +347,14 @@ const UserManager = () => {
                     <span>Guest ({counts.guests})</span>
                 </button>
                 <button
+                    onClick={() => setActiveTab('foreign_guests')}
+                    className={`pb-3 px-1 flex items-center space-x-2 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === 'foreign_guests' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                >
+                    <Globe size={18} />
+                    <span>Guest Inter ({counts.foreignGuests})</span>
+                </button>
+                <button
                     onClick={() => setActiveTab('sponsors')}
                     className={`pb-3 px-1 flex items-center space-x-2 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === 'sponsors' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-600 hover:text-slate-900'
                         }`}
@@ -371,7 +393,7 @@ const UserManager = () => {
                                 </tr>
                             ) : filteredUsers.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No {activeTab} found.</td>
+                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No {activeTab.replace('_', ' ')} found.</td>
                                 </tr>
                             ) : (
                                 filteredUsers.map((user) => (
@@ -387,11 +409,11 @@ const UserManager = () => {
                                                 ) : (
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-slate-500 mr-3 ${activeTab === 'sponsors' ? 'bg-indigo-100 text-indigo-600' :
                                                         activeTab === 'admins' ? 'bg-purple-100 text-purple-600' :
-                                                            activeTab === 'guests' ? 'bg-gray-100 text-gray-500' : 'bg-slate-200'
+                                                            (activeTab === 'guests' || activeTab === 'foreign_guests') ? 'bg-gray-100 text-gray-500' : 'bg-slate-200'
                                                         }`}>
                                                         {activeTab === 'sponsors' ? <Briefcase size={16} /> :
                                                             activeTab === 'admins' ? <Shield size={16} /> :
-                                                                activeTab === 'guests' ? <Smartphone size={16} /> : <User size={16} />}
+                                                                (activeTab === 'guests' || activeTab === 'foreign_guests') ? <Smartphone size={16} /> : <User size={16} />}
                                                     </div>
                                                 )}
                                                 <div>
@@ -494,22 +516,26 @@ const UserManager = () => {
                 </div>
             </div>
 
-            {isAddAdminModalOpen && (
-                <AddAdminModal
-                    users={users}
-                    onClose={() => setIsAddAdminModalOpen(false)}
-                    onPromote={handlePromoteAdmin}
-                />
-            )}
+            {
+                isAddAdminModalOpen && (
+                    <AddAdminModal
+                        users={users}
+                        onClose={() => setIsAddAdminModalOpen(false)}
+                        onPromote={handlePromoteAdmin}
+                    />
+                )
+            }
 
-            {editingPermissionsUser && (
-                <PermissionsModal
-                    user={editingPermissionsUser}
-                    onClose={() => setEditingPermissionsUser(null)}
-                    onSave={handleSavePermissions}
-                />
-            )}
-        </div>
+            {
+                editingPermissionsUser && (
+                    <PermissionsModal
+                        user={editingPermissionsUser}
+                        onClose={() => setEditingPermissionsUser(null)}
+                        onSave={handleSavePermissions}
+                    />
+                )
+            }
+        </div >
     );
 };
 

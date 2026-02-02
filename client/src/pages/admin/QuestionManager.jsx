@@ -451,7 +451,7 @@ const QuestionManager = () => {
                                                 ['clean']
                                             ],
                                         }}
-                                        className="h-40 mb-12"
+                                        className="h-64 mb-12"
                                     />
                                 </div>
                             </div>
@@ -544,12 +544,14 @@ const QuestionManager = () => {
 
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Explanation</label>
-                                <textarea
-                                    className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none min-h-[80px] text-gray-900"
-                                    placeholder="Explain why the answer is correct..."
-                                    value={formData.explanation}
-                                    onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
-                                />
+                                <div className="bg-white">
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={formData.explanation}
+                                        onChange={(content) => setFormData({ ...formData, explanation: content })}
+                                        className="h-32 mb-12"
+                                    />
+                                </div>
                             </div>
 
                             <div className="pt-4 flex justify-end space-x-3">
@@ -568,11 +570,11 @@ const QuestionManager = () => {
                                     {editingQuestion ? 'Update Question' : 'Create Question'}
                                 </button>
                             </div>
-                        </form>
-                    </div>
-                </div>
+                        </form >
+                    </div >
+                </div >
             )}
-        </div>
+        </div >
     );
 };
 
