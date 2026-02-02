@@ -15,7 +15,8 @@ import {
     Megaphone,
     Store,
     LifeBuoy,
-    Shield
+    Shield,
+    Database
 } from 'lucide-react';
 import PageLoadTimer from '../components/common/PageLoadTimer';
 
@@ -50,6 +51,7 @@ const AdminLayout = () => {
         { path: '/admin/rooms', label: 'จัดการห้องสอบ', icon: MonitorPlay },
         { path: '/admin/ads', label: 'จัดการโฆษณา (Ads)', icon: Megaphone },
         { path: '/admin/support', label: 'ศูนย์ช่วยเหลือ (Tickets)', icon: LifeBuoy },
+        { path: '/admin/backups', label: 'ระบบสำรองข้อมูล (Backup)', icon: Database },
         { path: '/admin/legal', label: 'PDPA/Legal', icon: Shield },
         { path: '/admin/settings', label: 'ตั้งค่าระบบ', icon: Settings },
 
