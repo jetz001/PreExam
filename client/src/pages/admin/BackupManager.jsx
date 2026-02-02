@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../services/api'; // Assuming generic api helper exists
-import { toast } from 'react-hot-toast';
+import api from '../../services/api'; // Corrected: Default export
+import toast from 'react-hot-toast'; // Corrected: Default export
 import {
     Database,
     Upload,
@@ -25,7 +25,7 @@ const BackupManager = () => {
 
     const fetchBackups = async () => {
         try {
-            const res = await api.get('/admin/backups'); // Uses adminRoutes
+            const res = await api.get('/admin/backups');
             if (res.data.success) {
                 setBackups(res.data.backups);
             }
