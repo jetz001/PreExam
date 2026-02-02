@@ -23,6 +23,7 @@ import PricingPage from './pages/PricingPage';
 import ContactPage from './pages/support/ContactPage';
 import TicketDetail from './pages/support/TicketDetail';
 import SupportTicketManager from './pages/admin/SupportTicketManager';
+import BackupManager from './pages/admin/BackupManager'; // New Import
 import PolicyPage from './pages/PolicyPage';
 import FAQPage from './pages/support/FAQPage';
 
@@ -140,6 +141,7 @@ function App() {
             <Route path="verify-payments" element={<PaymentVerifier />} />
             <Route path="ads" element={<AdsManager />} />
             <Route path="support" element={<SupportTicketManager />} />
+            <Route path="backups" element={<BackupManager />} />
           </Route>
           <Route path="/premium-upgrade" element={<PremiumUpgrade />} />
           <Route path="/pricing" element={<PricingPage />} />

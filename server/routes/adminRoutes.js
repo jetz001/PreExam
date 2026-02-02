@@ -1,11 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const backupController = require('../controllers/backupController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' }); // Temp upload for restoration
 
 // Protect all routes with auth and admin check
 router.use(authMiddleware, adminMiddleware);
+
+// Backup & Restore
+router.get('/backups', backupController.getBackups);
+router.post('/backups', backupController.createBackup);
+router.post('/restore', upload.single('backup_file'), backupController.restoreBackup);
 
 // Dashboard Stats
 router.get('/stats', adminController.getDashboardStats);
