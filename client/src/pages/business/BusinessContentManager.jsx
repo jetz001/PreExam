@@ -234,6 +234,16 @@ const BusinessContentManager = () => {
                                 <p className="text-sm text-gray-500 line-clamp-2">{post.content.replace(/<[^>]*>?/gm, '')}</p>
                             </div>
                             <div className="flex gap-2">
+                                <button
+                                    onClick={() => updateMutation.mutate({
+                                        id: post.id,
+                                        data: { is_pinned: !post.is_pinned } // Toggle pin status
+                                    })}
+                                    className={`p-2 rounded-lg transition-colors ${post.is_pinned ? 'text-orange-500 bg-orange-50 hover:bg-orange-100' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                                    title={post.is_pinned ? "Unpin" : "Pin to top"}
+                                >
+                                    <Pin size={18} fill={post.is_pinned ? "currentColor" : "none"} />
+                                </button>
                                 <button onClick={() => handleEditClick(post)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"><Edit size={18} /></button>
                             </div>
                         </div>

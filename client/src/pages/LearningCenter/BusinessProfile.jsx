@@ -195,25 +195,53 @@ const BusinessProfile = () => {
 
                                         {/* Action Bar */}
                                         <div className="flex items-center gap-4 text-gray-400 text-sm">
-                                            <button className="flex items-center gap-1 hover:text-red-500"><Star size={16} /> Like</button>
-                                            <button className="flex items-center gap-1 hover:text-blue-500"><MessageCircle size={16} /> Comment</button>
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        const res = await businessApi.toggleLike(post.id);
+                                                        if (res.success) {
+                                                            toast.success(res.liked ? 'Liked!' : 'Unliked');
+                                                            // Optimistic update or refetch
+                                                            // For now, refetch posts query
+                                                            queryClient.invalidateQueries(['businessPosts', id]);
+                                                        }
+                                                    } catch (err) {
+                                                        if (err.response?.status === 401) return toast.error('Please login to like');
+                                                        toast.error('Failed to like');
+                                                    }
+                                                }}
+                                                className={`flex items-center gap-1 transition-colors ${post.isLiked ? 'text-red-500' : 'hover:text-red-500'}`}
+                                            >
+                                                <Star size={16} fill={post.isLiked ? "currentColor" : "none"} /> {post.likes_count || 0} Like
+                                            </button>
+
+                                            <button
+                                                onClick={() => setSharePost(post)}
+                                                className="flex items-center gap-1 hover:text-blue-500"
+                                            >
+                                                <MessageCircle size={16} /> Discuss
+                                            </button>
+
                                             <button
                                                 onClick={() => {
-                                                    navigator.clipboard.writeText(window.location.href);
-                                                    toast.success('Link copied');
+                                                    navigator.clipboard.writeText(`${window.location.origin}/business/${id}?post=${post.id}`);
+                                                    toast.success('Link copied to clipboard');
                                                 }}
                                                 className="flex items-center gap-1 hover:text-green-500"
                                             >
                                                 <Share2 size={16} /> Share
                                             </button>
+
                                             <button
-                                                onClick={() => setSharePost(post)}
-                                                className="flex items-center gap-1 hover:text-indigo-500 text-indigo-400"
-                                            >
-                                                <MessageCircle size={16} /> Discuss
-                                            </button>
-                                            <button
-                                                onClick={() => businessApi.toggleBookmark(post.id).then(() => toast.success('Saved!'))}
+                                                onClick={async () => {
+                                                    try {
+                                                        const res = await businessApi.toggleBookmark(post.id);
+                                                        if (res.success) toast.success(res.bookmarked ? 'Saved!' : 'Removed from saved');
+                                                    } catch (err) {
+                                                        if (err.response?.status === 401) return toast.error('Please login to save');
+                                                        toast.error('Failed to save');
+                                                    }
+                                                }}
                                                 className="flex items-center gap-1 hover:text-yellow-500 ml-auto"
                                             >
                                                 <Bookmark size={16} /> Save
