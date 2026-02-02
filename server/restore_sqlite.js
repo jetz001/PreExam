@@ -29,7 +29,16 @@ async function restore(backupPath) {
             { name: 'BusinessReviews', backupName: 'BusinessReviews' },
             { name: 'UserFollows', backupName: 'UserFollows' },
             { name: 'UserBookmarks', backupName: 'UserBookmarks' },
-            { name: 'BusinessPostLikes', backupName: 'BusinessPostLikes' }
+            { name: 'BusinessPostLikes', backupName: 'BusinessPostLikes' },
+            // Community Tables
+            { name: 'threads', backupName: 'threads' },
+            { name: 'comments', backupName: 'comments' },
+            { name: 'polls', backupName: 'polls' },
+            { name: 'poll_options', backupName: 'poll_options' },
+            { name: 'poll_votes', backupName: 'poll_votes' },
+            { name: 'interest_tags', backupName: 'interest_tags' },
+            { name: 'thread_tags', backupName: 'thread_tags' },
+            { name: 'ThreadLikes', backupName: 'ThreadLikes' } // Assuming standard plural for this one upon checking Models/Index or verify? ThreadLike.js doesn't set table name but standard is ThreadLikes. Restoring it just in case.
         ];
 
         for (const table of tables) {
