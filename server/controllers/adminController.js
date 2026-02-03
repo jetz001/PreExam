@@ -574,7 +574,7 @@ exports.getPendingAds = async (req, res) => {
         const posts = await db.BusinessPost.findAll({
             where: { is_boosted: true, ad_status: 'pending' },
             include: [{ model: db.Business, as: 'Business', attributes: ['name', 'logo_image', 'id'] }],
-            order: [['createdAt', 'ASC']]
+            order: [['created_at', 'ASC']]
         });
         res.json(posts);
     } catch (error) {
