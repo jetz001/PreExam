@@ -219,7 +219,7 @@ db.Ad.hasMany(db.AdMetric, { foreignKey: 'ad_id' });
 db.AdMetric.belongsTo(db.Ad, { foreignKey: 'ad_id' });
 
 db.User.hasMany(db.SponsorTransaction, { foreignKey: 'sponsor_id' });
-db.SponsorTransaction.belongsTo(db.User, { foreignKey: 'sponsor_id' });
+db.SponsorTransaction.belongsTo(db.User, { foreignKey: 'sponsor_id', as: 'sponsor' });
 
 // --- Learning Center Associations ---
 

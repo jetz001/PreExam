@@ -14,11 +14,11 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         if (user) {
-            // Fix for Windows localhost resolution: force 127.0.0.1 if localhost
-            const hostname = window.location.hostname === 'localhost' ? '127.0.0.1' : window.location.hostname;
-            const socketUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                ? `${window.location.protocol}//${hostname}:3000`
-                : window.location.origin;
+            // Determine Socket URL
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const socketUrl = isLocal
+                ? 'http://127.0.0.1:3000'
+                : '/'; // Use relative path for production
 
             const newSocket = io(socketUrl, {
                 auth: { token: localStorage.getItem('token') },
