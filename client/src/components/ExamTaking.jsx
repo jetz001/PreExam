@@ -74,6 +74,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
             state: {
                 sharedTitle,
                 sharedContent,
+                sharedImageUrl: q.question_image, // Pass image URL
                 initialCategory: 'qa_help'
             }
         });

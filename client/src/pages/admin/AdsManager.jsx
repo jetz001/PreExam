@@ -372,7 +372,7 @@ const AdsManager = () => {
                                                 type="text"
                                                 name="houseAdTitle"
                                                 defaultValue={configData.houseAdTitle || 'ลงโฆษณากับเรา / Advertise Here'}
-                                                className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                                className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-gray-900"
                                                 placeholder="e.g. Advertise with Us"
                                             />
                                             <p className="text-xs text-gray-500 mt-1">Found at the top of the card.</p>
@@ -384,7 +384,7 @@ const AdsManager = () => {
                                                 name="houseAdDescription"
                                                 defaultValue={configData.houseAdDescription || 'เข้าถึงกลุ่มเป้าหมายนักเรียนกว่า 10,000 คน เริ่มต้นเพียง 100 บาท/วัน'}
                                                 rows="4"
-                                                className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                                className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-gray-900"
                                                 placeholder="e.g. Reach 10k students daily..."
                                             ></textarea>
                                         </div>
@@ -412,7 +412,7 @@ const AdsManager = () => {
                                                 type="text"
                                                 name="houseAdUrl"
                                                 defaultValue={configData.houseAdUrl || '/business'}
-                                                className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                                className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
                                             />
                                             <p className="text-xs text-gray-500 mt-1">Where the user goes when clicking.</p>
                                         </div>
@@ -443,7 +443,7 @@ const AdsManager = () => {
                                 <input
                                     type="text"
                                     placeholder="Search sponsors..."
-                                    className="pl-10 block w-64 text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                    className="pl-10 block w-64 text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                                 />
                             </div>
                             <div className="flex space-x-2">

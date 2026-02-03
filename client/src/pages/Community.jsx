@@ -53,9 +53,31 @@ const Community = () => {
 
         // Handle Shared Question (Text)
         if (location.state?.sharedTitle || location.state?.sharedContent) {
-            setIsModalOpen(true);
-            // Clear state
-            window.history.replaceState({}, document.title);
+
+            // Handle Shared Image URL (Convert to File)
+            if (location.state?.sharedImageUrl) {
+                const processImage = async () => {
+                    try {
+                        const response = await fetch(location.state.sharedImageUrl);
+                        const blob = await response.blob();
+                        const file = new File([blob], "shared_question.jpg", { type: blob.type });
+                        setSharedImage(file);
+                        setIsModalOpen(true);
+                        // Clear state
+                        window.history.replaceState({}, document.title);
+                    } catch (error) {
+                        console.error("Error processing shared image:", error);
+                        // Open modal anyway without image
+                        setIsModalOpen(true);
+                        window.history.replaceState({}, document.title);
+                    }
+                };
+                processImage();
+            } else {
+                setIsModalOpen(true);
+                // Clear state
+                window.history.replaceState({}, document.title);
+            }
         }
     }, [searchParams, location]);
 

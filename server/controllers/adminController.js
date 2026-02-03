@@ -619,9 +619,9 @@ exports.rejectAd = async (req, res) => {
 // --- Ticket Management ---
 exports.getTickets = async (req, res) => {
     try {
-        const tickets = await db.Ticket.findAll({
+        const tickets = await db.SupportTicket.findAll({
             include: [
-                { model: db.User, as: 'User', attributes: ['display_name', 'email'] }
+                { model: User, as: 'User', attributes: ['display_name', 'email'] }
             ],
             order: [['createdAt', 'ASC']]
         });

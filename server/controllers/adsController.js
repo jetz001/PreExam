@@ -676,3 +676,22 @@ exports.recordClick = async (req, res) => {
         res.status(500).json({ message: 'Click Burn failed' });
     }
 };
+
+exports.getPendingAds = async (req, res) => {
+    try {
+        // "Pending Ads" in the UI refers to Pending Top-up Slips (SponsorTransactions)
+        const transactions = await SponsorTransaction.findAll({
+            where: { status: 'pending' },
+            include: [{
+                model: User,
+                as: 'sponsor',
+                attributes: ['id', 'business_name', 'email', 'phone_number']
+            }],
+            order: [['created_at', 'ASC']]
+        });
+        res.json(transactions);
+    } catch (error) {
+        console.error('Get Pending Pay Slips Error:', error);
+        res.status(500).json({ message: 'Failed to fetch pending slips' });
+    }
+};
