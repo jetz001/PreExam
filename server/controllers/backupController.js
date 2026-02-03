@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
-const { sequelize } = require('../models');
+const { sequelize, SystemLog } = require('../models');
 
 // Configuration
 const BACKUP_DIR = '/backups'; // On VPS
@@ -34,18 +34,48 @@ exports.getBackups = async (req, res) => {
     }
 };
 
+exports.getBackupLogs = async (req, res) => {
+    try {
+        const logs = await SystemLog.findAll({
+            where: {
+                action: ['BACKUP_CREATE', 'BACKUP_RESTORE']
+            },
+            order: [['created_at', 'DESC']],
+            limit: 50
+        });
+        res.json({ success: true, logs });
+    } catch (error) {
+        console.error('Get Backup Logs Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch logs' });
+    }
+};
+
 exports.createBackup = async (req, res) => {
     try {
         // Execute shell script
-        exec(`bash ${BACKUP_SCRIPT}`, (error, stdout, stderr) => {
+        // Execute shell script
+        exec(`bash ${BACKUP_SCRIPT}`, async (error, stdout, stderr) => {
             if (error) {
                 console.error(`Backup Script Error: ${error.message}`);
+                await SystemLog.create({
+                    action: 'BACKUP_CREATE',
+                    status: 'FAILED',
+                    details: { error: error.message },
+                    user_id: req.user ? req.user.id : null
+                });
                 return res.status(500).json({ success: false, message: 'Backup failed', error: error.message });
             }
             if (stderr) {
                 console.warn(`Backup Script Stderr: ${stderr}`);
             }
             console.log(`Backup Script Output: ${stdout}`);
+
+            await SystemLog.create({
+                action: 'BACKUP_CREATE',
+                status: 'SUCCESS',
+                details: { output: stdout },
+                user_id: req.user ? req.user.id : null
+            });
 
             // Return success immediately (or wait? wait is better for UI feedback)
             res.json({ success: true, message: 'Backup created successfully' });
@@ -96,10 +126,23 @@ exports.restoreBackup = async (req, res) => {
 
             if (error) {
                 console.error(`Restore Error: ${error.message}`);
+                await SystemLog.create({
+                    action: 'BACKUP_RESTORE',
+                    status: 'FAILED',
+                    details: { error: error.message, filename: filename || (req.file ? req.file.originalname : 'unknown') },
+                    user_id: req.user ? req.user.id : null
+                });
                 return res.status(500).json({ success: false, message: 'Restore failed', error: error.message, logs: stderr });
             }
 
             console.log(`Restore Output: ${stdout}`);
+
+            await SystemLog.create({
+                action: 'BACKUP_RESTORE',
+                status: 'SUCCESS',
+                details: { output: stdout, filename: filename || (req.file ? req.file.originalname : 'unknown') },
+                user_id: req.user ? req.user.id : null
+            });
 
             // Restart PM2 to reload DB connection/cache
             // exec('pm2 restart all'); // Dangerous to do inside request, response might fail.

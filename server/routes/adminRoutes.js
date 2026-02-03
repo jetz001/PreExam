@@ -13,6 +13,7 @@ router.use(authMiddleware, adminMiddleware);
 
 // Backup & Restore
 router.get('/backups', backupController.getBackups);
+router.get('/backups/logs', backupController.getBackupLogs);
 router.post('/backups', backupController.createBackup);
 router.post('/restore', upload.single('backup_file'), backupController.restoreBackup);
 

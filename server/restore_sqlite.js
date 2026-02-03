@@ -50,7 +50,8 @@ async function restore(backupPath) {
             { name: 'SupportMessages', backupName: 'SupportMessages' },
             { name: 'ContactMessages', backupName: 'ContactMessages' }, // Inbox
             { name: 'SystemSettings', backupName: 'SystemSettings' },
-            { name: 'ReportedContent', backupName: 'ReportedContent' }
+            { name: 'ReportedContent', backupName: 'ReportedContent' },
+            { name: 'system_logs', backupName: 'system_logs' }
         ];
 
         for (const table of tables) {

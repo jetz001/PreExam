@@ -55,6 +55,7 @@ db.SponsorTransaction = require('./SponsorTransaction')(sequelize, DataTypes);
 
 // System Settings
 db.SystemSetting = require('./SystemSetting')(sequelize, DataTypes);
+db.SystemLog = require('./SystemLog')(sequelize, DataTypes);
 
 // Learning Center (Business/Marketplace)
 db.Business = require('./Business')(sequelize, DataTypes);
@@ -273,6 +274,11 @@ db.SupportMessage.belongsTo(db.SupportTicket, { foreignKey: 'ticket_id', as: 'ti
 // SupportMessage & Sender (User)
 db.SupportMessage.belongsTo(db.User, { foreignKey: 'sender_id', as: 'sender' });
 db.User.hasMany(db.SupportMessage, { foreignKey: 'sender_id', as: 'SupportMessages' });
+
+
+// System Logs
+db.User.hasMany(db.SystemLog, { foreignKey: 'user_id', as: 'SystemLogs' });
+db.SystemLog.belongsTo(db.User, { foreignKey: 'user_id', as: 'User' });
 
 
 
