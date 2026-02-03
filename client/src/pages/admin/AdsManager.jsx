@@ -201,7 +201,7 @@ const AdsManager = () => {
                         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                             <h3 className="text-lg font-bold text-gray-800 mb-6">Revenue Trend (7 Days)</h3>
                             <div className="h-72">
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                     <BarChart data={platformStats.revenueTrend}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                         <XAxis dataKey="date" axisLine={false} tickLine={false} />
