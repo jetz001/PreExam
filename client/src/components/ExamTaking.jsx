@@ -124,6 +124,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                                 <h3 className="text-xl text-gray-900 font-medium w-full" style={{ fontSize: `${1.25 * fontSizeScale}rem`, lineHeight: '1.5' }}>
                                     <span className="font-bold mr-2 float-left">{currentIndex + 1}.</span>
                                     <div className="inline" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentQuestion.question_text) }} />
+                                    <span className="hidden" id="version-check-v0.0.7-fix"></span>
                                     <span className="text-gray-400 text-sm ml-2">#{currentQuestion.id}</span>
                                 </h3>
                                 <div className="flex space-x-2 self-end md:self-start shrink-0">
