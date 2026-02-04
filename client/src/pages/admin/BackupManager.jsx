@@ -12,66 +12,16 @@ import {
     CheckCircle,
     History,
     FileText,
-    FileText,
     XCircle
 } from 'lucide-react';
-import { currentVersion } from '../../config/versionHistory';
+import { getCurrentVersion } from '../../config/versionHistory';
 
 const BackupManager = () => {
-    const [activeTab, setActiveTab] = useState('manage'); // 'manage' | 'history'
-    const [backups, setBackups] = useState([]);
-    const [logs, setLogs] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [logsLoading, setLogsLoading] = useState(false);
-    const [processing, setProcessing] = useState(false);
-    const [uploadFile, setUploadFile] = useState(null);
-
-    useEffect(() => {
-        if (activeTab === 'manage') {
-            fetchBackups();
-        } else {
-            fetchLogs();
-        }
-    }, [activeTab]);
-
-    const fetchBackups = async () => {
-        setLoading(true);
-        try {
-            const res = await api.get('/admin/backups');
-            if (res.data.success) {
-                setBackups(res.data.backups);
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to load backups');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchLogs = async () => {
-        setLogsLoading(true);
-        try {
-            const res = await api.get('/admin/backups/logs');
-            if (res.data.success) {
-                setLogs(res.data.logs);
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to load logs');
-        } finally {
-            setLogsLoading(false);
-        }
-    };
-
+    // ...
     const handleCreateBackup = async () => {
-        if (!window.confirm('Create a new system backup? This might affect performance momentarily.')) return;
-
-        setProcessing(true);
-        const toastId = toast.loading('Creating backup...');
-
+        // ...
         try {
-            const res = await api.post('/admin/backups', { version: currentVersion });
+            const res = await api.post('/admin/backups', { version: getCurrentVersion() });
             if (res.data.success) {
                 toast.success('Backup created successfully', { id: toastId });
                 fetchBackups();

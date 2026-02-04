@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import PageLoadTimer from './common/PageLoadTimer';
+import { getCurrentVersion } from '../config/versionHistory';
 
 const Footer = () => {
     return (
@@ -13,8 +14,7 @@ const Footer = () => {
                             ศูนย์กลางการซ้อมทำข้อสอบสำหรับเตรียมสอบราชการที่ครบวงจรที่สุด
                         </p>
                         <p className="mt-2 text-xs text-gray-400">
-                            {/* Display the version number defined in vite.config.js */}
-                            PreExam v{__APP_VERSION__}
+                            PreExam v{getCurrentVersion()}
                         </p>
                     </div>
                     <div>

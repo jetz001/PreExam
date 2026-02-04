@@ -1,4 +1,5 @@
-export const currentVersion = '0.2.3';
+export const getCurrentVersion = () => versionHistory[0].version;
+export const currentVersion = getCurrentVersion(); // For backward compatibility if needed, but we aim to replace usage.
 
 export const versionHistory = [
     {

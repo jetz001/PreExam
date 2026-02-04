@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Upload, Trash2, Image as ImageIcon, Volume2, X, Plus, Clock, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
-import { versionHistory, currentVersion } from '../../config/versionHistory';
+import { versionHistory, getCurrentVersion } from '../../config/versionHistory';
 
 const SettingsManager = () => {
     const queryClient = useQueryClient();
@@ -230,7 +230,7 @@ const SettingsManager = () => {
                         </div>
                         <div className="flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200">
                             <span className="text-xs font-semibold mr-1">CURRENT VER.</span>
-                            <span className="text-sm font-bold">{currentVersion}</span>
+                            <span className="text-sm font-bold">{getCurrentVersion()}</span>
                         </div>
                     </div>
 
