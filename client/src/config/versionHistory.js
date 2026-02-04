@@ -1,6 +1,14 @@
-export const currentVersion = "0.2.2";
+export const currentVersion = '0.2.3';
 
 export const versionHistory = [
+    {
+        version: '0.2.3',
+        date: '2026-02-04',
+        changes: [
+            { type: 'new', description: 'Added version logging to System Backups' },
+            { type: 'improvement', description: 'Moved Save Changes button in System Settings' }
+        ]
+    },
     {
         version: "0.2.2",
         date: "2026-02-04",

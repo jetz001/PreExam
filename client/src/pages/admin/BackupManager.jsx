@@ -12,8 +12,10 @@ import {
     CheckCircle,
     History,
     FileText,
+    FileText,
     XCircle
 } from 'lucide-react';
+import { currentVersion } from '../../config/versionHistory';
 
 const BackupManager = () => {
     const [activeTab, setActiveTab] = useState('manage'); // 'manage' | 'history'
@@ -69,7 +71,7 @@ const BackupManager = () => {
         const toastId = toast.loading('Creating backup...');
 
         try {
-            const res = await api.post('/admin/backups');
+            const res = await api.post('/admin/backups', { version: currentVersion });
             if (res.data.success) {
                 toast.success('Backup created successfully', { id: toastId });
                 fetchBackups();

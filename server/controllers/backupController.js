@@ -70,14 +70,46 @@ exports.createBackup = async (req, res) => {
             }
             console.log(`Backup Script Output: ${stdout}`);
 
+            // Rename file to include version if provided
+            const { version } = req.body;
+            let finalFilename = null;
+
+            if (version) {
+                try {
+                    // Find the newest file
+                    const files = fs.readdirSync(BACKUP_DIR)
+                        .filter(file => file.endsWith('.zip'))
+                        .map(file => ({
+                            name: file,
+                            time: fs.statSync(path.join(BACKUP_DIR, file)).birthtime
+                        }))
+                        .sort((a, b) => b.time - a.time);
+
+                    if (files.length > 0) {
+                        const newestFile = files[0].name;
+                        // Avoid double versioning if script already adds it (unlikely but safe)
+                        if (!newestFile.includes(`_v${version}`)) {
+                            const newName = newestFile.replace('.zip', `_v${version}.zip`);
+                            fs.renameSync(path.join(BACKUP_DIR, newestFile), path.join(BACKUP_DIR, newName));
+                            finalFilename = newName;
+                            console.log(`Renamed backup to: ${newName}`);
+                        } else {
+                            finalFilename = newestFile;
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to rename backup file with version:', err);
+                }
+            }
+
             await SystemLog.create({
                 action: 'BACKUP_CREATE',
                 status: 'SUCCESS',
-                details: { output: stdout },
+                details: { output: stdout, version: version, filename: finalFilename },
                 user_id: req.user ? req.user.id : null
             });
 
-            // Return success immediately (or wait? wait is better for UI feedback)
+            // Return success immediately
             res.json({ success: true, message: 'Backup created successfully' });
         });
     } catch (error) {
