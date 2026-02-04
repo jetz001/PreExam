@@ -116,14 +116,6 @@ const SettingsManager = () => {
                     {renderTabButton('assets', 'Assets', <ImageIcon size={18} />)}
                     {renderTabButton('versions', 'Versions', <Clock size={18} />)}
                 </div>
-                {activeTab === 'general' && (
-                    <button
-                        onClick={handleSaveSettings}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all active:scale-95 font-medium ml-auto md:ml-0"
-                    >
-                        Save Changes
-                    </button>
-                )}
             </div>
 
             {/* General Tab Content */}
@@ -212,6 +204,16 @@ const SettingsManager = () => {
                             <p className="text-xs text-gray-400 mt-2">Changes are applied immediately after saving.</p>
                         </div>
                     </section>
+
+                    {/* Save Button */}
+                    <div className="flex justify-end pt-4">
+                        <button
+                            onClick={handleSaveSettings}
+                            className="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all active:scale-95 font-medium flex items-center"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
                 </>
             )}
 
