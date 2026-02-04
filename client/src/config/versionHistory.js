@@ -1,0 +1,43 @@
+export const currentVersion = "0.2.2";
+
+export const versionHistory = [
+    {
+        version: "0.2.2",
+        date: "2026-02-04",
+        changes: [
+            { type: "new", description: "Added Version History in System Settings" },
+            { type: "fix", description: "Fixed rebase and git sync issues" }
+        ]
+    },
+    {
+        version: "0.2.1",
+        date: "2026-01-30",
+        changes: [
+            { type: "fix", description: "Fixed HTML rendering issue in Exam interface" }
+        ]
+    },
+    {
+        version: "0.2.0",
+        date: "2026-01-20",
+        changes: [
+            { type: "new", description: "Global Page Load Timer" },
+            { type: "fix", description: "News Edit and Icon updates" }
+        ]
+    },
+    {
+        version: "0.1.9",
+        date: "2026-01-16",
+        changes: [
+            { type: "fix", description: "Admin Dashboard Revenue calculation" },
+            { type: "new", description: "Thai translations for Exam Config" }
+        ]
+    },
+    {
+        version: "0.0.7",
+        date: "2026-01-14",
+        changes: [
+            { type: "fix", description: "Google Login Redirection" },
+            { type: "new", description: "Geolocation and Rich Text Editor" }
+        ]
+    }
+];

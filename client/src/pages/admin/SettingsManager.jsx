@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Trash2, Image as ImageIcon, Volume2, X, Plus } from 'lucide-react';
+import { Upload, Trash2, Image as ImageIcon, Volume2, X, Plus, Clock, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
+import { versionHistory, currentVersion } from '../../config/versionHistory';
 
 const SettingsManager = () => {
     const queryClient = useQueryClient();
@@ -162,6 +163,57 @@ const SettingsManager = () => {
                             <span className="font-medium">{settings.announcement_text || 'Preview Message'}</span>
                         </div>
                     )}
+                </div>
+            </section>
+
+            {/* Versions History - [NEW] */}
+            <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <div className="flex justify-between items-start mb-6">
+                    <div>
+                        <h3 className="text-lg font-semibold text-slate-700 flex items-center">
+                            <Clock size={20} className="mr-2" />
+                            Version History & Changelog
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">Track system updates and new features.</p>
+                    </div>
+                    <div className="flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200">
+                        <span className="text-xs font-semibold mr-1">CURRENT VER.</span>
+                        <span className="text-sm font-bold">{currentVersion}</span>
+                    </div>
+                </div>
+
+                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+                    {versionHistory.map((version, index) => (
+                        <div key={version.version} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                            {/* Icon */}
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-50 text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                                {index === 0 ? <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" /> : <div className="w-3 h-3 bg-slate-300 rounded-full" />}
+                            </div>
+
+                            {/* Content */}
+                            <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="font-bold text-slate-700 text-lg">v{version.version}</div>
+                                    <time className="font-mono text-xs text-slate-400">{version.date}</time>
+                                </div>
+                                <ul className="space-y-2">
+                                    {version.changes.map((change, i) => (
+                                        <li key={i} className="flex items-start text-sm">
+                                            <span className={`
+                                                inline-flex items-center justify-center px-2 py-0.5 mr-2 text-xs font-medium rounded
+                                                ${change.type === 'new' ? 'bg-green-100 text-green-800' : ''}
+                                                ${change.type === 'fix' ? 'bg-red-100 text-red-800' : ''}
+                                                ${change.type === 'improvement' ? 'bg-blue-100 text-blue-800' : ''}
+                                            `}>
+                                                {change.type.toUpperCase()}
+                                            </span>
+                                            <span className="text-slate-600">{change.description}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </section>
 
