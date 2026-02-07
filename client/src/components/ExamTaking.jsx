@@ -12,6 +12,12 @@ import PacingAlert from './exam/PacingAlert';
 import bookmarkService from '../services/bookmarkService';
 import toast from 'react-hot-toast';
 
+const decodeHtml = (html) => {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+};
+
 const ExamTaking = ({ questions, mode, onSubmit }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const navigate = useNavigate();
@@ -123,7 +129,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                             <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
                                 <h3 className="text-xl text-gray-900 font-medium w-full" style={{ fontSize: `${1.25 * fontSizeScale}rem`, lineHeight: '1.5' }}>
                                     <span className="font-bold mr-2 float-left">{currentIndex + 1}.</span>
-                                    <div className="inline" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentQuestion.question_text) }} />
+                                    <div className="inline" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }} />
                                     <span className="hidden" id="version-check-v0.0.7-fix"></span>
                                     <span className="text-gray-400 text-sm ml-2">#{currentQuestion.id}</span>
                                 </h3>
