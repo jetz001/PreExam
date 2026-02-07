@@ -8,6 +8,22 @@ import PermissionGate from './common/PermissionGate';
 import useUserRole from '../hooks/useUserRole';
 import PacingAlert from './exam/PacingAlert';
 
+import DOMPurify from 'dompurify';
+
+const decodeHtml = (html) => {
+    const txt = document.createElement("textarea");
+    let decoded = html;
+    let limit = 5; // Max recursion depth to prevent infinite loops
+    while (limit > 0 && decoded) {
+        txt.innerHTML = decoded;
+        const next = txt.value;
+        if (next === decoded) break;
+        decoded = next;
+        limit--;
+    }
+    return decoded;
+};
+
 const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinish, timeLimit }, ref) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState({});
@@ -102,7 +118,7 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
             <div className="bg-white p-6 rounded-lg shadow flex-1 overflow-y-auto">
                 <div className="flex justify-between items-start mb-6">
                     <h3 className="text-xl text-gray-900 font-medium" style={{ fontSize: `${1.25 * fontSizeScale}rem`, lineHeight: '1.5' }}>
-                        {currentQuestion.question_text}
+                        <div className="inline" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }} />
                         <span className="inline-block text-xs text-gray-400 font-normal ml-2 bg-gray-100 px-2 py-0.5 rounded-full align-middle">
                             #{currentQuestion.id}
                         </span>
