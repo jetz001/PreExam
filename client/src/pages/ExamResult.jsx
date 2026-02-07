@@ -3,6 +3,21 @@ import { useParams, useNavigate } from 'react-router-dom';
 import examService from '../services/examService';
 import { ChevronLeft, Award, XCircle, CheckCircle, Clock } from 'lucide-react';
 import AdSlot from '../components/ads/AdSlot';
+import DOMPurify from 'dompurify';
+
+const decodeHtml = (html) => {
+    const txt = document.createElement("textarea");
+    let decoded = html;
+    let limit = 5;
+    while (limit > 0 && decoded) {
+        txt.innerHTML = decoded;
+        const next = txt.value;
+        if (next === decoded) break;
+        decoded = next;
+        limit--;
+    }
+    return decoded;
+};
 
 const ExamResult = () => {
     const { id } = useParams();
@@ -109,7 +124,7 @@ const ExamResult = () => {
                                             {idx + 1}
                                         </span>
                                         <div className="flex-1">
-                                            <p className="font-medium text-lg text-gray-800 dark:text-gray-200 mb-4">{q.question_text}</p>
+                                            <div className="font-medium text-lg text-gray-800 dark:text-gray-200 mb-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(q.question_text)) }} />
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                                                 {['a', 'b', 'c', 'd'].map((option) => {

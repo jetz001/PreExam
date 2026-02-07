@@ -9,6 +9,21 @@ import Leaderboard from '../components/Leaderboard';
 import TutorView from '../components/TutorView';
 import { Users, Play, LogOut } from 'lucide-react';
 import AdSlot from '../components/ads/AdSlot';
+import DOMPurify from 'dompurify';
+
+const decodeHtml = (html) => {
+    const txt = document.createElement("textarea");
+    let decoded = html;
+    let limit = 5;
+    while (limit > 0 && decoded) {
+        txt.innerHTML = decoded;
+        const next = txt.value;
+        if (next === decoded) break;
+        decoded = next;
+        limit--;
+    }
+    return decoded;
+};
 
 const Room = () => {
     const { id } = useParams();
@@ -237,7 +252,10 @@ const Room = () => {
 
                                                 return (
                                                     <div key={q.id} className={`p-4 rounded-lg border ${isQuestionCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                                                        <p className="font-medium mb-2 text-gray-900">{index + 1}. {q.question_text}</p>
+                                                        <div className="font-medium mb-2 text-gray-900">
+                                                            <span className="mr-2">{index + 1}.</span>
+                                                            <div className="inline" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(q.question_text)) }} />
+                                                        </div>
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                                                             {['a', 'b', 'c', 'd'].map((opt) => {
                                                                 const choiceText = q[`choice_${opt}`];
