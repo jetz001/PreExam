@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import PageLoadTimer from '../components/common/PageLoadTimer';
 
 import businessApi from '../services/businessApi';
+import SystemBroadcast from '../components/common/SystemBroadcast';
 
 const BusinessLayout = () => {
     const { logout, user } = useAuth();
@@ -28,15 +29,7 @@ const BusinessLayout = () => {
         checkBusiness();
     }, [navigate]);
 
-    // System Broadcast
-    const [systemSettings, setSystemSettings] = useState(null);
-    React.useEffect(() => {
-        businessApi.getSystemSettings().then(res => {
-            if (res.success && res.settings) {
-                setSystemSettings(res.settings);
-            }
-        });
-    }, []);
+
 
     const handleLogout = () => {
         logout();
@@ -126,16 +119,8 @@ const BusinessLayout = () => {
             {/* Main Content */}
             <main className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Broadcast Banner */}
-                {systemSettings?.announcement_active && systemSettings?.announcement_text && (
-                    <div className={`w-full py-2 px-6 text-sm font-medium flex items-center justify-center gap-2 ${systemSettings.announcement_type === 'warning' ? 'bg-amber-100 text-amber-800 border-b border-amber-200' :
-                        systemSettings.announcement_type === 'success' ? 'bg-green-100 text-green-800 border-b border-green-200' :
-                            'bg-blue-600 text-white shadow-md'
-                        }`}>
-                        <span className="flex items-center gap-2">
-                            📣 {systemSettings.announcement_text}
-                        </span>
-                    </div>
-                )}
+                {/* Broadcast Banner */}
+                <SystemBroadcast />
                 {/* Header (optional, maybe specific page headers, keeping clean for now) */}
 
                 {/* Content Body */}

@@ -21,6 +21,7 @@ import {
 import PageLoadTimer from '../components/common/PageLoadTimer';
 
 import { Toaster } from 'react-hot-toast';
+import SystemBroadcast from '../components/common/SystemBroadcast';
 
 const AdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -109,8 +110,10 @@ const AdminLayout = () => {
                 </div>
             </aside>
 
+
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <SystemBroadcast />
                 <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10">
                     <h1 className="text-xl font-semibold text-slate-700">
                         {menuItems.find(item => isActive(item.path))?.label || 'Dashboard'}

@@ -9,6 +9,10 @@ const publicService = {
     getLandingNews: async () => {
         const response = await api.get('/news/landing');
         return response.data;
+    },
+    getSystemSettings: async () => {
+        const response = await api.get('/public/settings');
+        return response.data;
     }
 };
 
