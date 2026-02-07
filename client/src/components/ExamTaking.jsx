@@ -14,8 +14,16 @@ import toast from 'react-hot-toast';
 
 const decodeHtml = (html) => {
     const txt = document.createElement("textarea");
-    txt.innerHTML = html;
-    return txt.value;
+    let decoded = html;
+    let limit = 5; // Max recursion depth to prevent infinite loops
+    while (limit > 0 && decoded) {
+        txt.innerHTML = decoded;
+        const next = txt.value;
+        if (next === decoded) break;
+        decoded = next;
+        limit--;
+    }
+    return decoded;
 };
 
 const ExamTaking = ({ questions, mode, onSubmit }) => {
