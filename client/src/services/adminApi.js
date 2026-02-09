@@ -74,6 +74,10 @@ const adminApi = {
         const response = await api.put(`/admin/users/${id}/permissions`, { permissions });
         return response.data;
     },
+    getUserHistory: async (id) => {
+        const response = await api.get(`/admin/users/${id}/history`);
+        return response.data;
+    },
     updateUserStatus: async (id, status) => {
         const response = await api.put(`/admin/users/${id}/status`, { status });
         return response.data;

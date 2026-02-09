@@ -143,11 +143,131 @@ const AddAdminModal = ({ users, onClose, onPromote }) => {
     );
 };
 
+const HistoryModal = ({ user, history, onClose }) => {
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 className="font-bold text-lg text-gray-800 flex items-center">
+                        <Briefcase className="w-5 h-5 mr-2 text-indigo-600" />
+                        History: {user.display_name}
+                    </h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {/* Exam History Section */}
+                    <div>
+                        <h4 className="font-semibold text-gray-700 mb-3 flex items-center">
+                            <GraduationCap size={18} className="mr-2" />
+                            Recent Exams
+                        </h4>
+                        {history.examHistory && history.examHistory.length > 0 ? (
+                            <div className="overflow-hidden rounded-lg border border-gray-200">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {history.examHistory.map((exam) => (
+                                            <tr key={exam.id}>
+                                                <td className="px-4 py-2 text-sm text-gray-600">
+                                                    {new Date(exam.taken_at || exam.created_at).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-4 py-2 text-sm text-gray-600 capitalize">{exam.mode}</td>
+                                                <td className="px-4 py-2 text-sm text-gray-800 text-right font-medium">
+                                                    {exam.score} / {exam.total_score}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-500 italic bg-gray-50 p-3 rounded">No exam history found.</p>
+                        )}
+                    </div>
+
+                    {/* Payment History Section */}
+                    <div>
+                        <h4 className="font-semibold text-gray-700 mb-3 flex items-center">
+                            <Briefcase size={18} className="mr-2" />
+                            Recent Transactions
+                        </h4>
+                        {history.paymentHistory && history.paymentHistory.length > 0 ? (
+                            <div className="overflow-hidden rounded-lg border border-gray-200">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {history.paymentHistory.map((payment) => (
+                                            <tr key={payment.id}>
+                                                <td className="px-4 py-2 text-sm text-gray-600">
+                                                    {new Date(payment.created_at).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-4 py-2 text-sm text-gray-600">
+                                                    {payment.slip_image ? 'Bank Transfer' : (payment.type || 'Payment')}
+                                                </td>
+                                                <td className="px-4 py-2 text-sm text-gray-800 text-right font-medium">
+                                                    ฿{parseFloat(payment.amount).toLocaleString()}
+                                                </td>
+                                                <td className="px-4 py-2 text-center">
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${payment.status === 'approved' || payment.status === 'SUCCESS' || payment.status === 'completed'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : payment.status === 'pending' || payment.status === 'PENDING'
+                                                                ? 'bg-yellow-100 text-yellow-800'
+                                                                : 'bg-red-100 text-red-800'
+                                                        }`}>
+                                                        {payment.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-500 italic bg-gray-50 p-3 rounded">No transaction history found.</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="p-4 bg-gray-50 flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium shadow-sm"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const UserManager = () => {
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState('users');
     const [editingPermissionsUser, setEditingPermissionsUser] = useState(null);
+    const [viewingHistoryUser, setViewingHistoryUser] = useState(null);
+    const [historyData, setHistoryData] = useState(null);
     const [isAddAdminModalOpen, setIsAddAdminModalOpen] = useState(false);
+
+    // Check if url hash has page number
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 50;
 
     const { data: users = [], isLoading } = useQuery({
         queryKey: ['users'],
@@ -237,6 +357,24 @@ const UserManager = () => {
         updatePermissionsMutation.mutate({ id, permissions });
     };
 
+    const handleViewHistory = async (user) => {
+        try {
+            const data = await adminApi.getUserHistory(user.id);
+            setHistoryData(data);
+            setViewingHistoryUser(user);
+        } catch (error) {
+            toast.error('Failed to load history');
+        }
+    };
+
+    const handleViewProfile = (publicId) => {
+        if (publicId) {
+            window.open(`/profile/${publicId}`, '_blank');
+        } else {
+            toast.error('User does not have a public profile');
+        }
+    };
+
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
 
@@ -283,6 +421,18 @@ const UserManager = () => {
 
         return true;
     });
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const paginatedUsers = filteredUsers.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    // Reset page on filter change
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, searchTerm, filterStatus]);
 
     return (
         <div className="space-y-6">
@@ -381,6 +531,7 @@ const UserManager = () => {
                                     {activeTab === 'sponsors' ? 'ข้อมูลธุรกิจ' : 'ข้อมูลผู้ใช้'}
                                 </th>
                                 <th className="px-6 py-4 font-semibold">สถานะ/บทบาท</th>
+                                <th className="px-6 py-4 font-semibold">Last Active</th>
                                 <th className="px-6 py-4 font-semibold">Location</th>
                                 <th className="px-6 py-4 font-semibold">สถานะบัญชี</th>
                                 <th className="px-6 py-4 font-semibold text-right">จัดการ</th>
@@ -389,14 +540,14 @@ const UserManager = () => {
                         <tbody className="divide-y divide-slate-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500">Loading users...</td>
+                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">Loading users...</td>
                                 </tr>
                             ) : filteredUsers.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No {activeTab.replace('_', ' ')} found.</td>
+                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">No {activeTab.replace('_', ' ')} found.</td>
                                 </tr>
                             ) : (
-                                filteredUsers.map((user) => (
+                                paginatedUsers.map((user) => (
                                     <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
@@ -457,6 +608,9 @@ const UserManager = () => {
                                                 </span>
                                             )}
                                         </td>
+                                        <td className="px-6 py-4 text-sm text-slate-500">
+                                            {user.last_active_at ? new Date(user.last_active_at).toLocaleString() : '-'}
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="text-sm text-slate-800">
                                                 {user.city ? `${user.city}, ${user.country}` : (user.country || '-')}
@@ -469,7 +623,21 @@ const UserManager = () => {
                                                 {user.status || 'Active'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-right space-x-2">
+                                        <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                                            <button
+                                                onClick={() => handleViewHistory(user)}
+                                                className="text-slate-600 hover:bg-slate-100 p-2 rounded transition-colors text-xs font-medium border border-slate-200 inline-flex items-center"
+                                                title="View History"
+                                            >
+                                                <GraduationCap size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleViewProfile(user.public_id)}
+                                                className="text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors text-xs font-medium border border-blue-200 inline-flex items-center"
+                                                title="View Profile"
+                                            >
+                                                <User size={14} />
+                                            </button>
                                             {user.role === 'admin' && (
                                                 <>
                                                     <button
@@ -514,28 +682,60 @@ const UserManager = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50">
+                        <span className="text-sm text-slate-500">
+                            Showing page {currentPage} of {totalPages}
+                        </span>
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className={`px-3 py-1 text-sm rounded border ${currentPage === 1 ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className={`px-3 py-1 text-sm rounded border ${currentPage === totalPages ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {
-                isAddAdminModalOpen && (
-                    <AddAdminModal
-                        users={users}
-                        onClose={() => setIsAddAdminModalOpen(false)}
-                        onPromote={handlePromoteAdmin}
-                    />
-                )
-            }
+            {isAddAdminModalOpen && (
+                <AddAdminModal
+                    users={users}
+                    onClose={() => setIsAddAdminModalOpen(false)}
+                    onPromote={handlePromoteAdmin}
+                />
+            )}
 
-            {
-                editingPermissionsUser && (
-                    <PermissionsModal
-                        user={editingPermissionsUser}
-                        onClose={() => setEditingPermissionsUser(null)}
-                        onSave={handleSavePermissions}
-                    />
-                )
-            }
-        </div >
+            {editingPermissionsUser && (
+                <PermissionsModal
+                    user={editingPermissionsUser}
+                    onClose={() => setEditingPermissionsUser(null)}
+                    onSave={handleSavePermissions}
+                />
+            )}
+
+            {viewingHistoryUser && historyData && (
+                <HistoryModal
+                    user={viewingHistoryUser}
+                    history={historyData}
+                    onClose={() => {
+                        setViewingHistoryUser(null);
+                        setHistoryData(null);
+                    }}
+                />
+            )}
+        </div>
     );
 };
 

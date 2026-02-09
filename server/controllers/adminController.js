@@ -181,7 +181,7 @@ exports.getDashboardStats = async (req, res) => {
 exports.getUsers = async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'email', 'display_name', 'business_name', 'role', 'plan_type', 'status', 'created_at', 'admin_permissions', 'avatar', 'ip_address', 'country', 'region', 'city']
+            attributes: ['id', 'public_id', 'email', 'display_name', 'business_name', 'role', 'plan_type', 'status', 'created_at', 'last_active_at', 'admin_permissions', 'avatar', 'ip_address', 'country', 'region', 'city']
         });
         res.json(users);
     } catch (error) {
@@ -744,5 +744,49 @@ exports.updateSystemSettings = async (req, res) => {
     } catch (error) {
         console.error('Update Settings Error:', error);
         res.status(500).json({ message: 'Error updating settings' });
+    }
+};
+
+exports.getUserHistory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findByPk(id, {
+            attributes: ['id', 'display_name', 'email', 'public_id', 'created_at', 'last_active_at']
+        });
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // 1. Exam Results
+        const examResults = await ExamResult.findAll({
+            where: { user_id: id },
+            order: [['taken_at', 'DESC']],
+            limit: 20
+        });
+
+        // 2. Payments
+        const payments = await PaymentSlip.findAll({
+            where: { user_id: id },
+            order: [['created_at', 'DESC']],
+            limit: 10
+        });
+
+        const transactions = await Transaction.findAll({
+            where: { user_id: id },
+            order: [['created_at', 'DESC']],
+            limit: 10
+        });
+
+        const allPayments = [...payments, ...transactions].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 10);
+
+        res.json({
+            success: true,
+            user,
+            examHistory: examResults,
+            paymentHistory: allPayments
+        });
+
+    } catch (error) {
+        console.error('Get User History Error:', error);
+        res.status(500).json({ message: 'Error fetching user history', error });
     }
 };

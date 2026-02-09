@@ -1,5 +1,13 @@
 export const versionHistory = [
     {
+        version: '0.2.4',
+        date: '2026-02-09',
+        changes: [
+            { type: 'new', description: 'Enhanced Member Management (Last Active, Pagination, History)' },
+            { type: 'fix', description: 'Fixed Public Profile loading issue' }
+        ]
+    },
+    {
         version: '0.2.3',
         date: '2026-02-04',
         changes: [

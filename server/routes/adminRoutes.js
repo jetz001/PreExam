@@ -25,6 +25,7 @@ router.get('/users', adminController.getUsers);
 router.put('/users/:id', adminController.updateUser);
 router.put('/users/:id/status', adminController.updateUserStatus);
 router.put('/users/:id/permissions', adminController.updateUserPermissions);
+router.get('/users/:id/history', adminController.getUserHistory);
 
 // Payment Management
 router.get('/payments', adminController.getPayments);

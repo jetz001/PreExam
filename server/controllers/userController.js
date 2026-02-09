@@ -15,16 +15,29 @@ exports.getProfile = async (req, res) => {
 exports.getUserProfile = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = await User.findByPk(id, {
-            attributes: { exclude: ['password_hash', 'email', 'phone_number', 'premium_expiry'] } // Hide sensitive info initially
-        });
+        let user;
+
+        // Check if ID is likely a UUID (public_id) or Integer (id)
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+        if (isUUID) {
+            user = await User.findOne({
+                where: { public_id: id },
+                attributes: { exclude: ['password_hash', 'email', 'phone_number', 'premium_expiry'] }
+            });
+        } else {
+            user = await User.findByPk(id, {
+                attributes: { exclude: ['password_hash', 'email', 'phone_number', 'premium_expiry'] }
+            });
+        }
 
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         // Privacy Checks
-        const isSelf = req.user && req.user.id === parseInt(id);
+        // If query was by public_id, user.id is the internal ID. comparing req.user.id (int) with user.id (int).
+        const isSelf = req.user && req.user.id === user.id;
         const data = user.toJSON();
 
         if (!isSelf) {
