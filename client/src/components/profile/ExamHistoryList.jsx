@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import examService from '../../services/examService';
 import { useNavigate } from 'react-router-dom';
 
-const ExamHistoryList = ({ history }) => {
+const ExamHistoryList = ({ history, userId }) => {
     const [exams, setExams] = useState(history || []);
     const [loading, setLoading] = useState(!history);
     const navigate = useNavigate();
@@ -11,7 +11,12 @@ const ExamHistoryList = ({ history }) => {
         if (!history) {
             const fetchHistory = async () => {
                 try {
-                    const data = await examService.getHistory();
+                    let data;
+                    if (userId) {
+                        data = await examService.getUserHistory(userId);
+                    } else {
+                        data = await examService.getHistory();
+                    }
                     setExams(data.data || []);
                 } catch (error) {
                     console.error("Failed to fetch history");
@@ -21,7 +26,7 @@ const ExamHistoryList = ({ history }) => {
             };
             fetchHistory();
         }
-    }, [history]);
+    }, [history, userId]);
 
     if (loading) return <div>Loading history...</div>;
 

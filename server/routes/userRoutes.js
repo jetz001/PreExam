@@ -9,6 +9,7 @@ router.put('/settings', authMiddleware, userController.updateSettings);
 router.get('/stats/heatmap', authMiddleware, userController.getHeatmapStats);
 router.get('/stats/radar', authMiddleware, userController.getRadarStats);
 router.get('/stats', authMiddleware, userController.getStats);
+router.get('/:id/exams', authMiddleware, userController.getUserExams); // New route for fetching user exams
 router.get('/search', authMiddleware, userController.searchUsers);
 router.get('/profile/:id', authMiddleware, userController.getUserProfile);
 router.get('/profile', authMiddleware, userController.getProfile);

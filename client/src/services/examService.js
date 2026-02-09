@@ -41,6 +41,11 @@ const examService = {
         return response.data;
     },
 
+    getUserHistory: async (userId) => {
+        const response = await api.get(`/users/${userId}/exams`);
+        return response.data;
+    },
+
     getResultById: async (id) => {
         const response = await api.get(`/exams/${id}`);
         return response.data;

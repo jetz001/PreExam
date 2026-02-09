@@ -140,7 +140,7 @@ const ProfilePage = () => {
                             user={profileUser}
                         />
                     )}
-                    {activeTab === 'history' && <ExamHistoryList />}
+                    {activeTab === 'history' && <ExamHistoryList userId={profileUser.id} />}
                     {activeTab === 'bookmarks' && <BookmarkList />}
                     {activeTab === 'posts' && <ThreadList userId={isOwnProfile ? authUser.id : profileUser.id} />}
                     {activeTab === 'friends' && <FriendList />}

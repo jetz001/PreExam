@@ -1,5 +1,13 @@
 export const versionHistory = [
     {
+        version: '0.2.5',
+        date: '2026-02-09',
+        changes: [
+            { type: 'fix', description: 'Fixed duplicate exam history on user profiles' },
+            { type: 'new', description: 'Added backend support for fetching specific user exam history' }
+        ]
+    },
+    {
         version: '0.2.4',
         date: '2026-02-09',
         changes: [

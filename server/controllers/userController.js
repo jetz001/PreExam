@@ -490,3 +490,41 @@ exports.downgradeToUser = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
+exports.getUserExams = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const requestingUser = req.user;
+
+        let targetUserId = id;
+        // Check if ID is UUID
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+            const targetUser = await User.findOne({ where: { public_id: id } });
+            if (!targetUser) return res.status(404).json({ success: false, message: 'User not found' });
+            targetUserId = targetUser.id;
+        }
+
+        // Permission Check
+        const isSelf = requestingUser.id == targetUserId;
+        const isAdmin = requestingUser.role === 'admin';
+
+        if (!isSelf && !isAdmin) {
+            const targetUser = await User.findByPk(targetUserId);
+            if (!targetUser || !targetUser.is_public_stats) {
+                return res.status(403).json({ success: false, message: 'Private history' });
+            }
+        }
+
+        const exams = await ExamResult.findAll({
+            where: { user_id: targetUserId },
+            order: [['taken_at', 'DESC']],
+            limit: 20
+        });
+
+        res.json({ success: true, data: exams });
+
+    } catch (error) {
+        console.error('Get User Exams Error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
