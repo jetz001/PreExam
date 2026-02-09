@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: '0.2.6',
+        date: '2026-02-09',
+        changes: [
+            { type: 'new', description: 'Implemented Microsoft Clarity tracking' }
+        ]
+    },
+    {
         version: '0.2.5',
         date: '2026-02-09',
         changes: [
