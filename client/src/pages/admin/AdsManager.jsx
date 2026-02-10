@@ -24,9 +24,9 @@ const AdsManager = () => {
             newsViewCost: 0.15, newsClickCost: 6.0,
             resultViewCost: 0.2, resultClickCost: 8.0,
             inFeedFrequency: 10,
-            adSenseBackupId: 'ca-pub-123456789',
-            examResultSlotId: 'slot-123',
-            homeSlotId: 'slot-456'
+            adSenseBackupId: '',
+            examResultSlotId: '',
+            homeSlotId: ''
         }
     });
 

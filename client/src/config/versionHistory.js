@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: '0.2.9',
+        date: '2026-02-10',
+        changes: [
+            { type: 'fix', description: 'Functional AdSense Slot ID configuration in Admin Panel' }
+        ]
+    },
+    {
         version: '0.2.8',
         date: '2026-02-10',
         changes: [
