@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: '0.2.7',
+        date: '2026-02-10',
+        changes: [
+            { type: 'improvement', description: 'UX/UI Improvements: Quick Start button and Mobile Cookie Banner' }
+        ]
+    },
+    {
         version: '0.2.6',
         date: '2026-02-09',
         changes: [

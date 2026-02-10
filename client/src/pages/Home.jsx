@@ -96,7 +96,11 @@ const Home = () => {
                                         ทดลองทำข้อสอบฟรี
                                     </Link>
                                 </div>
-
+                                <div className="mt-3 sm:mt-0 sm:ml-3">
+                                    <Link to="/exam" className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-indigo-700 md:py-4 md:text-lg">
+                                        เริ่มทำข้อสอบทันที
+                                    </Link>
+                                </div>
                             </div>
                         </motion.div>
                         <motion.div
@@ -105,11 +109,13 @@ const Home = () => {
                             transition={{ duration: 0.5, delay: 0.2 }}
                             className="relative"
                         >
-                            <img
-                                className="w-full rounded-xl shadow-xl"
-                                src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
-                                alt="Students studying"
-                            />
+                            <Link to="/exam" className="block cursor-pointer hover:opacity-90 transition-opacity">
+                                <img
+                                    className="w-full rounded-xl shadow-xl"
+                                    src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
+                                    alt="Students studying - Click to start exam"
+                                />
+                            </Link>
                         </motion.div>
                     </div>
                 </div>
