@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: '0.2.8',
+        date: '2026-02-10',
+        changes: [
+            { type: 'new', description: 'Implemented Google AdSense verification (meta, script, ads.txt)' }
+        ]
+    },
+    {
         version: '0.2.7',
         date: '2026-02-10',
         changes: [
