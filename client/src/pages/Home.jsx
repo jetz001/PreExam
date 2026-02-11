@@ -92,7 +92,7 @@ const Home = () => {
                             </div>
                             <div className="mt-5 sm:mt-8 sm:flex sm:justify-start">
                                 <div className="rounded-md shadow">
-                                    <Link to="/exam" className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-secondary hover:bg-yellow-500 md:py-4 md:text-lg text-gray-900">
+                                    <Link to="/exam?quick=true" className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-secondary hover:bg-yellow-500 md:py-4 md:text-lg text-gray-900">
                                         ทดลองทำข้อสอบฟรี
                                     </Link>
                                 </div>
@@ -111,9 +111,11 @@ const Home = () => {
                         >
                             <Link to="/exam" className="block cursor-pointer hover:opacity-90 transition-opacity">
                                 <img
-                                    className="w-full rounded-xl shadow-xl"
+                                    className="w-full rounded-xl shadow-xl aspect-video object-cover"
                                     src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
                                     alt="Students studying - Click to start exam"
+                                    width="1350"
+                                    height="759"
                                 />
                             </Link>
                         </motion.div>
@@ -199,42 +201,42 @@ const Home = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="text-3xl font-extrabold text-gray-900 text-center mb-12">เลือกสนามสอบของคุณ</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="bg-white rounded-xl shadow-lg overflow-hidden transform transition hover:scale-105">
+                        <Link to="/exam?category=local_gov" className="group block bg-white rounded-xl shadow-lg overflow-hidden transform transition hover:scale-105 hover:shadow-xl">
                             <div className="p-8">
-                                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
                                     <Award className="h-6 w-6 text-primary" />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">สอบท้องถิ่น 67</h3>
                                 <p className="text-gray-500 mb-4">แนวข้อสอบท้องถิ่นล่าสุด ครบทุกตำแหน่ง อบต. เทศบาล อบจ.</p>
-                                <Link to="/exam?category=local_gov" className="text-primary font-medium flex items-center hover:text-blue-700">
+                                <span className="text-primary font-medium flex items-center group-hover:text-blue-700">
                                     เริ่มทำข้อสอบ <ArrowRight className="ml-2 h-4 w-4" />
-                                </Link>
+                                </span>
                             </div>
-                        </div>
-                        <div className="bg-white rounded-xl shadow-lg overflow-hidden transform transition hover:scale-105">
+                        </Link>
+                        <Link to="/exam?category=ocsc" className="group block bg-white rounded-xl shadow-lg overflow-hidden transform transition hover:scale-105 hover:shadow-xl">
                             <div className="p-8">
-                                <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+                                <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-yellow-200 transition-colors">
                                     <BookOpen className="h-6 w-6 text-yellow-600" />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">ก.พ. ภาค ก.</h3>
                                 <p className="text-gray-500 mb-4">เตรียมสอบ ก.พ. ภาค ก. ครบทุกวิชา ไทย อังกฤษ กฎหมาย คณิต</p>
-                                <Link to="/exam?category=ocsc" className="text-primary font-medium flex items-center hover:text-blue-700">
+                                <span className="text-primary font-medium flex items-center group-hover:text-blue-700">
                                     เริ่มทำข้อสอบ <ArrowRight className="ml-2 h-4 w-4" />
-                                </Link>
+                                </span>
                             </div>
-                        </div>
-                        <div className="bg-white rounded-xl shadow-lg overflow-hidden transform transition hover:scale-105">
+                        </Link>
+                        <Link to="/exam?category=teacher" className="group block bg-white rounded-xl shadow-lg overflow-hidden transform transition hover:scale-105 hover:shadow-xl">
                             <div className="p-8">
-                                <div className="h-12 w-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                                <div className="h-12 w-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-gray-200 transition-colors">
                                     <Users className="h-6 w-6 text-gray-600" />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">สอบครูผู้ช่วย</h3>
                                 <p className="text-gray-500 mb-4">คลังข้อสอบครูผู้ช่วยชุดใหม่ อัดแน่นด้วยคุณภาพ พร้อมเฉลยละเอียด</p>
-                                <Link to="/exam?category=teacher" className="text-primary font-medium flex items-center hover:text-blue-700">
+                                <span className="text-primary font-medium flex items-center group-hover:text-blue-700">
                                     เริ่มทำข้อสอบ <ArrowRight className="ml-2 h-4 w-4" />
-                                </Link>
+                                </span>
                             </div>
-                        </div>
+                        </Link>
                     </div>
                 </div>
             </section>

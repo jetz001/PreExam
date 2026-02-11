@@ -167,7 +167,7 @@ function App() {
       </Routes>
       <Toaster />
       <FloatingHelpWidget />
-      <CookieConsent />
+      {/* <CookieConsent /> - Temporarily disabled per user request (Clarity Feedback) */}
     </>
 
   );

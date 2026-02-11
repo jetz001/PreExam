@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import ExamConfig from '../components/ExamConfig';
 import ExamTaking from '../components/ExamTaking';
 import ExamResult from '../components/ExamResult';
@@ -9,6 +10,25 @@ const Exam = () => {
     const [questions, setQuestions] = useState([]);
     const [config, setConfig] = useState(null);
     const [result, setResult] = useState(null);
+    const location = useLocation();
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const isQuick = params.get('quick') === 'true';
+
+        if (isQuick && step === 'config') {
+            // Quick Test Configuration: Practice Mode, Local Gov (Default), 10 questions
+            const quickConfig = {
+                category: 'local_gov',
+                subject: '',
+                exam_year: '',
+                exam_set: '',
+                limit: 10,
+                mode: 'practice',
+            };
+            handleStart(quickConfig);
+        }
+    }, [location.search]);
 
     const handleStart = async (examConfig) => {
         try {
