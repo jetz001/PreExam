@@ -1,5 +1,13 @@
 export const versionHistory = [
     {
+        version: '0.2.13',
+        date: '2026-02-17',
+        changes: [
+            { type: 'fix', description: 'Room Creation: Fixed bug where rooms couldn\'t find questions with tags' },
+            { type: 'fix', description: 'Quick Start: Changed to search ALL categories to prevent "No Questions" error' }
+        ]
+    },
+    {
         version: '0.2.12',
         date: '2026-02-17',
         changes: [

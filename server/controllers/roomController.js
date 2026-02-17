@@ -20,7 +20,12 @@ exports.createRoom = async (req, res) => {
         const questions = await Question.findAll({
             where: {
                 subject: subject || 'thai',
-                ...(category && category !== 'Any Category' ? { category: { [sequelize.Sequelize.Op.like]: `%${category}%` } } : {})
+                ...(category && category !== 'Any Category' ? {
+                    [sequelize.Sequelize.Op.or]: [
+                        { category: { [sequelize.Sequelize.Op.like]: `%${category}%` } },
+                        { catalogs: { [sequelize.Sequelize.Op.like]: `%${category}%` } }
+                    ]
+                } : {})
             },
             order: [sequelize.literal('RANDOM()')],
             limit: question_count || 20,

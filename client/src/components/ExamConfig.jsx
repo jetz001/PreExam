@@ -81,7 +81,7 @@ const ExamConfig = ({ onStart }) => {
     const handleQuickStart = () => {
         // Default Quick Start Configuration
         const quickConfig = {
-            category: 'ocsc', // Default to OCSC (G-Gov) as it's the most popular
+            category: '', // Search ALL categories (Safe default)
             subject: '',
             exam_year: '',
             exam_set: '',
