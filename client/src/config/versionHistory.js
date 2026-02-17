@@ -1,5 +1,13 @@
 export const versionHistory = [
     {
+        version: '0.2.15',
+        date: '2026-02-17',
+        changes: [
+            { type: 'ui', description: 'Updated Quick Start button (removed icon)' },
+            { type: 'ui', description: 'Added "All" (ทั้งหมด) option to Category dropdown' }
+        ]
+    },
+    {
         version: '0.2.14',
         date: '2026-02-17',
         changes: [

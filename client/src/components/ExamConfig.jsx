@@ -107,7 +107,7 @@ const ExamConfig = ({ onStart }) => {
                         onClick={handleQuickStart}
                         className="w-full flex items-center justify-center py-4 px-6 border border-transparent rounded-xl shadow-lg text-xl font-bold text-white bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 focus:outline-none focus:ring-4 focus:ring-yellow-300 transform transition hover:scale-105"
                     >
-                        🚀 เริ่มฝึกทำข้อสอบ (สุ่ม 10 ข้อ)
+                        เริ่มฝึกทำข้อสอบ (สุ่ม 10 ข้อ)
                     </button>
                     <div className="text-center">
                         <p className="text-gray-500 text-sm mb-3">หรือ</p>
@@ -143,6 +143,7 @@ const ExamConfig = ({ onStart }) => {
                             onChange={handleChange}
                             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white"
                         >
+                            <option value="">ทั้งหมด</option>
                             {categories.map((cat, index) => (
                                 <option key={index} value={cat}>
                                     {cat === 'local_gov' ? 'ความรู้พื้นฐานในการปฏิบัติราชการ' : cat}
