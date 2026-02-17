@@ -81,7 +81,7 @@ const ExamConfig = ({ onStart }) => {
     const handleQuickStart = () => {
         // Default Quick Start Configuration
         const quickConfig = {
-            category: 'local_gov', // Default to Local Gov (most popular)
+            category: 'ocsc', // Default to OCSC (G-Gov) as it's the most popular
             subject: '',
             exam_year: '',
             exam_set: '',
@@ -99,7 +99,7 @@ const ExamConfig = ({ onStart }) => {
     return (
         <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow">
             <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center">เริ่มทำข้อสอบ</h2>
-            
+
             {/* Quick Start Section */}
             {!showAdvanced && (
                 <div className="space-y-6">
@@ -126,8 +126,8 @@ const ExamConfig = ({ onStart }) => {
                 <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in-down">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium text-gray-700">ตั้งค่าตัวกรอง</h3>
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             onClick={() => setShowAdvanced(false)}
                             className="text-gray-400 hover:text-gray-600 text-sm"
                         >

@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: '0.2.12',
+        date: '2026-02-17',
+        changes: [
+            { type: 'fix', description: 'Quick Start: Changed default category to OCSC (G-Gov) to ensure questions' }
+        ]
+    },
+    {
         version: '0.2.11',
         date: '2026-02-17',
         changes: [

@@ -17,9 +17,9 @@ const Exam = () => {
         const isQuick = params.get('quick') === 'true';
 
         if (isQuick && step === 'config') {
-            // Quick Test Configuration: Practice Mode, Local Gov (Default), 10 questions
+            // Quick Test Configuration: Practice Mode, OCSC (Default), 10 questions
             const quickConfig = {
-                category: 'local_gov',
+                category: 'ocsc',
                 subject: '',
                 exam_year: '',
                 exam_set: '',
