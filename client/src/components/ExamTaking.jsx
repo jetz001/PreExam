@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Flag, ChevronLeft, ChevronRight, AlertTriangle, Bookmark, Share2 } from 'lucide-react';
+import { Clock, Flag, ChevronLeft, ChevronRight, AlertTriangle, Bookmark, Share2, Type } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { useNavigate } from 'react-router-dom';
 import ReportModal from './exam/ReportModal';
@@ -35,6 +35,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
     const [startTime] = useState(Date.now()); // Track start time for accurate duration
     const [showReportModal, setShowReportModal] = useState(false);
     const [fontSizeScale, setFontSizeScale] = useState(1);
+    const [showFontMenu, setShowFontMenu] = useState(false);
     const { isPremium } = useUserRole();
 
     useEffect(() => {
@@ -121,12 +122,20 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                         {formatTime(timeLeft)}
                     </div>
                 )}
-                <button
-                    onClick={handleSubmit}
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                >
-                    ส่งคำตอบ
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowFontMenu(!showFontMenu)}
+                        className={`p-2 rounded hover:bg-gray-100 ${showFontMenu ? 'bg-gray-100 text-primary' : 'text-gray-600'}`}
+                    >
+                        <Type className="h-5 w-5" />
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        className="hidden md:block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                    >
+                        ส่งคำตอบ
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-grow overflow-hidden">
@@ -211,23 +220,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                             </div>
                         )}
 
-                        {/* Navigation */}
-                        <div className="flex justify-between mt-8">
-                            <button
-                                onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
-                                disabled={currentIndex === 0}
-                                className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                            >
-                                <ChevronLeft className="mr-2 h-4 w-4" /> ก่อนหน้า
-                            </button>
-                            <button
-                                onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))}
-                                disabled={currentIndex === questions.length - 1}
-                                className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                            >
-                                ถัดไป <ChevronRight className="ml-2 h-4 w-4" />
-                            </button>
-                        </div>
+                        {/* Old Navigation removed - moved to Footer */}
                     </div>
                 </div>
 
@@ -257,8 +250,34 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
             </div>
 
 
+            {/* Sticky Mobile Footer */}
+            <div className="bg-white border-t p-3 flex justify-between items-center sticky bottom-0 z-30">
+                <button
+                    onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
+                    disabled={currentIndex === 0}
+                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                    <ChevronLeft className="mr-2 h-4 w-4" />
+                </button>
+
+                <button
+                    onClick={handleSubmit}
+                    className="md:hidden bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow-sm hover:bg-green-700"
+                >
+                    ส่งคำตอบ
+                </button>
+
+                <button
+                    onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))}
+                    disabled={currentIndex === questions.length - 1}
+                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                </button>
+            </div>
+
             {/* Floating Tools */}
-            <FontResizer onResize={setFontSizeScale} currentSize={fontSizeScale} />
+            {showFontMenu && <FontResizer onResize={setFontSizeScale} currentSize={fontSizeScale} />}
 
             <PermissionGate requiredTier="premium" type="hide">
                 <AmbiencePlayer />

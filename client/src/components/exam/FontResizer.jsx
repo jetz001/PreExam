@@ -6,7 +6,7 @@ const FontResizer = ({ onResize, currentSize }) => {
     const sizes = [1, 1.25, 1.5];
 
     return (
-        <div className="fixed top-24 right-4 z-40 bg-white p-2 rounded-lg shadow-md border border-gray-200 flex flex-col space-y-2">
+        <div className="fixed top-28 right-4 z-50 bg-white p-2 rounded-lg shadow-xl border border-gray-200 flex flex-col space-y-2">
             <div className="text-xs text-center text-gray-400 font-bold mb-1">AABB</div>
             <button
                 onClick={() => onResize(1)}

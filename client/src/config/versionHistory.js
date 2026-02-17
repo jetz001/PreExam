@@ -1,5 +1,13 @@
 export const versionHistory = [
     {
+        version: '0.2.16',
+        date: '2026-02-17',
+        changes: [
+            { type: 'ui', description: 'Mobile UX: Added sticky footer navigation and movable submit button' },
+            { type: 'ui', description: 'Mobile UX: Changed font resizer to a toggleable menu to prevent overlap' }
+        ]
+    },
+    {
         version: '0.2.15',
         date: '2026-02-17',
         changes: [
