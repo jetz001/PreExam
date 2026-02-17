@@ -109,6 +109,15 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
     const currentQuestion = questions[currentIndex];
     const isAnswered = answers[currentQuestion.id];
 
+    // Logic: Ready to submit if on last question OR all questions answered
+    const isLastQuestion = currentIndex === questions.length - 1;
+    const allAnswered = Object.keys(answers).length === questions.length;
+    const isReadyToSubmit = isLastQuestion || allAnswered;
+
+    const submitBtnClass = isReadyToSubmit
+        ? "bg-green-600 text-white hover:bg-green-700 shadow-md transform hover:scale-105 transition-all"
+        : "bg-gray-200 text-gray-400 hover:bg-gray-300";
+
     return (
         <div className="flex flex-col h-screen-minus-navbar">
             {/* Header */}
@@ -131,7 +140,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className="hidden md:block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        className={`hidden md:block px-4 py-2 rounded font-medium transition-colors ${submitBtnClass}`}
                     >
                         ส่งคำตอบ
                     </button>
@@ -262,7 +271,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
 
                 <button
                     onClick={handleSubmit}
-                    className="md:hidden bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow-sm hover:bg-green-700"
+                    className={`md:hidden px-6 py-2 rounded-lg font-bold shadow-sm transition-colors ${submitBtnClass}`}
                 >
                     ส่งคำตอบ
                 </button>

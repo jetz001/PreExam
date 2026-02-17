@@ -1,5 +1,13 @@
 export const versionHistory = [
     {
+        version: '0.2.17',
+        date: '2026-02-17',
+        changes: [
+            { type: 'ui', description: 'Mobile UX: Moved Support button to avoid overlapping footer' },
+            { type: 'ui', description: 'UX: Submit button now appears faded until exam completion is near' }
+        ]
+    },
+    {
         version: '0.2.16',
         date: '2026-02-17',
         changes: [
