@@ -1,4 +1,4 @@
-const { Room, RoomParticipant, User, Question, sequelize } = require('../models');
+const { Room, RoomParticipant, User, Question, sequelize, Sequelize } = require('../models');
 const { v4: uuidv4 } = require('uuid');
 
 exports.createRoom = async (req, res) => {
@@ -21,9 +21,9 @@ exports.createRoom = async (req, res) => {
             where: {
                 subject: subject || 'thai',
                 ...(category && category !== 'Any Category' ? {
-                    [sequelize.Sequelize.Op.or]: [
-                        { category: { [sequelize.Sequelize.Op.like]: `%${category}%` } },
-                        { catalogs: { [sequelize.Sequelize.Op.like]: `%${category}%` } }
+                    [Sequelize.Op.or]: [
+                        { category: { [Sequelize.Op.like]: `%${category}%` } },
+                        { catalogs: { [Sequelize.Op.like]: `%${category}%` } }
                     ]
                 } : {})
             },

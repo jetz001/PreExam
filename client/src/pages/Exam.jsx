@@ -19,8 +19,8 @@ const Exam = () => {
         if (isQuick && step === 'config') {
             // Quick Test Configuration: Practice Mode, ALL Categories, 10 questions
             const quickConfig = {
-                category: '',
-                subject: '',
+                category: undefined,
+                subject: undefined,
                 exam_year: '',
                 exam_set: '',
                 limit: 10,

@@ -1,5 +1,13 @@
 export const versionHistory = [
     {
+        version: '0.2.14',
+        date: '2026-02-17',
+        changes: [
+            { type: 'fix', description: 'Room Creation: Fixed server error due to invalid database operator usage' },
+            { type: 'fix', description: 'Quick Start: Enhanced stability by cleaning up query parameters' }
+        ]
+    },
+    {
         version: '0.2.13',
         date: '2026-02-17',
         changes: [
