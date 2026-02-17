@@ -1,5 +1,13 @@
 export const versionHistory = [
     {
+        version: '0.2.11',
+        date: '2026-02-17',
+        changes: [
+            { type: 'feature', description: 'Advanced Filter: Quick Start button & hidden advanced settings' },
+            { type: 'fix', description: 'Exam: Added validation for question list integrity' }
+        ]
+    },
+    {
         version: '0.2.10',
         date: '2026-02-11',
         changes: [

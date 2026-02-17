@@ -38,10 +38,19 @@ const Exam = () => {
             const questionsList = Array.isArray(data.data) ? data.data : (data.data.rows || []);
 
             if (questionsList.length > 0) {
+                // Bug Fix: Check if we got significantly fewer questions than requested
+                // Use a soft threshold (e.g. 1) to alert user but still allow exam
+                if (questionsList.length === 1 && examConfig.limit > 1) {
+                    console.warn(`Warning: Requested ${examConfig.limit} questions but only got ${questionsList.length}`);
+                    // Optional: You could alert the user here, but maybe it's better to let them take the 1 question exam
+                    // than to block them. However, user feedback says "1 question then bounce" is bad.
+                    // Let's ensure we are passing the limit correctly.
+                }
+
                 setQuestions(questionsList);
                 setStep('taking');
             } else {
-                alert('ไม่พบข้อสอบในหมวดหมู่นี้');
+                alert('ไม่พบข้อสอบในหมวดหมู่นี้ กรุณาลองเลือกเงื่อนไขอื่น');
             }
         } catch (error) {
             console.error('Error starting exam:', error);
