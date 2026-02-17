@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: '0.2.18',
+        date: '2026-02-17',
+        changes: [
+            { type: 'fix', description: 'Fixed "Guest-guest-17" name collision issue for Facebook Browser users' }
+        ]
+    },
+    {
         version: '0.2.17',
         date: '2026-02-17',
         changes: [

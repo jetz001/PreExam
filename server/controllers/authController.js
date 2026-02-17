@@ -298,7 +298,9 @@ exports.guestLogin = async (req, res) => {
 
         if (!user) {
             // Create new guest user with safe display name
-            const shortId = deviceId.substring(0, 8);
+            // Create new guest user with safe display name
+            // Use last 5 chars of deviceId + 3 random digits to ensure uniqueness/randomness
+            const shortId = deviceId.slice(-5) + Math.floor(100 + Math.random() * 900);
             user = await User.create({
                 email,
                 display_name: `Guest-${shortId}`,

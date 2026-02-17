@@ -51,7 +51,9 @@ const authService = {
         let deviceId = localStorage.getItem('guest_device_id');
         if (!deviceId) {
             // Generate a robust UUID if not exists
-            deviceId = crypto.randomUUID ? crypto.randomUUID() : `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            // Generate a robust UUID if not exists. Fallback includes random hex to avoid 'guest-17' pattern.
+            const randomHex = Math.random().toString(16).slice(2, 10); // 8 random hex chars
+            deviceId = crypto.randomUUID ? crypto.randomUUID() : `guest-${Date.now()}-${randomHex}`;
             localStorage.setItem('guest_device_id', deviceId);
         }
 
