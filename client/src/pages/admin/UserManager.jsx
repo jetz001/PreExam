@@ -225,10 +225,10 @@ const HistoryModal = ({ user, history, onClose }) => {
                                                 </td>
                                                 <td className="px-4 py-2 text-center">
                                                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${payment.status === 'approved' || payment.status === 'SUCCESS' || payment.status === 'completed'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : payment.status === 'pending' || payment.status === 'PENDING'
-                                                                ? 'bg-yellow-100 text-yellow-800'
-                                                                : 'bg-red-100 text-red-800'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : payment.status === 'pending' || payment.status === 'PENDING'
+                                                            ? 'bg-yellow-100 text-yellow-800'
+                                                            : 'bg-red-100 text-red-800'
                                                         }`}>
                                                         {payment.status}
                                                     </span>
@@ -408,8 +408,9 @@ const UserManager = () => {
             const matchesName = (user.name || user.display_name || '').toLowerCase().includes(searchLower);
             const matchesEmail = (user.email || '').toLowerCase().includes(searchLower);
             const matchesBusiness = (user.business_name || '').toLowerCase().includes(searchLower);
+            const matchesPublicId = (user.public_id || '').toLowerCase().includes(searchLower);
 
-            if (!matchesName && !matchesEmail && !matchesBusiness) return false;
+            if (!matchesName && !matchesEmail && !matchesBusiness && !matchesPublicId) return false;
         }
 
         // Status Filter
@@ -445,7 +446,7 @@ const UserManager = () => {
                     </div>
                     <input
                         type="text"
-                        placeholder="ค้นหาด้วยชื่อ หรือ อีเมล..."
+                        placeholder="Search by Name, Email, or Public ID..."
                         className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out text-slate-900"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}

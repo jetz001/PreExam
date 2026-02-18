@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: '0.2.19',
+        date: '2026-02-18',
+        changes: [
+            { type: 'feature', description: 'Admin: Enable searching users by Public ID (UUID)' }
+        ]
+    },
+    {
         version: '0.2.18',
         date: '2026-02-17',
         changes: [

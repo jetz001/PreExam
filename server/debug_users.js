@@ -1,14 +1,23 @@
 const fs = require('fs');
-const { Op } = require('sequelize'); // Import Op
+const { Sequelize, DataTypes, Op } = require('sequelize'); // Import Op
 
-// Load models from index.js which handles connection
-const db = require('./models');
-const { User, ExamResult } = db;
+const sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: './db_production.sqlite',
+    logging: false // Disable SQL logging
+});
+
+const User = require('./models/User')(sequelize, DataTypes);
+const ExamResult = require('./models/ExamResult')(sequelize, DataTypes);
+
+// Setup associations
+User.hasMany(ExamResult, { foreignKey: 'user_id' });
+ExamResult.belongsTo(User, { foreignKey: 'user_id' });
 
 async function checkUsers() {
     try {
         // Ensure DB connection
-        await db.sequelize.authenticate();
+        await sequelize.authenticate();
         console.log('Connection has been established successfully.');
 
         // Sync not needed as we are reading
@@ -16,22 +25,23 @@ async function checkUsers() {
         const users = await User.findAll({
             where: {
                 [Op.or]: [
-                    { display_name: { [Op.like]: '%guest%' } },
-                    { public_id: '28c35b92-0c01-4a7f-81f1-56930e72af8b' } // ID from screenshot
+                    { public_id: '28c35b92-0c01-4a7f-81f1-56930e72af8b' },
+                    { display_name: 'Guest-guest-17' }
                 ]
             },
             include: [{
                 model: ExamResult,
-                // attributes: ['id', 'score', 'total_questions', 'created_at'] // Let's get all fields just in case
             }],
-            order: [['created_at', 'DESC']],
-            limit: 20
+            order: [['created_at', 'DESC']]
         });
 
-        let output = `Found ${users.length} users matching 'Guest-guest-17%'\n`;
+        let output = `Found ${users.length} users\n`;
 
         users.forEach(u => {
             output += `\nID: ${u.id}`;
+            output += `\nPublic ID: ${u.public_id}`;
+            output += `\nDisplay Name: ${u.display_name}`;
+            output += `\nEmail: ${u.email}`;
             output += `\nCreated: ${u.created_at}`;
             output += `\nLast Active: ${u.last_active_at}`;
             output += `\nRole: ${u.role}`;
