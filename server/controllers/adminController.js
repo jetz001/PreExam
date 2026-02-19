@@ -790,3 +790,21 @@ exports.getUserHistory = async (req, res) => {
         res.status(500).json({ message: 'Error fetching user history', error });
     }
 };
+
+exports.getUserLogs = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { SystemLog } = db;
+
+        const logs = await SystemLog.findAll({
+            where: { user_id: id },
+            order: [['created_at', 'DESC']],
+            limit: 10
+        });
+
+        res.json({ success: true, logs });
+    } catch (error) {
+        console.error('Get User Logs Error:', error);
+        res.status(500).json({ message: 'Error fetching user logs', error });
+    }
+};

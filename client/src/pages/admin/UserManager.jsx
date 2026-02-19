@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone, Globe } from 'lucide-react';
+import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone, Globe, FileText, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
 
@@ -257,12 +257,58 @@ const HistoryModal = ({ user, history, onClose }) => {
     );
 };
 
+const LogModal = ({ user, logs, onClose }) => {
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 className="font-bold text-lg text-gray-800 flex items-center">
+                        <Activity className="w-5 h-5 mr-2 text-indigo-600" />
+                        Activity Logs: {user.display_name}
+                    </h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <X size={20} />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                    {logs && logs.length > 0 ? (
+                        <div className="space-y-3">
+                            {logs.map((log) => (
+                                <div key={log.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="font-semibold text-gray-700 text-sm opacity-90">{log.action}</span>
+                                        <span className="text-xs text-gray-400">{new Date(log.created_at).toLocaleString()}</span>
+                                    </div>
+                                    <pre className="text-xs text-slate-500 overflow-x-auto whitespace-pre-wrap font-mono bg-white p-2 rounded border border-gray-100">
+                                        {typeof log.details === 'string'
+                                            ? log.details
+                                            : JSON.stringify(log.details, null, 2)}
+                                    </pre>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-center text-gray-500 py-8">No activity logs found.</p>
+                    )}
+                </div>
+                <div className="p-4 bg-gray-50 flex justify-end">
+                    <button onClick={onClose} className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium shadow-sm">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const UserManager = () => {
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState('users');
     const [editingPermissionsUser, setEditingPermissionsUser] = useState(null);
     const [viewingHistoryUser, setViewingHistoryUser] = useState(null);
     const [historyData, setHistoryData] = useState(null);
+    const [viewingLogsUser, setViewingLogsUser] = useState(null);
+    const [logsData, setLogsData] = useState(null);
     const [isAddAdminModalOpen, setIsAddAdminModalOpen] = useState(false);
 
     // Check if url hash has page number
@@ -355,6 +401,18 @@ const UserManager = () => {
 
     const handleSavePermissions = (id, permissions) => {
         updatePermissionsMutation.mutate({ id, permissions });
+    };
+
+    const handleViewLogs = async (user) => {
+        try {
+            const response = await adminApi.getUserLogs(user.id);
+            if (response.success) {
+                setLogsData(response.logs);
+                setViewingLogsUser(user);
+            }
+        } catch (error) {
+            toast.error('Failed to load logs');
+        }
     };
 
     const handleViewHistory = async (user) => {
@@ -610,7 +668,13 @@ const UserManager = () => {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-500">
-                                            {user.last_active_at ? new Date(user.last_active_at).toLocaleString() : '-'}
+                                            <button
+                                                onClick={() => handleViewLogs(user)}
+                                                className="hover:text-indigo-600 hover:underline focus:outline-none transition-colors text-left"
+                                                title="View Activity Logs"
+                                            >
+                                                {user.last_active_at ? new Date(user.last_active_at).toLocaleString() : '-'}
+                                            </button>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-sm text-slate-800">
@@ -733,6 +797,17 @@ const UserManager = () => {
                     onClose={() => {
                         setViewingHistoryUser(null);
                         setHistoryData(null);
+                    }}
+                />
+            )}
+
+            {viewingLogsUser && logsData && (
+                <LogModal
+                    user={viewingLogsUser}
+                    logs={logsData}
+                    onClose={() => {
+                        setViewingLogsUser(null);
+                        setLogsData(null);
                     }}
                 />
             )}

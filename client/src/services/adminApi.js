@@ -78,6 +78,10 @@ const adminApi = {
         const response = await api.get(`/admin/users/${id}/history`);
         return response.data;
     },
+    getUserLogs: async (id) => {
+        const response = await api.get(`/users/${id}/logs`);
+        return response.data;
+    },
     updateUserStatus: async (id, status) => {
         const response = await api.put(`/admin/users/${id}/status`, { status });
         return response.data;

@@ -1,4 +1,5 @@
 const { ExamResult, Question } = require('../models');
+const { logActivity } = require('../utils/activityLogger');
 
 exports.submitExam = async (req, res) => {
     try {
@@ -106,6 +107,14 @@ exports.submitExam = async (req, res) => {
         }
 
         res.status(201).json({ success: true, data: examResult });
+
+        // Log Activity
+        logActivity('BTN_SUBMIT_EXAM', {
+            score,
+            total_score,
+            mode,
+            subject_scores
+        }, req.user.id);
     } catch (error) {
         console.error('Error submitting exam:', error);
         console.error('Request body:', req.body);
@@ -136,5 +145,17 @@ exports.getExamResultById = async (req, res) => {
         res.json({ success: true, data: result });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+exports.logExamStart = async (req, res) => {
+    try {
+        const { mode, category } = req.body;
+        // Log Activity
+        logActivity('BTN_START_EXAM', { mode, category }, req.user.id);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Log Start Exam Error:', error);
+        res.status(500).json({ success: false });
     }
 };

@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
+const { logActivity } = require('../utils/activityLogger');
 
 const generateToken = (user) => {
     return jwt.sign(
@@ -63,6 +64,11 @@ exports.register = async (req, res) => {
                 public_id: user.public_id,
             },
         });
+
+        // Log Activity
+        logActivity('BTN_REGISTER', { email, role: safeRole }, user.id);
+
+
     } catch (error) {
         console.error('Register Error:', error);
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
@@ -98,6 +104,9 @@ exports.login = async (req, res) => {
 
         // Update location on successful login
         await user.update(locationData);
+
+        // Log Activity
+        logActivity('BTN_LOGIN_NORMAL', { email }, user.id);
 
         const token = generateToken(user);
 
@@ -167,6 +176,10 @@ exports.googleLogin = async (req, res) => {
         }
 
         const jwtToken = generateToken(user);
+
+        // Log Activity
+        logActivity('BTN_LOGIN_GOOGLE', { email }, user.id);
+
         res.json({
             success: true,
             token: jwtToken,
@@ -249,6 +262,10 @@ exports.facebookLogin = async (req, res) => {
         }
 
         const jwtToken = generateToken(user);
+
+        // Log Activity
+        logActivity('BTN_LOGIN_FACEBOOK', { email }, user.id);
+
         res.json({
             success: true,
             token: jwtToken,
@@ -315,6 +332,9 @@ exports.guestLogin = async (req, res) => {
         }
 
         const token = generateToken(user);
+
+        // Log Activity
+        logActivity('BTN_LOGIN_GUEST', { deviceId }, user.id);
 
         res.json({
             success: true,
