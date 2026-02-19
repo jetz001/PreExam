@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: '0.2.21',
+        date: '2026-02-19',
+        changes: [
+            { type: 'feature', description: 'Expanded User Activity Logging (News, Community, Profile, Landing Page)' }
+        ]
+    },
+    {
         version: '0.2.20',
         date: '2026-02-19',
         changes: [

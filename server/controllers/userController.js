@@ -1,4 +1,5 @@
 const { User, ExamResult } = require('../models');
+const { logActivity } = require('../utils/activityLogger');
 
 
 exports.getProfile = async (req, res) => {
@@ -53,6 +54,13 @@ exports.getUserProfile = async (req, res) => {
             // Always hide specific private fields for others
             delete data.notification_preferences; // concept
             delete data.plan_type; // Maybe keep?
+        }
+
+        if (req.user) {
+            // Only log if viewing OTHER profile, or maybe all? Let's log all profile views for now.
+            // But if viewing self, maybe redundancy.
+            // Let's log if user exists.
+            logActivity(req, 'BTN_VIEW_PROFILE', { target_user_id: user.id, is_self: isSelf });
         }
 
         res.json({ success: true, data });
@@ -119,7 +127,8 @@ exports.updateProfile = async (req, res) => {
             attributes: { exclude: ['password_hash'] }
         });
 
-
+        // Log Activity
+        logActivity(req, 'BTN_UPDATE_PROFILE', { updated_fields: Object.keys(updateData) });
 
         res.json({ success: true, data: user });
     } catch (error) {

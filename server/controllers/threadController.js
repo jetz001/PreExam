@@ -1,4 +1,5 @@
 const { Thread, User, InterestTag, ThreadTag, SearchLog, Sequelize } = require('../models');
+const { logActivity } = require('../utils/activityLogger');
 const db = require('../models');
 const { Op } = require('sequelize');
 
@@ -65,6 +66,9 @@ exports.createThread = async (req, res) => {
         // Socket.io Emit
         const io = req.app.get('io');
         io.emit('new_thread', fullThread);
+
+        // Log Activity
+        logActivity(req, 'BTN_CREATE_THREAD', { thread_id: thread.id, title: thread.title });
 
         res.status(201).json(fullThread);
     } catch (error) {
@@ -216,9 +220,13 @@ exports.getThreads = async (req, res) => {
             return threadJson;
         }));
 
-        let nextCursor = null;
         if (threadsWithLiked.length === parseInt(limit)) {
             nextCursor = threadsWithLiked[threadsWithLiked.length - 1].id;
+        }
+
+        // Log Community View (Only first page / no cursor)
+        if (!cursor && req.user) {
+            logActivity(req, 'BTN_VIEW_COMMUNITY', { category: category || 'all', search: search || null });
         }
 
         res.json({ threads: threadsWithLiked, nextCursor });
@@ -249,6 +257,11 @@ exports.getThreadById = async (req, res) => {
 
         // Increment views
         await thread.increment('views');
+
+        // Log Activity
+        if (req.user) {
+            logActivity(req, 'BTN_VIEW_THREAD', { thread_id: id, title: thread.title });
+        }
 
         const threadJson = thread.toJSON();
 

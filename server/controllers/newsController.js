@@ -1,4 +1,5 @@
 const { News, NewsSource } = require('../models');
+const { logActivity } = require('../utils/activityLogger');
 
 exports.getSources = async (req, res) => {
     try {
@@ -69,6 +70,9 @@ exports.getNewsById = async (req, res) => {
         // Increment views
         news.views += 1;
         await news.save();
+
+        // Log Activity
+        await logActivity(req, 'BTN_READ_NEWS', { newsId: news.id, title: news.title });
 
         res.json({ success: true, data: news });
     } catch (error) {
@@ -328,6 +332,9 @@ exports.getLandingPageNews = async (req, res) => {
                 });
             }
         }
+
+        // Log Landing Page Visit (ignoring errors to prevent blocking)
+        logActivity(req, 'VIEW_LANDING', { isFallback: useFallback }).catch(err => console.error('Log Error:', err));
 
         res.json({ success: true, data: news, isFallback: useFallback });
 
