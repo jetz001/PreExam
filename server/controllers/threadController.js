@@ -153,6 +153,7 @@ exports.shareBusinessPost = async (req, res) => {
 exports.getThreads = async (req, res) => {
     try {
         const { cursor, limit = 10, category, search, sort = 'newest' } = req.query;
+        let nextCursor = null; // Initialize nextCursor
         const whereClause = {};
 
         if (category && category !== 'all') {
@@ -232,7 +233,7 @@ exports.getThreads = async (req, res) => {
         res.json({ threads: threadsWithLiked, nextCursor });
     } catch (error) {
         console.error('ERROR in getThreads:', error);
-        res.status(500).json({ error: 'Server error fetching threads', details: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Server error fetching threads' });
     }
 };
 
