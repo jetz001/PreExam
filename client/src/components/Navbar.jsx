@@ -99,13 +99,25 @@ const Navbar = () => {
                                 </>
                             ) : (
                                 <>
-                                    <Link to="/auth/business/login" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                                    <Link
+                                        to="/auth/business/login"
+                                        onClick={() => handleNavClick('Business Login', '/auth/business/login')}
+                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                                    >
                                         สำหรับธุรกิจ
                                     </Link>
-                                    <Link to="/login" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                                    <Link
+                                        to="/login"
+                                        onClick={() => handleNavClick('Login', '/login')}
+                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                                    >
                                         เข้าสู่ระบบ
                                     </Link>
-                                    <Link to="/register" className="bg-primary dark:bg-indigo-600 text-white hover:bg-blue-700 dark:hover:bg-indigo-700 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                                    <Link
+                                        to="/register"
+                                        onClick={() => handleNavClick('Register', '/register')}
+                                        className="bg-primary dark:bg-indigo-600 text-white hover:bg-blue-700 dark:hover:bg-indigo-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                                    >
                                         สมัครสมาชิก
                                     </Link>
                                 </>
@@ -191,13 +203,34 @@ const Navbar = () => {
                                     </div>
                                 ) : (
                                     <div className="w-full space-y-2">
-                                        <Link to="/auth/business/login" className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2">
+                                        <Link
+                                            to="/auth/business/login"
+                                            onClick={() => {
+                                                setIsOpen(false);
+                                                handleNavClick('Business Login', '/auth/business/login');
+                                            }}
+                                            className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
+                                        >
                                             สำหรับธุรกิจ
                                         </Link>
-                                        <Link to="/login" className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2">
+                                        <Link
+                                            to="/login"
+                                            onClick={() => {
+                                                setIsOpen(false);
+                                                handleNavClick('Login', '/login');
+                                            }}
+                                            className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
+                                        >
                                             เข้าสู่ระบบ
                                         </Link>
-                                        <Link to="/register" className="block text-base font-medium text-primary dark:text-indigo-400 hover:text-blue-700 dark:hover:text-indigo-300 px-3 py-2">
+                                        <Link
+                                            to="/register"
+                                            onClick={() => {
+                                                setIsOpen(false);
+                                                handleNavClick('Register', '/register');
+                                            }}
+                                            className="block text-base font-medium text-primary dark:text-indigo-400 hover:text-blue-700 dark:hover:text-indigo-300 px-3 py-2"
+                                        >
                                             สมัครสมาชิก
                                         </Link>
                                     </div>
