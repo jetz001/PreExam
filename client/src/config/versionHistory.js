@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: 'v0.2.22',
+        date: '2026-02-19',
+        changes: [
+            { type: 'feature', description: 'Added Activity Logging to all Navbar buttons' }
+        ]
+    },
+    {
         version: '0.2.21',
         date: '2026-02-19',
         changes: [

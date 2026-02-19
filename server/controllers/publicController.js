@@ -1,5 +1,6 @@
 
 const { User, Question, ExamResult } = require('../models');
+const { logActivity } = require('../utils/activityLogger');
 
 exports.getLandingStats = async (req, res) => {
     try {
@@ -66,5 +67,21 @@ exports.getSystemSettings = async (req, res) => {
     } catch (error) {
         console.error('Get Public Settings Error:', error);
         res.json({ success: false, settings: {} });
+    }
+};
+
+exports.logFrontendActivity = async (req, res) => {
+    try {
+        const { action, details } = req.body;
+        // Validate
+        if (!action) return res.status(400).json({ success: false, message: 'Action required' });
+
+        // Log
+        await logActivity(req, action, details || {});
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Log Frontend Activity Error:', error);
+        res.status(500).json({ success: false });
     }
 };

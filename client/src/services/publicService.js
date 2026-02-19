@@ -10,9 +10,16 @@ const publicService = {
         const response = await api.get('/news/landing');
         return response.data;
     },
-    getSystemSettings: async () => {
+    async getSystemSettings() {
         const response = await api.get('/public/settings');
         return response.data;
+    },
+    async logActivity(action, details = {}) {
+        try {
+            await api.post('/public/log', { action, details });
+        } catch (error) {
+            console.error('Log Error:', error);
+        }
     }
 };
 

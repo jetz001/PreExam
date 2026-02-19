@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, Bell } from 'lucide-react';
 import authService from '../services/authService';
+import publicService from '../services/publicService';
 import EditProfileModal from './EditProfileModal';
 import { useTour } from '../context/TourContext';
 
@@ -21,9 +22,16 @@ const Navbar = () => {
     }, [location]);
 
     const handleLogout = () => {
+        publicService.logActivity('BTN_LOGOUT', { type: 'manual' });
         authService.logout();
         setUser(null);
         navigate('/login');
+    };
+
+    const handleNavClick = (label, path) => {
+        if (user) {
+            publicService.logActivity('BTN_NAV_CLICK', { label, path });
+        }
     };
 
     return (
@@ -47,6 +55,7 @@ const Navbar = () => {
                                     <Link
                                         key={item.path}
                                         to={item.path}
+                                        onClick={() => handleNavClick(item.label, item.path)}
                                         className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${location.pathname === item.path
                                             ? 'border-indigo-500 text-gray-900 dark:text-white'
                                             : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200'
@@ -67,11 +76,16 @@ const Navbar = () => {
                                         {user.display_name || user.username || 'User'}
                                     </span>
 
-                                    <Link to="/profile" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                                    <Link
+                                        to="/profile"
+                                        onClick={() => handleNavClick('My Profile', '/profile')}
+                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                                    >
                                         My Profile
                                     </Link>
                                     <Link
                                         to={user.email?.startsWith('guest_') ? "/login" : "/business/dashboard"}
+                                        onClick={() => handleNavClick('Manage Page', user.email?.startsWith('guest_') ? "/login" : "/business/dashboard")}
                                         className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                                     >
                                         จัดการหน้าเพจ
@@ -127,6 +141,10 @@ const Navbar = () => {
                                 <Link
                                     key={item.path}
                                     to={item.path}
+                                    onClick={() => {
+                                        setIsOpen(false);
+                                        handleNavClick(item.label, item.path);
+                                    }}
                                     className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors ${location.pathname === item.path
                                         ? 'bg-indigo-50 dark:bg-indigo-900/20 border-primary text-primary dark:text-indigo-400'
                                         : 'border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200'
@@ -144,11 +162,22 @@ const Navbar = () => {
                                             สวัสดี, {user.display_name}
                                         </div>
 
-                                        <Link to="/profile" className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2">
+                                        <Link
+                                            to="/profile"
+                                            onClick={() => {
+                                                setIsOpen(false);
+                                                handleNavClick('My Profile', '/profile');
+                                            }}
+                                            className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
+                                        >
                                             My Profile
                                         </Link>
                                         <Link
                                             to={user.email?.startsWith('guest_') ? "/login" : "/business/dashboard"}
+                                            onClick={() => {
+                                                setIsOpen(false);
+                                                handleNavClick('Manage Page', user.email?.startsWith('guest_') ? "/login" : "/business/dashboard");
+                                            }}
                                             className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
                                         >
                                             จัดการหน้าเพจ
