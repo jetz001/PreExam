@@ -232,7 +232,7 @@ exports.getThreads = async (req, res) => {
         res.json({ threads: threadsWithLiked, nextCursor });
     } catch (error) {
         console.error('ERROR in getThreads:', error);
-        res.status(500).json({ error: 'Server error fetching threads' });
+        res.status(500).json({ error: 'Server error fetching threads', details: error.message, stack: error.stack });
     }
 };
 
