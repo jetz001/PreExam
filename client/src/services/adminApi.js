@@ -79,7 +79,7 @@ const adminApi = {
         return response.data;
     },
     getUserLogs: async (id) => {
-        const response = await api.get(`/users/${id}/logs`);
+        const response = await api.get(`/admin/users/${id}/logs`);
         return response.data;
     },
     updateUserStatus: async (id, status) => {
