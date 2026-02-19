@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: 'v0.2.23',
+        date: '2026-02-19',
+        changes: [
+            { type: 'fix', description: 'Fixed issue where activity logs were missing user data (Auth Middleware)' }
+        ]
+    },
+    {
         version: 'v0.2.22',
         date: '2026-02-19',
         changes: [
