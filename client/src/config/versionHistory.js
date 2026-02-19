@@ -1,5 +1,13 @@
 export const versionHistory = [
     {
+        version: '0.2.20',
+        date: '2026-02-19',
+        changes: [
+            { type: 'feature', description: 'Admin: Added User Activity Log (View last 10 actions)' },
+            { type: 'backend', description: 'Implemented system-wide logging for key user actions' }
+        ]
+    },
+    {
         version: '0.2.19',
         date: '2026-02-18',
         changes: [
