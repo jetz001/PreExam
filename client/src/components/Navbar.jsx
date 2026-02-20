@@ -83,13 +83,7 @@ const Navbar = () => {
                                     >
                                         My Profile
                                     </Link>
-                                    <Link
-                                        to="/profile?tab=inbox"
-                                        onClick={() => handleNavClick('Inbox', '/profile?tab=inbox')}
-                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                                    >
-                                        กล่องข้อความ
-                                    </Link>
+
                                     <Link
                                         to={user.email?.startsWith('guest_') ? "/login" : "/business/dashboard"}
                                         onClick={() => handleNavClick('Manage Page', user.email?.startsWith('guest_') ? "/login" : "/business/dashboard")}
@@ -191,16 +185,7 @@ const Navbar = () => {
                                         >
                                             My Profile
                                         </Link>
-                                        <Link
-                                            to="/profile?tab=inbox"
-                                            onClick={() => {
-                                                setIsOpen(false);
-                                                handleNavClick('Inbox', '/profile?tab=inbox');
-                                            }}
-                                            className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
-                                        >
-                                            กล่องข้อความ
-                                        </Link>
+
                                         <Link
                                             to={user.email?.startsWith('guest_') ? "/login" : "/business/dashboard"}
                                             onClick={() => {

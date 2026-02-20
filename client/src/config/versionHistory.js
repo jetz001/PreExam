@@ -1,5 +1,13 @@
 export const versionHistory = [
     {
+        version: 'v0.2.24',
+        date: '2026-02-20',
+        changes: [
+            { type: 'fix', description: 'Fixed missing Users icon import in InboxTab' },
+            { type: 'ui', description: 'Removed Inbox (กล่องข้อความ) link from Navbar' }
+        ]
+    },
+    {
         version: 'v0.2.23',
         date: '2026-02-19',
         changes: [
