@@ -128,6 +128,12 @@ const adminApi = {
         const response = await api.get('/admin/messages');
         return response.data;
     },
+    broadcastMessage: async (data) => {
+        const response = await api.post('/admin/messages/broadcast', data);
+        return response.data;
+    },
+    // Adding standard sendMessage proxy if admin needs to send 1:1 specifically from admin panel
+    // Or we can just use the broadcast endpoint with a single userId
     getReports: async () => {
         const response = await api.get('/admin/reports');
         return response.data;

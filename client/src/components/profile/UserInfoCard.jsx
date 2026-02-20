@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Calendar, Flame, Timer, Edit, Crown, Check, X, AlertCircle } from 'lucide-react';
+import { Camera, Calendar, Flame, Timer, Edit, Crown, Check, X, AlertCircle, Mail } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import userService from '../../services/userService';
 import toast from 'react-hot-toast';
@@ -239,6 +239,17 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
                             className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-blue-600 transition text-sm font-medium py-1"
                         >
                             <Edit size={16} /> Edit Profile
+                        </button>
+                    </div>
+                )}
+
+                {!isOwnProfile && (
+                    <div className="mt-6 flex flex-col gap-2 w-full">
+                        <button
+                            onClick={() => navigate(`/inbox?user=${user.id}`)}
+                            className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium"
+                        >
+                            <Mail size={18} /> Send Message
                         </button>
                     </div>
                 )}

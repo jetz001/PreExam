@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone, Globe, FileText, Activity } from 'lucide-react';
+import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone, Globe, FileText, Activity, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
 
@@ -301,6 +301,68 @@ const LogModal = ({ user, logs, onClose }) => {
     );
 };
 
+const BroadcastModal = ({ isOpen, onClose, targetUser, onSend }) => {
+    const [message, setMessage] = useState('');
+    const [sending, setSending] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleSend = async () => {
+        if (!message.trim()) return;
+        setSending(true);
+        try {
+            await onSend({
+                message,
+                userIds: targetUser ? [targetUser.id] : [],
+                sendToAll: !targetUser
+            });
+            setMessage('');
+            onClose();
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 className="font-bold text-lg text-gray-800 flex items-center">
+                        <Mail className="w-5 h-5 mr-2 text-indigo-600" />
+                        {targetUser ? `Message to: ${targetUser.display_name}` : 'Broadcast Message (All Users)'}
+                    </h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <X size={20} />
+                    </button>
+                </div>
+                <div className="p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                    <textarea
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Type your message here..."
+                        rows="5"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                </div>
+                <div className="p-4 bg-gray-50 flex justify-end space-x-2">
+                    <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium">
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSend}
+                        disabled={sending || !message.trim()}
+                        className={`px-4 py-2 rounded-lg font-medium text-white flex items-center 
+                            ${sending || !message.trim() ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                    >
+                        {sending ? 'Sending...' : 'Send'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const UserManager = () => {
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState('users');
@@ -311,6 +373,10 @@ const UserManager = () => {
     const [logsData, setLogsData] = useState(null);
     const [isAddAdminModalOpen, setIsAddAdminModalOpen] = useState(false);
 
+    // Broadcast Modal States
+    const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+    const [broadcastTargetUser, setBroadcastTargetUser] = useState(null);
+
     // Check if url hash has page number
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 50;
@@ -319,6 +385,18 @@ const UserManager = () => {
         queryKey: ['users'],
         queryFn: adminApi.getUsers
     });
+
+    const broadcastMutation = useMutation({
+        mutationFn: adminApi.broadcastMessage,
+        onSuccess: () => {
+            toast.success('Message sent successfully');
+        },
+        onError: (err) => toast.error(`Failed to send message: ${err.response?.data?.message || err.message}`)
+    });
+
+    const handleSendBroadcast = async (data) => {
+        await broadcastMutation.mutateAsync(data);
+    };
 
     const updateUserMutation = useMutation({
         mutationFn: ({ id, data }) => adminApi.updateUser(id, data),
@@ -525,15 +603,27 @@ const UserManager = () => {
                             <Shield className="h-4 w-4 text-slate-400" />
                         </div>
                     </div>
-                    {activeTab === 'admins' && (
+                    <div className="flex items-center gap-2">
                         <button
-                            onClick={() => setIsAddAdminModalOpen(true)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm transition-colors whitespace-nowrap"
+                            onClick={() => {
+                                setBroadcastTargetUser(null);
+                                setIsBroadcastModalOpen(true);
+                            }}
+                            className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm transition-colors whitespace-nowrap border border-indigo-200"
                         >
-                            <Shield size={16} className="mr-2" />
-                            เพิ่มผู้ดูแล
+                            <Mail size={16} className="mr-2" />
+                            ประกาศ (Broadcast)
                         </button>
-                    )}
+                        {activeTab === 'admins' && (
+                            <button
+                                onClick={() => setIsAddAdminModalOpen(true)}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm transition-colors whitespace-nowrap"
+                            >
+                                <Shield size={16} className="mr-2" />
+                                เพิ่มผู้ดูแล
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -703,6 +793,16 @@ const UserManager = () => {
                                             >
                                                 <User size={14} />
                                             </button>
+                                            <button
+                                                onClick={() => {
+                                                    setBroadcastTargetUser(user);
+                                                    setIsBroadcastModalOpen(true);
+                                                }}
+                                                className="text-indigo-600 hover:bg-indigo-50 p-2 rounded transition-colors text-xs font-medium border border-indigo-200 inline-flex items-center"
+                                                title="Send Message"
+                                            >
+                                                <Mail size={14} />
+                                            </button>
                                             {user.role === 'admin' && (
                                                 <>
                                                     <button
@@ -811,6 +911,13 @@ const UserManager = () => {
                     }}
                 />
             )}
+
+            <BroadcastModal
+                isOpen={isBroadcastModalOpen}
+                onClose={() => setIsBroadcastModalOpen(false)}
+                targetUser={broadcastTargetUser}
+                onSend={handleSendBroadcast}
+            />
         </div>
     );
 };

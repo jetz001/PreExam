@@ -96,3 +96,43 @@ exports.markRead = async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 };
+
+exports.getInboxConversations = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Find all unique users the current user has chatted with
+        // We'll use a raw query or complex Sequelize query to get the latest message per conversation
+        
+        const conversations = await db.sequelize.query(`
+            SELECT 
+                u.id as friend_id,
+                u.display_name,
+                u.avatar,
+                m.id as last_message_id,
+                m.message as last_message,
+                m.created_at as last_message_date,
+                m.sender_id as last_sender_id,
+                (SELECT COUNT(*) FROM private_messages WHERE sender_id = u.id AND receiver_id = :userId AND is_read = 0) as unread_count
+            FROM Users u
+            JOIN (
+                SELECT 
+                    MAX(id) as max_id,
+                    CASE WHEN sender_id = :userId THEN receiver_id ELSE sender_id END as contact_id
+                FROM private_messages
+                WHERE sender_id = :userId OR receiver_id = :userId
+                GROUP BY contact_id
+            ) latest_msg ON u.id = latest_msg.contact_id
+            JOIN private_messages m ON m.id = latest_msg.max_id
+            ORDER BY m.created_at DESC
+        `, {
+            replacements: { userId },
+            type: Sequelize.QueryTypes.SELECT
+        });
+
+        res.json({ success: true, data: conversations });
+    } catch (error) {
+        console.error("Get inbox conversations error", error);
+        res.status(500).json({ error: "Server error getting inbox" });
+    }
+};

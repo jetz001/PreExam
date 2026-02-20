@@ -44,6 +44,7 @@ import SettingsPage from './pages/user/SettingsPage';
 import ExamResult from './pages/ExamResult';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
+import Inbox from './pages/Inbox'; // Add Inbox import
 // Business & Ads
 import BusinessLayout from './layouts/BusinessLayout';
 import BusinessRegister from './pages/auth/BusinessRegister';
@@ -126,6 +127,7 @@ function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/exam" element={<Exam />} />
           <Route path="/exam/result/:id" element={<ExamResult />} />
+          <Route path="/inbox" element={<Inbox />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<DashboardOverview />} />
             <Route path="businesses" element={<BusinessManager />} />

@@ -433,6 +433,55 @@ exports.getMessages = async (req, res) => {
     }
 };
 
+exports.broadcastMessage = async (req, res) => {
+    try {
+        const adminId = req.user.id;
+        const { userIds, message, sendToAll } = req.body;
+
+        if (!message || message.trim() === '') {
+            return res.status(400).json({ message: 'Message cannot be empty' });
+        }
+
+        let targetUserIds = [];
+
+        if (sendToAll) {
+            // Fetch all active user IDs (excluding admins if desired, but we'll include everyone except sender)
+            const users = await User.findAll({
+                attributes: ['id'],
+                where: {
+                    id: { [Op.ne]: adminId },
+                    status: 'active'
+                }
+            });
+            targetUserIds = users.map(u => u.id);
+        } else if (Array.isArray(userIds) && userIds.length > 0) {
+            targetUserIds = userIds;
+        } else {
+            return res.status(400).json({ message: 'No target users specified' });
+        }
+
+        if (targetUserIds.length === 0) {
+            return res.status(400).json({ message: 'No valid target users found' });
+        }
+
+        // Prepare bulk insert data
+        const messagesToInsert = targetUserIds.map(receiverId => ({
+            sender_id: adminId,
+            receiver_id: receiverId,
+            message: message.trim(),
+            is_read: false
+        }));
+
+        // Use bulkCreate for performance
+        await db.PrivateMessage.bulkCreate(messagesToInsert);
+
+        res.json({ success: true, message: `Message broadcasted to ${targetUserIds.length} users.` });
+    } catch (error) {
+        console.error('Error broadcasting message:', error);
+        res.status(500).json({ message: 'Error broadcasting message', error });
+    }
+};
+
 // --- Community Management ---
 
 // Get All Threads (formatted for table)

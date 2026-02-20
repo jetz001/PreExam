@@ -35,6 +35,7 @@ router.post('/payments/:id/reject', adminController.rejectPayment);
 
 // Inbox
 router.get('/messages', adminController.getMessages);
+router.post('/messages/broadcast', adminController.broadcastMessage);
 
 // Community & Reports
 router.get('/threads', adminController.getThreads);
