@@ -9,6 +9,7 @@ import ExamHistoryList from '../../components/profile/ExamHistoryList';
 import BookmarkList from '../../components/profile/BookmarkList';
 import FriendList from '../../components/profile/FriendList';
 import ThreadList from '../../components/profile/ThreadList';
+import InboxTab from '../../components/profile/InboxTab';
 // Placeholder for Threads
 const Placeholder = ({ title }) => <div className="p-8 text-center text-gray-500 bg-white dark:bg-slate-800 rounded-xl shadow">{title} Coming Soon</div>;
 
@@ -18,10 +19,28 @@ const ProfilePage = () => {
     const { user: authUser, loading: authLoading } = useAuth();
     const [profileUser, setProfileUser] = useState(null);
     const [stats, setStats] = useState({ radar: [], heatmap: [] });
-    const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(true);
 
     const isOwnProfile = !id || (authUser && authUser.id === parseInt(id));
+
+    // Initialize tab from URL query params
+    const getInitialTab = () => {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam === 'inbox' && isOwnProfile) return 'inbox';
+        return 'overview';
+    };
+
+    const [activeTab, setActiveTab] = useState(getInitialTab());
+
+    // Update active tab if URL changes
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam === 'inbox' && isOwnProfile) {
+            setActiveTab('inbox');
+        }
+    }, [window.location.search, isOwnProfile]);
 
     useEffect(() => {
         // Wait for auth check to complete
@@ -91,6 +110,10 @@ const ProfilePage = () => {
         { id: 'friends', label: 'Friends', icon: Users },
     ];
 
+    if (isOwnProfile) {
+        tabs.splice(4, 0, { id: 'inbox', label: 'กล่องข้อความ', icon: MessageSquare });
+    }
+
     return (
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -143,6 +166,7 @@ const ProfilePage = () => {
                     {activeTab === 'history' && <ExamHistoryList userId={profileUser.id} />}
                     {activeTab === 'bookmarks' && <BookmarkList />}
                     {activeTab === 'posts' && <ThreadList userId={isOwnProfile ? authUser.id : profileUser.id} />}
+                    {activeTab === 'inbox' && isOwnProfile && <InboxTab />}
                     {activeTab === 'friends' && <FriendList />}
                 </div>
             </div>

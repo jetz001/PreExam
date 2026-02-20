@@ -1,0 +1,272 @@
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { MessageSquare, Send, User, ChevronLeft, PenSquare, X } from 'lucide-react';
+import chatApi from '../../services/chatApi';
+import friendService from '../../services/friendService';
+import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
+
+const InboxTab = () => {
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
+    const [selectedFriendId, setSelectedFriendId] = useState(null);
+    const [selectedFriend, setSelectedFriend] = useState(null);
+    const [newMessage, setNewMessage] = useState('');
+
+    // Compose Modal State
+    const [isComposeOpen, setIsComposeOpen] = useState(false);
+    const [friendsList, setFriendsList] = useState([]);
+    const [loadingFriends, setLoadingFriends] = useState(false);
+
+    // Fetch conversations list
+    const { data: conversations = [], isLoading: loadingConversations } = useQuery({
+        queryKey: ['inboxConversations'],
+        queryFn: chatApi.getInboxConversations,
+        enabled: !!user
+    });
+
+    // Fetch messages for selected friend
+    const { data: messages = [], isLoading: loadingMessages } = useQuery({
+        queryKey: ['messages', selectedFriendId],
+        queryFn: () => chatApi.getMessages(selectedFriendId),
+        enabled: !!selectedFriendId,
+        refetchInterval: 5000 // Poll every 5s for new messages
+    });
+
+    const markReadMutation = useMutation({
+        mutationFn: chatApi.markRead,
+        onSuccess: () => {
+            queryClient.invalidateQueries(['inboxConversations']);
+        }
+    });
+
+    const sendMessageMutation = useMutation({
+        mutationFn: ({ friendId, message }) => chatApi.sendMessage(friendId, message),
+        onSuccess: () => {
+            setNewMessage('');
+            queryClient.invalidateQueries(['messages', selectedFriendId]);
+            queryClient.invalidateQueries(['inboxConversations']);
+        }
+    });
+
+    const handleSelectConversation = (conv) => {
+        setSelectedFriendId(conv.friend_id);
+        setSelectedFriend({ id: conv.friend_id, display_name: conv.display_name, avatar: conv.avatar });
+        if (conv.unread_count > 0) {
+            markReadMutation.mutate(conv.friend_id);
+        }
+    };
+
+    const handleSendMessage = (e) => {
+        e.preventDefault();
+        if (!newMessage.trim() || !selectedFriendId) return;
+        sendMessageMutation.mutate({ friendId: selectedFriendId, message: newMessage });
+    };
+
+    const handleOpenCompose = async () => {
+        setIsComposeOpen(true);
+        if (friendsList.length === 0) {
+            setLoadingFriends(true);
+            try {
+                const res = await friendService.getFriends();
+                setFriendsList(res.data || []);
+            } catch (error) {
+                toast.error("Failed to load friends list");
+            } finally {
+                setLoadingFriends(false);
+            }
+        }
+    };
+
+    const handleStartNewChat = (friend) => {
+        setSelectedFriendId(friend.id);
+        setSelectedFriend({ id: friend.id, display_name: friend.display_name, avatar: friend.avatar });
+        setIsComposeOpen(false);
+    };
+
+    return (
+        <div className="w-full h-[600px] bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex font-sans relative">
+
+            {/* Left Pane: Conversations List */}
+            <div className={`w-full md:w-1/3 border-r border-slate-200 flex flex-col ${selectedFriendId ? 'hidden md:flex' : 'flex'}`}>
+                <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-slate-800 flex items-center">
+                        <MessageSquare className="mr-2 text-indigo-600" /> กล่องข้อความ
+                    </h2>
+                    <button
+                        onClick={handleOpenCompose}
+                        className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-full transition-colors"
+                        title="เขียนข้อความใหม่"
+                    >
+                        <PenSquare size={20} />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                    {loadingConversations ? (
+                        <div className="p-6 text-center text-slate-500">กำลังโหลด...</div>
+                    ) : conversations.length === 0 ? (
+                        <div className="p-6 text-center text-slate-500">ไม่มีข้อความ</div>
+                    ) : (
+                        conversations.map((conv) => (
+                            <div
+                                key={conv.friend_id}
+                                onClick={() => handleSelectConversation(conv)}
+                                className={`p-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors ${selectedFriendId === conv.friend_id ? 'bg-indigo-50 border-l-4 border-indigo-600' : ''}`}
+                            >
+                                <div className="flex items-center">
+                                    {conv.avatar ? (
+                                        <img src={conv.avatar} alt="avatar" className="w-12 h-12 rounded-full object-cover border border-slate-200" />
+                                    ) : (
+                                        <div className="w-12 h-12 rounded-full bg-slate-200 flex flex-col items-center justify-center text-slate-500">
+                                            <User size={24} />
+                                        </div>
+                                    )}
+                                    <div className="ml-3 flex-1 min-w-0">
+                                        <div className="flex justify-between items-baseline mb-1">
+                                            <h3 className="text-sm font-bold text-slate-800 truncate">{conv.display_name || 'Admin'}</h3>
+                                            <span className="text-xs text-slate-400 whitespace-nowrap ml-2">
+                                                {new Date(conv.last_message_date).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-slate-600 truncate">{conv.last_sender_id === user?.id ? 'คุณ: ' : ''}{conv.last_message}</p>
+                                    </div>
+                                    {conv.unread_count > 0 && (
+                                        <div className="ml-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                            {conv.unread_count}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Right Pane: Chat Window */}
+            <div className={`w-full md:w-2/3 flex flex-col ${!selectedFriendId ? 'hidden md:flex' : 'flex'}`}>
+                {selectedFriendId ? (
+                    <>
+                        {/* Chat Header */}
+                        <div className="p-4 border-b border-slate-200 bg-white flex items-center shadow-sm z-10">
+                            <button
+                                onClick={() => setSelectedFriendId(null)}
+                                className="md:hidden mr-3 text-slate-500 hover:text-slate-800"
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                            {selectedFriend.avatar ? (
+                                <img src={selectedFriend.avatar} alt="avatar" className="w-10 h-10 rounded-full object-cover mr-3 border border-slate-200" />
+                            ) : (
+                                <div className="w-10 h-10 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-slate-500 mr-3">
+                                    <User size={20} />
+                                </div>
+                            )}
+                            <h3 className="font-bold text-slate-800 text-lg">{selectedFriend.display_name || 'Admin'}</h3>
+                        </div>
+
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-4">
+                            {loadingMessages ? (
+                                <div className="text-center text-slate-500">กำลังโหลดข้อความ...</div>
+                            ) : messages.length === 0 ? (
+                                <div className="text-center text-slate-500 h-full flex items-center justify-center flex-col">
+                                    <MessageSquare size={48} className="text-slate-300 mb-4" />
+                                    <p>เริ่มการสนทนา</p>
+                                </div>
+                            ) : (
+                                messages.map((msg, idx) => {
+                                    const isMe = msg.sender_id === user?.id;
+                                    return (
+                                        <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[70%] rounded-2xl px-4 py-2 ${isMe ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-white text-slate-800 border border-slate-200 shadow-sm rounded-bl-sm'}`}>
+                                                <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                                                <span className={`text-[10px] block mt-1 ${isMe ? 'text-indigo-200 text-right' : 'text-slate-400'}`}>
+                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* Message Input */}
+                        <div className="p-4 bg-white border-t border-slate-200">
+                            <form onSubmit={handleSendMessage} className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder="พิมพ์ข้อความ..."
+                                    className="flex-1 border border-slate-300 rounded-full px-4 py-2 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                    disabled={sendMessageMutation.isLoading}
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={!newMessage.trim() || sendMessageMutation.isLoading}
+                                    className={`p-2 rounded-full flex items-center justify-center transition-colors 
+                                        ${!newMessage.trim() ? 'bg-slate-200 text-slate-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                                >
+                                    <Send size={20} className={newMessage.trim() ? 'ml-1' : ''} />
+                                </button>
+                            </form>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50">
+                        <MessageSquare size={64} className="mb-4 text-slate-300" />
+                        <p className="text-lg">เลือกข้อความเพื่ออ่าน</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Compose Modal */}
+            {isComposeOpen && (
+                <div className="absolute inset-0 bg-white/95 z-20 flex flex-col p-4 animate-in fade-in slide-in-from-bottom-4 duration-200">
+                    <div className="flex justify-between items-center mb-4 pb-2 border-b">
+                        <h3 className="text-xl font-bold text-slate-800">ส่งข้อความถึงเพื่อน</h3>
+                        <button onClick={() => setIsComposeOpen(false)} className="text-slate-500 hover:text-slate-800">
+                            <X size={24} />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto">
+                        {loadingFriends ? (
+                            <div className="text-center py-10 text-slate-500">กำลังโหลดรายชื่อเพื่อน...</div>
+                        ) : friendsList.length === 0 ? (
+                            <div className="text-center py-10 text-slate-500 flex flex-col items-center">
+                                <Users size={48} className="mb-4 text-slate-300" />
+                                <p>คุณยังไม่มีเพื่อนในรายชื่อ</p>
+                                <p className="text-sm mt-2">เพิ่มเพื่อนเพื่อเริ่มการสนทนา</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {friendsList.map(friend => (
+                                    <div
+                                        key={friend.id}
+                                        onClick={() => handleStartNewChat(friend)}
+                                        className="flex items-center p-3 border rounded-xl hover:bg-indigo-50 hover:border-indigo-200 cursor-pointer transition-colors"
+                                    >
+                                        {friend.avatar ? (
+                                            <img src={friend.avatar} alt="avatar" className="w-12 h-12 rounded-full object-cover mr-4" />
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 mr-4">
+                                                <User size={24} />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <h4 className="font-bold text-slate-800">{friend.display_name}</h4>
+                                            <p className="text-sm text-slate-500">@{friend.public_id}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default InboxTab;

@@ -246,7 +246,7 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
                 {!isOwnProfile && (
                     <div className="mt-6 flex flex-col gap-2 w-full">
                         <button
-                            onClick={() => navigate(`/inbox?user=${user.id}`)}
+                            onClick={() => navigate(`/profile?tab=inbox&user=${user.id}`)}
                             className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium"
                         >
                             <Mail size={18} /> Send Message

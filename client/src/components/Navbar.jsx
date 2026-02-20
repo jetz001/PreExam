@@ -84,8 +84,8 @@ const Navbar = () => {
                                         My Profile
                                     </Link>
                                     <Link
-                                        to="/inbox"
-                                        onClick={() => handleNavClick('Inbox', '/inbox')}
+                                        to="/profile?tab=inbox"
+                                        onClick={() => handleNavClick('Inbox', '/profile?tab=inbox')}
                                         className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                                     >
                                         กล่องข้อความ
@@ -192,10 +192,10 @@ const Navbar = () => {
                                             My Profile
                                         </Link>
                                         <Link
-                                            to="/inbox"
+                                            to="/profile?tab=inbox"
                                             onClick={() => {
                                                 setIsOpen(false);
-                                                handleNavClick('Inbox', '/inbox');
+                                                handleNavClick('Inbox', '/profile?tab=inbox');
                                             }}
                                             className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
                                         >
