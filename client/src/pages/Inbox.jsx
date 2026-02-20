@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Send, User, ChevronLeft } from 'lucide-react';
-import chatApi from '../../services/chatApi';
-import { useAuth } from '../../context/AuthContext';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
+import chatApi from '../services/chatApi';
+import { useAuth } from '../context/AuthContext';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 const Inbox = () => {
     const { user } = useAuth();
