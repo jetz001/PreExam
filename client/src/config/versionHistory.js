@@ -1,5 +1,12 @@
 export const versionHistory = [
     {
+        version: 'v0.2.25',
+        date: '2026-03-02',
+        changes: [
+            { type: 'feature', description: 'Added Scraper Admin Panel with automated job scraping & logo extraction for OCSC' }
+        ]
+    },
+    {
         version: 'v0.2.24',
         date: '2026-02-20',
         changes: [

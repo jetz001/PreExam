@@ -64,12 +64,14 @@ const friendRoutes = require('./routes/friendRoutes');
 const roomRoutes = require('./routes/roomRoutes');
 const assetRoutes = require('./routes/assetRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const scraperRoutes = require('./routes/scraperRoutes');
 
 app.use(['/api/auth', '/auth'], authRoutes);
 app.use(['/api/users', '/users'], userRoutes);
 app.use(['/api/questions', '/questions'], questionRoutes);
 app.use(['/api/exams', '/exams'], examRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api/scraper', scraperRoutes);
 app.use('/api/admin', adminRoutes);
 app.use(['/api/payments', '/payments'], paymentRoutes);
 app.use(['/api/reports', '/reports'], reportRoutes);

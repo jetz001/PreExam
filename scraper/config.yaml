@@ -1,0 +1,35 @@
+# OCSC Job Scraper Config
+urls:
+  portal: "https://job.ocsc.go.th/portal"
+  search_prefix: "https://job.ocsc.go.th"
+
+selectors:
+  # Step 1: Home Page
+  home:
+    category_block: "div.max-w-6xl.mt-12.mx-auto.p-4"
+    agency_card: "a.job-board-card"
+  
+  # Step 2: Job List Page
+  job_list:
+    container: "div.flex.flex-col.gap-4.mt-8"
+    job_card: "a.job-card"
+  
+  # Step 3: Job Detail Page
+  job_detail:
+    main: "main.mt-6.job-detail-content"
+    sections: "h4"
+    pdf_download: "a:has(button.secondary-button)"
+    agency_logo: "header.job-detail-header img"
+
+# Anti-Bot Settings
+browser:
+  headless: true
+  user_agents:
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    - "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+
+# Scraping Limits
+limits:
+  max_concurrent_pages: 3
+  timeout_ms: 30000

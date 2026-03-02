@@ -57,4 +57,10 @@ router.delete('/businesses/:id', adminController.deleteBusiness);
 router.get('/settings', adminController.getSystemSettings);
 router.put('/settings', adminController.updateSystemSettings);
 
+// Scraper Management
+const scraperControlController = require('../controllers/scraperControlController');
+router.get('/scraper/status', scraperControlController.getStatus);
+router.post('/scraper/start', scraperControlController.startManualRun);
+router.post('/scraper/schedule', scraperControlController.updateSchedule);
+
 module.exports = router;

@@ -16,7 +16,8 @@ import {
     Store,
     LifeBuoy,
     Shield,
-    Database
+    Database,
+    Activity
 } from 'lucide-react';
 import PageLoadTimer from '../components/common/PageLoadTimer';
 
@@ -46,7 +47,8 @@ const AdminLayout = () => {
         { path: '/admin/questions', label: 'จัดการคลังข้อสอบ', icon: FileQuestion },
         { path: '/admin/payments', label: 'ตรวจสอบการชำระเงิน', icon: CreditCard },
         { path: '/admin/users', label: 'จัดการสมาชิก', icon: Users },
-        { path: '/admin/community', label: 'จัดการชุมชน', icon: MonitorPlay }, // Using distinct icon if possible, or same as Sidebar
+        { path: '/admin/community', label: 'จัดการชุมชน', icon: MonitorPlay },
+        { path: '/admin/scraper', label: 'ระบบดึงข้อมูล (Scraper)', icon: Activity },
         { path: '/admin/news', label: 'ข่าวสาร & Affiliate', icon: Newspaper },
         { path: '/admin/inbox', label: 'กล่องข้อความ & รายงาน', icon: Inbox },
         { path: '/admin/rooms', label: 'จัดการห้องสอบ', icon: MonitorPlay },

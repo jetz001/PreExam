@@ -2,7 +2,7 @@
 Write-Host "Starting Frontend Deployment..." -ForegroundColor Green
 
 # 1. Navigate to client directory
-Set-Location "d:\Project\PreExam\client"
+Set-Location "d:\DEV\PreExam\client"
 
 # 2. Install Dependencies (Legacy Peer Deps)
 Write-Host "Installing dependencies..." -ForegroundColor Yellow
