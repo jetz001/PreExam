@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Edit2, Trash2, X, Check, Filter, HelpCircle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Check, Filter, HelpCircle, FileQuestion, Bot } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import GeneratorManager from './GeneratorManager';
 
 const QuestionManager = () => {
     const queryClient = useQueryClient();
@@ -13,6 +14,7 @@ const QuestionManager = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState(null);
+    const [activeTab, setActiveTab] = useState('questions');
 
     const handleSearchCheck = () => {
         setFilters(prev => ({ ...prev, search: localSearch }));
@@ -194,7 +196,30 @@ const QuestionManager = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* Tabs */}
+            <div className="flex space-x-1 border-b border-slate-200">
+                <button
+                    onClick={() => setActiveTab('questions')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center ${activeTab === 'questions' ? 'border-royal-blue-600 text-royal-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                >
+                    <FileQuestion size={18} className="mr-2" />
+                    คลังข้อสอบ (All Questions)
+                </button>
+                <button
+                    onClick={() => setActiveTab('generator')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center ${activeTab === 'generator' ? 'border-royal-blue-600 text-royal-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                >
+                    <Bot size={18} className="mr-2" />
+                    ระบบสร้างข้อสอบอัตโนมัติ (Generator)
+                </button>
+            </div>
+
+            <div className={activeTab === 'generator' ? 'block' : 'hidden'}>
+                <GeneratorManager />
+            </div>
+
+            <div className={activeTab === 'questions' ? 'space-y-6 block' : 'hidden'}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-2xl font-bold text-slate-800">Question Bank</h2>
                 <div className="flex gap-2">
                     <button
@@ -365,6 +390,7 @@ const QuestionManager = () => {
                     </div>
                 </div>
             </div>
+            </div> {/* End Questions Tab Content */}
 
             {/* Import Guide Modal */}
             {isGuideOpen && (

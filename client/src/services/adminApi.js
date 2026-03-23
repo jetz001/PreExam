@@ -204,6 +204,10 @@ const adminApi = {
     toggleNewsFeature: async (id) => {
         const response = await api.put(`/news/${id}/feature`);
         return response.data;
+    },
+    startGenerator: async () => {
+        const response = await api.post('/admin/generator/start');
+        return response.data;
     }
 };
 

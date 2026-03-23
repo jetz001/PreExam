@@ -25,6 +25,7 @@ import TicketDetail from './pages/support/TicketDetail';
 import SupportTicketManager from './pages/admin/SupportTicketManager';
 import BackupManager from './pages/admin/BackupManager'; // New Import
 import ScraperManager from './pages/admin/ScraperManager';
+import GeneratorManager from './pages/admin/GeneratorManager';
 import PolicyPage from './pages/PolicyPage';
 import FAQPage from './pages/support/FAQPage';
 

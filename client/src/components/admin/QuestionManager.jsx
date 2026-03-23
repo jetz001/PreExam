@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import adminService from '../../services/adminService';
 import examService from '../../services/examService';
-import { Edit, Trash2, Plus, Search, X, Layers } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, X, Layers, Bot } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import BulkQuestionModal from './BulkQuestionModal';
@@ -9,6 +9,7 @@ import BulkQuestionModal from './BulkQuestionModal';
 const QuestionManager = () => {
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [generating, setGenerating] = useState(false);
     const [filter, setFilter] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -117,6 +118,23 @@ const QuestionManager = () => {
         }
     };
 
+    const handleGenerate = async () => {
+        setGenerating(true);
+        try {
+            const res = await adminService.startGenerator();
+            if (res.success) {
+                alert('ระบบเริ่ม Gen คำถามแล้ว! ข้อสอบจะแสดงในตารางในเวลาไม่ถึง 1 นาที (Refresh หน้าจอเพื่อดู)');
+            } else {
+                alert('ไม่สามารถเริ่มระบบ Gen ได้: ' + res.message);
+            }
+        } catch (error) {
+            console.error('Error starting generator:', error);
+            alert('ล้มเหลวในการสั่งรัน (ตรวจสอบ Error Logs หรือ API Key อาจหมดโควต้า)');
+        } finally {
+            setGenerating(false);
+        }
+    };
+
     const filteredQuestions = questions.filter(q =>
         q.question_text.toLowerCase().includes(filter.toLowerCase()) ||
         q.category.toLowerCase().includes(filter.toLowerCase())
@@ -127,6 +145,14 @@ const QuestionManager = () => {
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">จัดการคลังข้อสอบ</h2>
                 <div className="flex space-x-2">
+                    <button
+                        onClick={handleGenerate}
+                        disabled={generating}
+                        className={`text-white px-4 py-2 rounded-lg flex items-center transition-all duration-300 shadow-sm ${generating ? 'bg-purple-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'}`}
+                    >
+                        <Bot className={`h-5 w-5 mr-2 ${generating ? 'animate-pulse' : ''}`} />
+                        {generating ? 'กำลังสั่งรัน...' : 'Gen คำถาม (AI)'}
+                    </button>
                     <button
                         onClick={() => setIsBulkModalOpen(true)}
                         className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-700"

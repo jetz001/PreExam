@@ -17,7 +17,8 @@ import {
     LifeBuoy,
     Shield,
     Database,
-    Activity
+    Activity,
+    Bot
 } from 'lucide-react';
 import PageLoadTimer from '../components/common/PageLoadTimer';
 

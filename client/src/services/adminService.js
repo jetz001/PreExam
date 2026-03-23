@@ -30,6 +30,11 @@ const adminService = {
         const response = await api.delete(`/news/${id}`);
         return response.data;
     },
+
+    startGenerator: async () => {
+        const response = await api.post('/admin/generator/start');
+        return response.data;
+    },
 };
 
 export default adminService;

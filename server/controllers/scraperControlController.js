@@ -53,8 +53,9 @@ exports.startManualRun = async (req, res) => {
         const { spawn } = require('child_process');
         const scraperProcess = spawn(process.platform === 'win32' ? 'python' : 'python3', ['scraper.py'], {
             cwd: SCRAPER_DIR,
-            detached: true,
-            stdio: 'ignore'
+            detached: false,
+            stdio: 'ignore',
+            windowsHide: true
         });
 
         scraperProcess.unref();

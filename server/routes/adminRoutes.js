@@ -63,4 +63,10 @@ router.get('/scraper/status', scraperControlController.getStatus);
 router.post('/scraper/start', scraperControlController.startManualRun);
 router.post('/scraper/schedule', scraperControlController.updateSchedule);
 
+// Generator Management
+const generatorControlController = require('../controllers/generatorControlController');
+router.get('/generator/status', generatorControlController.getStatus);
+router.post('/generator/schedule', generatorControlController.updateSchedule);
+router.post('/generator/start', generatorControlController.startGenerator);
+
 module.exports = router;

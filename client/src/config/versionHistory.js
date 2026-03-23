@@ -1,5 +1,22 @@
 export const versionHistory = [
     {
+        version: 'v0.2.27',
+        date: '2026-03-23',
+        changes: [
+            { type: 'feature', description: 'Implemented AI Virtual Terminal (Linux-style) for Admin Dashboard' },
+            { type: 'feature', description: 'Added standalone AI Terminal CLI tool (scripts/ai-terminal.js)' },
+            { type: 'improvement', description: 'Migrated AI services to OpenAI SDK for improved stability with Gemini' }
+        ]
+    },
+    {
+        version: 'v0.2.26',
+        date: '2026-03-23',
+        changes: [
+            { type: 'feature', description: 'Added dedicated Daily Exam Generator UI Control Panel' },
+            { type: 'ui', description: 'Refactored Admin Panel sidebar to include Generator Logs' }
+        ]
+    },
+    {
         version: 'v0.2.25',
         date: '2026-03-02',
         changes: [
