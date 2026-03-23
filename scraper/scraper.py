@@ -42,14 +42,16 @@ class OCSCScraper:
                 await page.goto(self.config['urls']['portal'], timeout=120000)
                 
                 # Step 1: Get Agencies
-                agency_urls = await self.get_agency_urls(page)
-                logging.info(f"Found {len(agency_urls)} agencies")
+                agencies = await self.get_agency_info(page)
+                logging.info(f"Found {len(agencies)} agencies")
 
                 all_jobs_count = 0
-                for agency_url in agency_urls:
+                for agency in agencies:
+                    agency_url = agency['url']
+                    agency_name = agency['name']
                     # Step 2: Get Jobs for Agency
                     job_urls = await self.get_job_urls(page, agency_url)
-                    logging.info(f"Found {len(job_urls)} jobs in {agency_url}")
+                    logging.info(f"Found {len(job_urls)} jobs in {agency_name}")
 
                     for job_url in job_urls:
                         if self.db.is_processed(job_url) and not dry_run:
@@ -59,8 +61,9 @@ class OCSCScraper:
                         # Step 3: Scrape Job Detail
                         job_data = await self.scrape_job_detail(page, job_url)
                         if job_data:
+                            job_data['agency'] = agency_name # Add agency name
                             if dry_run:
-                                logging.info(f"DRY RUN: Would post job: {job_data['title']}")
+                                logging.info(f"DRY RUN: Would post job: {job_data['title']} (Agency: {agency_name})")
                             else:
                                 res = await self.api.post_job(job_data)
                                 if res and res.get('success'):
@@ -81,16 +84,31 @@ class OCSCScraper:
             finally:
                 await browser.close()
 
-    async def get_agency_urls(self, page):
+    async def get_agency_info(self, page):
         selectors = self.config['selectors']['home']
         await page.wait_for_selector(selectors['category_block'], timeout=60000)
         links = await page.query_selector_all(selectors['agency_card'])
-        urls = []
+        agencies = []
         for link in links:
             href = await link.get_attribute('href')
+            text_el = await link.query_selector('p') # The name is usually in a paragraph inside the a tag
+            name = await text_el.inner_text() if text_el else "Unknown Agency"
+            
             if href:
-                urls.append(self.config['urls']['search_prefix'] + href if href.startswith('/') else href)
-        return list(set(urls))
+                url = self.config['urls']['search_prefix'] + href if href.startswith('/') else href
+                agencies.append({
+                    'name': name.strip(),
+                    'url': url
+                })
+        
+        # Remove duplicates based on URL
+        seen = set()
+        unique_agencies = []
+        for a in agencies:
+            if a['url'] not in seen:
+                seen.add(a['url'])
+                unique_agencies.append(a)
+        return unique_agencies
 
     async def get_job_urls(self, page, agency_url):
         selectors = self.config['selectors']['job_list']

@@ -117,14 +117,9 @@ const NewsManager = () => {
                 title: data.title || prev.title,
                 image_url: data.image_url || prev.image_url,
                 content: data.summary || data.description || prev.content,
-                keywords: data.keywords || prev.keywords,
-                agency: data.agency || prev.agency,
-                metadata: data.metadata ? { ...prev.metadata, ...data.metadata } : prev.metadata
+                keywords: data.keywords || prev.keywords
             }));
-            if (data.metadata) {
-                setActiveTab('gov');
-            }
-            toast.success('Content & Details auto-filled!');
+            toast.success('Content & Keywords auto-filled!');
         },
         onError: () => toast.error('Failed to scrape content')
     });

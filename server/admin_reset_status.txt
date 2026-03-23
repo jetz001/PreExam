@@ -1,0 +1,2 @@
+Database connected.
+New admin created: admin@preexam.com / admin1234

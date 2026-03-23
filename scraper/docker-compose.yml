@@ -1,0 +1,9 @@
+services:
+  scraper:
+    build: .
+    volumes:
+      - ./scraper.db:/app/scraper.db
+      - ./scraper.log:/app/scraper.log
+    env_file:
+      - .env
+    restart: "no" # Run on schedule, not always restarting

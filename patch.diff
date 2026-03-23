@@ -1,0 +1,9 @@
+--- client/src/components/news/AgencyGrid.jsx
++++ client/src/components/news/AgencyGrid.jsx
+@@ -32,5 +32,5 @@
+         <div className="flex text-[0.8rem] flex-col gap-1 w-full mt-2 mx-auto justify-content center items-center">
+-            <Briefcase className="w-5 h-5 text-indigo-400 group-hover:-translate-y-1 transition-all" />
++            <Briefcase className="w-5 h-5 text-indigo-500 group-hover:-translate-y-1 transition-all mb-1 mt-1" />
+-            <span className="font-semibold text-slate-800 text-[0.6rem] mx-auto ">{agency.agency.replace("กรุงเทพมหานคร", "กทม.").substring(0,25)}{agency.agency.length > 25 ? '..': ''}</span>
++            <span className="font-bold text-slate-800 ">{agency.agency.replace("กรุงเทพมหานคร", "กทม.").substring(0,25)}{agency.agency.length > 25 ? '..': ''}</span>
+             <span className="text-gray-400 opacity-60 text-[0.6rem]">จำนวน {agency.count} อัตรา</span>

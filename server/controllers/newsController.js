@@ -42,6 +42,11 @@ exports.getNews = async (req, res) => {
             whereClause.category = category;
         }
 
+        const { agency } = req.query;
+        if (agency) {
+            whereClause.agency = agency;
+        }
+
         if (search) {
             whereClause[Op.or] = [
                 { title: { [Op.like]: `%${search}%` } },
@@ -50,6 +55,12 @@ exports.getNews = async (req, res) => {
             ];
         }
 
+        const today = new Date().toISOString().split('T')[0];
+        whereClause[Op.or] = [
+            { end_date: { [Op.gte]: today } },
+            { end_date: null }
+        ];
+
         const news = await News.findAll({
             where: whereClause,
             order: [['published_at', 'DESC']],
@@ -57,6 +68,33 @@ exports.getNews = async (req, res) => {
         res.json({ success: true, data: news });
     } catch (error) {
         console.error('Error fetching news:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+exports.getAgencyStats = async (req, res) => {
+    try {
+        const { sequelize } = require('../models');
+        const stats = await News.findAll({
+            attributes: [
+                'agency',
+                [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+                [sequelize.fn('MAX', sequelize.col('published_at')), 'latest_published'],
+                [sequelize.literal(`json_extract(metadata, '$.agency_logo')`), 'agency_logo']
+            ],
+            where: {
+                agency: { [require('sequelize').Op.ne]: null },
+                [require('sequelize').Op.or]: [
+                    { end_date: { [require('sequelize').Op.gte]: new Date().toISOString().split('T')[0] } },
+                    { end_date: null }
+                ]
+            },
+            group: ['agency'],
+            order: [[sequelize.col('count'), 'DESC']]
+        });
+        res.json({ success: true, data: stats });
+    } catch (error) {
+        console.error('Error fetching agency stats:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
@@ -129,95 +167,134 @@ exports.scrapeMetadata = async (req, res) => {
         });
         const html = response.data;
 
-        // Simple Regex Helpers
-        const getMetaContent = (prop) => {
-            const regex = new RegExp(`<meta\\s+(?:property|name)=["']${prop}["']\\s+content=["'](.*?)["']`, 'i');
-            const match = html.match(regex);
-            return match ? match[1] : '';
-        };
+        const isOCSC = url.includes('job.ocsc.go.th/portal/jobs/');
+        let metadata = {};
 
-        const getTitle = () => {
-            const ogTitle = getMetaContent('og:title');
-            if (ogTitle) return ogTitle;
-            const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-            return titleMatch ? titleMatch[1] : '';
-        };
+        if (isOCSC) {
+            let agencyName = '';
+            let supervisingAgency = '';
+            let agency_logo = '';
 
-        const title = getTitle();
-        const summary = getMetaContent('og:description') || getMetaContent('description');
-        const image_url = getMetaContent('og:image');
+            // Try to extract from __NEXT_DATA__ json first
+            const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/);
+            if (nextDataMatch) {
+                try {
+                    const d = JSON.parse(nextDataMatch[1]);
+                    const jobData = d.props?.pageProps?.job || {};
 
-        let keywords = getMetaContent('keywords') || getMetaContent('news_keywords');
+                    agencyName = jobData.department || '';
+                    supervisingAgency = jobData.ministry || '';
+                    metadata.recruitment_type = jobData.positionGroup || '';
+                    metadata.salary = jobData.salaryRange || '';
+                    metadata.vacancy_count = jobData.vacancyCount || '';
+                    metadata.education_level = jobData.educationLevel || '';
+                    metadata.position = jobData.position || '';
+                    metadata.location = jobData.location || '';
+                    metadata.position_type = jobData.positionType || '';
+                    metadata.job_description = jobData.jobDescription || '';
+                    metadata.selection_method = jobData.selectionMethod || '';
+                    metadata.announcement_url = jobData.fileName || '';
+                    metadata.website = jobData.url || '';
 
-        // Fallback: Generate keywords from Title & Summary if meta is empty
-        if (!keywords && (title || summary)) {
-            const text = `${title} ${summary}`;
-            keywords = ''; // Initialize keywords for accumulation
+                    if (jobData.applicationStartPrint) {
+                        metadata.application_start = jobData.applicationStartPrint;
+                        metadata.application_end = jobData.applicationEndPrint || '';
+                    }
+                } catch (e) {
+                    console.error("Failed parsing NEXT_DATA:", e);
+                }
+            } else {
+                // Try parsing raw HTML fallback using jsdom
+                const { JSDOM } = require('jsdom');
+                const dom = new JSDOM(html);
+                const document = dom.window.document;
 
-            // 1. Pattern-Based Extraction (High Priority)
-            // Extract text after "ตำแหน่ง" (Position)
-            const positionMatch = text.match(/ตำแหน่ง\s*([ก-๙a-zA-Z0-9\.\-]+)/g);
-            if (positionMatch) {
-                positionMatch.forEach(m => {
-                    const clean = m.replace('ตำแหน่ง', '').trim();
-                    if (clean.length > 3) keywords += `, ${clean}`;
+                const headerImg = document.querySelector('.job-detail-header img');
+                agency_logo = headerImg ? headerImg.src : '';
+
+                agencyName = document.querySelector('#department-link h2')?.textContent?.trim() || '';
+                supervisingAgency = document.querySelector('.job-detail-header span')?.textContent?.trim() || '';
+
+                const mappings = {
+                    'รับสมัคร': 'recruitment_type',
+                    'ตำแหน่ง': 'position',
+                    'จังหวัดที่บรรจุ': 'location',
+                    'เงินเดือน': 'salary',
+                    'ประเภท': 'position_type',
+                    'จำนวน': 'vacancy_count',
+                    'ระดับการศึกษา': 'education_level',
+                    'ลักษณะงานที่ปฏิบัติ': 'job_description',
+                    'วิธีการเลือกสรร': 'selection_method',
+                    'เกณฑ์การประเมิน': 'evaluation_criteria',
+                    'เปิดรับสมัคร': 'application_period',
+                    'ประกาศรับสมัคร': 'announcement_url',
+                    'เว็บไซต์': 'website'
+                };
+
+                const headers = document.querySelectorAll('h4');
+                headers.forEach(h4 => {
+                    const headText = h4.textContent.trim();
+                    const field = mappings[headText];
+
+                    if (field) {
+                        let value = '';
+                        const nextEl = h4.nextElementSibling;
+                        if (!nextEl) return;
+
+                        if (nextEl.tagName === 'P') value = nextEl.textContent.trim();
+                        else if (nextEl.tagName === 'UL') value = Array.from(nextEl.querySelectorAll('li')).map(li => li.textContent.trim()).join('\n');
+                        else if (nextEl.tagName === 'A') value = nextEl.href;
+                        else if (nextEl.querySelector('a')) value = nextEl.querySelector('a').href;
+                        else if (nextEl.classList.contains('flex') || nextEl.tagName === 'DIV') value = nextEl.textContent.trim();
+
+                        if (value) metadata[field] = value;
+                    }
                 });
+
+                if (!metadata.job_description) {
+                    const contentDivs = document.querySelectorAll('.content');
+                    let fullText = '';
+                    contentDivs.forEach(div => fullText += div.textContent + '\n');
+                    if (fullText) metadata.job_description = fullText.substring(0, 1000);
+                }
+
+                if (!metadata.announcement_url) {
+                    const pdfLink = Array.from(headers).find(h => h.textContent.includes("ประกาศรับสมัคร"))?.nextElementSibling?.querySelector('a')?.href;
+                    if (pdfLink) metadata.announcement_url = pdfLink;
+                }
+
+                if (metadata.application_period) {
+                    const period = metadata.application_period.split('-');
+                    if (period.length === 2) {
+                        metadata.application_start = period[0].trim();
+                        metadata.application_end = period[1].trim();
+                    }
+                }
             }
 
-            // Extract Organization looking phrases (starts with Commission, Office, Department, Ministry)
-            const orgPrefixes = ['สำนักงาน', 'กรม', 'กระทรวง', 'คณะ', 'โรงเรียน', 'มหาวิทยาลัย', 'อบต\\.', 'อบจ\\.', 'เทศบาล'];
-            const orgRegex = new RegExp(`(${orgPrefixes.join('|')})[ก-๙a-zA-Z0-9\\.\\-]+`, 'g');
-            const orgMatch = text.match(orgRegex);
-            if (orgMatch) {
-                orgMatch.forEach(m => {
-                    if (m.length > 5) keywords += `, ${m}`;
-                });
-            }
-
-            // 2. Tokenization Strategy (Fallback for general tags)
-            let cleanText = text
-                .replace(/["'()*+,-./:;<=>?@[\]^_`{|}~]/g, ' ')
-                .replace(/\s+/g, ' ');
-
-            const tokens = cleanText.split(/[\s,]+/);
-
-            // 3. Stopwords
-            const stopWords = [
-                'และ', 'หรือ', 'ของ', 'ที่', 'ใน', 'การ', 'ความ', 'เป็น', 'ไม่', 'ให้', 'ได้', 'ไป', 'มา', 'เพื่อ', 'โดย',
-                'ประกาศ', 'เรื่อง', 'ฉบับ', 'ว่าด้วย', 'หลักเกณฑ์', 'วิธีการ', 'เงื่อนไข', 'กำหนด', 'วัน', 'เวลา', 'สถานที่',
-                'สอบ', 'ระเบียบ', 'เกี่ยวกับการ', 'รายชื่อ', 'ผู้มีสิทธิ', 'รายละเอียด', 'แนบท้าย', 'ดังนี้', 'สำนักงาน',
-                'คณะกรรมการ', 'จังหวัด', 'อำเภอ', 'ตำบล', 'ประจำปี', 'พ.ศ.', 'รับสมัคร', 'ตำแหน่ง'
-            ];
-
-            const potentialKeywords = tokens
-                .map(t => t.trim())
-                .filter(t => {
-                    if (t.length < 2) return false;
-                    if (/^\d+$/.test(t)) return false;
-                    if (stopWords.includes(t)) return false;
-                    // Allow longer phrases now if they were not caught by logic above, but limit strictness
-                    if (t.length > 50) return false;
-                    return true;
-                });
-
-            // Add unique tokens
-            keywords += ', ' + potentialKeywords.join(', ');
-
-            // 4. Final Cleanup
-            const finalSet = new Set(
-                keywords
-                    .split(',')
-                    .map(k => k.trim())
-                    .filter(k => k && k.length > 2)
-            );
-            // Limit to top 15 to allow for more variety
-            keywords = [...finalSet].slice(0, 15).join(', ');
+            res.json({
+                success: true,
+                data: {
+                    title: `${metadata.position || title} - ${agencyName}`,
+                    summary: summary || metadata.job_description?.substring(0, 200),
+                    image_url: image_url || agency_logo,
+                    keywords: keywords || `งานราชการ, ${agencyName}, ${metadata.position || ''}`,
+                    agency: agencyName,
+                    metadata: {
+                        organization: agencyName,
+                        supervising_agency: supervisingAgency,
+                        agency_logo: agency_logo,
+                        ...metadata
+                    }
+                }
+            });
+            return;
         }
 
         res.json({
             success: true,
             data: {
-                title: title.replace(/&amp;/g, '&'), // Basic decode
+                title: title.replace(/&amp;/g, '&'),
                 summary: summary ? summary.replace(/&amp;/g, '&') : '',
                 image_url: image_url || '',
                 keywords: keywords || ''

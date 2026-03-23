@@ -1,6 +1,7 @@
 # OCSC Job Scraper Config
 urls:
   portal: "https://job.ocsc.go.th/portal"
+  api_base: "https://jobapp.ocsc.go.th/jobapi/portal"
   search_prefix: "https://job.ocsc.go.th"
 
 selectors:

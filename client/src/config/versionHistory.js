@@ -1,5 +1,15 @@
 export const versionHistory = [
     {
+        version: 'v0.2.29',
+        date: '2026-03-23',
+        changes: [
+            { type: 'fix', description: 'Resolved OpenRouter-Kimi integration issues (402 error, token limit)' },
+            { type: 'fix', description: 'Implemented robust JSON parsing and key normalization for AI generator' },
+            { type: 'improvement', description: 'Added 60s timeout and strict data validation to AI generation' },
+            { type: 'improvement', description: 'Stripped unsupported HTML tags from AI explanations for better UI compatibility' }
+        ]
+    },
+    {
         version: 'v0.2.28',
         date: '2026-03-23',
         changes: [

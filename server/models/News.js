@@ -62,6 +62,18 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: true,
         },
+        agency: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        metadata: {
+            type: DataTypes.JSON,
+            allowNull: true,
+        },
+        end_date: {
+            type: DataTypes.DATEONLY,
+            allowNull: true
+        }
     }, {
         tableName: 'news',
         timestamps: false,

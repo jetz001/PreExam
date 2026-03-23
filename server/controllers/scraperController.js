@@ -2,7 +2,7 @@ const { News, Notification, User } = require('../models');
 
 exports.postJob = async (req, res) => {
     try {
-        const { title, content, summary, image_url, pdf_url, external_link, keywords, source_memo } = req.body;
+        const { title, content, summary, image_url, pdf_url, external_link, keywords, source_memo, agency, metadata, end_date } = req.body;
 
         // Check if job already exists by external_link if provided
         if (external_link) {
@@ -17,6 +17,9 @@ exports.postJob = async (req, res) => {
                     pdf_url,
                     keywords,
                     source_memo,
+                    agency,
+                    metadata,
+                    end_date,
                     // Optionally update more fields
                 });
                 return res.json({ success: true, message: 'Job updated', data: existingJob });
@@ -33,6 +36,9 @@ exports.postJob = async (req, res) => {
             external_link,
             keywords,
             source_memo,
+            agency,
+            metadata,
+            end_date,
             is_featured: false,
             published_at: new Date()
         });

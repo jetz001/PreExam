@@ -70,6 +70,76 @@ const saveHistory = async (db, categoryName, questionText) => {
     });
 };
 
+const cleanHtml = (str) => {
+    if (typeof str !== 'string') return str;
+    // Replace BR with newline and strip all other HTML tags
+    return str.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>?/gm, '');
+};
+
+const cleanJson = (str) => {
+    if (!str) return "{}";
+    let cleaned = str.trim();
+    // Try to extract JSON object from the string (handles markdown backticks and extra text)
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return jsonMatch[0];
+    return cleaned;
+};
+
+const normalizeExamData = (data) => {
+    const normalized = {};
+    
+    const findInObject = (obj, possibleKeys) => {
+        if (!obj || typeof obj !== 'object') return null;
+        const keys = Object.keys(obj);
+        for (const pk of possibleKeys) {
+            const foundKey = keys.find(k => k.toLowerCase() === pk.toLowerCase() || k.replace(/_/g, '').toLowerCase() === pk.replace(/_/g, '').toLowerCase());
+            if (foundKey) return obj[foundKey];
+        }
+        return null;
+    };
+
+    let qText = findInObject(data, ['question_text', 'questionText', 'question']);
+    if (qText && typeof qText === 'object') {
+        qText = findInObject(qText, ['text', 'question', 'content', 'body']) || JSON.stringify(qText);
+    }
+    normalized.question_text = cleanHtml(qText);
+
+    normalized.option_a = findInObject(data, ['option_a', 'optionA', 'choice_a', 'choiceA', 'A']);
+    normalized.option_b = findInObject(data, ['option_b', 'optionB', 'choice_b', 'choiceB', 'B']);
+    normalized.option_c = findInObject(data, ['option_c', 'optionC', 'choice_c', 'choiceC', 'C']);
+    normalized.option_d = findInObject(data, ['option_d', 'optionD', 'choice_d', 'choiceD', 'D']);
+
+    const options = findInObject(data, ['options', 'choices']);
+    if (options) {
+        if (Array.isArray(options)) {
+            normalized.option_a = normalized.option_a || options[0];
+            normalized.option_b = normalized.option_b || options[1];
+            normalized.option_c = normalized.option_c || options[2];
+            normalized.option_d = normalized.option_d || options[3];
+        } else if (typeof options === 'object') {
+            normalized.option_a = normalized.option_a || findInObject(options, ['A', '1', 'option_a', 'optionA', 'a']);
+            normalized.option_b = normalized.option_b || findInObject(options, ['B', '2', 'option_b', 'optionB', 'b']);
+            normalized.option_c = normalized.option_c || findInObject(options, ['C', '3', 'option_c', 'optionC', 'c']);
+            normalized.option_d = normalized.option_d || findInObject(options, ['D', '4', 'option_d', 'optionD', 'd']);
+        }
+    }
+
+    // Final string check for options to ensure they are not objects
+    const ensureString = (val) => (val && typeof val === 'object') ? (val.text || val.content || JSON.stringify(val)) : val;
+    normalized.option_a = ensureString(normalized.option_a);
+    normalized.option_b = ensureString(normalized.option_b);
+    normalized.option_c = ensureString(normalized.option_c);
+    normalized.option_d = ensureString(normalized.option_d);
+
+    normalized.correct_answer = findInObject(data, ['correct_answer', 'correctAnswer', 'answer']);
+    normalized.subject = findInObject(data, ['subject', 'category']);
+    normalized.skill = findInObject(data, ['skill']);
+    normalized.catalogs = findInObject(data, ['catalogs', 'tags']);
+    normalized.explanation = cleanHtml(findInObject(data, ['explanation', 'solution']));
+
+    return normalized;
+};
+
 const tryFixCorrectAnswer = (answer) => {
     if (!answer) return "Option A";
     const ans = answer.trim().toUpperCase();
@@ -102,7 +172,7 @@ ${previousQuestions}
 ห้ามตั้งคำถามที่ต้องอาศัยการดูรูปภาพ กราฟ หรือตารางประกอบ เพราะระบบไม่รองรับการแนบภาพ
 หลีกเลี่ยงประเด็นอ่อนไหวทางการเมือง ศาสนา หรือบุคคลที่มีอยู่จริงในปัจจุบัน ให้ใช้สถานการณ์สมมติที่เป็นกลาง
 ตัวลวง (Distractors) ในอีก 3 ตัวเลือกที่ผิด ต้องมีความน่าจะเป็นสูง สมเหตุสมผล หรือเป็นความเข้าใจผิดที่พบบ่อย
-สามารถใช้ HTML Tags พื้นฐาน เช่น <b>คำที่ต้องการเน้น</b> หรือ <br> ในส่วนของโจทย์และคำอธิบายได้
+ห้ามใช้ HTML Tags (เช่น <b>, <br>) ในโจทย์และคำอธิบาย ให้ใช้ข้อความธรรมดาเท่านั้น (Plain Text)
 
 ⚠️ ข้อมูลสำคัญ 3 (รูปแบบคำอธิบายเฉลย - explanation):
 หากเป็นวิชาคำนวณ หรือ ตรรกศาสตร์ ให้แสดงวิธีคิดวิเคราะห์ทีละขั้นตอน (Step-by-step)
@@ -128,17 +198,35 @@ ${previousQuestions}
     const response = await openai.chat.completions.create({
         model: provider.model,
         temperature: 0.7,
+        max_tokens: 4000,
         messages: [
             { role: "system", content: "คุณเป็นผู้เชี่ยวชาญการออกข้อสอบข้าราชการ/พนักงานราชการ สร้างข้อสอบ 1 ข้อ และตอบกลับมาเป็น pure JSON Format เท่านั้น ห้ามตอบกลับเป็นข้อความอื่น" },
             { role: "user", content: prompt }
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
+        timeout: 60000 // 60 seconds timeout
     });
 
     let rawJson = response.choices[0].message.content;
-    const data = JSON.parse(rawJson);
-    data.correct_answer = tryFixCorrectAnswer(data.correct_answer);
-    return data;
+    try {
+        const cleaned = cleanJson(rawJson);
+        let data = JSON.parse(cleaned);
+        data = normalizeExamData(data);
+        data.correct_answer = tryFixCorrectAnswer(data.correct_answer);
+
+        // Validation
+        const requiredFields = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer'];
+        const missing = requiredFields.filter(f => !data[f]);
+        if (missing.length > 0) {
+            logToFile(`Validation Failed: Missing ${missing.join(', ')}. Data: ${JSON.stringify(data)}. Raw: ${rawJson}`, 'ERROR');
+            throw new Error(`AI response missing required fields: ${missing.join(', ')}`);
+        }
+
+        return data;
+    } catch (e) {
+        logToFile(`Failed to parse AI response: ${e.message}. Raw: ${rawJson}`, 'ERROR');
+        throw new Error(`AI generated invalid JSON: ${e.message}`);
+    }
 };
 
 const sendInboxAlert = async (message) => {

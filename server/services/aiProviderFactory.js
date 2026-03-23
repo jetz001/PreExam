@@ -29,8 +29,8 @@ class AIProviderFactory {
                 apiKey: process.env.XAI_API_KEY
             },
             'openrouter': {
-                name: 'OpenRouter',
-                model: 'google/gemini-2.0-flash-001',
+                name: 'OpenRouter (Kimi)',
+                model: 'moonshotai/kimi-k2.5',
                 baseURL: 'https://openrouter.ai/api/v1',
                 apiKey: process.env.OPENROUTER_API_KEY
             }

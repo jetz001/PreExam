@@ -7,6 +7,7 @@ router.get('/', newsController.getNews);
 router.get('/landing', newsController.getLandingPageNews); // Public route for landing page
 
 // Scrape Metadata
+router.get('/agency-stats', newsController.getAgencyStats);
 router.get('/popular-keywords', newsController.getPopularKeywords);
 router.post('/scrape', authMiddleware, adminMiddleware, newsController.scrapeMetadata);
 
