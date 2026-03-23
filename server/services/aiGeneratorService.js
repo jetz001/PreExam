@@ -2,8 +2,8 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
-const { OpenAI } = require('openai');
 const { Question, Notification, User } = require('../models');
+const aiProviderFactory = require('./aiProviderFactory');
 
 const EXAM_GEN_DIR = path.resolve(__dirname, '../../exam-generator');
 const DB_PATH = path.join(EXAM_GEN_DIR, 'exams.db');
@@ -85,12 +85,12 @@ const tryFixCorrectAnswer = (answer) => {
 };
 
 const generateExamQuestion = async (categoryName, previousQuestions, customPrompt = null) => {
-    // We use the OpenAI SDK with Google's compatibility endpoint for better reliability
-    const openai = new OpenAI({
-        apiKey: process.env.GEMINI_API_KEY,
-        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
-    });
+    // Determine provider and model
+    const provider = aiProviderFactory.getProvider();
+    const openai = aiProviderFactory.getInferenceClient();
     
+    logToFile(`Using AI Provider: ${provider.name} (${provider.model})`);
+
     // If no custom prompt, use the default exam generation prompt
     const prompt = customPrompt || `จงสร้างข้อสอบปรนัย 4 ตัวเลือก จำนวน 1 ข้อ สำหรับชุดข้อสอบ (Exam Set): "${categoryName}"
 ระดับความยาก: เทียบเท่าข้อสอบแข่งขันเข้ารับราชการ (เช่น ภาค ก. หรือ ท้องถิ่น)
@@ -126,7 +126,7 @@ ${previousQuestions}
 `;
 
     const response = await openai.chat.completions.create({
-        model: "gemini-1.5-flash",
+        model: provider.model,
         temperature: 0.7,
         messages: [
             { role: "system", content: "คุณเป็นผู้เชี่ยวชาญการออกข้อสอบข้าราชการ/พนักงานราชการ สร้างข้อสอบ 1 ข้อ และตอบกลับมาเป็น pure JSON Format เท่านั้น ห้ามตอบกลับเป็นข้อความอื่น" },
@@ -180,9 +180,8 @@ const saveToDb = async (data, categoryName) => {
 };
 
 let isRunning = false;
-exports.getIsRunning = () => isRunning;
 
-exports.runGenerator = async (customPrompt = null) => {
+const runGenerator = async (customPrompt = null) => {
     if (isRunning) return { success: false, message: 'Already running' };
     
     isRunning = true;
@@ -252,4 +251,10 @@ exports.runGenerator = async (customPrompt = null) => {
         if (db) db.close();
         isRunning = false;
     }
+};
+
+module.exports = {
+    runGenerator,
+    generateExamQuestion,
+    getIsRunning: () => isRunning
 };

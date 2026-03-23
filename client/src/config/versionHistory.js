@@ -1,5 +1,14 @@
 export const versionHistory = [
     {
+        version: 'v0.2.28',
+        date: '2026-03-23',
+        changes: [
+            { type: 'feature', description: 'Implemented Multi-Provider AI Engine (Gemini, DeepSeek, OpenAI, X.AI, OpenRouter)' },
+            { type: 'ui', description: 'Added Engine Indicator to Virtual Terminal UI' },
+            { type: 'improvement', description: 'Migrated all AI communications to OpenAI SDK for better stability' }
+        ]
+    },
+    {
         version: 'v0.2.27',
         date: '2026-03-23',
         changes: [

@@ -5,12 +5,32 @@ import axios from 'axios';
 const TerminalUI = () => {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState([
-    { type: 'system', content: '--- PreExam AI Virtual Terminal v1.0.0 ---' },
+    { type: 'system', content: '--- PreExam AI Virtual Terminal v1.1.0 ---' },
     { type: 'system', content: '>>> Welcome, Admin. System is ready.' },
     { type: 'system', content: '>>> Type "help" to see available commands.' },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeProvider, setActiveProvider] = useState('Google Gemini');
   const scrollRef = useRef(null);
+
+  const fetchStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post('/api/terminal/command', 
+        { command: 'status' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // Extract provider name from status message like ">>> Status: Idle (Active Provider: Google Gemini)"
+      const match = response.data.message.match(/Active Provider: (.*)\)/) || response.data.message.match(/Using (.*)\.\.\./);
+      if (match) setActiveProvider(match[1]);
+    } catch (err) {
+      console.error('Failed to fetch terminal status', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -49,6 +69,12 @@ const TerminalUI = () => {
         type: 'bot', 
         content: response.data.message || 'Command executed.' 
       }]);
+
+      // If switched provider, update the indicator
+      if (cmd.toLowerCase().startsWith('use ')) {
+        const match = response.data.message.match(/Switched to Provider: (.*)\n/);
+        if (match) setActiveProvider(match[1]);
+      }
     } catch (error) {
       setHistory(prev => [...prev, { 
         type: 'error', 
@@ -66,6 +92,9 @@ const TerminalUI = () => {
         <div className="flex items-center gap-2">
           <TerminalIcon size={16} className="text-emerald-400" />
           <span className="text-slate-300 text-xs font-bold uppercase tracking-wider">AI Virtual Terminal</span>
+          <span className="ml-2 px-1.5 py-0.5 rounded bg-slate-700 text-[10px] text-sky-400 border border-slate-600">
+            Engine: {activeProvider}
+          </span>
         </div>
         <div className="flex gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
