@@ -7,7 +7,9 @@ const suppressedWarnings = [
     'google.accounts.id.prompt',
     '[GSI_LOGGER]',
     'The given origin is not allowed',
-    'Duplicate script ID' // Suppress the duplicate script error if we can't fix the source
+    'Duplicate script ID', // Suppress the duplicate script error if we can't fix the source
+    'Socket connection error',
+    'websocket error'
 ];
 
 const matchSuppression = (args) => {

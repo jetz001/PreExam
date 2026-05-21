@@ -29,7 +29,8 @@ export const SocketProvider = ({ children }) => {
             });
 
             newSocket.on('connect_error', (err) => {
-                console.warn('Socket connection error:', err);
+                // Suppress constant console errors if server is intentionally offline
+                // console.warn('Socket connection error:', err);
             });
 
             newSocket.on('connect', () => {

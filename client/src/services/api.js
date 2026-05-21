@@ -23,6 +23,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        // If it's a network error (e.g. backend offline), suppress console noise
+        if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.code === 'ECONNREFUSED') {
+            console.warn('Backend server is currently unreachable. Operating in offline/degraded mode.');
+            return Promise.reject(error);
+        }
+
         if (error.response && error.response.status === 401) {
             // Token is invalid or expired
             localStorage.removeItem('token');
