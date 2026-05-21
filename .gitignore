@@ -16,3 +16,9 @@ Bin/rclone.exe
 firebase-service-account.json
 server/config/firebase-service-account.json
 temp.js
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
