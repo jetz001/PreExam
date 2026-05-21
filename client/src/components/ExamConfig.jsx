@@ -109,15 +109,24 @@ export default function ExamConfig({ onStart }) {
                     70%     { transform:translate(-15px,15px) scale(0.96); }
                 }
                 @keyframes ecSlideUp {
-                    from { opacity:0; transform:translateY(24px); }
-                    to   { opacity:1; transform:translateY(0); }
+                    from { opacity:0; transform:translateY(28px) scale(0.97); }
+                    to   { opacity:1; transform:translateY(0) scale(1); }
                 }
                 @keyframes ecPanelDown {
-                    from { opacity:0; transform:translateY(-12px); max-height:0; }
-                    to   { opacity:1; transform:translateY(0); max-height:900px; }
+                    from { opacity:0; transform:translateY(-8px); }
+                    to   { opacity:1; transform:translateY(0); }
                 }
                 @keyframes ecSpin {
                     to { transform:rotate(360deg); }
+                }
+                @keyframes ecBounce {
+                    0%,100% { transform:translateY(0) scale(1); }
+                    30%     { transform:translateY(-8px) scale(1.04); }
+                    60%     { transform:translateY(-3px) scale(1.01); }
+                }
+                @keyframes ecFloat {
+                    0%   { transform:translateY(110vh) rotate(0deg); opacity:0.8; }
+                    100% { transform:translateY(-10vh) rotate(720deg); opacity:0; }
                 }
 
                 .ec-root {
@@ -139,19 +148,23 @@ export default function ExamConfig({ onStart }) {
                 .ec-title {
                     font-family: 'Nunito','Sarabun',sans-serif;
                     font-weight: 900;
-                    font-size: clamp(2rem,6vw,2.8rem);
+                    font-size: clamp(2.2rem,7vw,3.2rem);
                     color: #fff;
                     text-align: center;
-                    letter-spacing: -1px;
-                    margin-bottom: 4px;
-                    text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                    letter-spacing: -1.5px;
+                    margin-bottom: 6px;
+                    text-shadow: 0 6px 30px rgba(0,0,0,0.4), 0 0 60px rgba(167,139,250,0.5);
+                    animation: ecBounce 2.5s ease-in-out infinite;
+                    display: inline-block;
+                    width: 100%;
                 }
                 .ec-sub {
                     text-align: center;
-                    color: rgba(255,255,255,0.7);
-                    font-size: 0.95rem;
-                    font-weight: 600;
-                    margin-bottom: 32px;
+                    color: rgba(255,255,255,0.65);
+                    font-size: 1rem;
+                    font-weight: 700;
+                    margin-bottom: 28px;
+                    letter-spacing: 0.3px;
                 }
                 /* Mode cards */
                 .ec-modes {
@@ -161,8 +174,8 @@ export default function ExamConfig({ onStart }) {
                     margin-bottom: 20px;
                 }
                 .ec-mode-card {
-                    border-radius: 16px;
-                    padding: 16px 12px;
+                    border-radius: 20px;
+                    padding: 22px 14px;
                     cursor: pointer;
                     border: 3px solid transparent;
                     transition: transform 0.18s cubic-bezier(.34,1.6,.64,1), box-shadow 0.18s;
@@ -261,58 +274,69 @@ export default function ExamConfig({ onStart }) {
                     display: flex; align-items: center; justify-content: center; gap: 8px;
                 }
                 .ec-adv-toggle:hover { background: rgba(255,255,255,0.18); color: #fff; }
-                /* Advanced panel */
+                /* Advanced panel — dark glass */
                 .ec-adv-panel {
-                    margin-top: 16px;
-                    background: rgba(255,255,255,0.97);
-                    border-radius: 20px;
-                    padding: 24px;
-                    animation: ecPanelDown 0.35s ease both;
-                    overflow: hidden;
+                    margin-top: 14px;
+                    background: rgba(15,5,40,0.75);
+                    backdrop-filter: blur(24px);
+                    -webkit-backdrop-filter: blur(24px);
+                    border: 1.5px solid rgba(167,139,250,0.25);
+                    border-radius: 24px;
+                    padding: 24px 20px;
+                    animation: ecPanelDown 0.3s ease both;
                 }
                 .ec-adv-label {
                     display: block;
-                    font-size: 0.78rem;
+                    font-size: 0.7rem;
                     font-weight: 800;
-                    color: #6b21a8;
-                    margin-bottom: 4px;
-                    letter-spacing: 0.5px;
+                    color: rgba(167,139,250,0.9);
+                    margin-bottom: 6px;
+                    letter-spacing: 1px;
                     text-transform: uppercase;
                 }
                 .ec-adv-select, .ec-adv-input {
                     width: 100%;
-                    border: 2px solid #e9d5ff;
-                    border-radius: 10px;
-                    padding: 9px 12px;
-                    font-size: 0.9rem;
-                    font-weight: 600;
-                    color: #1a0533;
-                    background: #faf5ff;
-                    transition: border-color 0.15s;
+                    border: 1.5px solid rgba(167,139,250,0.3);
+                    border-radius: 12px;
+                    padding: 11px 14px;
+                    font-size: 0.92rem;
+                    font-weight: 700;
+                    color: #fff;
+                    background: rgba(255,255,255,0.07);
+                    transition: border-color 0.15s, background 0.15s;
                     outline: none;
+                    font-family: 'Sarabun','Nunito',sans-serif;
                 }
-                .ec-adv-select:focus, .ec-adv-input:focus { border-color: #7c3aed; }
-                .ec-adv-select:disabled { opacity: 0.5; cursor: not-allowed; }
+                .ec-adv-select option { background: #2d1060; color: #fff; }
+                .ec-adv-select:focus, .ec-adv-input:focus {
+                    border-color: #a78bfa;
+                    background: rgba(167,139,250,0.12);
+                }
+                .ec-adv-select:disabled { opacity: 0.35; cursor: not-allowed; }
                 .ec-adv-submit {
                     width: 100%;
-                    padding: 14px;
-                    border-radius: 14px;
+                    padding: 15px;
+                    border-radius: 16px;
                     border: none;
-                    background: linear-gradient(135deg,#7c3aed,#4f46e5);
+                    background: linear-gradient(135deg,#a855f7,#7c3aed);
                     color: #fff;
                     font-weight: 900;
-                    font-size: 1rem;
+                    font-size: 1.05rem;
                     cursor: pointer;
-                    box-shadow: 0 6px 24px rgba(124,58,237,0.4);
-                    transition: transform 0.15s, box-shadow 0.15s;
+                    font-family: 'Nunito','Sarabun',sans-serif;
+                    box-shadow: 0 8px 30px rgba(168,85,247,0.5);
+                    transition: transform 0.18s cubic-bezier(.34,1.6,.64,1), box-shadow 0.18s;
                     margin-top: 20px;
+                    letter-spacing: 0.3px;
                 }
-                .ec-adv-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(124,58,237,0.5); }
+                .ec-adv-submit:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 14px 40px rgba(168,85,247,0.65); }
                 .ec-premium-badge {
-                    font-size: 0.62rem; font-weight: 800;
-                    background: #fef3c7; color: #d97706;
-                    border-radius: 4px; padding: 2px 5px;
-                    vertical-align: middle; margin-left: 4px;
+                    font-size: 0.6rem; font-weight: 800;
+                    background: linear-gradient(135deg,#fbbf24,#f59e0b);
+                    color: #1a0533;
+                    border-radius: 5px; padding: 2px 6px;
+                    vertical-align: middle; margin-left: 5px;
+                    letter-spacing: 0.5px;
                 }
             `}</style>
 
@@ -325,6 +349,26 @@ export default function ExamConfig({ onStart }) {
                     <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'60vw', height:'60vw', maxWidth:600, maxHeight:600, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%,#8b2fc9 0%,#6b21a8 60%,transparent 100%)', animation:'ecBlobDrift 14s ease-in-out infinite' }}/>
                     <div style={{ position:'absolute', bottom:'-20%', right:'-10%', width:'65vw', height:'65vw', maxWidth:660, maxHeight:660, borderRadius:'50%', background:'radial-gradient(circle at 60% 60%,#7c3aed 0%,#5b21b6 55%,transparent 100%)', animation:'ecBlobDrift 18s ease-in-out infinite reverse' }}/>
                 </div>
+
+                {/* Floating confetti dots */}
+                {[
+                    { left:'8%',  delay:'0s',   dur:'7s',  size:10, color:'#ffcc00' },
+                    { left:'20%', delay:'1.5s', dur:'9s',  size:7,  color:'#ff6b8a' },
+                    { left:'35%', delay:'0.8s', dur:'6s',  size:12, color:'#22c55e' },
+                    { left:'55%', delay:'2.2s', dur:'8s',  size:8,  color:'#00b4d8' },
+                    { left:'70%', delay:'0.3s', dur:'10s', size:6,  color:'#fbbf24' },
+                    { left:'85%', delay:'1.8s', dur:'7.5s',size:11, color:'#a855f7' },
+                    { left:'92%', delay:'0.9s', dur:'8.5s',size:7,  color:'#ff9800' },
+                ].map((dot, i) => (
+                    <div key={i} style={{
+                        position:'absolute', bottom:'-20px', left:dot.left,
+                        width:dot.size, height:dot.size, borderRadius:'50%',
+                        background:dot.color, pointerEvents:'none',
+                        animation:`ecFloat ${dot.dur} ${dot.delay} ease-in infinite`,
+                        opacity:0.75,
+                    }}/>
+                ))}
+
 
                 <div className="ec-card">
                     {/* Title */}
