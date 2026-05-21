@@ -63,7 +63,7 @@ import BusinessWallet from './pages/business/BusinessWallet';
 import AdsManager from './pages/admin/AdsManager';
 import SafetyInterstitial from './pages/SafetyInterstitial';
 import FloatingHelpWidget from './components/support/FloatingHelpWidget';
-import CookieConsent from './components/common/CookieConsent';
+import PrivacyBanner from './components/common/PrivacyBanner';
 
 
 import { useAuth } from './context/AuthContext';
@@ -170,7 +170,7 @@ function App() {
       </Routes>
       <Toaster />
       <FloatingHelpWidget />
-      {/* <CookieConsent /> - Temporarily disabled per user request (Clarity Feedback) */}
+      {/* <PrivacyBanner /> - Temporarily disabled per user request (Clarity Feedback) */}
     </>
 
   );
