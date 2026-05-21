@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import HomeNavbar from '../components/HomeNavbar';
 
 /* ── Confetti particle ── */
 function useConfetti() {
@@ -155,9 +154,6 @@ const Home = () => {
             animation:'blobDrift3 11s ease-in-out infinite',
           }}/>
         </div>
-
-        {/* ── HomeNavbar ── */}
-        <HomeNavbar />
 
         {/* ── Confetti ── */}
         <div style={{ position:'absolute', inset:0, pointerEvents:'none', overflow:'hidden' }}>
@@ -345,15 +341,6 @@ const Home = () => {
 
           </div>{/* /buttons */}
 
-          {/* footer */}
-          <div style={{
-            marginTop:40, textAlign:'center',
-            color:'rgba(255,255,255,0.4)', fontSize:'0.78rem', fontWeight:600,
-            letterSpacing:0.5,
-            animation:'subtitleFade 0.5s 1s both',
-          }}>
-            © {new Date().getFullYear()} PreExam &nbsp;·&nbsp; ระบบสอบออนไลน์
-          </div>
         </div>
 
       </div>

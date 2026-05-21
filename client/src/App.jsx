@@ -119,11 +119,11 @@ function App() {
           <Route path="settings" element={<BusinessSettings />} />
         </Route>
         {/* ── Standalone (no old Navbar/Footer) ── */}
+        <Route path="/" element={<Home />} />
         <Route path="/exam" element={<Exam />} />
         <Route path="/exam/result/:id" element={<ExamResult />} />
 
         <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
