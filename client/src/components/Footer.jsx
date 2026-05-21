@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import PageLoadTimer from './common/PageLoadTimer';
 import { getCurrentVersion } from '../config/versionHistory';
 
 const Footer = () => {
@@ -45,7 +44,6 @@ const Footer = () => {
                     <p className="text-base text-gray-400 text-center">
                         &copy; 2024 PreExam. All rights reserved.
                     </p>
-                    <PageLoadTimer />
                 </div>
             </div>
         </footer>

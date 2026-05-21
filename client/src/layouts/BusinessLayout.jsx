@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, List, LogOut, Wallet, Building2, User, Settings, ArrowLeft, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import PageLoadTimer from '../components/common/PageLoadTimer';
 
 import businessApi from '../services/businessApi';
 import SystemBroadcast from '../components/common/SystemBroadcast';
@@ -126,9 +125,6 @@ const BusinessLayout = () => {
                 {/* Content Body */}
                 <div className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6 md:p-8">
                     <Outlet />
-                    <div className="mt-8 border-t border-slate-200 pt-4">
-                        <PageLoadTimer />
-                    </div>
                 </div>
             </main>
         </div>

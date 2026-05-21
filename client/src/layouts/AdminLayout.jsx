@@ -20,7 +20,6 @@ import {
     Activity,
     Bot
 } from 'lucide-react';
-import PageLoadTimer from '../components/common/PageLoadTimer';
 
 import { Toaster } from 'react-hot-toast';
 import SystemBroadcast from '../components/common/SystemBroadcast';
@@ -133,7 +132,6 @@ const AdminLayout = () => {
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>
-                    <PageLoadTimer />
                 </main>
             </div>
         </div>
