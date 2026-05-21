@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import HomeNavbar from './HomeNavbar';
 
 /* ─────────────────────────────────────────────
    ExamConfig  — Kahoot-style redesign
@@ -316,6 +317,9 @@ export default function ExamConfig({ onStart }) {
             `}</style>
 
             <div className="ec-root">
+                {/* Navbar */}
+                <HomeNavbar />
+                
                 {/* Background blobs */}
                 <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
                     <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'60vw', height:'60vw', maxWidth:600, maxHeight:600, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%,#8b2fc9 0%,#6b21a8 60%,transparent 100%)', animation:'ecBlobDrift 14s ease-in-out infinite' }}/>
@@ -445,8 +449,8 @@ export default function ExamConfig({ onStart }) {
                         </div>
                     )}
 
-                    <div style={{ marginTop:28, textAlign:'center', color:'rgba(255,255,255,0.35)', fontSize:'0.75rem', fontWeight:600 }}>
-                        © {new Date().getFullYear()} PreExam · Solo Mode
+                    <div style={{ marginTop:28, textAlign:'center', color:'rgba(255,255,255,0.25)', fontSize:'0.72rem', fontWeight:600 }}>
+                        © {new Date().getFullYear()} PreExam
                     </div>
                 </div>
             </div>

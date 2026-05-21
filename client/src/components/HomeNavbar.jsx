@@ -10,11 +10,23 @@ import publicService from '../services/publicService';
 ────────────────────────────────────────────────────── */
 
 const NAV_LINKS = [
+  { path: '/',               label: '🏠 หน้าแรก',          color: '#a78bfa' },
+  { path: '/exam',           label: '📝 คลังข้อสอบ',       color: '#e91e63' },
+  { path: '/lobby',          label: '🏆 ห้องสอบกลุ่ม',     color: '#00b4d8' },
   { path: '/community',      label: '💬 ชุมชน',            color: '#22c55e' },
   { path: '/learning-center',label: '📚 ศูนย์เรียนรู้',    color: '#f59e0b' },
   { path: '/news',           label: '📰 ข่าวสอบ',          color: '#3b82f6' },
-  { path: '/exam',           label: '📝 สอบเดี่ยว',        color: '#e91e63' },
-  { path: '/lobby',          label: '🏆 สอบกลุ่ม',         color: '#00b4d8' },
+];
+
+const HELP_LINKS = [
+  { path: '/contact', label: '📬 ติดต่อเรา' },
+  { path: '/faq',     label: '❓ คำถามที่พบบ่อย' },
+  { path: '/policy',  label: '🔒 นโยบายความเป็นส่วนตัว' },
+];
+
+const SOCIAL_LINKS = [
+  { href: 'https://facebook.com', label: '👥 Facebook' },
+  { href: 'https://line.me',      label: '💚 Line OA' },
 ];
 
 export default function HomeNavbar() {
@@ -164,32 +176,51 @@ export default function HomeNavbar() {
 
           {/* Dropdown menu */}
           {menuOpen && (
-            <div className="hn-dropdown" style={{ left:0, minWidth:220 }}>
-              <div style={{ padding:'4px 12px 10px', color:'rgba(255,255,255,0.45)',
-                fontSize:'0.72rem', fontWeight:700, letterSpacing:1, textTransform:'uppercase' }}>
+            <div className="hn-dropdown" style={{ left:0, minWidth:230 }}>
+
+              {/* ── เมนูหลัก ── */}
+              <div style={{ padding:'6px 12px 6px', color:'rgba(255,255,255,0.4)',
+                fontSize:'0.68rem', fontWeight:800, letterSpacing:1.2, textTransform:'uppercase' }}>
                 เมนูหลัก
               </div>
               {NAV_LINKS.map(link => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className="hn-drop-link"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <span style={{
-                    width:8, height:8, borderRadius:'50%',
-                    background:link.color, flexShrink:0,
-                    boxShadow:`0 0 8px ${link.color}`,
-                  }}/>
+                <Link key={link.path} to={link.path} className="hn-drop-link" onClick={() => setMenuOpen(false)}>
+                  <span style={{ width:7, height:7, borderRadius:'50%', background:link.color,
+                    flexShrink:0, boxShadow:`0 0 8px ${link.color}` }}/>
                   {link.label}
                 </Link>
               ))}
-              <div style={{ margin:'8px 0 4px', borderTop:'1px solid rgba(255,255,255,0.08)' }}/>
               <Link to="/pricing" className="hn-drop-link" onClick={() => setMenuOpen(false)}>
-                <span style={{ width:8, height:8, borderRadius:'50%',
-                  background:'#fbbf24', flexShrink:0, boxShadow:'0 0 8px #fbbf24' }}/>
+                <span style={{ width:7, height:7, borderRadius:'50%', background:'#fbbf24',
+                  flexShrink:0, boxShadow:'0 0 8px #fbbf24' }}/>
                 ⭐ พรีเมียม
               </Link>
+
+              {/* ── ช่วยเหลือ ── */}
+              <div style={{ margin:'8px 0 0', borderTop:'1px solid rgba(255,255,255,0.08)' }}/>
+              <div style={{ padding:'8px 12px 4px', color:'rgba(255,255,255,0.4)',
+                fontSize:'0.68rem', fontWeight:800, letterSpacing:1.2, textTransform:'uppercase' }}>
+                ช่วยเหลือ
+              </div>
+              {HELP_LINKS.map(link => (
+                <Link key={link.path} to={link.path} className="hn-drop-link" onClick={() => setMenuOpen(false)}>
+                  {link.label}
+                </Link>
+              ))}
+
+              {/* ── ติดตามเรา ── */}
+              <div style={{ margin:'8px 0 0', borderTop:'1px solid rgba(255,255,255,0.08)' }}/>
+              <div style={{ padding:'8px 12px 4px', color:'rgba(255,255,255,0.4)',
+                fontSize:'0.68rem', fontWeight:800, letterSpacing:1.2, textTransform:'uppercase' }}>
+                ติดตามเรา
+              </div>
+              {SOCIAL_LINKS.map(link => (
+                <a key={link.href} href={link.href} target="_blank" rel="noreferrer"
+                  className="hn-drop-link" onClick={() => setMenuOpen(false)}>
+                  {link.label}
+                </a>
+              ))}
+
             </div>
           )}
         </div>
