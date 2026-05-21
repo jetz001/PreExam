@@ -118,6 +118,10 @@ function App() {
           <Route path="wallet" element={<BusinessWallet />} />
           <Route path="settings" element={<BusinessSettings />} />
         </Route>
+        {/* ── Standalone (no old Navbar/Footer) ── */}
+        <Route path="/exam" element={<Exam />} />
+        <Route path="/exam/result/:id" element={<ExamResult />} />
+
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -126,8 +130,6 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/:id" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/exam" element={<Exam />} />
-          <Route path="/exam/result/:id" element={<ExamResult />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<DashboardOverview />} />
             <Route path="businesses" element={<BusinessManager />} />
