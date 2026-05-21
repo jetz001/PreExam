@@ -1,10 +1,48 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-const ExamConfig = ({ onStart }) => {
-    const { user } = useAuth(); // Assuming useAuth hook exists
+/* ─────────────────────────────────────────────
+   ExamConfig  — Kahoot-style redesign
+   Quick start big button  +  advanced panel
+───────────────────────────────────────────── */
+
+const MODE_OPTIONS = [
+    {
+        id: 'practice',
+        emoji: '📝',
+        label: 'ฝึกฝน',
+        sub: 'เฉลยทันทีทุกข้อ',
+        color: '#22c55e',
+        bg: 'linear-gradient(135deg,#22c55e,#16a34a)',
+    },
+    {
+        id: 'simulation',
+        emoji: '⏱️',
+        label: 'จำลองสนามสอบ',
+        sub: 'จับเวลา / ไม่เฉลย',
+        color: '#f59e0b',
+        bg: 'linear-gradient(135deg,#f59e0b,#d97706)',
+    },
+];
+
+const QUICK_AMOUNTS = [10, 20, 30, 50];
+
+export default function ExamConfig({ onStart }) {
+    const { user } = useAuth();
+    const isPremium = user?.plan_type === 'subscription' || user?.role === 'admin';
+
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [mode, setMode] = useState('practice');
+    const [quickAmount, setQuickAmount] = useState(10);
+    const [loading, setLoading] = useState(false);
+
+    // Advanced state
+    const [subjects, setSubjects]     = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [years, setYears]           = useState([]);
+    const [sets, setSets]             = useState([]);
     const [config, setConfig] = useState({
-        category: 'local_gov',
+        category: '',
         subject: '',
         exam_year: '',
         exam_set: '',
@@ -12,256 +50,406 @@ const ExamConfig = ({ onStart }) => {
         mode: 'practice',
     });
 
-    const [subjects, setSubjects] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [years, setYears] = useState([]);
-    const [sets, setSets] = useState([]);
-
-    const isPremium = user?.plan_type === 'subscription' || user?.role === 'admin';
-
-    const [showAdvanced, setShowAdvanced] = useState(false);
-
-    // Initial Load - Subjects
+    // Load advanced data lazily
     React.useEffect(() => {
-        const fetchSubjects = async () => {
+        if (!showAdvanced) return;
+        (async () => {
             try {
                 const examService = (await import('../services/examService')).default;
-                const subjectsRes = await examService.getSubjects();
-                if (subjectsRes.success) setSubjects(subjectsRes.data);
-
-                const [yearsRes, setsRes] = await Promise.all([
+                const [subjectsRes, yearsRes, setsRes] = await Promise.all([
+                    examService.getSubjects(),
                     examService.getExamYears(),
-                    examService.getExamSets()
+                    examService.getExamSets(),
                 ]);
-                if (yearsRes.success) setYears(yearsRes.data);
-                if (setsRes.success) setSets(setsRes.data);
-            } catch (error) {
-                console.error('Error fetching initial data:', error);
-            }
-        };
-        fetchSubjects();
-    }, [isPremium]);
+                if (subjectsRes.success)  setSubjects(subjectsRes.data);
+                if (yearsRes.success)     setYears(yearsRes.data);
+                if (setsRes.success)      setSets(setsRes.data);
+            } catch (e) { console.error(e); }
+        })();
+    }, [showAdvanced]);
 
-    // Dependent Dropdown: Fetch Categories when Subject changes
     React.useEffect(() => {
-        const fetchCategories = async () => {
+        if (!showAdvanced) return;
+        (async () => {
             try {
                 const examService = (await import('../services/examService')).default;
-                // Fetch categories filtered by selected subject
-                const categoriesRes = await examService.getCategories({ subject: config.subject });
-
-                if (categoriesRes.success) {
-                    setCategories(categoriesRes.data);
-
-                    // Auto-select first category if current selection is invalid for new list
-                    // or if it's empty.
-                    if (categoriesRes.data.length > 0) {
-                        const isCurrentValid = categoriesRes.data.includes(config.category);
-                        if (!config.category || !isCurrentValid) {
-                            // Don't auto-set if "All" concept is desired, but here we enforce selection usually.
-                            // Let's set default to first one to ensure valid state.
-                            setConfig(prev => ({ ...prev, category: categoriesRes.data[0] }));
-                        }
-                    } else {
-                        // No categories for this subject
-                        setConfig(prev => ({ ...prev, category: '' }));
-                    }
+                const res = await examService.getCategories({ subject: config.subject });
+                if (res.success) {
+                    setCategories(res.data);
+                    if (res.data.length > 0 && !res.data.includes(config.category))
+                        setConfig(p => ({ ...p, category: res.data[0] }));
                 }
-            } catch (error) {
-                console.error('Error fetching dependent categories:', error);
-            }
-        };
-        fetchCategories();
-    }, [config.subject]);
+            } catch (e) { console.error(e); }
+        })();
+    }, [config.subject, showAdvanced]);
 
-    const handleChange = (e) => {
-        setConfig({ ...config, [e.target.name]: e.target.value });
+    const handleQuickStart = async () => {
+        setLoading(true);
+        await onStart({ category: '', subject: '', exam_year: '', exam_set: '', limit: quickAmount, mode });
+        setLoading(false);
     };
 
-    const handleQuickStart = () => {
-        // Default Quick Start Configuration
-        const quickConfig = {
-            category: '', // Search ALL categories (Safe default)
-            subject: '',
-            exam_year: '',
-            exam_set: '',
-            limit: 10,
-            mode: 'practice',
-        };
-        onStart(quickConfig);
-    };
-
-    const handleSubmit = (e) => {
+    const handleAdvancedSubmit = (e) => {
         e.preventDefault();
-        onStart(config);
+        onStart({ ...config, mode });
     };
+
+    const handleChange = (e) =>
+        setConfig(p => ({ ...p, [e.target.name]: e.target.value }));
 
     return (
-        <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center">เริ่มทำข้อสอบ</h2>
+        <>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
 
-            {/* Quick Start Section */}
-            {!showAdvanced && (
-                <div className="space-y-6">
+                @keyframes ecBlobDrift {
+                    0%,100% { transform:translate(0,0) scale(1); }
+                    40%     { transform:translate(30px,-20px) scale(1.06); }
+                    70%     { transform:translate(-15px,15px) scale(0.96); }
+                }
+                @keyframes ecSlideUp {
+                    from { opacity:0; transform:translateY(24px); }
+                    to   { opacity:1; transform:translateY(0); }
+                }
+                @keyframes ecPanelDown {
+                    from { opacity:0; transform:translateY(-12px); max-height:0; }
+                    to   { opacity:1; transform:translateY(0); max-height:900px; }
+                }
+                @keyframes ecSpin {
+                    to { transform:rotate(360deg); }
+                }
+
+                .ec-root {
+                    min-height: 100vh;
+                    background: #46178f;
+                    position: relative;
+                    overflow: hidden;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 80px 16px 32px;
+                    font-family: 'Sarabun','Nunito',sans-serif;
+                }
+                .ec-card {
+                    position: relative; z-index: 10;
+                    width: 100%; max-width: 520px;
+                    animation: ecSlideUp 0.5s ease both;
+                }
+                .ec-title {
+                    font-family: 'Nunito','Sarabun',sans-serif;
+                    font-weight: 900;
+                    font-size: clamp(2rem,6vw,2.8rem);
+                    color: #fff;
+                    text-align: center;
+                    letter-spacing: -1px;
+                    margin-bottom: 4px;
+                    text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                }
+                .ec-sub {
+                    text-align: center;
+                    color: rgba(255,255,255,0.7);
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    margin-bottom: 32px;
+                }
+                /* Mode cards */
+                .ec-modes {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 12px;
+                    margin-bottom: 20px;
+                }
+                .ec-mode-card {
+                    border-radius: 16px;
+                    padding: 16px 12px;
+                    cursor: pointer;
+                    border: 3px solid transparent;
+                    transition: transform 0.18s cubic-bezier(.34,1.6,.64,1), box-shadow 0.18s;
+                    text-align: center;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .ec-mode-card:hover { transform: translateY(-3px); }
+                .ec-mode-card.active {
+                    border-color: #fff;
+                    box-shadow: 0 0 0 4px rgba(255,255,255,0.25), 0 12px 40px rgba(0,0,0,0.3);
+                    transform: translateY(-3px) scale(1.02);
+                }
+                .ec-mode-emoji { font-size: 2rem; margin-bottom: 6px; }
+                .ec-mode-label {
+                    font-weight: 900;
+                    font-size: 1rem;
+                    color: #fff;
+                    font-family: 'Nunito','Sarabun',sans-serif;
+                }
+                .ec-mode-sub { font-size: 0.72rem; color: rgba(255,255,255,0.75); margin-top: 2px; font-weight: 600; }
+                .ec-mode-check {
+                    position: absolute; top: 8px; right: 8px;
+                    width: 20px; height: 20px; border-radius: 50%;
+                    background: #fff; color: #16a34a;
+                    font-size: 12px; font-weight: 900;
+                    display: flex; align-items: center; justify-content: center;
+                }
+                /* Amount selector */
+                .ec-amounts {
+                    display: flex;
+                    gap: 8px;
+                    justify-content: center;
+                    margin-bottom: 24px;
+                }
+                .ec-amount-btn {
+                    width: 58px; height: 44px;
+                    border-radius: 12px;
+                    font-weight: 800; font-size: 1rem;
+                    border: 2.5px solid rgba(255,255,255,0.3);
+                    background: rgba(255,255,255,0.1);
+                    color: rgba(255,255,255,0.7);
+                    cursor: pointer;
+                    transition: all 0.15s;
+                }
+                .ec-amount-btn.active {
+                    background: #fff;
+                    color: #46178f;
+                    border-color: #fff;
+                    box-shadow: 0 4px 20px rgba(255,255,255,0.3);
+                    transform: scale(1.08);
+                }
+                .ec-amount-btn:hover:not(.active) { background: rgba(255,255,255,0.2); color: #fff; }
+                /* Big start button */
+                .ec-start-btn {
+                    width: 100%;
+                    padding: 20px;
+                    border-radius: 20px;
+                    border: none;
+                    background: linear-gradient(135deg,#ffcc00,#ff9800);
+                    color: #1a0533;
+                    font-weight: 900;
+                    font-size: 1.25rem;
+                    font-family: 'Nunito','Sarabun',sans-serif;
+                    cursor: pointer;
+                    box-shadow: 0 8px 32px rgba(255,200,0,0.45);
+                    transition: transform 0.18s cubic-bezier(.34,1.6,.64,1), box-shadow 0.18s, filter 0.18s;
+                    display: flex; align-items: center; justify-content: center; gap: 10px;
+                    margin-bottom: 16px;
+                }
+                .ec-start-btn:hover:not(:disabled) {
+                    transform: translateY(-4px) scale(1.02);
+                    box-shadow: 0 16px 48px rgba(255,200,0,0.6);
+                    filter: brightness(1.05);
+                }
+                .ec-start-btn:active:not(:disabled) { transform: scale(0.97); }
+                .ec-start-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+                .ec-spinner {
+                    width: 22px; height: 22px;
+                    border: 3px solid rgba(0,0,0,0.2);
+                    border-top-color: #1a0533;
+                    border-radius: 50%;
+                    animation: ecSpin 0.7s linear infinite;
+                }
+                /* Advanced toggle */
+                .ec-adv-toggle {
+                    width: 100%;
+                    background: rgba(255,255,255,0.1);
+                    border: 2px solid rgba(255,255,255,0.25);
+                    color: rgba(255,255,255,0.8);
+                    border-radius: 14px;
+                    padding: 12px;
+                    font-weight: 700; font-size: 0.88rem;
+                    cursor: pointer;
+                    transition: background 0.15s, color 0.15s;
+                    display: flex; align-items: center; justify-content: center; gap: 8px;
+                }
+                .ec-adv-toggle:hover { background: rgba(255,255,255,0.18); color: #fff; }
+                /* Advanced panel */
+                .ec-adv-panel {
+                    margin-top: 16px;
+                    background: rgba(255,255,255,0.97);
+                    border-radius: 20px;
+                    padding: 24px;
+                    animation: ecPanelDown 0.35s ease both;
+                    overflow: hidden;
+                }
+                .ec-adv-label {
+                    display: block;
+                    font-size: 0.78rem;
+                    font-weight: 800;
+                    color: #6b21a8;
+                    margin-bottom: 4px;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                }
+                .ec-adv-select, .ec-adv-input {
+                    width: 100%;
+                    border: 2px solid #e9d5ff;
+                    border-radius: 10px;
+                    padding: 9px 12px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    color: #1a0533;
+                    background: #faf5ff;
+                    transition: border-color 0.15s;
+                    outline: none;
+                }
+                .ec-adv-select:focus, .ec-adv-input:focus { border-color: #7c3aed; }
+                .ec-adv-select:disabled { opacity: 0.5; cursor: not-allowed; }
+                .ec-adv-submit {
+                    width: 100%;
+                    padding: 14px;
+                    border-radius: 14px;
+                    border: none;
+                    background: linear-gradient(135deg,#7c3aed,#4f46e5);
+                    color: #fff;
+                    font-weight: 900;
+                    font-size: 1rem;
+                    cursor: pointer;
+                    box-shadow: 0 6px 24px rgba(124,58,237,0.4);
+                    transition: transform 0.15s, box-shadow 0.15s;
+                    margin-top: 20px;
+                }
+                .ec-adv-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(124,58,237,0.5); }
+                .ec-premium-badge {
+                    font-size: 0.62rem; font-weight: 800;
+                    background: #fef3c7; color: #d97706;
+                    border-radius: 4px; padding: 2px 5px;
+                    vertical-align: middle; margin-left: 4px;
+                }
+            `}</style>
+
+            <div className="ec-root">
+                {/* Background blobs */}
+                <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
+                    <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'60vw', height:'60vw', maxWidth:600, maxHeight:600, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%,#8b2fc9 0%,#6b21a8 60%,transparent 100%)', animation:'ecBlobDrift 14s ease-in-out infinite' }}/>
+                    <div style={{ position:'absolute', bottom:'-20%', right:'-10%', width:'65vw', height:'65vw', maxWidth:660, maxHeight:660, borderRadius:'50%', background:'radial-gradient(circle at 60% 60%,#7c3aed 0%,#5b21b6 55%,transparent 100%)', animation:'ecBlobDrift 18s ease-in-out infinite reverse' }}/>
+                </div>
+
+                <div className="ec-card">
+                    {/* Title */}
+                    <div className="ec-title">🎯 เลือกโหมดสอบ</div>
+                    <div className="ec-sub">Solo Exam — ทำคนเดียว ได้ทุกที่</div>
+
+                    {/* Mode selector */}
+                    <div className="ec-modes">
+                        {MODE_OPTIONS.map(m => (
+                            <div
+                                key={m.id}
+                                className={`ec-mode-card ${mode === m.id ? 'active' : ''}`}
+                                style={{ background: m.bg }}
+                                onClick={() => setMode(m.id)}
+                            >
+                                {mode === m.id && <div className="ec-mode-check">✓</div>}
+                                <div className="ec-mode-emoji">{m.emoji}</div>
+                                <div className="ec-mode-label">{m.label}</div>
+                                <div className="ec-mode-sub">{m.sub}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Question amount */}
+                    <div style={{ textAlign:'center', marginBottom:10, color:'rgba(255,255,255,0.6)', fontSize:'0.78rem', fontWeight:700, letterSpacing:1, textTransform:'uppercase' }}>
+                        จำนวนข้อ
+                    </div>
+                    <div className="ec-amounts">
+                        {QUICK_AMOUNTS.map(n => (
+                            <button
+                                key={n}
+                                className={`ec-amount-btn ${quickAmount === n ? 'active' : ''}`}
+                                onClick={() => setQuickAmount(n)}
+                            >
+                                {n}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Start button */}
                     <button
+                        className="ec-start-btn"
                         onClick={handleQuickStart}
-                        className="w-full flex items-center justify-center py-4 px-6 border border-transparent rounded-xl shadow-lg text-xl font-bold text-white bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 focus:outline-none focus:ring-4 focus:ring-yellow-300 transform transition hover:scale-105"
+                        disabled={loading}
                     >
-                        เริ่มฝึกทำข้อสอบ (สุ่ม 10 ข้อ)
+                        {loading
+                            ? <><div className="ec-spinner"/> กำลังโหลด...</>
+                            : <>🚀 &nbsp;เริ่มสอบเลย! &nbsp;<span style={{ opacity:0.6, fontSize:'0.9rem' }}>({quickAmount} ข้อ)</span></>
+                        }
                     </button>
-                    <div className="text-center">
-                        <p className="text-gray-500 text-sm mb-3">หรือ</p>
-                        <button
-                            onClick={() => setShowAdvanced(true)}
-                            className="text-primary hover:text-blue-700 font-medium text-sm border border-primary px-4 py-2 rounded-full hover:bg-blue-50 transition-colors"
-                        >
-                            ⚙️ ตั้งค่าการสอบเอง (ขั้นสูง)
-                        </button>
+
+                    {/* Advanced toggle */}
+                    <button
+                        className="ec-adv-toggle"
+                        onClick={() => setShowAdvanced(v => !v)}
+                    >
+                        <span style={{ fontSize:'1rem' }}>{showAdvanced ? '▲' : '⚙️'}</span>
+                        {showAdvanced ? 'ซ่อนตัวกรอง' : 'ตั้งค่าเอง (ขั้นสูง)'}
+                    </button>
+
+                    {/* Advanced panel */}
+                    {showAdvanced && (
+                        <div className="ec-adv-panel">
+                            <form onSubmit={handleAdvancedSubmit}>
+                                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                                    {/* Subject */}
+                                    <div style={{ gridColumn:'1/-1' }}>
+                                        <label className="ec-adv-label">วิชา</label>
+                                        <select name="subject" value={config.subject} onChange={handleChange} className="ec-adv-select">
+                                            <option value="">ทั้งหมด</option>
+                                            {subjects.map((s,i) => <option key={i} value={s}>{s}</option>)}
+                                        </select>
+                                    </div>
+                                    {/* Category */}
+                                    <div style={{ gridColumn:'1/-1' }}>
+                                        <label className="ec-adv-label">หมวดหมู่</label>
+                                        <select name="category" value={config.category} onChange={handleChange} className="ec-adv-select">
+                                            <option value="">ทั้งหมด</option>
+                                            {categories.map((c,i) => (
+                                                <option key={i} value={c}>
+                                                    {c === 'local_gov' ? 'ความรู้พื้นฐานในการปฏิบัติราชการ' : c}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    {/* Year */}
+                                    <div>
+                                        <label className="ec-adv-label">
+                                            ปีข้อสอบ
+                                            {!isPremium && <span className="ec-premium-badge">PREMIUM</span>}
+                                        </label>
+                                        <select name="exam_year" value={config.exam_year} onChange={handleChange} disabled={!isPremium} className="ec-adv-select">
+                                            <option value="">ทั้งหมด</option>
+                                            {years.map((y,i) => <option key={i} value={y}>{y}</option>)}
+                                        </select>
+                                    </div>
+                                    {/* Set */}
+                                    <div>
+                                        <label className="ec-adv-label">
+                                            ชุดข้อสอบ
+                                            {!isPremium && <span className="ec-premium-badge">PREMIUM</span>}
+                                        </label>
+                                        <select name="exam_set" value={config.exam_set} onChange={handleChange} disabled={!isPremium} className="ec-adv-select">
+                                            <option value="">ทั้งหมด</option>
+                                            {sets.map((s,i) => (
+                                                <option key={i} value={s}>
+                                                    {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    {/* Limit */}
+                                    <div style={{ gridColumn:'1/-1' }}>
+                                        <label className="ec-adv-label">จำนวนข้อ</label>
+                                        <input type="number" name="limit" value={config.limit} onChange={handleChange} min="5" max="100" className="ec-adv-input"/>
+                                    </div>
+                                </div>
+                                <button type="submit" className="ec-adv-submit">
+                                    🎯 เริ่มสอบด้วยตัวกรองนี้
+                                </button>
+                            </form>
+                        </div>
+                    )}
+
+                    <div style={{ marginTop:28, textAlign:'center', color:'rgba(255,255,255,0.35)', fontSize:'0.75rem', fontWeight:600 }}>
+                        © {new Date().getFullYear()} PreExam · Solo Mode
                     </div>
                 </div>
-            )}
-
-            {/* Advanced Filters */}
-            {showAdvanced && (
-                <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in-down">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-medium text-gray-700">ตั้งค่าตัวกรอง</h3>
-                        <button
-                            type="button"
-                            onClick={() => setShowAdvanced(false)}
-                            className="text-gray-400 hover:text-gray-600 text-sm"
-                        >
-                            ✕ ปิดตัวกรอง
-                        </button>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-900">หมวดหมู่</label>
-                        <select
-                            name="category"
-                            value={config.category}
-                            onChange={handleChange}
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white"
-                        >
-                            <option value="">ทั้งหมด</option>
-                            {categories.map((cat, index) => (
-                                <option key={index} value={cat}>
-                                    {cat === 'local_gov' ? 'ความรู้พื้นฐานในการปฏิบัติราชการ' : cat}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-900">วิชา</label>
-                        <select
-                            name="subject"
-                            value={config.subject}
-                            onChange={handleChange}
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white"
-                        >
-                            <option value="">ทั้งหมด</option>
-                            {subjects.map((subj, index) => (
-                                <option key={index} value={subj}>{subj}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <label className="block text-sm font-medium text-gray-900">ปีข้อสอบ</label>
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
-                            </div>
-                            <select
-                                name="exam_year"
-                                value={config.exam_year}
-                                onChange={handleChange}
-                                disabled={!isPremium}
-                                className={`block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white ${!isPremium ? 'opacity-60 cursor-not-allowed bg-gray-100' : ''}`}
-                            >
-                                <option value="">ทั้งหมด</option>
-                                {years.map((y, index) => (
-                                    <option key={index} value={y}>{y}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <label className="block text-sm font-medium text-gray-900">ชุดข้อสอบ</label>
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600">PREMIUM</span>
-                            </div>
-                            <select
-                                name="exam_set"
-                                value={config.exam_set}
-                                onChange={handleChange}
-                                disabled={!isPremium}
-                                className={`block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white ${!isPremium ? 'opacity-60 cursor-not-allowed bg-gray-100' : ''}`}
-                            >
-                                <option value="">ทั้งหมด</option>
-                                {sets.map((s, index) => (
-                                    <option key={index} value={s}>
-                                        {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-900">จำนวนข้อ</label>
-                        <input
-                            type="number"
-                            name="limit"
-                            value={config.limit}
-                            onChange={handleChange}
-                            min="5"
-                            max="100"
-                            className="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-gray-900 bg-white"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-900">โหมดการสอบ</label>
-                        <div className="mt-2 space-y-2">
-                            <div className="flex items-center">
-                                <input
-                                    id="practice"
-                                    name="mode"
-                                    type="radio"
-                                    value="practice"
-                                    checked={config.mode === 'practice'}
-                                    onChange={handleChange}
-                                    className="focus:ring-primary h-4 w-4 text-primary border-gray-300"
-                                />
-                                <label htmlFor="practice" className="ml-3 block text-sm font-medium text-gray-900">
-                                    ฝึกฝน (เฉลยทันที)
-                                </label>
-                            </div>
-                            <div className="flex items-center">
-                                <input
-                                    id="simulation"
-                                    name="mode"
-                                    type="radio"
-                                    value="simulation"
-                                    checked={config.mode === 'simulation'}
-                                    onChange={handleChange}
-                                    className="focus:ring-primary h-4 w-4 text-primary border-gray-300"
-                                />
-                                <label htmlFor="simulation" className="ml-3 block text-sm font-medium text-gray-900">
-                                    จำลองสนามสอบ (จับเวลา/ไม่เฉลย)
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <button
-                        type="submit"
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                    >
-                        เริ่มทำข้อสอบ
-                    </button>
-                </form>
-            )}
-        </div>
+            </div>
+        </>
     );
-};
-
-export default ExamConfig;
+}

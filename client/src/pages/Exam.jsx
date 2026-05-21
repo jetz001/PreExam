@@ -81,17 +81,26 @@ const Exam = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <>
+            {/* Config: full-screen Kahoot style — no wrapper */}
             {step === 'config' && <ExamConfig onStart={handleStart} />}
-            {step === 'taking' && (
-                <ExamTaking
-                    questions={questions}
-                    mode={config.mode}
-                    onSubmit={handleSubmit}
-                />
+
+            {/* Taking / Result keep their own layout */}
+            {(step === 'taking' || step === 'result') && (
+                <div className="min-h-screen bg-gray-50 py-8">
+                    {step === 'taking' && (
+                        <ExamTaking
+                            questions={questions}
+                            mode={config.mode}
+                            onSubmit={handleSubmit}
+                        />
+                    )}
+                    {step === 'result' && (
+                        <ExamResult result={result} onRetry={handleRetry} />
+                    )}
+                </div>
             )}
-            {step === 'result' && <ExamResult result={result} onRetry={handleRetry} />}
-        </div>
+        </>
     );
 };
 
