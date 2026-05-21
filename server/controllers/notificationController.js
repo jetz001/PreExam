@@ -1,19 +1,23 @@
-const { Notification, User } = require('../models');
+const { db: firestore } = require('../config/firebase');
+
+const notificationsRef = firestore.collection('notifications');
 
 exports.createNotification = async ({ userId, actorId, type, referenceId, message }) => {
     try {
         if (userId === actorId) return; // Don't notify self
 
-        await Notification.create({
-            user_id: userId,
-            actor_id: actorId,
+        const newDocRef = notificationsRef.doc();
+        await newDocRef.set({
+            id: newDocRef.id,
+            user_id: userId.toString(),
+            actor_id: actorId.toString(),
             type,
-            reference_id: referenceId,
-            message
+            reference_id: referenceId ? referenceId.toString() : null,
+            message,
+            is_read: false,
+            created_at: new Date().toISOString()
         });
 
-        // Socket.io emit if online
-        // Handled in calling controller usually, or here if we have access to io
     } catch (error) {
         console.error('Notification creation error:', error);
     }
@@ -21,24 +25,36 @@ exports.createNotification = async ({ userId, actorId, type, referenceId, messag
 
 exports.getNotifications = async (req, res) => {
     try {
-        const notifications = await Notification.findAll({
-            where: { user_id: req.user.id },
-            order: [['created_at', 'DESC']],
-            limit: 20
-        });
+        const snapshot = await notificationsRef.where('user_id', '==', req.user.id.toString())
+                                               .orderBy('created_at', 'desc')
+                                               .limit(20)
+                                               .get();
+
+        const notifications = snapshot.docs.map(doc => doc.data());
         res.json(notifications);
     } catch (error) {
+        console.error('Fetch notification error:', error);
         res.status(500).json({ error: 'Server error fetching notifications' });
     }
 };
 
 exports.markAsRead = async (req, res) => {
     try {
-        await Notification.update({ is_read: true }, {
-            where: { user_id: req.user.id, is_read: false }
+        const snapshot = await notificationsRef.where('user_id', '==', req.user.id.toString())
+                                               .where('is_read', '==', false)
+                                               .get();
+
+        if (snapshot.empty) return res.json({ success: true });
+
+        const batch = firestore.batch();
+        snapshot.docs.forEach(doc => {
+            batch.update(doc.ref, { is_read: true });
         });
+        await batch.commit();
+
         res.json({ success: true });
     } catch (error) {
+        console.error('Mark read error:', error);
         res.status(500).json({ error: 'Server error updating notifications' });
     }
 };

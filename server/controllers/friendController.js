@@ -1,43 +1,36 @@
-const { User, Friendship, Sequelize } = require('../models');
-const { Op } = Sequelize;
+const { db: firestore, admin } = require('../config/firebase');
+
+const usersRef = firestore.collection('users');
 
 exports.searchUsers = async (req, res) => {
     try {
         const { query } = req.query;
         if (!query) return res.json({ success: true, data: [] });
 
-        const users = await User.findAll({
-            where: {
-                [Op.or]: [
-                    { display_name: { [Op.like]: `%${query}%` } },
-                    { public_id: { [Op.like]: `%${query}%` } }, // Support referral code search
-                    { email: { [Op.like]: `%${query}%` } }
-                ],
-                id: { [Op.ne]: req.user.id } // Exclude self
-            },
-            attributes: ['id', 'display_name', 'avatar', 'public_id', 'bio'],
-            limit: 10
+        // Simple text search mock for Firestore
+        const snapshot = await usersRef.limit(50).get();
+        let users = snapshot.docs.map(d => {
+            const data = d.data();
+            return { id: d.id, display_name: data.display_name, avatar: data.avatar, public_id: data.public_id, bio: data.bio };
         });
 
-        // Add friend status
-        const myId = req.user.id;
-        const usersWithStatus = await Promise.all(users.map(async u => {
-            const friendship = await Friendship.findOne({
-                where: {
-                    [Op.or]: [
-                        { user_id: myId, friend_id: u.id },
-                        { user_id: u.id, friend_id: myId }
-                    ]
-                }
-            });
+        const lowerQ = query.toLowerCase();
+        users = users.filter(u => u.id !== req.user.id.toString() && (
+            (u.display_name && u.display_name.toLowerCase().includes(lowerQ)) ||
+            (u.public_id && u.public_id.toLowerCase().includes(lowerQ))
+        )).slice(0, 10);
 
+        const myId = req.user.id.toString();
+        const usersWithStatus = await Promise.all(users.map(async u => {
+            const friendDoc = await usersRef.doc(myId).collection('friends').doc(u.id).get();
             let status = 'none';
-            if (friendship) {
-                if (friendship.status === 'accepted') status = 'friends';
-                else if (friendship.user_id === myId) status = 'sent';
-                else status = 'received';
+            if (friendDoc.exists) {
+                const fs = friendDoc.data().status;
+                if (fs === 'accepted') status = 'friends';
+                else if (fs === 'sent') status = 'sent';
+                else if (fs === 'pending') status = 'received';
             }
-            return { ...u.toJSON(), status };
+            return { ...u, status };
         }));
 
         res.json({ success: true, data: usersWithStatus });
@@ -49,48 +42,32 @@ exports.searchUsers = async (req, res) => {
 
 exports.sendRequest = async (req, res) => {
     try {
-        const { friendId } = req.body;
-        const userId = req.user.id;
+        const friendId = req.body.friendId.toString();
+        const userId = req.user.id.toString();
 
-        if (userId == friendId) {
-            return res.status(400).json({ error: "Cannot add yourself" });
-        }
+        if (userId === friendId) return res.status(400).json({ error: "Cannot add yourself" });
 
-
-        // Check if exists
-        const recipient = await User.findByPk(friendId);
-        if (!recipient) return res.status(404).json({ error: "User not found" });
-
-        if (recipient.allow_friend_request === false) {
+        const recipientDoc = await usersRef.doc(friendId).get();
+        if (!recipientDoc.exists) return res.status(404).json({ error: "User not found" });
+        if (recipientDoc.data().allow_friend_request === false) {
             return res.status(400).json({ error: "User does not accept friend requests" });
         }
 
-        const existing = await Friendship.findOne({
-            where: {
-                [Op.or]: [
-                    { user_id: userId, friend_id: friendId },
-                    { user_id: friendId, friend_id: userId }
-                ]
-            }
-        });
+        const myFriendRef = usersRef.doc(userId).collection('friends').doc(friendId);
+        const theirFriendRef = usersRef.doc(friendId).collection('friends').doc(userId);
 
-        if (existing) {
-            if (existing.status === 'accepted') {
-                return res.status(400).json({ error: "Already friends" });
-            }
-            if (existing.user_id === userId) {
-                return res.status(400).json({ error: "Request already sent" });
-            }
-            // If existing request from them, auto accept? Or separate logic?
-            // For now, let's just say "Request already pending" or "They sent you one"
-            return res.status(400).json({ error: "Request pending from other user" });
+        const myFriendDoc = await myFriendRef.get();
+        if (myFriendDoc.exists) {
+            const status = myFriendDoc.data().status;
+            if (status === 'accepted') return res.status(400).json({ error: "Already friends" });
+            if (status === 'sent') return res.status(400).json({ error: "Request already sent" });
+            if (status === 'pending') return res.status(400).json({ error: "Request pending from other user" });
         }
 
-        await Friendship.create({
-            user_id: userId,
-            friend_id: friendId,
-            status: 'pending'
-        });
+        const batch = firestore.batch();
+        batch.set(myFriendRef, { status: 'sent', created_at: new Date().toISOString() });
+        batch.set(theirFriendRef, { status: 'pending', created_at: new Date().toISOString() });
+        await batch.commit();
 
         res.json({ success: true, message: "Friend request sent" });
     } catch (error) {
@@ -101,27 +78,21 @@ exports.sendRequest = async (req, res) => {
 
 exports.acceptRequest = async (req, res) => {
     try {
-        const { requestId } = req.body; // Can accept by Friendship ID, OR by userId. Let's support userId for cleaner UI logic usually.
-        // Actually UI usually knows who they are clicking.
+        const friendId = req.body.friendId.toString();
+        const userId = req.user.id.toString();
 
-        // Let's implement accept by "friend_id" (which is the requester)
-        const { friendId } = req.body;
-        const userId = req.user.id;
+        const myFriendRef = usersRef.doc(userId).collection('friends').doc(friendId);
+        const theirFriendRef = usersRef.doc(friendId).collection('friends').doc(userId);
 
-        const request = await Friendship.findOne({
-            where: {
-                user_id: friendId,
-                friend_id: userId,
-                status: 'pending'
-            }
-        });
-
-        if (!request) {
+        const myFriendDoc = await myFriendRef.get();
+        if (!myFriendDoc.exists || myFriendDoc.data().status !== 'pending') {
             return res.status(404).json({ error: "Request not found" });
         }
 
-        request.status = 'accepted';
-        await request.save();
+        const batch = firestore.batch();
+        batch.update(myFriendRef, { status: 'accepted' });
+        batch.update(theirFriendRef, { status: 'accepted' });
+        await batch.commit();
 
         res.json({ success: true, message: "Friend request accepted" });
     } catch (error) {
@@ -132,17 +103,16 @@ exports.acceptRequest = async (req, res) => {
 
 exports.removeFriend = async (req, res) => {
     try {
-        const { friendId } = req.params; // or query
-        const userId = req.user.id;
+        const friendId = req.params.friendId.toString();
+        const userId = req.user.id.toString();
 
-        await Friendship.destroy({
-            where: {
-                [Op.or]: [
-                    { user_id: userId, friend_id: friendId },
-                    { user_id: friendId, friend_id: userId }
-                ]
-            }
-        });
+        const myFriendRef = usersRef.doc(userId).collection('friends').doc(friendId);
+        const theirFriendRef = usersRef.doc(friendId).collection('friends').doc(userId);
+
+        const batch = firestore.batch();
+        batch.delete(myFriendRef);
+        batch.delete(theirFriendRef);
+        await batch.commit();
 
         res.json({ success: true, message: "Friend removed" });
     } catch (error) {
@@ -153,28 +123,28 @@ exports.removeFriend = async (req, res) => {
 
 exports.getFriends = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.id.toString();
+        const snapshot = await usersRef.doc(userId).collection('friends').where('status', '==', 'accepted').get();
 
-        // Find all ACCEPTED friendships involved
-        const friendships = await Friendship.findAll({
-            where: {
-                status: 'accepted',
-                [Op.or]: [
-                    { user_id: userId },
-                    { friend_id: userId }
-                ]
-            },
-            include: [
-                { model: User, as: 'Requester', attributes: ['id', 'display_name', 'avatar', 'public_id', 'last_active_at', 'is_online_visible'] },
-                { model: User, as: 'Recipient', attributes: ['id', 'display_name', 'avatar', 'public_id', 'last_active_at', 'is_online_visible'] }
-            ]
-        });
+        if (snapshot.empty) return res.json({ success: true, data: [] });
 
-        // Map to just the 'other' user
-        const friends = friendships.map(f => {
-            if (f.user_id === userId) return f.Recipient;
-            return f.Requester;
-        });
+        const friendIds = snapshot.docs.map(d => d.id);
+        const friends = [];
+        
+        for (const fId of friendIds) {
+            const fDoc = await usersRef.doc(fId).get();
+            if (fDoc.exists) {
+                const data = fDoc.data();
+                friends.push({
+                    id: fDoc.id,
+                    display_name: data.display_name,
+                    avatar: data.avatar,
+                    public_id: data.public_id,
+                    last_active_at: data.last_active_at,
+                    is_online_visible: data.is_online_visible
+                });
+            }
+        }
 
         res.json({ success: true, data: friends });
     } catch (error) {
@@ -185,33 +155,19 @@ exports.getFriends = async (req, res) => {
 
 exports.checkStatus = async (req, res) => {
     try {
-        const { userId: otherId } = req.params;
-        const myId = req.user.id;
+        const otherId = req.params.userId.toString();
+        const myId = req.user.id.toString();
 
-        const friendship = await Friendship.findOne({
-            where: {
-                [Op.or]: [
-                    { user_id: myId, friend_id: otherId },
-                    { user_id: otherId, friend_id: myId }
-                ]
-            }
-        });
+        const friendDoc = await usersRef.doc(myId).collection('friends').doc(otherId).get();
+        
+        if (!friendDoc.exists) return res.json({ status: 'none' });
 
-        if (!friendship) {
-            return res.json({ status: 'none' });
-        }
+        const fs = friendDoc.data().status;
+        if (fs === 'accepted') return res.json({ status: 'friends' });
+        if (fs === 'sent') return res.json({ status: 'sent' });
+        if (fs === 'pending') return res.json({ status: 'received' });
 
-        if (friendship.status === 'accepted') {
-            return res.json({ status: 'friends' });
-        }
-
-        // Pending
-        if (friendship.user_id === myId) {
-            return res.json({ status: 'sent' });
-        } else {
-            return res.json({ status: 'received' });
-        }
-
+        res.json({ status: 'none' });
     } catch (error) {
         console.error("Check status error", error);
         res.status(500).json({ error: "Server error" });
@@ -220,19 +176,25 @@ exports.checkStatus = async (req, res) => {
 
 exports.getPendingRequests = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.id.toString();
+        const snapshot = await usersRef.doc(userId).collection('friends').where('status', '==', 'pending').get();
 
-        const requests = await Friendship.findAll({
-            where: {
-                friend_id: userId,
-                status: 'pending'
-            },
-            include: [
-                { model: User, as: 'Requester', attributes: ['id', 'display_name', 'avatar'] }
-            ]
-        });
+        if (snapshot.empty) return res.json({ success: true, data: [] });
 
-        const users = requests.map(r => r.Requester);
+        const requesterIds = snapshot.docs.map(d => d.id);
+        const users = [];
+        
+        for (const reqId of requesterIds) {
+            const rDoc = await usersRef.doc(reqId).get();
+            if (rDoc.exists) {
+                const data = rDoc.data();
+                users.push({
+                    id: rDoc.id,
+                    display_name: data.display_name,
+                    avatar: data.avatar
+                });
+            }
+        }
 
         res.json({ success: true, data: users });
     } catch (error) {

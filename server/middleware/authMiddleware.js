@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { db: firestore } = require('../config/firebase');
+
+const usersRef = firestore.collection('users');
 
 const authMiddleware = async (req, res, next) => {
     try {
@@ -11,17 +13,17 @@ const authMiddleware = async (req, res, next) => {
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
 
-        const user = await User.findByPk(decoded.id);
-        if (!user) {
+        const userDoc = await usersRef.doc(decoded.id.toString()).get();
+        if (!userDoc.exists) {
             return res.status(401).json({ success: false, message: 'Unauthorized: User not found' });
         }
 
+        const user = { id: userDoc.id, ...userDoc.data() };
         req.user = user;
 
-        // Update last_active_at if > 1 minute
         const now = new Date();
         if (!user.last_active_at || (now - new Date(user.last_active_at) > 60000)) {
-            await User.update({ last_active_at: now }, { where: { id: user.id } });
+            await userDoc.ref.update({ last_active_at: now.toISOString() });
         }
 
         next();
@@ -49,18 +51,17 @@ const optionalAuthMiddleware = async (req, res, next) => {
         if (!token) return next();
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
-        const user = await User.findByPk(decoded.id);
+        const userDoc = await usersRef.doc(decoded.id.toString()).get();
 
-        if (user) {
+        if (userDoc.exists) {
+            const user = { id: userDoc.id, ...userDoc.data() };
             console.log('OptionalAuth: User found', user.id);
             req.user = user;
-            // Update activity (optional here, maybe skip for read-only to save DB writes)
         } else {
             console.log('OptionalAuth: User NOT found for token');
         }
         next();
     } catch (error) {
-        // Invalid token - treat as guest rather than error? 
         console.log('OptionalAuth: Error', error.message);
         next();
     }

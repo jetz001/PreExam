@@ -1,4 +1,4 @@
-const { ExamResult, Question } = require('../models');
+const { ExamResult, Question, User, UserRankingStats } = require('../firebaseModels');
 const { logActivity } = require('../utils/activityLogger');
 
 exports.submitExam = async (req, res) => {

@@ -1,58 +1,60 @@
-const { StudyGroup, StudyGroupMember, GroupMessage, User } = require('../models');
-const { Op } = require('sequelize');
+const { db: firestore } = require('../config/firebase');
+
+const groupsRef = firestore.collection('study_groups');
+const usersRef = firestore.collection('users');
+const notificationsRef = firestore.collection('notifications');
 
 exports.getAllGroups = async (req, res) => {
     try {
         const { search } = req.query;
-        const where = {};
+        let snapshot;
 
         if (search) {
-            where.name = { [Op.like]: `%${search}%` };
+            // Simple string matching simulation for search in Firebase
+            // Firestore doesn't support native wildcard text search well, 
+            // but we fetch a batch and filter in memory since groups are small.
+            snapshot = await groupsRef.limit(50).get();
+        } else {
+            snapshot = await groupsRef.limit(20).get();
         }
 
-        console.log("Searching groups with where:", where);
+        let groups = snapshot.docs.map(doc => doc.data());
 
-        const groups = await StudyGroup.findAll({
-            where,
-            limit: 20
+        if (search) {
+            const lowerS = search.toLowerCase();
+            groups = groups.filter(g => g.name.toLowerCase().includes(lowerS));
+        }
+
+        const userId = req.user ? req.user.id.toString() : null;
+        
+        const groupsWithMeta = groups.map(g => {
+            const members = g.members || [];
+            return {
+                ...g,
+                memberCount: members.length,
+                isJoined: userId ? members.includes(userId) : false
+            };
         });
-
-        // Add member count and isJoined flag
-        const groupsWithMeta = await Promise.all(groups.map(async g => {
-            const json = g.toJSON();
-            json.memberCount = await StudyGroupMember.count({ where: { group_id: g.id } });
-            if (req.user) {
-                json.isJoined = await StudyGroupMember.count({ where: { group_id: g.id, user_id: req.user.id } }) > 0;
-            } else {
-                json.isJoined = false;
-            }
-            return json;
-        }));
 
         res.json({ success: true, data: groupsWithMeta });
     } catch (error) {
-        console.error("Get all groups error:", error);
-        res.status(500).json({ error: error.message || 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
 exports.getMyGroups = async (req, res) => {
     try {
-        const userId = req.user.id;
-        const memberships = await StudyGroupMember.findAll({
-            where: { user_id: userId },
-            include: [{ model: StudyGroup }]
-        });
-
-        const groups = await Promise.all(memberships.map(async m => {
-            const g = m.StudyGroup.toJSON();
-            g.memberCount = await StudyGroupMember.count({ where: { group_id: g.id } });
+        const userId = req.user.id.toString();
+        const snapshot = await groupsRef.where('members', 'array-contains', userId).get();
+        
+        const groups = snapshot.docs.map(doc => {
+            const g = doc.data();
+            g.memberCount = (g.members || []).length;
             return g;
-        }));
+        });
 
         res.json({ success: true, data: groups });
     } catch (error) {
-        console.error("Get my groups error", error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -60,24 +62,25 @@ exports.getMyGroups = async (req, res) => {
 exports.createGroup = async (req, res) => {
     try {
         const { name, description, subject, max_members, is_private, password } = req.body;
-        const group = await StudyGroup.create({
+        const userId = req.user.id.toString();
+
+        const newRef = groupsRef.doc();
+        const groupData = {
+            id: newRef.id,
             name,
             description,
             subject,
             max_members: max_members || 10,
             is_private: is_private || false,
             password: is_private ? password : null,
-            owner_id: req.user.id
-        });
+            owner_id: userId,
+            members: [userId],
+            created_at: new Date().toISOString()
+        };
 
-        await StudyGroupMember.create({
-            group_id: group.id,
-            user_id: req.user.id
-        });
-
-        res.json({ success: true, data: group });
+        await newRef.set(groupData);
+        res.json({ success: true, data: groupData });
     } catch (error) {
-        console.error("Create group error", error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -86,34 +89,45 @@ exports.joinGroup = async (req, res) => {
     try {
         const { id } = req.params;
         const { password } = req.body;
-        const group = await StudyGroup.findByPk(id);
+        const userId = req.user.id.toString();
 
-        if (!group) return res.status(404).json({ error: 'Group not found' });
+        const groupRef = groupsRef.doc(id);
 
-        if (group.is_private) {
-            if (!password || password !== group.password) {
-                return res.status(403).json({ error: 'Incorrect password' });
+        let success = false;
+        let errorMessage = '';
+
+        await firestore.runTransaction(async (t) => {
+            const groupDoc = await t.get(groupRef);
+            if (!groupDoc.exists) {
+                errorMessage = 'Group not found';
+                return;
             }
-        }
 
-        const exists = await StudyGroupMember.findOne({
-            where: { group_id: id, user_id: req.user.id }
+            const g = groupDoc.data();
+            if (g.is_private && g.password !== password) {
+                errorMessage = 'Incorrect password';
+                return;
+            }
+
+            const members = g.members || [];
+            if (members.includes(userId)) {
+                errorMessage = 'Already joined';
+                return;
+            }
+
+            if (members.length >= g.max_members) {
+                errorMessage = 'Group is full';
+                return;
+            }
+
+            members.push(userId);
+            t.update(groupRef, { members });
+            success = true;
         });
 
-        if (exists) return res.status(400).json({ error: 'Already joined' });
-
-        // Check max members
-        const count = await StudyGroupMember.count({ where: { group_id: id } });
-        if (count >= group.max_members) return res.status(400).json({ error: 'Group is full' });
-
-        await StudyGroupMember.create({
-            group_id: id,
-            user_id: req.user.id
-        });
-
+        if (!success) return res.status(400).json({ error: errorMessage });
         res.json({ success: true, message: 'Joined' });
     } catch (error) {
-        console.error("Join group error", error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -121,20 +135,21 @@ exports.joinGroup = async (req, res) => {
 exports.getMessages = async (req, res) => {
     try {
         const { id } = req.params;
-        // Verify membership
-        const isMember = await StudyGroupMember.findOne({ where: { group_id: id, user_id: req.user.id } });
-        if (!isMember) return res.status(403).json({ error: 'Not a member' });
+        const userId = req.user.id.toString();
 
-        const messages = await GroupMessage.findAll({
-            where: { group_id: id },
-            include: [{ model: User, as: 'Sender', attributes: ['id', 'display_name', 'avatar'] }],
-            order: [['created_at', 'ASC']],
-            limit: 50 // Limit for performance
-        });
+        const groupDoc = await groupsRef.doc(id).get();
+        if (!groupDoc.exists || !(groupDoc.data().members || []).includes(userId)) {
+            return res.status(403).json({ error: 'Not a member' });
+        }
 
+        const snapshot = await groupsRef.doc(id).collection('messages')
+                                        .orderBy('created_at', 'asc')
+                                        .limit(50)
+                                        .get();
+
+        const messages = snapshot.docs.map(doc => doc.data());
         res.json({ success: true, data: messages });
     } catch (error) {
-        console.error("Get messages error", error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -143,51 +158,54 @@ exports.sendMessage = async (req, res) => {
     try {
         const { id } = req.params;
         const { message } = req.body;
+        const userId = req.user.id.toString();
 
-        // socket will be handled separately or here
-        const newMsg = await GroupMessage.create({
+        const groupDoc = await groupsRef.doc(id).get();
+        const members = groupDoc.exists ? (groupDoc.data().members || []) : [];
+        if (!groupDoc.exists || !members.includes(userId)) {
+            return res.status(403).json({ error: 'Not a member' });
+        }
+
+        const msgRef = groupsRef.doc(id).collection('messages').doc();
+        const userDoc = await usersRef.doc(userId).get();
+        
+        const fullMsg = {
+            id: msgRef.id,
             group_id: id,
-            user_id: req.user.id,
-            message
-        });
+            user_id: userId,
+            message,
+            Sender: { id: userId, display_name: userDoc.data().display_name, avatar: userDoc.data().avatar },
+            created_at: new Date().toISOString()
+        };
 
-        const fullMsg = await GroupMessage.findByPk(newMsg.id, {
-            include: [{ model: User, as: 'Sender', attributes: ['id', 'display_name', 'avatar'] }]
-        });
+        await msgRef.set(fullMsg);
 
-        // Emit socket event if io is available
         const io = req.app.get('io');
         if (io) {
             io.to(`group_${id}`).emit('group_message', fullMsg);
 
-            // Create Notifications for offline/other members
-            const members = await StudyGroupMember.findAll({ where: { group_id: id } });
-            const notifications = [];
-
-            for (const member of members) {
-                if (member.user_id !== req.user.id) {
-                    // Check if user wants notifications (Assuming user settings are checked here or we send to all and filter on client)
-                    // For now, simpler to send to all and let client handle, or check User model if we eager loaded it.
-                    // Doing a quick check via User model would be better but expensive for large groups.
-                    // Let's create the notification first.
-
-                    const notification = await require('../models').Notification.create({
-                        user_id: member.user_id,
+            const batch = firestore.batch();
+            members.forEach(mId => {
+                if (mId !== userId) {
+                    const notifRef = notificationsRef.doc();
+                    const notifData = {
+                        id: notifRef.id,
+                        user_id: mId,
                         type: 'group_message',
                         source_id: id,
-                        message: `${req.user.display_name} sent a message in ${newMsg.group_id}`, // Ideally fetch group name
-                        is_read: false
-                    });
-
-                    // Specific room for user notification
-                    io.to(`user_${member.user_id}`).emit('new_notification', notification);
+                        message: `${req.user.display_name} sent a message in ${groupDoc.data().name}`,
+                        is_read: false,
+                        created_at: new Date().toISOString()
+                    };
+                    batch.set(notifRef, notifData);
+                    io.to(`user_${mId}`).emit('new_notification', notifData);
                 }
-            }
+            });
+            await batch.commit();
         }
 
         res.json({ success: true, data: fullMsg });
     } catch (error) {
-        console.error("Send message error", error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -195,23 +213,23 @@ exports.sendMessage = async (req, res) => {
 exports.deleteGroup = async (req, res) => {
     try {
         const { id } = req.params;
-        const group = await StudyGroup.findByPk(id);
+        const userId = req.user.id.toString();
 
-        if (!group) return res.status(404).json({ error: 'Group not found' });
+        const groupDoc = await groupsRef.doc(id).get();
+        if (!groupDoc.exists) return res.status(404).json({ error: 'Group not found' });
 
-        // Allow Owner OR Admin
-        if (group.owner_id !== req.user.id && req.user.role !== 'admin') {
+        if (groupDoc.data().owner_id !== userId && req.user.role !== 'admin') {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
-        // Delete associated data
-        await GroupMessage.destroy({ where: { group_id: id } });
-        await StudyGroupMember.destroy({ where: { group_id: id } });
-        await group.destroy();
+        const mSnap = await groupDoc.ref.collection('messages').get();
+        const batch = firestore.batch();
+        mSnap.docs.forEach(d => batch.delete(d.ref));
+        batch.delete(groupDoc.ref);
+        await batch.commit();
 
         res.json({ success: true, message: 'Group deleted' });
     } catch (error) {
-        console.error("Delete group error", error);
         res.status(500).json({ error: 'Server error' });
     }
 };

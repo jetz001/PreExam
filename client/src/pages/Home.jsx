@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import HomeNavbar from '../components/HomeNavbar';
 
 /* ── Confetti particle ── */
 function useConfetti() {
@@ -126,6 +127,7 @@ const Home = () => {
         fontFamily: "'Sarabun', 'Nunito', sans-serif",
         padding: '24px 16px',
       }}>
+        <HomeNavbar />
 
         {/* ── Kahoot-style smooth blobs ── */}
         <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
@@ -136,6 +138,7 @@ const Home = () => {
             borderRadius:'50%',
             background:'radial-gradient(circle at 40% 40%, #8b2fc9 0%, #6b21a8 60%, transparent 100%)',
             animation:'blobDrift1 14s ease-in-out infinite',
+            willChange: 'transform'
           }}/>
           {/* bottom-right blob */}
           <div style={{
@@ -144,6 +147,7 @@ const Home = () => {
             borderRadius:'50%',
             background:'radial-gradient(circle at 60% 60%, #7c3aed 0%, #5b21b6 55%, transparent 100%)',
             animation:'blobDrift2 17s ease-in-out infinite',
+            willChange: 'transform'
           }}/>
           {/* center accent */}
           <div style={{
@@ -152,6 +156,7 @@ const Home = () => {
             borderRadius:'50%',
             background:'radial-gradient(circle at 50% 50%, #9333ea 0%, #7e22ce 50%, transparent 100%)',
             animation:'blobDrift3 11s ease-in-out infinite',
+            willChange: 'transform'
           }}/>
         </div>
 
@@ -171,6 +176,7 @@ const Home = () => {
               borderBottom: d.shape === 'triangle' ? `${d.size}px solid ${d.color}` : undefined,
               '--swing': `${d.swing}px`,
               animation: `fall ${d.dur}s ${d.delay}s ease-in infinite`,
+              willChange: 'transform, opacity',
               opacity: 0.82,
             }}/>
           ))}

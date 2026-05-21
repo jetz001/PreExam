@@ -1,16 +1,14 @@
-const { Bookmark, News, Thread, Question } = require('../models');
+const { db: firestore } = require('../config/firebase');
+
+const bookmarksRef = firestore.collection('bookmarks');
 
 exports.getBookmarks = async (req, res) => {
     try {
-        const bookmarks = await Bookmark.findAll({
-            where: { user_id: req.user.id },
-            order: [['saved_at', 'DESC']]
-        });
+        const snapshot = await bookmarksRef.where('user_id', '==', req.user.id.toString())
+                                           .orderBy('saved_at', 'desc')
+                                           .get();
 
-        // Optionally fetch related data details if needed, or just return basic info
-        // For efficiency, we just return what's in Bookmark table or do minimal hydration
-        // But the UI shows Title. Bookmark model saves title? Checked model: Yes, "title" field.
-
+        const bookmarks = snapshot.docs.map(doc => doc.data());
         res.json({ success: true, data: bookmarks });
     } catch (error) {
         console.error("Get bookmarks error", error);
@@ -21,23 +19,30 @@ exports.getBookmarks = async (req, res) => {
 exports.addBookmark = async (req, res) => {
     try {
         const { target_type, target_id, title } = req.body;
+        const userId = req.user.id.toString();
 
-        const existing = await Bookmark.findOne({
-            where: { user_id: req.user.id, target_type, target_id }
-        });
+        const snapshot = await bookmarksRef.where('user_id', '==', userId)
+                                           .where('target_type', '==', target_type)
+                                           .where('target_id', '==', target_id.toString())
+                                           .limit(1)
+                                           .get();
 
-        if (existing) {
+        if (!snapshot.empty) {
             return res.status(400).json({ success: false, message: 'Already bookmarked' });
         }
 
-        const bookmark = await Bookmark.create({
-            user_id: req.user.id,
+        const newDoc = bookmarksRef.doc();
+        const bookmarkData = {
+            id: newDoc.id,
+            user_id: userId,
             target_type,
-            target_id,
-            title // Client should send title to save DB hits
-        });
+            target_id: target_id.toString(),
+            title: title || 'Untitled Bookmark',
+            saved_at: new Date().toISOString()
+        };
 
-        res.json({ success: true, data: bookmark });
+        await newDoc.set(bookmarkData);
+        res.json({ success: true, data: bookmarkData });
     } catch (error) {
         console.error("Add bookmark error", error);
         res.status(500).json({ success: false, message: 'Server error' });
@@ -47,10 +52,16 @@ exports.addBookmark = async (req, res) => {
 exports.removeBookmark = async (req, res) => {
     try {
         const { id } = req.params;
-        await Bookmark.destroy({
-            where: { id, user_id: req.user.id }
-        });
-        res.json({ success: true, message: 'Removed' });
+        const userId = req.user.id.toString();
+
+        const docRef = bookmarksRef.doc(id);
+        const doc = await docRef.get();
+
+        if (doc.exists && doc.data().user_id === userId) {
+            await docRef.delete();
+            return res.json({ success: true, message: 'Removed' });
+        }
+        res.status(404).json({ success: false, message: 'Bookmark not found or unauthorized' });
     } catch (error) {
         console.error("Remove bookmark error", error);
         res.status(500).json({ success: false, message: 'Server error' });

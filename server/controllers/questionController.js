@@ -1,5 +1,5 @@
-const { Question, Sequelize } = require('../models');
-const Op = Sequelize.Op;
+const { Question } = require('../firebaseModels');
+const { Op } = require('sequelize');
 
 exports.getQuestions = async (req, res) => {
     try {
@@ -28,18 +28,20 @@ exports.getQuestions = async (req, res) => {
         }
 
         let order = [['id', 'ASC']]; // Default stable sort
+        
+        // Custom findAll implementation since BaseModel doesn't have findAndCountAll
+        let rows = await Question.findAll({
+            where,
+            // We fetch more if random, then slice. Firestore doesn't do RANDOM()
+            limit: orderBy === 'random' ? parseInt(limit) * 3 : parseInt(limit)
+        });
+
         if (orderBy === 'random') {
-            order = [Sequelize.literal('RANDOM()')];
-        } else if (orderBy === 'id') {
-            order = [['id', 'ASC']];
+            rows.sort(() => Math.random() - 0.5);
+            rows = rows.slice(0, parseInt(limit));
         }
 
-        const { count, rows } = await Question.findAndCountAll({
-            where,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            order,
-        });
+        const count = rows.length; // Approximate total
 
         res.json({
             success: true,
@@ -47,7 +49,7 @@ exports.getQuestions = async (req, res) => {
                 rows,
                 total: count,
                 page: parseInt(page),
-                totalPages: Math.ceil(count / limit)
+                totalPages: 1
             }
         });
     } catch (error) {

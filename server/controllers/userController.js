@@ -1,4 +1,4 @@
-const { User, ExamResult } = require('../models');
+const { User, ExamResult } = require('../firebaseModels');
 const { logActivity } = require('../utils/activityLogger');
 
 
@@ -444,8 +444,8 @@ exports.deleteAccount = async (req, res) => {
         try { await ExamResult.destroy({ where: { user_id: userId } }); } catch (e) { }
 
         // Load other models dynamically to avoid circular deps or verify existence
-        const { Bookmark, Thread, StudyGroupMember, GroupMessage, Friendship, Sequelize } = require('../models');
-        const Op = Sequelize.Op;
+        const { Bookmark, Thread, StudyGroupMember, GroupMessage, Friendship } = require('../firebaseModels');
+        const Op = {};
 
         // 2. Delete Bookmarks
         if (Bookmark) await Bookmark.destroy({ where: { user_id: userId } });

@@ -3,7 +3,6 @@ const cors = require('cors');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 const path = require('path');
-const { sequelize, Thread, User } = require('./models');
 const fs = require('fs');
 
 // Explicitly load .env from current directory
@@ -16,6 +15,7 @@ if (result.error) {
 
 const http = require('http');
 const { Server } = require('socket.io');
+const { db: firestore } = require('./config/firebase');
 
 const app = express();
 const server = http.createServer(app);
@@ -100,7 +100,8 @@ app.get('/api', (req, res) => {
 // Health Check Endpoint for Uptime Kuma
 app.get('/api/health', async (req, res) => {
     try {
-        await sequelize.query('SELECT 1');
+        // Simple firestore read to check DB
+        await firestore.collection('users').limit(1).get();
         const memory = process.memoryUsage();
         res.status(200).json({
             status: 'ok',
@@ -122,33 +123,24 @@ const sharp = require('sharp');
 app.get('/api/og/thread/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const thread = await Thread.findByPk(id);
+        const threadDoc = await firestore.collection('threads').doc(id.toString()).get();
 
-        if (!thread) {
+        if (!threadDoc.exists) {
             return res.status(404).send('Not proper thread');
         }
 
-        // Determine background image
-        // We need absolute path to the static file on server
+        const thread = threadDoc.data();
         const bgStyle = thread.background_style || 'c1'; // Default to c1
         const bgPath = path.join(__dirname, `../client/dist/og/${bgStyle}.png`);
 
-        // Check if bg file exists, fallback if not
         if (!fs.existsSync(bgPath)) {
-            // Fallback to favicon
             return res.redirect('https://preexam.online/favicon.png');
         }
 
-        // Prepare Text SVG
-        // Wrap text logic (simple implementation)
         const title = thread.title || "PreExam Community";
-        // Simple SVG text wrapping
-        // Width 1200, padding 100?
-        // Let's create an SVG overlay
         const width = 1200;
         const height = 630;
 
-        // Escape XML chars
         const escapeXml = (unsafe) => {
             return unsafe.replace(/[<>&'"]/g, c => {
                 switch (c) {
@@ -163,10 +155,6 @@ app.get('/api/og/thread/:id', async (req, res) => {
 
         const safeTitle = escapeXml(title);
 
-        // Basic word wrap logic for SVG is hard without measuring text.
-        // We will just assume 40 chars per line for font size 60?
-        // Or cleaner: Use a foreignObject with HTML/CSS (Sharp supports this sometimes but depends on libs).
-        // Safest pure SVG approach:
         const svgText = `
         <svg width="${width}" height="${height}">
             <style>
@@ -201,23 +189,23 @@ app.get('/api/og/thread/:id', async (req, res) => {
 app.get('/community', async (req, res) => {
     const threadId = req.query.threadId; // e.g. /community?threadId=123
 
-    // If no threadId, just serve index.html (client-side routing handles it)
+    // If no threadId, just serve index.html
     if (!threadId || isNaN(threadId)) {
         return res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
     }
 
     try {
-        const thread = await Thread.findByPk(threadId, {
-            include: [{ model: User, attributes: ['display_name'] }]
-        });
+        const threadDoc = await firestore.collection('threads').doc(threadId.toString()).get();
 
-        if (!thread) {
+        if (!threadDoc.exists) {
             return res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
         }
+        
+        const thread = threadDoc.data();
 
         // Read index.html
         const indexPath = path.join(__dirname, '../client/dist', 'index.html');
-        fs.readFile(indexPath, 'utf8', (err, htmlData) => {
+        fs.readFile(indexPath, 'utf8', async (err, htmlData) => {
             if (err) {
                 console.error('Error reading index.html', err);
                 return res.status(500).send('Error loading page');
@@ -226,29 +214,26 @@ app.get('/community', async (req, res) => {
             // Construct OG Tags
             const title = thread.title;
             const description = thread.content ? thread.content.substring(0, 150) + '...' : 'PreExam Community Thread';
-            // Use thread image, or a default one
             let imageUrl = "https://preexam.online/favicon.png"; // Default fallback
 
             if (thread.image_url) {
-                // If it's a relative path, make it absolute. 
                 if (!thread.image_url.startsWith('http')) {
                     imageUrl = `https://preexam.online${thread.image_url}`;
                 } else {
                     imageUrl = thread.image_url;
                 }
             } else if (thread.background_style) {
-                // Use Static Image with Background Color
                 const style = thread.background_style || 'c1';
                 imageUrl = `https://preexam.online/og/${style}.png`;
-            } else if (thread.SharedNews && thread.SharedNews.image_url) {
-                imageUrl = thread.SharedNews.image_url;
+            } else if (thread.shared_news_id) {
+                const newsDoc = await firestore.collection('news').doc(thread.shared_news_id.toString()).get();
+                if (newsDoc.exists && newsDoc.data().image_url) {
+                    imageUrl = newsDoc.data().image_url;
+                }
             }
 
-            const url = `https://preexam.online/community?threadId=${thread.id}`;
+            const url = `https://preexam.online/community?threadId=${threadDoc.id}`;
 
-            // Inject into <head>
-            // We replace the placeholder or append to <head>
-            // Assuming index.html has <title>...</title> or just append before </head>
             const ogTags = `
                 <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
                 <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />
@@ -284,234 +269,12 @@ app.use((err, req, res, next) => {
 // Start Server
 const startServer = async () => {
     try {
-        await sequelize.authenticate();
-        console.log('Database connected!');
-        // Sync models
-        // Sync models
-        // Sync models
-        await sequelize.sync();
-
-        // Manual column addition for SQLite stability (replacing flaky alter: true)
-        try {
-            await sequelize.query("ALTER TABLE threads ADD COLUMN image_url VARCHAR(255);");
-            console.log("Added image_url column to threads table");
-        } catch (err) {
-            // Ignore error if column already exists
-            if (!err.message.includes('duplicate column name')) {
-                console.log("Column image_url likely exists or another error:", err.message);
-            }
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE users ADD COLUMN avatar VARCHAR(255);");
-            console.log("Added avatar column to users table");
-        } catch (err) {
-            if (!err.message.includes('duplicate column name')) {
-                console.log("Column avatar likely exists or another error:", err.message);
-            }
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE threads ADD COLUMN shared_news_id INTEGER;");
-            console.log("Added shared_news_id column to threads table");
-        } catch (err) {
-            if (!err.message.includes('duplicate column name')) {
-                console.log("Column shared_news_id likely exists or another error:", err.message);
-            }
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE threads ADD COLUMN shared_business_post_id INTEGER;");
-            console.log("Added shared_business_post_id column to threads table");
-        } catch (err) {
-            if (!err.message.includes('duplicate column name')) {
-                console.log("Column shared_business_post_id likely exists or another error:", err.message);
-            }
-        }
-
-        // New User Profile Columns
-        const newColumns = [
-            "ADD COLUMN bio TEXT",
-            "ADD COLUMN phone_number VARCHAR(255)",
-            "ADD COLUMN target_exam VARCHAR(255)",
-            "ADD COLUMN target_exam_date DATETIME",
-            "ADD COLUMN streak_count INTEGER DEFAULT 0",
-            "ADD COLUMN last_active_at DATETIME",
-            "ADD COLUMN is_public_stats BOOLEAN DEFAULT 1",
-            "ADD COLUMN is_online_visible BOOLEAN DEFAULT 1",
-            "ADD COLUMN allow_friend_request BOOLEAN DEFAULT 1",
-            "ADD COLUMN notify_study_group BOOLEAN DEFAULT 1",
-            "ADD COLUMN notify_friend_request BOOLEAN DEFAULT 1",
-            "ADD COLUMN notify_news_update BOOLEAN DEFAULT 1",
-            "ADD COLUMN theme_preference VARCHAR(20) DEFAULT 'system'",
-            "ADD COLUMN font_size_preference VARCHAR(20) DEFAULT 'medium'",
-            "ADD COLUMN xp_points INTEGER DEFAULT 0",
-            "ADD COLUMN rank_level VARCHAR(50) DEFAULT 'Newbie'",
-            "ADD COLUMN mistake_history TEXT",
-            "ADD COLUMN business_name VARCHAR(255)",
-            "ADD COLUMN tax_id VARCHAR(50)",
-            "ADD COLUMN wallet_balance DECIMAL(10, 2) DEFAULT 0.00"
-        ];
-
-        // Manual updates for Study Groups
-        const studyGroupColumns = [
-            "ADD COLUMN subject VARCHAR(255)",
-            "ADD COLUMN max_members INTEGER DEFAULT 10",
-            "ADD COLUMN is_private BOOLEAN DEFAULT 0",
-            "ADD COLUMN password VARCHAR(255)"
-        ];
-
-        for (const col of studyGroupColumns) {
-            try {
-                await sequelize.query(`ALTER TABLE study_groups ${col};`);
-                console.log(`Executed: ALTER TABLE study_groups ${col}`);
-            } catch (err) {
-                // Ignore if already exists
-            }
-        }
-
-        // Room Customization
-        try {
-            await sequelize.query("ALTER TABLE rooms ADD COLUMN theme_color VARCHAR(50);");
-            console.log("Added theme_color column to rooms table");
-        } catch (err) {
-            if (!err.message.includes('duplicate column name')) {
-                // console.log("Column likely exists:", err.message);
-            }
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE rooms ADD COLUMN background_url VARCHAR(255);");
-            console.log("Added background_url column to rooms table");
-        } catch (err) {
-            if (!err.message.includes('duplicate column name')) {
-                // console.log("Column likely exists:", err.message);
-            }
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE questions ADD COLUMN skill VARCHAR(255);");
-            console.log("Added skill column to questions table");
-        } catch (err) {
-            if (!err.message.includes('duplicate column name')) {
-                // console.log("Column likely exists:", err.message);
-            }
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE exam_results ADD COLUMN skill_scores TEXT;");
-            console.log("Added skill_scores column to exam_results table");
-        } catch (err) {
-            if (!err.message.includes('duplicate column name')) {
-                // console.log("Column likely exists:", err.message);
-            }
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE questions ADD COLUMN catalogs TEXT;"); // Store JSON as TEXT in SQLite/MySQL if JSON type varies
-            console.log("Added catalogs column to questions table");
-        } catch (err) {
-            if (!err.message.includes('duplicate column name')) {
-                // console.log("Column likely exists:", err.message);
-            }
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE questions ADD COLUMN exam_year INTEGER;");
-            console.log("Added exam_year column to questions table");
-        } catch (err) {
-            if (!err.message.includes('duplicate column name')) {
-                // console.log("Column likely exists:", err.message);
-            }
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE questions ADD COLUMN exam_set VARCHAR(50);");
-            console.log("Added exam_set column to questions table");
-        } catch (err) {
-            if (!err.message.includes('duplicate column name')) {
-                // console.log("Column likely exists:", err.message);
-            }
-        }
-
-        // --- Ad System Migrations ---
-        try {
-            await sequelize.query("ALTER TABLE users ADD COLUMN plan_type VARCHAR(20) DEFAULT 'free';");
-            console.log("Added plan_type column to users table");
-        } catch (err) {
-            // Ignore if exists
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE users ADD COLUMN premium_expiry DATETIME;");
-            console.log("Added premium_expiry column to users table");
-        } catch (err) {
-            // Ignore if exists
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE ads ADD COLUMN link_url VARCHAR(255);");
-            console.log("Added link_url column to ads table");
-        } catch (err) {
-            // Ignore if exists
-        }
-        try {
-            await sequelize.query("ALTER TABLE ads ADD COLUMN image_url VARCHAR(255);");
-            console.log("Added image_url column to ads table");
-        } catch (err) {
-            // Ignore
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE users ADD COLUMN premium_start_date DATETIME;");
-            console.log("Added premium_start_date column to users table");
-        } catch (err) {
-            // Ignore if exists
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE BusinessPosts ADD COLUMN ad_status VARCHAR(20) DEFAULT 'pending';");
-            console.log("Added ad_status column to BusinessPosts table");
-        } catch (err) {
-            // Ignore
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE Businesses ADD COLUMN verification_documents TEXT;");
-            console.log("Added verification_documents column to Businesses table");
-        } catch (err) {
-            // Ignore
-        }
-
-        try {
-            await sequelize.query("ALTER TABLE Businesses ADD COLUMN verification_status VARCHAR(20) DEFAULT 'unverified';");
-            console.log("Added verification_status column to Businesses table");
-        } catch (err) {
-            // Ignore
-        }
-
-        // Location Columns for Users
-        try { await sequelize.query("ALTER TABLE users ADD COLUMN ip_address VARCHAR(255);"); console.log("Added ip_address"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE users ADD COLUMN country VARCHAR(255);"); console.log("Added country"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE users ADD COLUMN region VARCHAR(255);"); console.log("Added region"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE users ADD COLUMN city VARCHAR(255);"); console.log("Added city"); } catch (e) { }
-
-        for (const col of newColumns) {
-            try {
-                await sequelize.query(`ALTER TABLE users ${col};`);
-                console.log(`Executed: ALTER TABLE users ${col}`);
-            } catch (err) {
-                if (!err.message.includes('duplicate column name')) {
-                    // console.log("Column likely exists:", err.message);
-                }
-            }
-        }
-
+        console.log('Firebase connected!');
         server.listen(PORT, '0.0.0.0', () => {
             console.log(`Server running on port ${PORT} (0.0.0.0)`);
         });
     } catch (error) {
-        console.error('Unable to connect to the database:', error);
+        console.error('Unable to start the server:', error);
     }
 };
 

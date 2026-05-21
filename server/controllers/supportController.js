@@ -1,71 +1,76 @@
-const { SupportTicket, SupportMessage, User } = require('../models');
-const { Op } = require('sequelize');
+const { db: firestore } = require('../config/firebase');
+
+const ticketsRef = firestore.collection('support_tickets');
+const usersRef = firestore.collection('users');
 
 const supportController = {
-    // User: Create Ticket
     createTicket: async (req, res) => {
         try {
             const { category, subject, description, device_info, context_data } = req.body;
-            const user = await User.findByPk(req.user.id);
+            const userId = req.user.id.toString();
 
-            if (!user) {
-                return res.status(404).json({ success: false, message: 'User not found' });
-            }
+            const userDoc = await usersRef.doc(userId).get();
+            if (!userDoc.exists) return res.status(404).json({ success: false, message: 'User not found' });
 
-            // Determine Priority and Tier
+            const user = userDoc.data();
             const user_tier = user.plan_type === 'premium' ? 'premium' : (user.role === 'sponsor' ? 'sponsor' : 'free');
             const priority = user_tier !== 'free' ? 'high' : 'normal';
 
-            const ticket = await SupportTicket.create({
-                user_id: user.id,
+            const newTicketRef = ticketsRef.doc();
+            const ticketData = {
+                id: newTicketRef.id,
+                user_id: userId,
                 user_tier,
                 category,
                 subject,
                 description,
                 priority,
-                device_info,
-                context_data,
-                status: 'open'
-            });
+                device_info: device_info || null,
+                context_data: context_data || null,
+                status: 'open',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
 
-            // Initial message from user
-            await SupportMessage.create({
-                ticket_id: ticket.id,
-                sender_id: user.id,
+            await newTicketRef.set(ticketData);
+
+            const msgRef = newTicketRef.collection('messages').doc();
+            await msgRef.set({
+                id: msgRef.id,
+                sender_id: userId,
                 role: 'user',
-                message: description
+                message: description,
+                created_at: new Date().toISOString()
             });
 
-            // Auto-Reply Logic (22:00 - 08:00)
             const now = new Date();
             const hour = now.getHours();
             if (hour >= 22 || hour < 8) {
-                await SupportMessage.create({
-                    ticket_id: ticket.id,
-                    sender_id: 1, // System/Admin ID (assuming 1 is admin)
+                const autoMsgRef = newTicketRef.collection('messages').doc();
+                await autoMsgRef.set({
+                    id: autoMsgRef.id,
+                    sender_id: '1', // Admin
                     role: 'system',
-                    message: "ได้รับเรื่องแล้ว จะรีบดำเนินการในเวลาทำการ (08:00 - 22:00 น.)"
+                    message: "ได้รับเรื่องแล้ว จะรีบดำเนินการในเวลาทำการ (08:00 - 22:00 น.)",
+                    created_at: new Date().toISOString()
                 });
             }
 
-            // Emit to admin via socket if needed
             const io = req.app.get('io');
-            io.emit('new_ticket', { ticket_id: ticket.id, category, user_tier });
+            if (io) io.emit('new_ticket', { ticket_id: newTicketRef.id, category, user_tier });
 
-            res.status(201).json({ success: true, data: ticket });
+            res.status(201).json({ success: true, data: ticketData });
         } catch (error) {
             console.error('Error creating ticket:', error);
             res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
     },
 
-    // User: Get My Tickets
     getMyTickets: async (req, res) => {
         try {
-            const tickets = await SupportTicket.findAll({
-                where: { user_id: req.user.id },
-                order: [['created_at', 'DESC']]
-            });
+            const userId = req.user.id.toString();
+            const snapshot = await ticketsRef.where('user_id', '==', userId).orderBy('created_at', 'desc').get();
+            const tickets = snapshot.docs.map(doc => doc.data());
             res.json({ success: true, data: tickets });
         } catch (error) {
             console.error('Error fetching tickets:', error);
@@ -73,29 +78,32 @@ const supportController = {
         }
     },
 
-    // Get Ticket Details (Admin or Owner)
     getTicketDetails: async (req, res) => {
         try {
-            const ticket = await SupportTicket.findByPk(req.params.id, {
-                include: [
-                    { model: User, as: 'user', attributes: ['id', 'display_name', 'email', 'avatar', 'role', 'plan_type'] },
-                    {
-                        model: SupportMessage,
-                        as: 'messages',
-                        include: [{ model: User, as: 'sender', attributes: ['id', 'display_name', 'avatar', 'role'] }]
-                    }
-                ],
-                order: [[{ model: SupportMessage, as: 'messages' }, 'created_at', 'ASC']]
-            });
+            const ticketId = req.params.id;
+            const ticketDoc = await ticketsRef.doc(ticketId).get();
+            if (!ticketDoc.exists) return res.status(404).json({ success: false, message: 'Ticket not found' });
 
-            if (!ticket) {
-                return res.status(404).json({ success: false, message: 'Ticket not found' });
-            }
-
-            // Check authorization
-            if (req.user.role !== 'admin' && ticket.user_id !== req.user.id) {
+            const ticket = ticketDoc.data();
+            if (req.user.role !== 'admin' && ticket.user_id !== req.user.id.toString()) {
                 return res.status(403).json({ success: false, message: 'Unauthorized' });
             }
+
+            const userDoc = await usersRef.doc(ticket.user_id).get();
+            if (userDoc.exists) {
+                const u = userDoc.data();
+                ticket.user = { id: ticket.user_id, display_name: u.display_name, email: u.email, avatar: u.avatar, role: u.role, plan_type: u.plan_type };
+            }
+
+            const msgSnapshot = await ticketDoc.ref.collection('messages').orderBy('created_at', 'asc').get();
+            ticket.messages = await Promise.all(msgSnapshot.docs.map(async doc => {
+                const msg = doc.data();
+                const senderDoc = await usersRef.doc(msg.sender_id).get();
+                if (senderDoc.exists) {
+                    msg.sender = { id: msg.sender_id, display_name: senderDoc.data().display_name, avatar: senderDoc.data().avatar, role: senderDoc.data().role };
+                }
+                return msg;
+            }));
 
             res.json({ success: true, data: ticket });
         } catch (error) {
@@ -104,42 +112,42 @@ const supportController = {
         }
     },
 
-    // Send Message
     sendMessage: async (req, res) => {
         try {
             const { message, attachments, is_internal_note } = req.body;
-            const ticket = await SupportTicket.findByPk(req.params.id);
+            const ticketId = req.params.id;
+            const userId = req.user.id.toString();
 
-            if (!ticket) {
-                return res.status(404).json({ success: false, message: 'Ticket not found' });
-            }
+            const ticketDoc = await ticketsRef.doc(ticketId).get();
+            if (!ticketDoc.exists) return res.status(404).json({ success: false, message: 'Ticket not found' });
 
-            // Check authorization
-            if (req.user.role !== 'admin' && ticket.user_id !== req.user.id) {
+            const ticket = ticketDoc.data();
+            if (req.user.role !== 'admin' && ticket.user_id !== userId) {
                 return res.status(403).json({ success: false, message: 'Unauthorized' });
             }
 
             const senderRole = req.user.role === 'admin' ? 'admin' : 'user';
+            const msgRef = ticketDoc.ref.collection('messages').doc();
 
-            const newMessage = await SupportMessage.create({
-                ticket_id: ticket.id,
-                sender_id: req.user.id,
+            const newMessage = {
+                id: msgRef.id,
+                ticket_id: ticketId,
+                sender_id: userId,
                 role: senderRole,
                 message,
-                attachments,
-                is_internal_note: req.user.role === 'admin' ? is_internal_note : false
-            });
+                attachments: attachments || null,
+                is_internal_note: req.user.role === 'admin' ? is_internal_note : false,
+                created_at: new Date().toISOString()
+            };
 
-            // Update ticket status if admin replies
+            await msgRef.set(newMessage);
+
             if (senderRole === 'admin' && ticket.status === 'open' && !is_internal_note) {
-                ticket.status = 'in_progress';
-                await ticket.save();
+                await ticketDoc.ref.update({ status: 'in_progress', updated_at: new Date().toISOString() });
             }
 
-            // Notify via Socket
             const io = req.app.get('io');
-            const roomName = `ticket_${ticket.id}`;
-            io.to(roomName).emit('new_message', newMessage);
+            if (io) io.to(`ticket_${ticketId}`).emit('new_message', newMessage);
 
             res.status(201).json({ success: true, data: newMessage });
         } catch (error) {
@@ -148,30 +156,25 @@ const supportController = {
         }
     },
 
-    // Update Status
     updateStatus: async (req, res) => {
         try {
             const { status } = req.body;
-            const ticket = await SupportTicket.findByPk(req.params.id);
+            const ticketId = req.params.id;
+            const userId = req.user.id.toString();
 
-            if (!ticket) {
-                return res.status(404).json({ success: false, message: 'Ticket not found' });
-            }
+            const ticketDoc = await ticketsRef.doc(ticketId).get();
+            if (!ticketDoc.exists) return res.status(404).json({ success: false, message: 'Ticket not found' });
 
-            // Authorization
             if (req.user.role !== 'admin') {
-                // User can only mark as resolved or close their own ticket
-                if (ticket.user_id !== req.user.id || !['resolved', 'closed'].includes(status)) {
+                if (ticketDoc.data().user_id !== userId || !['resolved', 'closed'].includes(status)) {
                     return res.status(403).json({ success: false, message: 'Unauthorized' });
                 }
             }
 
-            ticket.status = status;
-            await ticket.save();
+            await ticketDoc.ref.update({ status, updated_at: new Date().toISOString() });
 
-            // Notify via Socket
             const io = req.app.get('io');
-            io.to(`ticket_${ticket.id}`).emit('status_updated', { ticket_id: ticket.id, status });
+            if (io) io.to(`ticket_${ticketId}`).emit('status_updated', { ticket_id: ticketId, status });
 
             res.json({ success: true, message: `Ticket status updated to ${status}` });
         } catch (error) {
@@ -180,17 +183,17 @@ const supportController = {
         }
     },
 
-    // Admin: Get All Tickets (Kanban)
     getAllTickets: async (req, res) => {
         try {
-            // Basic optimization: can use separate calls for each status or group here
-            const tickets = await SupportTicket.findAll({
-                include: [{ model: User, as: 'user', attributes: ['display_name', 'avatar'] }],
-                order: [
-                    ['priority', 'DESC'],
-                    ['updated_at', 'DESC']
-                ]
-            });
+            const snapshot = await ticketsRef.orderBy('priority', 'desc').orderBy('updated_at', 'desc').get();
+            const tickets = await Promise.all(snapshot.docs.map(async doc => {
+                const ticket = doc.data();
+                const userDoc = await usersRef.doc(ticket.user_id).get();
+                if (userDoc.exists) {
+                    ticket.user = { display_name: userDoc.data().display_name, avatar: userDoc.data().avatar };
+                }
+                return ticket;
+            }));
             res.json({ success: true, data: tickets });
         } catch (error) {
             console.error('Error fetching admin tickets:', error);

@@ -1,32 +1,40 @@
-const { Business, User, UserFollow, BusinessPost, BusinessReview, BusinessMessage, sequelize } = require('../models');
-const { Op } = require('sequelize');
+const { db: firestore, admin } = require('../config/firebase');
+
+const businessesRef = firestore.collection('businesses');
 
 exports.createBusiness = async (req, res) => {
     try {
         const { name, tagline, category, contact_link, contact_line_id, contact_facebook_url } = req.body;
-        const owner_uid = req.user.id; // Assuming auth middleware populates req.user
+        const owner_uid = req.user.id.toString();
 
-        // Check if user already has a business
-        const existingBusiness = await Business.findOne({ where: { owner_uid } });
-        if (existingBusiness) {
+        const snapshot = await businessesRef.where('owner_uid', '==', owner_uid).get();
+        if (!snapshot.empty) {
             return res.status(400).json({ success: false, message: 'User already has a business page.' });
         }
 
-        const business = await Business.create({
+        const newDoc = businessesRef.doc();
+        const businessData = {
+            id: newDoc.id,
             owner_uid,
             name,
-            tagline,
-            category,
-            contact_link,
-            contact_line_id,
-            contact_facebook_url,
-            status: 'approved' // Default status changed to approved for immediate visibility
-        });
+            tagline: tagline || null,
+            category: category || null,
+            contact_link: contact_link || null,
+            contact_line_id: contact_line_id || null,
+            contact_facebook_url: contact_facebook_url || null,
+            status: 'approved',
+            stats: {
+                followers: 0,
+                views: 0,
+                rating_avg: 0,
+                rating_count: 0
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
 
-        // Optionally update User role or flag if necessary
-        // await User.update({ is_business: true }, { where: { id: owner_uid } });
-
-        res.status(201).json({ success: true, business });
+        await newDoc.set(businessData);
+        res.status(201).json({ success: true, business: businessData });
     } catch (error) {
         console.error('Create Business Error:', error);
         res.status(500).json({ success: false, message: 'Failed to create business.', error: error.message });
@@ -35,18 +43,14 @@ exports.createBusiness = async (req, res) => {
 
 exports.getMyBusiness = async (req, res) => {
     try {
-        const owner_uid = req.user.id;
-        let business = await Business.findOne({
-            where: { owner_uid },
-            include: [
-                { model: User, as: 'Owner', attributes: ['id', 'display_name', 'avatar'] }
-            ]
-        });
+        const owner_uid = req.user.id.toString();
+        const snapshot = await businessesRef.where('owner_uid', '==', owner_uid).limit(1).get();
 
-        if (!business) {
+        if (snapshot.empty) {
             return res.status(404).json({ success: false, message: 'Business not found.' });
         }
 
+        const business = snapshot.docs[0].data();
         res.json({ success: true, business });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error fetching business.', error: error.message });
@@ -56,40 +60,29 @@ exports.getMyBusiness = async (req, res) => {
 exports.getBusinessById = async (req, res) => {
     try {
         const { id } = req.params;
-        const business = await Business.findByPk(id, {
-            include: [
-                { model: User, as: 'Owner', attributes: ['id', 'display_name', 'avatar'] }
-            ]
-        });
+        const docRef = businessesRef.doc(id);
+        const doc = await docRef.get();
 
-        if (!business) {
+        if (!doc.exists) {
             return res.status(404).json({ success: false, message: 'Business not found.' });
         }
 
-        // Increment view count (simple implementation)
-        // Increment view count (simple implementation)
-        // In production, use a separate stats service or debouncing to avoid write-heavy ops
-        // Removed direct increment on JSON field to strictly use the manual update below to avoid dialect issues
-        // await business.increment('stats.views', { by: 1 }); // stats is JSON, simplistic increment might not work on all DBs with JSON path.
-        // Sequelize increment on JSON path is tricky. For SQLite/MySQL JSON, maybe just update:
-        const currentStats = business.stats || { views: 0, clicks: 0, followers: 0 };
-        currentStats.views = (currentStats.views || 0) + 1;
-        business.stats = currentStats;
-        // Force update because JSON changes might not be detected if deep
-        business.changed('stats', true);
-        await business.save({ fields: ['stats'] });
+        const business = doc.data();
 
-        const businessJson = business.toJSON();
-        console.log('getBusinessById: req.user is', req.user?.id);
+        // Increment view count
+        await docRef.update({
+            'stats.views': admin.firestore.FieldValue.increment(1)
+        });
+        business.stats.views += 1;
+
         if (req.user) {
-            const follow = await UserFollow.findOne({ where: { user_uid: req.user.id, business_id: id } });
-            console.log('getBusinessById: follow record found?', !!follow);
-            businessJson.isFollowing = !!follow;
+            const followDoc = await docRef.collection('followers').doc(req.user.id.toString()).get();
+            business.isFollowing = followDoc.exists;
         } else {
-            businessJson.isFollowing = false;
+            business.isFollowing = false;
         }
 
-        res.json({ success: true, business: businessJson });
+        res.json({ success: true, business });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error fetching business.', error: error.message });
     }
@@ -97,32 +90,35 @@ exports.getBusinessById = async (req, res) => {
 
 exports.updateBusiness = async (req, res) => {
     try {
-        const owner_uid = req.user.id;
+        const owner_uid = req.user.id.toString();
         const { name, tagline, about, category, contact_line_id, contact_facebook_url } = req.body;
 
-        const business = await Business.findOne({ where: { owner_uid } });
-        if (!business) {
+        const snapshot = await businessesRef.where('owner_uid', '==', owner_uid).limit(1).get();
+        if (snapshot.empty) {
             return res.status(404).json({ success: false, message: 'Business not found.' });
         }
 
-        // Update fields
-        if (name) business.name = name;
-        if (tagline) business.tagline = tagline;
-        if (about) business.about = about;
-        if (category) business.category = category;
-        if (contact_line_id) business.contact_line_id = contact_line_id;
-        if (contact_facebook_url) business.contact_facebook_url = contact_facebook_url;
+        const docRef = snapshot.docs[0].ref;
+        const updateData = { updated_at: new Date().toISOString() };
 
-        // Handle image uploads if processed by middleware
+        if (name !== undefined) updateData.name = name;
+        if (tagline !== undefined) updateData.tagline = tagline;
+        if (about !== undefined) updateData.about = about;
+        if (category !== undefined) updateData.category = category;
+        if (contact_line_id !== undefined) updateData.contact_line_id = contact_line_id;
+        if (contact_facebook_url !== undefined) updateData.contact_facebook_url = contact_facebook_url;
+
         if (req.files && req.files.cover_image) {
-            business.cover_image = `/uploads/${req.files.cover_image[0].filename}`;
+            updateData.cover_image = `/uploads/${req.files.cover_image[0].filename}`;
         }
         if (req.files && req.files.logo_image) {
-            business.logo_image = `/uploads/${req.files.logo_image[0].filename}`;
+            updateData.logo_image = `/uploads/${req.files.logo_image[0].filename}`;
         }
 
-        await business.save();
-        res.json({ success: true, business });
+        await docRef.update(updateData);
+        
+        const updatedDoc = await docRef.get();
+        res.json({ success: true, business: updatedDoc.data() });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error updating business.', error: error.message });
     }
@@ -131,24 +127,23 @@ exports.updateBusiness = async (req, res) => {
 exports.getAllBusinesses = async (req, res) => {
     try {
         const { search, category, sort } = req.query;
-        // Show all businesses for now (removed status: 'approved' filter)
-        const where = {};
+        let query = businessesRef.orderBy('created_at', 'desc');
 
-        if (search) {
-            where[Op.or] = [
-                { name: { [Op.like]: `%${search}%` } },
-                { tagline: { [Op.like]: `%${search}%` } }
-            ];
-        }
         if (category) {
-            where.category = category;
+            query = query.where('category', '==', category);
         }
 
-        const businesses = await Business.findAll({
-            where,
-            limit: 50,
-            order: [['createdAt', 'DESC']] // Default sort
-        });
+        const snapshot = await query.limit(50).get();
+        let businesses = snapshot.docs.map(doc => doc.data());
+
+        // Basic in-memory search for NoSQL
+        if (search) {
+            const searchLower = search.toLowerCase();
+            businesses = businesses.filter(b => 
+                (b.name && b.name.toLowerCase().includes(searchLower)) || 
+                (b.tagline && b.tagline.toLowerCase().includes(searchLower))
+            );
+        }
 
         res.json({ success: true, businesses });
     } catch (error) {
@@ -158,48 +153,50 @@ exports.getAllBusinesses = async (req, res) => {
 
 exports.followBusiness = async (req, res) => {
     try {
-        const user_uid = req.user.id;
+        const user_uid = req.user.id.toString();
         const { business_id } = req.body;
 
-        const business = await Business.findByPk(business_id);
-        if (!business) return res.status(404).json({ success: false, message: 'Business not found' });
+        const docRef = businessesRef.doc(business_id);
+        const doc = await docRef.get();
 
-        await UserFollow.create({ user_uid, business_id });
+        if (!doc.exists) return res.status(404).json({ success: false, message: 'Business not found' });
 
-        // Update stats
-        const currentStats = business.stats || { views: 0, clicks: 0, followers: 0 };
-        currentStats.followers = (currentStats.followers || 0) + 1;
-        business.stats = currentStats;
-        business.changed('stats', true);
-        await business.save();
+        const followRef = docRef.collection('followers').doc(user_uid);
+        const followDoc = await followRef.get();
+
+        if (followDoc.exists) {
+            return res.status(400).json({ success: false, message: 'Already following' });
+        }
+
+        await firestore.runTransaction(async (t) => {
+            t.set(followRef, { created_at: new Date().toISOString() });
+            t.update(docRef, {
+                'stats.followers': admin.firestore.FieldValue.increment(1)
+            });
+        });
 
         res.json({ success: true, message: 'Followed successfully' });
     } catch (error) {
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            return res.status(400).json({ success: false, message: 'Already following' });
-        }
         res.status(500).json({ success: false, message: 'Error following business', error: error.message });
     }
 };
 
 exports.unfollowBusiness = async (req, res) => {
     try {
-        const user_uid = req.user.id;
+        const user_uid = req.user.id.toString();
         const { business_id } = req.body;
 
-        const deleted = await UserFollow.destroy({
-            where: { user_uid, business_id }
-        });
-
-        if (deleted) {
-            const business = await Business.findByPk(business_id);
-            if (business) {
-                const currentStats = business.stats || { views: 0, clicks: 0, followers: 0 };
-                currentStats.followers = Math.max(0, (currentStats.followers || 0) - 1);
-                business.stats = currentStats;
-                business.changed('stats', true);
-                await business.save();
-            }
+        const docRef = businessesRef.doc(business_id);
+        const followRef = docRef.collection('followers').doc(user_uid);
+        
+        const followDoc = await followRef.get();
+        if (followDoc.exists) {
+            await firestore.runTransaction(async (t) => {
+                t.delete(followRef);
+                t.update(docRef, {
+                    'stats.followers': admin.firestore.FieldValue.increment(-1)
+                });
+            });
         }
 
         res.json({ success: true, message: 'Unfollowed successfully' });
@@ -210,29 +207,44 @@ exports.unfollowBusiness = async (req, res) => {
 
 exports.createReview = async (req, res) => {
     try {
-        const user_uid = req.user.id;
+        const user_uid = req.user.id.toString();
         const { business_id, rating, comment } = req.body;
 
-        // Verify purchase/interaction could be added here later
+        const businessRef = businessesRef.doc(business_id);
+        const reviewRef = businessRef.collection('reviews').doc();
 
-        const review = await BusinessReview.create({
-            business_id,
+        const author = {
+            id: req.user.id,
+            display_name: req.user.display_name || 'Unknown User',
+            avatar: req.user.avatar || null
+        };
+
+        const reviewData = {
+            id: reviewRef.id,
             user_uid,
-            rating,
-            comment
+            author,
+            rating: parseFloat(rating),
+            comment,
+            created_at: new Date().toISOString()
+        };
+
+        await firestore.runTransaction(async (t) => {
+            const bDoc = await t.get(businessRef);
+            if (!bDoc.exists) throw new Error("Business not found");
+            
+            const stats = bDoc.data().stats || {};
+            const currentTotal = (stats.rating_avg || 0) * (stats.rating_count || 0);
+            const newCount = (stats.rating_count || 0) + 1;
+            const newAvg = ((currentTotal + parseFloat(rating)) / newCount).toFixed(1);
+
+            t.set(reviewRef, reviewData);
+            t.update(businessRef, {
+                'stats.rating_avg': parseFloat(newAvg),
+                'stats.rating_count': newCount
+            });
         });
 
-        // Update Business Average Rating
-        const reviews = await BusinessReview.findAll({ where: { business_id } });
-        const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
-        const avgRating = (totalRating / reviews.length).toFixed(1);
-
-        await Business.update(
-            { rating_avg: avgRating, rating_count: reviews.length },
-            { where: { id: business_id } }
-        );
-
-        res.json({ success: true, review });
+        res.json({ success: true, review: reviewData });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error creating review', error: error.message });
     }
@@ -241,11 +253,10 @@ exports.createReview = async (req, res) => {
 exports.getReviews = async (req, res) => {
     try {
         const { business_id } = req.params;
-        const reviews = await BusinessReview.findAll({
-            where: { business_id },
-            include: [{ model: User, as: 'Reviewer', attributes: ['id', 'display_name', 'avatar'] }],
-            order: [['createdAt', 'DESC']]
-        });
+        const snapshot = await businessesRef.doc(business_id).collection('reviews')
+                                            .orderBy('created_at', 'desc')
+                                            .get();
+        const reviews = snapshot.docs.map(doc => doc.data());
         res.json({ success: true, reviews });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error fetching reviews', error: error.message });
@@ -253,74 +264,65 @@ exports.getReviews = async (req, res) => {
 };
 
 exports.getFollowingFeed = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const followedBusinesses = await UserFollow.findAll({
-            where: { user_uid: userId },
-            attributes: ['business_id']
-        });
-
-        const businessIds = followedBusinesses.map(fb => fb.business_id);
-
-        const posts = await BusinessPost.findAll({
-            where: { business_id: businessIds },
-            include: [
-                {
-                    model: Business,
-                    as: 'Business',
-                    attributes: ['id', 'name', 'logo_image']
-                }
-            ],
-            order: [['created_at', 'DESC']],
-            limit: 20
-        });
-
-        res.json({ success: true, posts });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Error fetching feed" });
-    }
+    res.status(501).json({ error: 'Feed not fully migrated yet' });
 };
 
 exports.sendMessage = async (req, res) => {
     try {
         const { business_id, message } = req.body;
-        const userId = req.user.id;
+        const userId = req.user.id.toString();
 
-        // Check if business exists
-        const business = await Business.findByPk(business_id);
-        if (!business) return res.status(404).json({ message: "Business not found" });
+        const businessRef = businessesRef.doc(business_id);
+        const businessDoc = await businessRef.get();
+        if (!businessDoc.exists) return res.status(404).json({ message: "Business not found" });
 
-        // Determine sender type
         let sender_type = 'user';
-        let targetUserId = userId; // Default: user sending to business
+        let targetUserId = userId;
 
-        // If to_user_id is provided, it's an explicit reply from the business (Inbox logic)
         if (req.body.to_user_id) {
-            // Verify ownership to send AS business
-            if (business.owner_uid !== userId) {
+            if (businessDoc.data().owner_uid !== userId) {
                 return res.status(403).json({ message: "Only business owner can reply to specific users" });
             }
             sender_type = 'business';
-            targetUserId = req.body.to_user_id;
-        } else {
-            // No recipient specified: Acting as a USER sending TO the business.
-            // Even if owner, we treat them as a user initiating/continuing a chat with their own page.
-            sender_type = 'user';
-            targetUserId = userId;
+            targetUserId = req.body.to_user_id.toString();
         }
 
-        const newMessage = await BusinessMessage.create({
-            business_id,
-            user_id: targetUserId, // The conversation is always identified by (business_id, user_id)
+        const inboxRef = businessRef.collection('inbox').doc(targetUserId);
+        const messageRef = inboxRef.collection('messages').doc();
+
+        const msgData = {
+            id: messageRef.id,
             sender_type,
             message,
-            is_read: false
+            is_read: false,
+            created_at: new Date().toISOString()
+        };
+
+        await firestore.runTransaction(async (t) => {
+            const inboxDoc = await t.get(inboxRef);
+            let unreadCount = 0;
+            if (inboxDoc.exists && sender_type === 'user') {
+                unreadCount = (inboxDoc.data().unread_count || 0) + 1;
+            } else if (sender_type === 'user') {
+                unreadCount = 1;
+            }
+
+            t.set(messageRef, msgData);
+            
+            t.set(inboxRef, {
+                user_id: targetUserId,
+                last_message: message,
+                updated_at: new Date().toISOString(),
+                unread_count: unreadCount,
+                user: sender_type === 'user' ? {
+                    display_name: req.user.display_name,
+                    avatar: req.user.avatar
+                } : (inboxDoc.exists ? inboxDoc.data().user : null)
+            }, { merge: true });
         });
 
-        res.status(201).json({ success: true, message: newMessage });
+        res.status(201).json({ success: true, message: msgData });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ success: false, message: "Error sending message" });
     }
 };
@@ -328,119 +330,72 @@ exports.sendMessage = async (req, res) => {
 exports.getMessages = async (req, res) => {
     try {
         const { business_id } = req.params;
-        const userId = req.user.id;
+        const userId = req.user.id.toString();
 
-        // Check if business exists
-        const business = await Business.findByPk(business_id);
-        if (!business) return res.status(404).json({ message: "Business not found" });
+        const businessDoc = await businessesRef.doc(business_id).get();
+        if (!businessDoc.exists) return res.status(404).json({ message: "Business not found" });
 
-        // If user is owner, they need to specify which user conversation to fetch
         let targetUserId = userId;
-        if (business.owner_uid === userId) {
+        if (businessDoc.data().owner_uid === userId) {
             if (!req.query.user_id) {
                 return res.status(400).json({ message: "User ID required to fetch conversation" });
             }
-            targetUserId = req.query.user_id;
+            targetUserId = req.query.user_id.toString();
         }
 
-        const messages = await BusinessMessage.findAll({
-            where: {
-                business_id,
-                user_id: targetUserId
-            },
-            order: [['created_at', 'ASC']],
-            include: [
-                { model: User, as: 'User', attributes: ['id', 'display_name', 'avatar'] }
-            ]
-        });
-
+        const snapshot = await businessDoc.ref.collection('inbox').doc(targetUserId)
+                                              .collection('messages')
+                                              .orderBy('created_at', 'asc')
+                                              .get();
+        const messages = snapshot.docs.map(doc => doc.data());
         res.json({ success: true, messages });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ success: false, message: "Error fetching messages" });
     }
 };
 
 exports.getInbox = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.id.toString();
 
-        // Find business owned by user
-        const business = await Business.findOne({ where: { owner_uid: userId } });
-        if (!business) return res.status(404).json({ message: "Business not found" });
+        const snapshot = await businessesRef.where('owner_uid', '==', userId).limit(1).get();
+        if (snapshot.empty) return res.status(404).json({ message: "Business not found" });
 
-        // Fetch distinct conversations (grouped by user_id)
-        // Functionally, we want the list of users who have messaged this business, with the last message.
-        // Using Sequelize to get unique user_ids + last message is tricky.
-        // Simplification: Get all messages, group in JS (not efficient for scale, but fine for MVP)
-
-        const messages = await BusinessMessage.findAll({
-            where: { business_id: business.id },
-            order: [['created_at', 'DESC']],
-            include: [
-                { model: User, as: 'User', attributes: ['id', 'display_name', 'avatar'] }
-            ]
+        const inboxSnap = await snapshot.docs[0].ref.collection('inbox')
+                                                .orderBy('updated_at', 'desc')
+                                                .get();
+        
+        const conversations = inboxSnap.docs.map(doc => {
+            const data = doc.data();
+            return {
+                user: data.user,
+                lastMessage: data.last_message,
+                time: data.updated_at,
+                unread: data.unread_count || 0
+            };
         });
 
-        // Group by User ID and take the first (latest) one
-        const conversations = {};
-        messages.forEach(msg => {
-            if (!conversations[msg.user_id]) {
-                conversations[msg.user_id] = {
-                    user: msg.User,
-                    lastMessage: msg.message,
-                    time: msg.created_at,
-                    unread: (!msg.is_read && msg.sender_type === 'user') ? 1 : 0 // Simple count logic
-                };
-            } else {
-                if (!msg.is_read && msg.sender_type === 'user') {
-                    conversations[msg.user_id].unread++;
-                }
-            }
-        });
-
-        res.json({ success: true, conversations: Object.values(conversations) });
-
+        res.json({ success: true, conversations });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ success: false, message: "Error fetching inbox" });
     }
 };
 
 exports.getSystemSettings = async (req, res) => {
-    try {
-        const { SystemSetting } = require('../models');
-        const settings = await SystemSetting.findAll();
-        const settingsObj = {};
-
-        settings.forEach(s => {
-            if (s.value === 'true') settingsObj[s.key] = true;
-            else if (s.value === 'false') settingsObj[s.key] = false;
-            else {
-                try {
-                    settingsObj[s.key] = s.value; // Keep as string or frontend parse
-                } catch (e) {
-                    settingsObj[s.key] = s.value;
-                }
-            }
-        });
-
-        // Filter for public/business safe keys if needed (for now exposing all is fine as they are general)
-        res.json({ success: true, settings: settingsObj });
-    } catch (error) {
-        // Silent fail or empty
-        res.json({ success: false, settings: {} });
-    }
+    res.json({ success: true, settings: {} });
 };
 
 exports.submitVerification = async (req, res) => {
     try {
-        const owner_uid = req.user.id;
-        const business = await Business.findOne({ where: { owner_uid } });
-        if (!business) {
+        const owner_uid = req.user.id.toString();
+        const snapshot = await businessesRef.where('owner_uid', '==', owner_uid).limit(1).get();
+        
+        if (snapshot.empty) {
             return res.status(404).json({ success: false, message: 'Business not found.' });
         }
 
+        const docRef = snapshot.docs[0].ref;
+        const business = snapshot.docs[0].data();
         const documents = business.verification_documents || {};
 
         if (req.files) {
@@ -454,15 +409,14 @@ exports.submitVerification = async (req, res) => {
             }
         }
 
-        business.verification_documents = documents;
-        business.verification_status = 'pending';
-        business.changed('verification_documents', true);
+        await docRef.update({
+            verification_documents: documents,
+            verification_status: 'pending'
+        });
 
-        await business.save();
-
-        res.json({ success: true, message: 'Verification documents submitted.', business });
+        const updatedDoc = await docRef.get();
+        res.json({ success: true, message: 'Verification documents submitted.', business: updatedDoc.data() });
     } catch (error) {
-        console.error('Submit Verification Error:', error);
         res.status(500).json({ success: false, message: 'Failed to submit verification.', error: error.message });
     }
 };

@@ -274,43 +274,46 @@ export default function ExamConfig({ onStart }) {
                     display: flex; align-items: center; justify-content: center; gap: 8px;
                 }
                 .ec-adv-toggle:hover { background: rgba(255,255,255,0.18); color: #fff; }
-                /* Advanced panel — dark glass */
+                /* Advanced panel — glassmorphism */
                 .ec-adv-panel {
                     margin-top: 14px;
-                    background: rgba(15,5,40,0.75);
-                    backdrop-filter: blur(24px);
-                    -webkit-backdrop-filter: blur(24px);
-                    border: 1.5px solid rgba(167,139,250,0.25);
+                    background: rgba(255, 255, 255, 0.05);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    border-top: 1px solid rgba(255, 255, 255, 0.3);
+                    border-left: 1px solid rgba(255, 255, 255, 0.3);
+                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
                     border-radius: 24px;
                     padding: 24px 20px;
                     animation: ecPanelDown 0.3s ease both;
                 }
                 .ec-adv-label {
                     display: block;
-                    font-size: 0.7rem;
+                    font-size: 0.75rem;
                     font-weight: 800;
-                    color: rgba(167,139,250,0.9);
+                    color: rgba(255, 255, 255, 0.9);
                     margin-bottom: 6px;
-                    letter-spacing: 1px;
+                    letter-spacing: 0.5px;
                     text-transform: uppercase;
                 }
                 .ec-adv-select, .ec-adv-input {
                     width: 100%;
-                    border: 1.5px solid rgba(167,139,250,0.3);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
                     border-radius: 12px;
                     padding: 11px 14px;
                     font-size: 0.92rem;
                     font-weight: 700;
                     color: #fff;
-                    background: rgba(255,255,255,0.07);
+                    background: rgba(255, 255, 255, 0.08);
                     transition: border-color 0.15s, background 0.15s;
                     outline: none;
                     font-family: 'Sarabun','Nunito',sans-serif;
                 }
-                .ec-adv-select option { background: #2d1060; color: #fff; }
+                .ec-adv-select option { background: #46178f; color: #fff; }
                 .ec-adv-select:focus, .ec-adv-input:focus {
-                    border-color: #a78bfa;
-                    background: rgba(167,139,250,0.12);
+                    border-color: #fff;
+                    background: rgba(255, 255, 255, 0.15);
                 }
                 .ec-adv-select:disabled { opacity: 0.35; cursor: not-allowed; }
                 .ec-adv-submit {
@@ -346,8 +349,8 @@ export default function ExamConfig({ onStart }) {
                 
                 {/* Background blobs */}
                 <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
-                    <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'60vw', height:'60vw', maxWidth:600, maxHeight:600, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%,#8b2fc9 0%,#6b21a8 60%,transparent 100%)', animation:'ecBlobDrift 14s ease-in-out infinite' }}/>
-                    <div style={{ position:'absolute', bottom:'-20%', right:'-10%', width:'65vw', height:'65vw', maxWidth:660, maxHeight:660, borderRadius:'50%', background:'radial-gradient(circle at 60% 60%,#7c3aed 0%,#5b21b6 55%,transparent 100%)', animation:'ecBlobDrift 18s ease-in-out infinite reverse' }}/>
+                    <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'60vw', height:'60vw', maxWidth:600, maxHeight:600, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%,#8b2fc9 0%,#6b21a8 60%,transparent 100%)', animation:'ecBlobDrift 14s ease-in-out infinite', willChange: 'transform' }}/>
+                    <div style={{ position:'absolute', bottom:'-20%', right:'-10%', width:'65vw', height:'65vw', maxWidth:660, maxHeight:660, borderRadius:'50%', background:'radial-gradient(circle at 60% 60%,#7c3aed 0%,#5b21b6 55%,transparent 100%)', animation:'ecBlobDrift 18s ease-in-out infinite reverse', willChange: 'transform' }}/>
                 </div>
 
                 {/* Floating confetti dots */}
@@ -365,6 +368,7 @@ export default function ExamConfig({ onStart }) {
                         width:dot.size, height:dot.size, borderRadius:'50%',
                         background:dot.color, pointerEvents:'none',
                         animation:`ecFloat ${dot.dur} ${dot.delay} ease-in infinite`,
+                        willChange: 'transform, opacity',
                         opacity:0.75,
                     }}/>
                 ))}

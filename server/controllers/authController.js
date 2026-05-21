@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User } = require('../firebaseModels');
 const { logActivity } = require('../utils/activityLogger');
 
 const generateToken = (user) => {
@@ -44,7 +44,7 @@ exports.register = async (req, res) => {
 
         // Auto-create Business for Sponsors
         if (safeRole === 'sponsor') {
-            const { Business } = require('../models');
+            const { Business } = require('../firebaseModels');
             await Business.create({
                 owner_uid: user.id,
                 name: business_name || `${display_name}'s Business`,

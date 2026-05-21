@@ -1,4 +1,7 @@
-const { Room, RoomParticipant, User, ExamResult } = require('../models');
+const { db: firestore, admin } = require('../config/firebase');
+
+const roomsRef = firestore.collection('rooms');
+const examResultsRef = firestore.collection('exam_results');
 
 module.exports = (io) => {
     io.on('connection', (socket) => {
@@ -16,8 +19,6 @@ module.exports = (io) => {
             try {
                 socket.join(roomId);
                 console.log(`User ${userId} joined room ${roomId}`);
-
-                // Notify others
                 io.to(roomId).emit('user_joined', { userId });
             } catch (error) {
                 console.error('Join room error:', error);
@@ -62,7 +63,6 @@ module.exports = (io) => {
             console.log(`Socket ${socket.id} left ${roomName}`);
         });
 
-
         // Chat Message
         socket.on('send_message', ({ roomId, userId, message, displayName }) => {
             io.to(roomId).emit('receive_message', {
@@ -76,8 +76,8 @@ module.exports = (io) => {
         // Host starts exam
         socket.on('start_exam', async ({ roomId, userId }) => {
             try {
-                const room = await Room.findByPk(roomId);
-                if (room && room.host_user_id == userId) {
+                const roomDoc = await roomsRef.doc(roomId.toString()).get();
+                if (roomDoc.exists && roomDoc.data().host_user_id === userId.toString()) {
                     io.to(roomId).emit('exam_started');
                 }
             } catch (error) {
@@ -92,11 +92,8 @@ module.exports = (io) => {
 
         // Submit Score (Real-time leaderboard)
         socket.on('submit_score', async ({ roomId, userId, score }) => {
-            // Update DB (simplified)
             try {
-                await RoomParticipant.update({ score }, { where: { room_id: roomId, user_id: userId } });
-
-                // Broadcast update
+                await roomsRef.doc(roomId.toString()).collection('participants').doc(userId.toString()).update({ score });
                 io.to(roomId).emit('score_updated', { userId, score });
             } catch (error) {
                 console.error('Score update error:', error);
@@ -106,11 +103,12 @@ module.exports = (io) => {
         // Host resets exam
         socket.on('reset_exam', async ({ roomId }) => {
             try {
-                // Reset all participants in this room
-                await RoomParticipant.update(
-                    { score: 0, status: 'joined', current_question_index: 0 },
-                    { where: { room_id: roomId } }
-                );
+                const partsSnap = await roomsRef.doc(roomId.toString()).collection('participants').get();
+                const batch = firestore.batch();
+                partsSnap.docs.forEach(doc => {
+                    batch.update(doc.ref, { score: 0, status: 'joined', current_question_index: 0 });
+                });
+                await batch.commit();
                 io.to(roomId).emit('exam_reset');
             } catch (error) {
                 console.error('Reset exam error:', error);
@@ -121,34 +119,33 @@ module.exports = (io) => {
         socket.on('finish_exam', async ({ roomId, userId, score, timeTaken }) => {
             console.log(`[DEBUG] finish_exam called for room ${roomId}, user ${userId}, score ${score}`);
             try {
-                await RoomParticipant.update(
-                    { score, status: 'finished' },
-                    { where: { room_id: roomId, user_id: userId } }
-                );
+                const rDocRef = roomsRef.doc(roomId.toString());
+                const pDocRef = rDocRef.collection('participants').doc(userId.toString());
+                
+                await pDocRef.update({ score, status: 'finished' });
 
-                // Save to ExamResult for statistics
-                const room = await Room.findByPk(roomId);
-                if (room) {
-                    await ExamResult.create({
-                        user_id: userId,
+                const roomDoc = await rDocRef.get();
+                if (roomDoc.exists) {
+                    const room = roomDoc.data();
+                    const newResRef = examResultsRef.doc();
+                    await newResRef.set({
+                        id: newResRef.id,
+                        user_id: userId.toString(),
                         score: score,
-                        total_score: room.question_count,
-                        mode: 'classroom', // Use classroom mode for multiplayer rooms
+                        total_score: room.question_count || 0,
+                        mode: 'classroom',
                         time_taken: timeTaken || 0,
-                        taken_at: new Date(),
-                        subject_scores: { [room.subject]: score } // Simple subject tracking
+                        taken_at: new Date().toISOString(),
+                        subject_scores: { [room.subject || 'General']: score }
                     });
                 }
 
-                // Check if all participants have finished
-                const participants = await RoomParticipant.findAll({ where: { room_id: roomId } });
-                const allFinished = participants.every(p => p.status === 'finished');
+                const participantsSnap = await rDocRef.collection('participants').get();
+                const allFinished = participantsSnap.docs.every(d => d.data().status === 'finished');
 
-                if (allFinished) {
-                    await Room.update({ status: 'finished' }, { where: { id: roomId } });
-                    // io.to(roomId).emit('room_closed'); // Keep room open for viewing scores
+                if (allFinished && participantsSnap.size > 0) {
+                    await rDocRef.update({ status: 'finished' });
                 }
-
             } catch (error) {
                 console.error('Finish exam error:', error);
             }
@@ -157,9 +154,9 @@ module.exports = (io) => {
         // Host closes room (Tutor mode or manual finish)
         socket.on('close_room', async ({ roomId, userId }) => {
             try {
-                const room = await Room.findByPk(roomId);
-                if (room && room.host_user_id == userId) {
-                    await Room.update({ status: 'finished' }, { where: { id: roomId } });
+                const roomDoc = await roomsRef.doc(roomId.toString()).get();
+                if (roomDoc.exists && roomDoc.data().host_user_id === userId.toString()) {
+                    await roomDoc.ref.update({ status: 'finished' });
                     io.to(roomId).emit('room_closed_by_host');
                 }
             } catch (error) {

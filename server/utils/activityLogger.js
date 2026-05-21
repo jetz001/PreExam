@@ -1,11 +1,12 @@
-const db = require('../models');
-const { SystemLog } = db;
+const { db: firestore } = require('../config/firebase');
+
+const logsRef = firestore.collection('system_logs');
 
 /**
  * Logs a system activity or user action.
  * @param {string} action - The action code (e.g., 'BTN_LOGIN', 'BTN_START_EXAM')
  * @param {object} details - Additional details (e.g., ip_address, exam_id)
- * @param {number|null} userId - The ID of the user performing the action (optional)
+ * @param {string|null} userId - The ID of the user performing the action (optional)
  * @param {string} status - 'SUCCESS', 'FAILED', or 'PENDING' (default: 'SUCCESS')
  */
 const logActivity = async (arg1, arg2 = {}, arg3 = null, arg4 = 'SUCCESS') => {
@@ -20,7 +21,7 @@ const logActivity = async (arg1, arg2 = {}, arg3 = null, arg4 = 'SUCCESS') => {
             status = arg4;
 
             // Extract context from req
-            userId = req.user ? req.user.id : null;
+            userId = req.user ? req.user.id.toString() : null;
 
             // Add IP to details if not present
             if (!details.ip_address) {
@@ -35,15 +36,18 @@ const logActivity = async (arg1, arg2 = {}, arg3 = null, arg4 = 'SUCCESS') => {
             // Legacy signature: (action, details, userId, status)
             action = arg1;
             details = arg2;
-            userId = arg3;
+            userId = arg3 ? arg3.toString() : null;
             status = arg4;
         }
 
-        await SystemLog.create({
+        const newLogRef = logsRef.doc();
+        await newLogRef.set({
+            id: newLogRef.id,
             action,
-            details: details,
+            details: details || {},
             user_id: userId,
-            status
+            status,
+            created_at: new Date().toISOString()
         });
     } catch (error) {
         console.error('Failed to create system log:', error);

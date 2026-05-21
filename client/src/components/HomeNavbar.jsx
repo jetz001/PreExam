@@ -99,11 +99,14 @@ export default function HomeNavbar() {
 
         .hn-dropdown {
           position:absolute; top:calc(100% + 10px);
-          background:rgba(30,10,60,0.97);
+          background:rgba(255, 255, 255, 0.05);
           backdrop-filter:blur(20px);
-          border:1px solid rgba(255,255,255,0.12);
+          -webkit-backdrop-filter:blur(20px);
+          border:1px solid rgba(255, 255, 255, 0.15);
+          border-top:1px solid rgba(255, 255, 255, 0.3);
+          border-left:1px solid rgba(255, 255, 255, 0.3);
           border-radius:20px;
-          box-shadow:0 20px 60px rgba(0,0,0,0.5);
+          box-shadow:0 20px 60px rgba(0,0,0,0.4);
           animation:menuSlide 0.2s ease both;
           overflow:hidden; z-index:200;
           padding:10px;

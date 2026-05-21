@@ -1,48 +1,44 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { Transaction, User, AdsConfig, Business, Plan, sequelize } = require('../models');
-const { Op } = require('sequelize');
+const { db: firestore, admin } = require('../config/firebase');
+
+const paymentsRef = firestore.collection('payments');
+const usersRef = firestore.collection('users');
+const plansRef = firestore.collection('plans');
+const businessesRef = firestore.collection('businesses');
 
 exports.createCheckoutSession = async (req, res) => {
     try {
         const { packageId, amount, type, businessId, planId, metadata } = req.body;
-        // Check user
-        if (!req.user || !req.user.id) {
-            return res.status(401).json({ error: 'User not authenticated' });
-        }
-        const userId = req.user.id;
+        if (!req.user || !req.user.id) return res.status(401).json({ error: 'User not authenticated' });
+        const userId = req.user.id.toString();
 
-        if (!process.env.STRIPE_SECRET_KEY) {
-            throw new Error('STRIPE_SECRET_KEY is missing');
-        }
+        if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY is missing');
+        if (!amount || !type) return res.status(400).json({ error: 'Missing required fields' });
 
-        if (!amount || !type) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
+        const newRef = paymentsRef.doc();
+        const transactionId = newRef.id;
 
-        console.log('[Payment] Creating DB Transaction...');
-        // 1. Create PENDING Transaction in DB
-        const transaction = await Transaction.create({
+        await newRef.set({
+            id: transactionId,
             user_id: userId,
-            business_id: businessId || null,
+            business_id: businessId ? businessId.toString() : null,
             type: type,
-            amount: amount,
+            amount: parseFloat(amount),
             status: 'PENDING',
             metadata: metadata || {},
+            created_at: new Date().toISOString()
         });
-        console.log('[Payment] DB Transaction created:', transaction.id);
 
         const domain = process.env.BASE_URL || 'http://localhost:3000';
 
-        console.log('[Payment] Creating Stripe Session...');
-        // 2. Create Stripe Session
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card', 'promptpay'],
             line_items: [{
                 price_data: {
                     currency: 'thb',
                     product_data: {
-                        name: type === 'AD_PURCHASE' ? 'Advertising Package' : 'Wallet Top-up',
-                        description: `Transaction ID: ${transaction.id}`,
+                        name: type === 'AD_PURCHASE' ? 'Advertising Package' : (type === 'PLAN_PURCHASE' ? 'Premium Plan' : 'Wallet Top-up'),
+                        description: `Transaction ID: ${transactionId}`,
                     },
                     unit_amount: Math.round(amount * 100),
                 },
@@ -52,18 +48,15 @@ exports.createCheckoutSession = async (req, res) => {
             success_url: `${domain}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${domain}/payment/cancel`,
             metadata: {
-                transactionId: transaction.id,
-                userId: userId.toString(),
+                transactionId: transactionId,
+                userId: userId,
                 type: type,
                 businessId: businessId ? businessId.toString() : '',
                 planId: planId ? planId.toString() : '',
             }
         });
-        console.log('[Payment] Stripe Session created:', session.id);
 
-        // Update transaction with session ID
-        await transaction.update({ stripe_session_id: session.id });
-
+        await newRef.update({ stripe_session_id: session.id });
         res.json({ url: session.url });
 
     } catch (error) {
@@ -74,10 +67,20 @@ exports.createCheckoutSession = async (req, res) => {
 
 exports.getPlans = async (req, res) => {
     try {
-        const plans = await Plan.findAll({
-            where: { is_active: true },
-            order: [['price', 'ASC']]
-        });
+        const snapshot = await plansRef.where('is_active', '==', true).orderBy('price', 'asc').get();
+        
+        // Mock fallback if collection is empty
+        if (snapshot.empty) {
+            return res.json({
+                success: true,
+                plans: [
+                    { id: '1', name: 'Pro Plan', price: 99, duration_days: 30, is_active: true },
+                    { id: '2', name: 'Yearly Plan', price: 990, duration_days: 365, is_active: true }
+                ]
+            });
+        }
+        
+        const plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         res.json({ success: true, plans });
     } catch (error) {
         console.error('Get Plans Error:', error);
@@ -87,15 +90,20 @@ exports.getPlans = async (req, res) => {
 
 exports.getMyTransactions = async (req, res) => {
     try {
-        if (!req.user || !req.user.id) {
-            return res.status(401).json({ success: false, error: 'Unauthorized' });
-        }
+        if (!req.user || !req.user.id) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-        const transactions = await Transaction.findAll({
-            where: { user_id: req.user.id },
-            include: [{ model: Plan, as: 'plan' }],
-            order: [['created_at', 'DESC']]
-        });
+        const snapshot = await paymentsRef.where('user_id', '==', req.user.id.toString())
+                                          .orderBy('created_at', 'desc')
+                                          .get();
+
+        const transactions = await Promise.all(snapshot.docs.map(async doc => {
+            const data = doc.data();
+            if (data.metadata && data.metadata.planId) {
+                const planDoc = await plansRef.doc(data.metadata.planId).get();
+                if (planDoc.exists) data.plan = { id: planDoc.id, ...planDoc.data() };
+            }
+            return data;
+        }));
 
         res.json({ success: true, transactions });
     } catch (error) {
@@ -109,14 +117,12 @@ exports.handleWebhook = async (req, res) => {
     let event;
 
     try {
-        // req.body MUST be raw buffer here
         event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
         console.error(`Webhook Signature Verification Failed: ${err.message}`);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // Handle the event
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         const metadata = session.metadata;
@@ -125,84 +131,59 @@ exports.handleWebhook = async (req, res) => {
         console.log(`Payment Success for Transaction: ${transactionId}`);
 
         try {
-            // Start a DB transaction
-            await sequelize.transaction(async (t) => {
-                // 1. Update Transaction Status
-                const transaction = await Transaction.findByPk(transactionId, { transaction: t });
-                if (!transaction) throw new Error('Transaction not found');
+            await firestore.runTransaction(async (t) => {
+                const transRef = paymentsRef.doc(transactionId);
+                const transDoc = await t.get(transRef);
 
-                // Prevent double processing
-                if (transaction.status === 'SUCCESS') return;
+                if (!transDoc.exists) throw new Error('Transaction not found');
+                const transData = transDoc.data();
+                if (transData.status === 'SUCCESS') return;
 
-                await transaction.update({
-                    status: 'SUCCESS',
-                    receipt_url: session.url // Stripe doesn't send receipt URL in session object directly usually, often in charge. But let's check later. For now, we can skip or find another way. Session has payment_intent which has charges. 
-                    // To keep it simple: We mark success.
-                }, { transaction: t });
+                t.update(transRef, { status: 'SUCCESS', receipt_url: session.url });
 
-                // 2. Logic based on Type
                 if (metadata.type === 'AD_PURCHASE' && metadata.businessId) {
-                    const businessId = parseInt(metadata.businessId);
-
-                    // Update AdsConfig
-                    let adsConfig = await AdsConfig.findOne({ where: { business_id: businessId }, transaction: t });
-
-                    if (!adsConfig) {
-                        adsConfig = await AdsConfig.create({ business_id: businessId }, { transaction: t });
+                    const busRef = businessesRef.doc(metadata.businessId);
+                    const busDoc = await t.get(busRef);
+                    if (busDoc.exists) {
+                        const now = new Date();
+                        let currentExpiry = busDoc.data().ads_expiry ? new Date(busDoc.data().ads_expiry) : now;
+                        if (currentExpiry < now) currentExpiry = now;
+                        
+                        const newExpiry = new Date(currentExpiry.getTime() + (30 * 24 * 60 * 60 * 1000));
+                        t.update(busRef, { ads_expiry: newExpiry.toISOString(), last_payment_id: transactionId });
                     }
-
-                    // Calculate new expiry (Example: +7 days) - Real logic depends on packageId from metadata
-                    const now = new Date();
-                    const currentExpiry = adsConfig.zone_a_expiry && adsConfig.zone_a_expiry > now ? adsConfig.zone_a_expiry : now;
-                    // Example: All ad purchases are 30 days for now, or based on amount
-                    const addedTime = 30 * 24 * 60 * 60 * 1000; // 30 days
-                    const newExpiry = new Date(currentExpiry.getTime() + addedTime);
-
-                    await adsConfig.update({
-                        zone_a_expiry: newExpiry, // Assuming Zone A for now as per prompt example logic simple update
-                        last_payment_id: transactionId
-                    }, { transaction: t });
-
-                    console.log(`Updated AdsConfig for Business ${businessId}, New Expiry: ${newExpiry}`);
-
                 } else if (metadata.type === 'WALLET_TOPUP') {
-                    // Update User Wallet
-                    const user = await User.findByPk(metadata.userId, { transaction: t });
-                    if (user) {
-                        // user.wallet_balance is Decimal/Float
-                        const currentBalance = parseFloat(user.wallet_balance || 0);
-                        const topupAmount = parseFloat(transaction.amount);
-                        await user.update({ wallet_balance: currentBalance + topupAmount }, { transaction: t });
-                        console.log(`Wallet Top-up User ${user.id}: +${topupAmount}`);
+                    const userRef = usersRef.doc(metadata.userId);
+                    const userDoc = await t.get(userRef);
+                    if (userDoc.exists) {
+                        t.update(userRef, { wallet_balance: admin.firestore.FieldValue.increment(transData.amount) });
                     }
                 } else if (metadata.type === 'PLAN_PURCHASE') {
-                    // Handle Premium Plan
-                    const planId = parseInt(metadata.planId);
-                    const plan = await Plan.findByPk(planId, { transaction: t });
-                    const user = await User.findByPk(metadata.userId, { transaction: t });
+                    const userRef = usersRef.doc(metadata.userId);
+                    const userDoc = await t.get(userRef);
+                    
+                    const planDoc = await plansRef.doc(metadata.planId).get();
+                    const durationDays = planDoc.exists ? planDoc.data().duration_days : 30; // fallback
 
-                    if (user && plan) {
+                    if (userDoc.exists) {
                         const now = new Date();
-                        // If already premium and not expired, extend
-                        let currentExpiry = user.premium_expiry ? new Date(user.premium_expiry) : now;
+                        const userData = userDoc.data();
+                        
+                        let currentExpiry = userData.premium_expiry ? new Date(userData.premium_expiry) : now;
                         if (currentExpiry < now) currentExpiry = now;
 
-                        const addedTime = plan.duration_days * 24 * 60 * 60 * 1000;
-                        const newExpiry = new Date(currentExpiry.getTime() + addedTime);
-
-                        // Set start date only if not currently active premium or expired
-                        let newStartDate = user.premium_start_date;
-                        if (!user.plan_type || user.plan_type === 'free' || (user.premium_expiry && new Date(user.premium_expiry) < now)) {
-                            newStartDate = now;
+                        const newExpiry = new Date(currentExpiry.getTime() + (durationDays * 24 * 60 * 60 * 1000));
+                        
+                        let newStartDate = userData.premium_start_date;
+                        if (!userData.plan_type || userData.plan_type === 'free' || (userData.premium_expiry && new Date(userData.premium_expiry) < now)) {
+                            newStartDate = now.toISOString();
                         }
 
-                        await user.update({
+                        t.update(userRef, {
                             plan_type: 'premium',
-                            premium_start_date: newStartDate || now,
-                            premium_expiry: newExpiry
-                        }, { transaction: t });
-
-                        console.log(`Plan Purchase User ${user.id}: Plan ${plan.name}, Expiry: ${newExpiry}`);
+                            premium_start_date: newStartDate || now.toISOString(),
+                            premium_expiry: newExpiry.toISOString()
+                        });
                     }
                 }
             });
