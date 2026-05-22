@@ -37,7 +37,7 @@ const ExamResult = ({ result, onRetry }) => {
 
                 .er-root {
                     min-height: 100vh;
-                    background: ${isPassed ? '#16a34a' : '#f97316'};
+                    background: ${isPassed ? '#16a34a' : '#ef5350'};
                     position: fixed;
                     inset: 0;
                     z-index: 50;
@@ -124,8 +124,8 @@ const ExamResult = ({ result, onRetry }) => {
 
                 {/* Background blobs */}
                 <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
-                    <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'60vw', height:'60vw', maxWidth:600, maxHeight:600, borderRadius:'50%', background: isPassed ? 'radial-gradient(circle at 40% 40%,#22c55e 0%,#15803d 60%,transparent 100%)' : 'radial-gradient(circle at 40% 40%,#f97316 0%,#c2410c 60%,transparent 100%)', animation:'erBlobDrift 14s ease-in-out infinite', willChange: 'transform' }}/>
-                    <div style={{ position:'absolute', bottom:'-20%', right:'-10%', width:'65vw', height:'65vw', maxWidth:660, maxHeight:660, borderRadius:'50%', background: isPassed ? 'radial-gradient(circle at 60% 60%,#4ade80 0%,#16a34a 55%,transparent 100%)' : 'radial-gradient(circle at 60% 60%,#fb923c 0%,#ea580c 55%,transparent 100%)', animation:'erBlobDrift 18s ease-in-out infinite reverse', willChange: 'transform' }}/>
+                    <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'60vw', height:'60vw', maxWidth:600, maxHeight:600, borderRadius:'50%', background: isPassed ? 'radial-gradient(circle at 40% 40%,#22c55e 0%,#15803d 60%,transparent 100%)' : 'radial-gradient(circle at 40% 40%,#e53935 0%,#c62828 60%,transparent 100%)', animation:'erBlobDrift 14s ease-in-out infinite', willChange: 'transform' }}/>
+                    <div style={{ position:'absolute', bottom:'-20%', right:'-10%', width:'65vw', height:'65vw', maxWidth:660, maxHeight:660, borderRadius:'50%', background: isPassed ? 'radial-gradient(circle at 60% 60%,#4ade80 0%,#16a34a 55%,transparent 100%)' : 'radial-gradient(circle at 60% 60%,#ef9a9a 0%,#e53935 55%,transparent 100%)', animation:'erBlobDrift 18s ease-in-out infinite reverse', willChange: 'transform' }}/>
                 </div>
 
                 {/* Floating confetti dots */}
