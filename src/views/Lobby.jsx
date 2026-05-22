@@ -126,7 +126,7 @@ export default function Lobby() {
       <style>{`
         .lb-wrapper {
           min-height: 100vh;
-          background: #1a0533;
+          background: radial-gradient(circle at 50% 50%, #2a0845 0%, #1a0533 100%);
           padding-top: 80px;
           padding-bottom: 80px;
           font-family: 'Nunito', 'Sarabun', sans-serif;
@@ -136,15 +136,34 @@ export default function Lobby() {
         }
         /* Floating shapes */
         .lb-shape { position: absolute; pointer-events: none; z-index: 1; }
-        .lb-circle-1 { width: 40px; height: 40px; background: #e21b3c; border-radius: 50%; top: 15%; left: 25%; opacity: 0.8; filter: blur(2px); animation: float 6s ease-in-out infinite; }
-        .lb-rect-1 { width: 30px; height: 30px; background: #ffcc00; top: 10%; right: 20%; transform: rotate(45deg); opacity: 0.9; animation: float 8s ease-in-out infinite alternate; }
-        .lb-confetti-1 { width: 15px; height: 30px; background: #00c985; top: 30%; right: 10%; transform: rotate(-20deg); opacity: 0.7; animation: float 5s ease-in-out infinite; }
+        .lb-circle-1 { width: 40px; height: 40px; background: #e21b3c; border-radius: 50%; top: 15%; left: 15%; opacity: 0.8; filter: blur(2px); animation: float 6s ease-in-out infinite; }
+        .lb-circle-2 { width: 25px; height: 25px; background: #00c985; border-radius: 50%; bottom: 25%; left: 5%; opacity: 0.6; filter: blur(1px); animation: float 8s ease-in-out infinite reverse; }
+        .lb-rect-1 { width: 30px; height: 30px; background: #ffcc00; top: 10%; right: 20%; transform: rotate(45deg); opacity: 0.9; animation: floatSpin 8s linear infinite alternate; }
+        .lb-rect-2 { width: 20px; height: 20px; background: #e21b3c; bottom: 20%; right: 10%; transform: rotate(15deg); opacity: 0.7; animation: floatSpin 10s linear infinite; }
+        .lb-confetti-1 { width: 15px; height: 35px; background: #00c985; top: 30%; right: 15%; transform: rotate(-20deg); opacity: 0.7; animation: float 5s ease-in-out infinite; }
         .lb-confetti-2 { width: 12px; height: 12px; background: #1368ce; top: 25%; left: 45%; opacity: 0.8; animation: float 7s ease-in-out infinite; }
+        .lb-confetti-3 { width: 18px; height: 8px; background: #ff8c00; top: 50%; left: 8%; transform: rotate(30deg); opacity: 0.9; animation: float 6s ease-in-out infinite reverse; }
+        .lb-confetti-4 { width: 10px; height: 20px; background: #ffcc00; bottom: 40%; right: 25%; transform: rotate(70deg); opacity: 0.8; animation: float 5.5s ease-in-out infinite; }
+        .lb-star-1 { color: #ffcc00; font-size: 24px; top: 15%; left: 75%; opacity: 0.9; animation: floatPulse 4s ease-in-out infinite; }
+        .lb-star-2 { color: #1368ce; font-size: 30px; bottom: 15%; left: 25%; opacity: 0.7; animation: floatPulse 5s ease-in-out infinite 1s; }
 
         @keyframes float {
           0% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(10deg); }
+          50% { transform: translateY(-25px) rotate(15deg); }
           100% { transform: translateY(0px) rotate(0deg); }
+        }
+        @keyframes floatSpin {
+          0% { transform: translateY(0px) rotate(0deg); }
+          100% { transform: translateY(-30px) rotate(360deg); }
+        }
+        @keyframes floatPulse {
+          0% { transform: scale(1) translateY(0); }
+          50% { transform: scale(1.2) translateY(-10px); }
+          100% { transform: scale(1) translateY(0); }
+        }
+        @keyframes bounceGlow {
+          0%, 100% { text-shadow: 0 4px 10px rgba(0,0,0,0.3); transform: translateY(0); }
+          50% { text-shadow: 0 10px 20px rgba(255,204,0,0.4); transform: translateY(-5px); }
         }
 
         .lb-container {
@@ -168,13 +187,14 @@ export default function Lobby() {
           margin-bottom: 4px;
         }
         .lb-username {
-          font-size: 2.5rem;
+          font-size: 2.8rem;
           font-weight: 900;
           margin-bottom: 12px;
           text-shadow: 0 4px 10px rgba(0,0,0,0.3);
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
+          animation: bounceGlow 4s ease-in-out infinite;
         }
         
         .lb-chips {
@@ -227,6 +247,11 @@ export default function Lobby() {
           max-width: 450px;
           box-shadow: 0 12px 30px rgba(0,0,0,0.3);
           position: relative;
+          transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
+        }
+        .lb-action-card:hover {
+          transform: translateY(-8px) scale(1.02);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
         .lb-action-badge {
           position: absolute;
@@ -406,9 +431,15 @@ export default function Lobby() {
 
       {/* Decorative Shapes */}
       <div className="lb-shape lb-circle-1"></div>
+      <div className="lb-shape lb-circle-2"></div>
       <div className="lb-shape lb-rect-1"></div>
+      <div className="lb-shape lb-rect-2"></div>
       <div className="lb-shape lb-confetti-1"></div>
       <div className="lb-shape lb-confetti-2"></div>
+      <div className="lb-shape lb-confetti-3"></div>
+      <div className="lb-shape lb-confetti-4"></div>
+      <div className="lb-shape lb-star-1">⭐</div>
+      <div className="lb-shape lb-star-2">✨</div>
 
       <div className="lb-container">
         
@@ -529,8 +560,23 @@ export default function Lobby() {
           })}
           
           {filteredRooms.length === 0 && !loading && (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>
-              No rooms found matching your search.
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.05)', borderRadius: '24px', border: '2px dashed rgba(255,255,255,0.2)' }}>
+              <div style={{ fontSize: '4rem', marginBottom: '16px', animation: 'float 3s ease-in-out infinite' }}>🙈</div>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '8px', color: 'white' }}>Oh no! It's so quiet here.</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, marginBottom: '20px' }}>No rooms found matching your search. Be the first to start the fun!</p>
+              <button 
+                className="btn-create-room"
+                style={{ margin: '0 auto', fontSize: '1.1rem', padding: '14px 32px' }}
+                onClick={() => {
+                  if (user?.email?.startsWith('guest_')) {
+                    alert('Guests cannot create rooms. Please register to create a room.');
+                    return;
+                  }
+                  setShowCreateModal(true);
+                }}
+              >
+                <Plus size={24} strokeWidth={3}/> Create a Room Now 🚀
+              </button>
             </div>
           )}
         </div>
