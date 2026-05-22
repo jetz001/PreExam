@@ -172,7 +172,7 @@ const Room = () => {
                     100% { transform: translateY(0px) rotate(0deg); }
                 }
                 .room-wrapper { 
-                    position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+                    position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
                     background: linear-gradient(-45deg, #7e22ce, #c026d3, #2563eb, #0ea5e9);
                     background-size: 400% 400%;
                     animation: gradientBG 15s ease infinite;
