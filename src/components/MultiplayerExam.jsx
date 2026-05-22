@@ -24,6 +24,25 @@ const decodeHtml = (html) => {
     return decoded;
 };
 
+// Authentic Kahoot! brand colors & chunky shadows
+const choiceStyles = {
+    'A': 'bg-[#e21b3c] hover:bg-[#c91835] shadow-[0_6px_0_#b3152d]', // Triangle (Red)
+    'B': 'bg-[#1368ce] hover:bg-[#105bb5] shadow-[0_6px_0_#0e4e9c]', // Diamond (Blue)
+    'C': 'bg-[#d89e00] hover:bg-[#c28e00] shadow-[0_6px_0_#a87b00]', // Circle (Yellow/Mustard)
+    'D': 'bg-[#26890c] hover:bg-[#20750a] shadow-[0_6px_0_#1a5e08]'  // Square (Green)
+};
+
+// Helper shapes
+const ShapeIcon = ({ choice }) => {
+    switch (choice) {
+        case 'A': return <svg viewBox="0 0 32 32" className="w-8 h-8 fill-white"><path d="M16 4L4 26h24L16 4z"/></svg>;
+        case 'B': return <svg viewBox="0 0 32 32" className="w-8 h-8 fill-white"><path d="M16 4l12 12-12 12L4 16 16 4z"/></svg>;
+        case 'C': return <svg viewBox="0 0 32 32" className="w-8 h-8 fill-white"><circle cx="16" cy="16" r="12"/></svg>;
+        case 'D': return <svg viewBox="0 0 32 32" className="w-8 h-8 fill-white"><rect x="6" y="6" width="20" height="20" rx="3"/></svg>;
+        default: return null;
+    }
+};
+
 const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinish, timeLimit }, ref) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState({});
@@ -102,61 +121,72 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
     const currentQuestion = questions[currentIndex];
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-hidden w-full max-w-5xl mx-auto font-['Nunito','Sarabun',sans-serif]">
             {/* Header */}
-            <div className="bg-white shadow px-4 py-3 flex justify-between items-center mb-4 rounded-lg">
-                <div className="text-lg font-bold">
-                    ข้อที่ {currentIndex + 1} / {questions.length}
+            <div className="bg-white/20 backdrop-blur-md rounded-full px-5 py-3 mb-6 shadow-lg border border-white/30 flex justify-between items-center w-full">
+                <div className="text-xl font-black text-white">
+                    ข้อที่ {currentIndex + 1} <span className="opacity-70">/ {questions.length}</span>
                 </div>
-                <div className={`flex items-center text-xl font-mono ${timeLeft < 300 ? 'text-red-600' : 'text-gray-900'}`}>
-                    <Clock className="mr-2 h-5 w-5" />
+                <div className={`flex items-center text-xl font-black ${timeLeft < 300 ? 'text-[#ff6b8a] animate-pulse' : 'text-white'}`}>
+                    <Clock className="mr-2 h-6 w-6" />
                     {formatTime(timeLeft)}
                 </div>
             </div>
 
-            {/* Question Area */}
-            <div className="bg-white p-6 rounded-lg shadow flex-1 overflow-y-auto">
-                <div className="flex justify-between items-start mb-6">
-                    <h3 className="text-xl text-gray-900 font-medium" style={{ fontSize: `${1.25 * fontSizeScale}rem`, lineHeight: '1.5' }}>
-                        <div className="inline" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }} />
-                        <span className="inline-block text-xs text-gray-400 font-normal ml-2 bg-gray-100 px-2 py-0.5 rounded-full align-middle">
+            <div className="flex-1 overflow-y-auto w-full custom-scrollbar pb-4 pr-2">
+                {/* Question Area */}
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[2rem] p-6 md:p-12 shadow-xl relative w-full mb-6">
+                    <div className="absolute top-4 right-4 flex gap-2">
+                        <button
+                            onClick={() => setShowReportModal(true)}
+                            className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
+                            title="แจ้งปัญหา"
+                        >
+                            <AlertTriangle className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <h3 className="text-white font-black text-2xl md:text-4xl text-center leading-relaxed mt-4 mb-4 drop-shadow-md" style={{ fontSize: `${1.4 * fontSizeScale}rem` }}>
+                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }} />
+                        <span className="block text-sm text-white/50 font-normal mt-2">
                             #{currentQuestion.id}
                         </span>
                     </h3>
-                    <button
-                        onClick={() => setShowReportModal(true)}
-                        className="p-2 rounded-full text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        title="แจ้งปัญหา"
-                    >
-                        <AlertTriangle className="h-5 w-5" />
-                    </button>
+                    {currentQuestion.question_image && (
+                        <img src={currentQuestion.question_image} alt="Question" className="mt-6 mx-auto max-w-full h-64 object-contain rounded-xl border border-white/20 shadow-lg" />
+                    )}
+
+                    {/* Premium Tools: Question Note */}
+                    <PermissionGate requiredTier="premium" type="hide">
+                        <QuestionNote questionId={currentQuestion.id} />
+                    </PermissionGate>
                 </div>
 
-                {currentQuestion.question_image && (
-                    <img src={currentQuestion.question_image} alt="Question" className="mb-4 max-w-full h-auto rounded" />
-                )}
-
-                <div className="space-y-3">
-                    {['A', 'B', 'C', 'D'].map((choice) => (
-                        <button
-                            key={choice}
-                            onClick={() => handleAnswer(choice)}
-                            disabled={answers[currentQuestion.id]}
-                            className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${answers[currentQuestion.id] === choice
-                                ? 'border-primary bg-blue-50 text-primary'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 bg-white text-gray-900'
-                                }`}
-                        >
-                            <span className="font-bold mr-2" style={{ fontSize: `${1 * fontSizeScale}rem` }}>{choice}.</span>
-                            <span style={{ fontSize: `${1 * fontSizeScale}rem` }}>{currentQuestion[`choice_${choice.toLowerCase()}`]}</span>
-                        </button>
-                    ))}
+                {/* Choices (Kahoot Style 2x2 Grid) */}
+                <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-8">
+                    {['A', 'B', 'C', 'D'].map((choice) => {
+                        const isSelected = answers[currentQuestion.id] === choice;
+                        return (
+                            <button
+                                key={choice}
+                                onClick={() => handleAnswer(choice)}
+                                disabled={answers[currentQuestion.id]}
+                                className={`relative p-6 md:p-8 rounded-[1rem] flex items-center transform transition-all duration-100 active:translate-y-[6px] active:shadow-none
+                                    ${choiceStyles[choice]} 
+                                    ${isSelected ? 'ring-4 ring-white ring-offset-4 ring-offset-[#46178f] scale-[1.02]' : 'hover:brightness-110'}
+                                    ${answers[currentQuestion.id] && !isSelected ? 'opacity-50 grayscale cursor-not-allowed' : ''}
+                                `}
+                            >
+                                <div className="mr-6 flex-shrink-0">
+                                    <ShapeIcon choice={choice} />
+                                </div>
+                                <span className="font-bold text-white text-xl md:text-2xl text-left drop-shadow-sm leading-tight" style={{ fontSize: `${1.2 * fontSizeScale}rem` }}>
+                                    {currentQuestion[`choice_${choice.toLowerCase()}`]}
+                                </span>
+                            </button>
+                        );
+                    })}
                 </div>
-
-                {/* Premium Tools: Question Note */}
-                <PermissionGate requiredTier="premium" type="hide">
-                    <QuestionNote questionId={currentQuestion.id} />
-                </PermissionGate>
             </div>
 
             {/* Floating Tools */}
