@@ -4,7 +4,7 @@ import roomService from '../services/roomService';
 import authService from '../services/authService';
 import userService from '../services/userService';
 import api from '../services/api';
-import { Search, Play, Users, Lock, ChevronRight } from 'lucide-react';
+import { Search, Play, Users, Lock, ChevronRight, Plus } from 'lucide-react';
 import CreateRoomModal from '../components/room/CreateRoomModal';
 
 export default function Lobby() {
