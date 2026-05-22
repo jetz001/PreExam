@@ -1,0 +1,12 @@
+{
+  "viewCost": 0.1,
+  "clickCost": 5,
+  "inFeedFrequency": 10,
+  "adSenseBackupId": "ca-pub-123456789",
+  "communityViewCost": 0.1,
+  "communityClickCost": 10,
+  "newsViewCost": 0.15,
+  "newsClickCost": 6,
+  "resultViewCost": 0.2,
+  "resultClickCost": 8
+}

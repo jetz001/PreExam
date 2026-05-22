@@ -1,0 +1,19 @@
+{
+  "stack": "Error\n    at Database.<anonymous> (D:\\Project\\PreExam\\server\\node_modules\\sequelize\\lib\\dialects\\sqlite\\query.js:185:27)\n    at D:\\Project\\PreExam\\server\\node_modules\\sequelize\\lib\\dialects\\sqlite\\query.js:183:50\n    at new Promise (<anonymous>)\n    at Query.run (D:\\Project\\PreExam\\server\\node_modules\\sequelize\\lib\\dialects\\sqlite\\query.js:183:12)\n    at D:\\Project\\PreExam\\server\\node_modules\\sequelize\\lib\\sequelize.js:315:28\n    at async SQLiteQueryInterface.select (D:\\Project\\PreExam\\server\\node_modules\\sequelize\\lib\\dialects\\abstract\\query-interface.js:407:12)\n    at async BusinessMessage.findAll (D:\\Project\\PreExam\\server\\node_modules\\sequelize\\lib\\model.js:1140:21)\n    at async debugQueries (D:\\Project\\PreExam\\server\\scripts\\debug_threads_inbox.js:34:34)",
+  "message": "SQLITE_ERROR: no such column: BusinessMessage.createdAt",
+  "name": "SequelizeDatabaseError",
+  "parent": {
+    "stack": "Error: SQLITE_ERROR: no such column: BusinessMessage.createdAt",
+    "message": "SQLITE_ERROR: no such column: BusinessMessage.createdAt",
+    "name": "Error",
+    "sql": "SELECT `BusinessMessage`.`id`, `BusinessMessage`.`business_id`, `BusinessMessage`.`user_id`, `BusinessMessage`.`sender_type`, `BusinessMessage`.`message`, `BusinessMessage`.`is_read`, `BusinessMessage`.`created_at`, `User`.`id` AS `User.id`, `User`.`display_name` AS `User.display_name`, `User`.`avatar` AS `User.avatar` FROM `business_messages` AS `BusinessMessage` LEFT OUTER JOIN `users` AS `User` ON `BusinessMessage`.`user_id` = `User`.`id` WHERE `BusinessMessage`.`business_id` = 1 ORDER BY `BusinessMessage`.`createdAt` DESC;"
+  },
+  "original": {
+    "stack": "Error: SQLITE_ERROR: no such column: BusinessMessage.createdAt",
+    "message": "SQLITE_ERROR: no such column: BusinessMessage.createdAt",
+    "name": "Error",
+    "sql": "SELECT `BusinessMessage`.`id`, `BusinessMessage`.`business_id`, `BusinessMessage`.`user_id`, `BusinessMessage`.`sender_type`, `BusinessMessage`.`message`, `BusinessMessage`.`is_read`, `BusinessMessage`.`created_at`, `User`.`id` AS `User.id`, `User`.`display_name` AS `User.display_name`, `User`.`avatar` AS `User.avatar` FROM `business_messages` AS `BusinessMessage` LEFT OUTER JOIN `users` AS `User` ON `BusinessMessage`.`user_id` = `User`.`id` WHERE `BusinessMessage`.`business_id` = 1 ORDER BY `BusinessMessage`.`createdAt` DESC;"
+  },
+  "sql": "SELECT `BusinessMessage`.`id`, `BusinessMessage`.`business_id`, `BusinessMessage`.`user_id`, `BusinessMessage`.`sender_type`, `BusinessMessage`.`message`, `BusinessMessage`.`is_read`, `BusinessMessage`.`created_at`, `User`.`id` AS `User.id`, `User`.`display_name` AS `User.display_name`, `User`.`avatar` AS `User.avatar` FROM `business_messages` AS `BusinessMessage` LEFT OUTER JOIN `users` AS `User` ON `BusinessMessage`.`user_id` = `User`.`id` WHERE `BusinessMessage`.`business_id` = 1 ORDER BY `BusinessMessage`.`createdAt` DESC;",
+  "parameters": {}
+}
