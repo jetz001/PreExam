@@ -12,7 +12,9 @@ export function generateStaticParams() {
     { slug: ['community'] },
     { slug: ['news'] },
     { slug: ['admin'] },
-    { slug: ['exam'] }
+    { slug: ['exam'] },
+    { slug: ['lobby'] },
+    { slug: ['room'] }
   ];
 }
 
