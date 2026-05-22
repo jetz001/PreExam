@@ -253,9 +253,9 @@ export default function HomeNavbar() {
                     <div style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.76rem', marginTop:2 }}>{user.email}</div>
                   </div>
 
-                  <Link to="/profile"   className="hn-drop-link" onClick={() => setProfileOpen(false)}>👤 โปรไฟล์ของฉัน</Link>
-                  <Link to="/dashboard" className="hn-drop-link" onClick={() => setProfileOpen(false)}>📊 แดชบอร์ด</Link>
-                  <Link to="/settings"  className="hn-drop-link" onClick={() => setProfileOpen(false)}>⚙️ ตั้งค่า</Link>
+                  <Link to="/profile" className="hn-drop-link" onClick={() => setProfileOpen(false)}>👤 โปรไฟล์ของฉัน</Link>
+                  <Link to="/profile/dashboard" className="hn-drop-link" onClick={() => setProfileOpen(false)}>📊 แดชบอร์ด</Link>
+                  <Link to="/profile/settings" className="hn-drop-link" onClick={() => setProfileOpen(false)}>⚙️ ตั้งค่า</Link>
 
                   {!user.email?.startsWith('guest_') && (
                     <Link to="/business/dashboard" className="hn-drop-link" onClick={() => setProfileOpen(false)}>
