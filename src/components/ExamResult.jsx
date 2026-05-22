@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CheckCircle, XCircle } from 'lucide-react';
 import DetailedSolution from './exam/DetailedSolution';
 import AdSlot from './ads/AdSlot';
+import HomeNavbar from './HomeNavbar';
 
 const ExamResult = ({ result, onRetry }) => {
     const score = result.score || 0;
@@ -44,7 +45,7 @@ const ExamResult = ({ result, onRetry }) => {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 40px 16px;
+                    padding: 80px 16px 32px;
                     font-family: 'Sarabun','Nunito',sans-serif;
                     transition: background 0.8s ease;
                 }
@@ -118,6 +119,9 @@ const ExamResult = ({ result, onRetry }) => {
             `}</style>
 
             <div className="er-root">
+                {/* Floating Transparent Navbar */}
+                <HomeNavbar />
+
                 {/* Background blobs */}
                 <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
                     <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'60vw', height:'60vw', maxWidth:600, maxHeight:600, borderRadius:'50%', background: isPassed ? 'radial-gradient(circle at 40% 40%,#22c55e 0%,#15803d 60%,transparent 100%)' : 'radial-gradient(circle at 40% 40%,#f97316 0%,#c2410c 60%,transparent 100%)', animation:'erBlobDrift 14s ease-in-out infinite', willChange: 'transform' }}/>

@@ -56,11 +56,49 @@ class BaseModel {
 
     async findAll(options = {}) {
         let query = this.collection;
+        let inChunks = null;
+        let inKey = null;
+
         if (options.where) {
             for (const [key, value] of Object.entries(options.where)) {
-                query = query.where(key, '==', value);
+                if (Array.isArray(value)) {
+                    inKey = key;
+                    inChunks = [];
+                    // Chunk into groups of 10 to avoid Firestore limits
+                    for (let i = 0; i < value.length; i += 10) {
+                        inChunks.push(value.slice(i, i + 10));
+                    }
+                } else {
+                    if (key === 'id') {
+                        const { admin } = require('../config/firebase');
+                        query = query.where(admin.firestore.FieldPath.documentId(), '==', value);
+                    } else {
+                        query = query.where(key, '==', value);
+                    }
+                }
             }
         }
+
+        if (inChunks && inChunks.length > 0) {
+            const allDocs = [];
+            for (const chunk of inChunks) {
+                if (chunk.length === 0) continue;
+                let chunkQuery = query;
+                if (inKey === 'id') {
+                    const { admin } = require('../config/firebase');
+                    chunkQuery = chunkQuery.where(admin.firestore.FieldPath.documentId(), 'in', chunk);
+                } else {
+                    chunkQuery = chunkQuery.where(inKey, 'in', chunk);
+                }
+                if (options.limit) {
+                    chunkQuery = chunkQuery.limit(options.limit);
+                }
+                const snapshot = await chunkQuery.get();
+                allDocs.push(...snapshot.docs);
+            }
+            return allDocs.map(doc => this._wrapDoc(doc));
+        }
+
         if (options.limit) {
             query = query.limit(options.limit);
         }

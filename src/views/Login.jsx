@@ -108,6 +108,13 @@ const Login = () => {
                         <SocialLogin />
                     </div>
 
+                    <div className="mt-6 text-center">
+                        <span className="text-gray-600 font-medium">ยังไม่มีบัญชีใช่ไหม? </span>
+                        <Link to="/register" className="text-[#46178f] font-bold hover:underline">
+                            สมัครสมาชิกใหม่
+                        </Link>
+                    </div>
+
                 </div>
             </div>
             

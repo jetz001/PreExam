@@ -41,8 +41,16 @@ import NewsDetail from './views/NewsDetail';
 import PremiumUpgrade from './views/PremiumUpgrade';
 import Lobby from './views/Lobby';
 import Room from './views/Room';
-import ProfilePage from './views/user/ProfilePage';
-import SettingsPage from './views/user/SettingsPage';
+import ProfileLayout from './layouts/ProfileLayout';
+import ProfileDashboard from './views/user/ProfileDashboard';
+import ProfileHistoryOverview from './views/user/ProfileHistoryOverview';
+import ProfileHistory from './views/user/ProfileHistory';
+import ProfileBookmarks from './views/user/ProfileBookmarks';
+import ProfileThreads from './views/user/ProfileThreads';
+import ProfileMessages from './views/user/ProfileMessages';
+import ProfileFriends from './views/user/ProfileFriends';
+import ProfileSettings from './views/user/ProfileSettings';
+
 import ExamResult from './views/ExamResult';
 import PaymentSuccess from './views/PaymentSuccess';
 import PaymentCancel from './views/PaymentCancel';
@@ -123,13 +131,23 @@ function App() {
         <Route path="/exam" element={<Exam />} />
         <Route path="/exam/result/:id" element={<ExamResult />} />
 
+        {/* Gamified Profile / Dashboard */}
+        <Route path="/profile" element={<ProfileLayout />}>
+          <Route index element={<ProfileDashboard />} />
+          <Route path="dashboard" element={<ProfileDashboard />} />
+          <Route path="history-overview" element={<ProfileHistoryOverview />} />
+          <Route path="history" element={<ProfileHistory />} />
+          <Route path="bookmarks" element={<ProfileBookmarks />} />
+          <Route path="threads" element={<ProfileThreads />} />
+          <Route path="messages" element={<ProfileMessages />} />
+          <Route path="friends" element={<ProfileFriends />} />
+          <Route path="settings" element={<ProfileSettings />} />
+        </Route>
+
         <Route element={<MainLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/profile/:id" element={<ProfilePage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<DashboardOverview />} />
             <Route path="businesses" element={<BusinessManager />} />

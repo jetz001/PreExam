@@ -3,7 +3,7 @@ import ClientAppWrapper from './ClientAppWrapper';
 // Required for 'output: export' with dynamic routes
 export function generateStaticParams() {
   return [
-    { slug: [''] },
+    { slug: [] },
     { slug: ['login'] },
     { slug: ['register'] },
     { slug: ['dashboard'] },
@@ -11,7 +11,8 @@ export function generateStaticParams() {
     { slug: ['settings'] },
     { slug: ['community'] },
     { slug: ['news'] },
-    { slug: ['admin'] }
+    { slug: ['admin'] },
+    { slug: ['exam'] }
   ];
 }
 

@@ -132,6 +132,13 @@ const Register = () => {
                         <SocialLogin />
                     </div>
 
+                    <div className="mt-6 text-center">
+                        <span className="text-gray-600 font-medium">มีบัญชีอยู่แล้วใช่ไหม? </span>
+                        <Link to="/login" className="text-[#46178f] font-bold hover:underline">
+                            เข้าสู่ระบบ
+                        </Link>
+                    </div>
+
                 </div>
             </div>
             
