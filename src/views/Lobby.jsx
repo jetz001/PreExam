@@ -126,7 +126,7 @@ export default function Lobby() {
       <style>{`
         .lb-wrapper {
           min-height: 100vh;
-          background: radial-gradient(circle at 50% 50%, #2a0845 0%, #1a0533 100%);
+          background: radial-gradient(circle at 50% 50%, #581cba 0%, #371172 100%);
           padding-top: 80px;
           padding-bottom: 80px;
           font-family: 'Nunito', 'Sarabun', sans-serif;
@@ -383,7 +383,7 @@ export default function Lobby() {
           bottom: 0;
           left: 0;
           right: 0;
-          background: rgba(26,5,51,0.95);
+          background: rgba(55, 17, 114, 0.95);
           backdrop-filter: blur(10px);
           border-top: 1px solid rgba(255,255,255,0.1);
           padding: 12px 20px;
