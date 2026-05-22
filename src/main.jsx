@@ -14,26 +14,8 @@ import { TourProvider } from './context/TourContext';
 
 const queryClient = new QueryClient();
 
-const fallbackClientId = '344062096565-4lrdvepsa1hsp75863jiorll6qp4q78a.apps.googleusercontent.com';
-let googleClientId = fallbackClientId;
-
-try {
-  if (typeof process !== 'undefined' && process?.env?.NEXT_PUBLIC_VITE_GOOGLE_CLIENT_ID) {
-    googleClientId = process.env.NEXT_PUBLIC_VITE_GOOGLE_CLIENT_ID;
-  } else if (typeof import !== 'undefined' && import.meta && import.meta.env && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-    googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  } else if (typeof import !== 'undefined' && import.meta && import.meta.env && import.meta.env.NEXT_PUBLIC_VITE_GOOGLE_CLIENT_ID) {
-    googleClientId = import.meta.env.NEXT_PUBLIC_VITE_GOOGLE_CLIENT_ID;
-  }
-} catch (e) {
-  // Ignore
-}
-
-// Clean any potential whitespace or newlines
-googleClientId = googleClientId?.trim() || fallbackClientId;
-
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <GoogleOAuthProvider clientId={googleClientId}>
+  <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_VITE_GOOGLE_CLIENT_ID}>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SocketProvider>

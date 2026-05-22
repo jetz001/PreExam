@@ -4,12 +4,11 @@ const bookmarksRef = firestore.collection('bookmarks');
 
 exports.getBookmarks = async (req, res) => {
     try {
-        const snapshot = await bookmarksRef.where('user_id', '==', req.user.id.toString()).get();
+        const snapshot = await bookmarksRef.where('user_id', '==', req.user.id.toString())
+                                           .orderBy('saved_at', 'desc')
+                                           .get();
 
         const bookmarks = snapshot.docs.map(doc => doc.data());
-        // Sort in memory to avoid Firebase composite index requirement
-        bookmarks.sort((a, b) => new Date(b.saved_at) - new Date(a.saved_at));
-        
         res.json({ success: true, data: bookmarks });
     } catch (error) {
         console.error("Get bookmarks error", error);

@@ -219,13 +219,8 @@ exports.getHeatmapStats = async (req, res) => {
         // Group by YYYY-MM-DD
         const dateMap = {};
         results.forEach(r => {
-            if (!r.taken_at) return;
-            try {
-                const dateObj = new Date(r.taken_at);
-                if (isNaN(dateObj.getTime())) return;
-                const date = dateObj.toISOString().split('T')[0];
-                dateMap[date] = (dateMap[date] || 0) + 1;
-            } catch (err) {}
+            const date = new Date(r.taken_at).toISOString().split('T')[0];
+            dateMap[date] = (dateMap[date] || 0) + 1;
         });
 
         const data = Object.keys(dateMap).map(date => ({

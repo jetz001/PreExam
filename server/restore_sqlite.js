@@ -18,9 +18,6 @@ async function restore(backupPath) {
         console.log(`Connecting to Live DB...`);
         await sequelize.authenticate();
 
-        console.log(`Disabling Foreign Key checks temporarily...`);
-        await sequelize.query('PRAGMA foreign_keys = OFF;');
-
         console.log(`Attaching backup: ${absoluteBackupPath}`);
         // Escape single quotes in path just in case
         const safePath = absoluteBackupPath.replace(/'/g, "''");

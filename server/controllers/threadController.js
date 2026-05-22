@@ -282,29 +282,15 @@ exports.votePoll = async (req, res) => {
 exports.getUserThreads = async (req, res) => {
     try {
         const { userId } = req.params;
+        const snapshot = await threadsRef.where('user_id', '==', parseInt(userId))
+                                       .orderBy('created_at', 'desc')
+                                       .limit(20).get();
         
-        // Fetch both string and integer just in case, without orderBy to prevent composite index errors
-        const [snapshotStr, snapshotInt] = await Promise.all([
-            threadsRef.where('user_id', '==', userId.toString()).get(),
-            threadsRef.where('user_id', '==', parseInt(userId)).get()
-        ]);
-        
-        const allDocs = [...snapshotStr.docs, ...snapshotInt.docs];
-        // Deduplicate in case string and int were somehow the same or something weird
-        const uniqueDocsMap = new Map();
-        allDocs.forEach(doc => uniqueDocsMap.set(doc.id, doc));
-        
-        let threads = Array.from(uniqueDocsMap.values()).map(doc => {
+        const threads = snapshot.docs.map(doc => {
             const data = doc.data();
             data.isLiked = false;
             return data;
         });
-
-        // Sort in memory by created_at desc
-        threads.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-        
-        // Limit to 20
-        threads = threads.slice(0, 20);
 
         res.json(threads);
     } catch (error) {
