@@ -172,7 +172,7 @@ const Room = () => {
                     100% { transform: translateY(0px) rotate(0deg); }
                 }
                 .room-wrapper { 
-                    position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+                    position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
                     background: linear-gradient(-45deg, #7e22ce, #c026d3, #2563eb, #0ea5e9);
                     background-size: 400% 400%;
                     animation: gradientBG 15s ease infinite;
@@ -224,10 +224,11 @@ const Room = () => {
             
             {/* Playful Floating Shapes behind */}
             <div className="room-wrapper">
-                <div className="absolute top-10 right-20 text-8xl opacity-40 float-anim" style={{ animationDelay: '0s' }}>☁️</div>
-                <div className="absolute bottom-10 left-10 text-8xl opacity-40 float-anim" style={{ animationDelay: '1s' }}>🚀</div>
-                <div className="absolute top-1/2 right-10 text-6xl opacity-30 float-anim" style={{ animationDelay: '2s' }}>🎮</div>
-                <div className="absolute top-32 left-32 text-6xl opacity-40 float-anim" style={{ animationDelay: '3s' }}>⭐</div>
+                <div className="absolute top-10 right-20 text-8xl opacity-50 float-anim" style={{ animationDelay: '0s' }}>☁️</div>
+                <div className="absolute bottom-10 left-10 text-8xl opacity-50 float-anim" style={{ animationDelay: '1s' }}>🚀</div>
+                <div className="absolute top-1/2 right-10 text-6xl opacity-40 float-anim" style={{ animationDelay: '2s' }}>🎮</div>
+                <div className="absolute top-32 left-32 text-6xl opacity-50 float-anim" style={{ animationDelay: '3s' }}>⭐</div>
+                <div className="absolute bottom-32 right-1/3 text-7xl opacity-40 float-anim" style={{ animationDelay: '1.5s' }}>🎯</div>
             </div>
 
             <div className="container mx-auto px-4 py-8 flex flex-col h-full relative z-10">
