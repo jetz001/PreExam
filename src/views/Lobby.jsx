@@ -135,7 +135,7 @@ export default function Lobby() {
         }
         /* Fixed background to cover entire screen */
         .lb-bg {
-          position: fixed; inset: 0; z-index: -1;
+          position: fixed; inset: 0; z-index: 0;
           background: radial-gradient(circle at 50% 50%, #581cba 0%, #371172 100%);
           pointer-events: none;
         }
