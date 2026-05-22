@@ -53,9 +53,9 @@ const ChatBox = ({ socket, roomId, userId, displayName }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-                <h3 className="font-bold text-gray-700">Chat Room</h3>
+        <div className="flex flex-col h-full bg-white rounded-b-3xl shadow-sm border border-gray-200">
+            <div className="p-4 border-b border-gray-200 bg-gray-50 text-gray-800">
+                <h3 className="font-bold text-gray-800 text-lg flex items-center">💬 Chat Room</h3>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3 h-64">
@@ -79,11 +79,11 @@ const ChatBox = ({ socket, roomId, userId, displayName }) => {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="flex-1 border-2 border-gray-300 rounded-l-xl px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-gray-900 font-medium"
                 />
                 <button
                     type="submit"
-                    className="bg-primary text-white px-4 py-2 rounded-r-lg hover:bg-blue-700"
+                    className="bg-blue-600 text-white px-5 py-3 rounded-r-xl hover:bg-blue-700 font-bold flex items-center transition-colors"
                 >
                     <Send className="w-4 h-4" />
                 </button>
