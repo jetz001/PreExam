@@ -371,9 +371,12 @@ const Room = () => {
                             </div>
                             
                             {isHost ? (
-                                <div className="bg-yellow-400 text-yellow-900 font-black px-6 py-3 rounded-2xl border-4 border-yellow-500 shadow-[0_6px_0_#ca8a04] text-lg animate-bounce">
-                                    👑 You are the host. Click "Start Exam" when ready!
-                                </div>
+                                <button 
+                                    onClick={handleStartExam}
+                                    className="bg-yellow-400 text-yellow-900 font-black px-8 py-4 rounded-3xl border-4 border-yellow-500 shadow-[0_8px_0_#ca8a04] text-xl animate-bounce hover:bg-yellow-300 hover:translate-y-[-4px] hover:shadow-[0_12px_0_#ca8a04] active:translate-y-[8px] active:shadow-none transition-all cursor-pointer"
+                                >
+                                    👑 You are the host. Click here to START! 🚀
+                                </button>
                             ) : (
                                 <div className="bg-blue-500 text-white font-black px-6 py-3 rounded-2xl border-4 border-blue-600 shadow-[0_6px_0_#2563eb] text-lg animate-pulse">
                                     ⏳ Waiting for host to start the game...
