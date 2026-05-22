@@ -198,12 +198,23 @@ const Room = () => {
                 .btn-leave:hover { background: #f87171; transform: translateY(-2px); box-shadow: 0 8px 0 #b91c1c; }
                 .btn-leave:active { transform: translateY(6px); box-shadow: 0 0 0 #b91c1c; }
                 
-                .glass-panel { 
-                    background: rgba(255, 255, 255, 0.25); 
-                    backdrop-filter: blur(16px); 
-                    border: 4px solid rgba(255, 255, 255, 0.4); 
-                    border-radius: 32px; 
-                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255,255,255,0.3); 
+                .playful-panel-header {
+                    background: #46178f;
+                    border: 4px solid #fff;
+                    border-radius: 32px;
+                    box-shadow: 0 8px 0 #2d0d6b, 0 15px 30px rgba(0,0,0,0.3);
+                }
+                .playful-panel-main {
+                    background: #0ea5e9;
+                    border: 4px solid #fff;
+                    border-radius: 32px;
+                    box-shadow: 0 8px 0 #0284c7, 0 15px 30px rgba(0,0,0,0.3);
+                }
+                .playful-panel-sidebar {
+                    background: #e21b3c;
+                    border: 4px solid #fff;
+                    border-radius: 32px;
+                    box-shadow: 0 8px 0 #b3142e, 0 15px 30px rgba(0,0,0,0.3);
                 }
                 .tab-btn { padding: 14px; font-weight: 900; font-size: 1.1rem; transition: 0.2s; color: rgba(255,255,255,0.7); }
                 .tab-btn.active { color: white; background: rgba(255,255,255,0.25); border-bottom: 4px solid #facc15; }
@@ -221,7 +232,7 @@ const Room = () => {
 
             <div className="container mx-auto px-4 py-8 flex flex-col h-full relative z-10">
                 {/* Room Header */}
-                <div className="glass-panel p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden bg-gradient-to-r from-white/30 to-white/10">
+                <div className="playful-panel-header p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden">
                     <div className="relative z-10 flex-1">
                         <h1 className="text-4xl font-black text-white flex items-center drop-shadow-lg tracking-wide">
                             {room.name}
@@ -270,9 +281,9 @@ const Room = () => {
                 </div>
                 </div>
 
-                <div className={`grid grid-cols-1 ${examFinished ? '' : 'lg:grid-cols-3'} gap-6 flex-1 overflow-hidden relative z-10`}>
+                <div className={`grid grid-cols-1 ${examFinished ? '' : 'lg:grid-cols-3'} gap-8 flex-1 overflow-hidden relative z-10`}>
                     {/* Main Content Area (Waiting / Exam) */}
-                    <div className={`${examFinished ? 'w-full' : 'lg:col-span-2'} glass-panel bg-white/30 p-2 md:p-6 flex flex-col overflow-hidden shadow-2xl`}>
+                    <div className={`${examFinished ? 'w-full' : 'lg:col-span-2'} playful-panel-main p-2 md:p-6 flex flex-col overflow-hidden`}>
                     {examFinished ? (
                         <div className="flex flex-col h-full">
                             <div className="flex justify-between items-center mb-6">
@@ -365,8 +376,8 @@ const Room = () => {
                             <h2 className="text-5xl font-black text-white mb-6 drop-shadow-xl tracking-wide uppercase">Waiting for Players<span className="animate-pulse">...</span></h2>
                             
                             <div className="bg-white px-8 py-4 rounded-full border-4 border-white/80 shadow-xl mb-8 transform hover:scale-105 transition-transform">
-                                <p className="text-purple-800 font-black text-2xl flex items-center gap-3">
-                                    <span className="text-4xl text-pink-500">{participants.length}</span> <span className="text-gray-400">/</span> {room.max_participants} joined
+                                <p className="text-blue-600 font-black text-2xl flex items-center gap-3">
+                                    <span className="text-4xl text-blue-500">{participants.length}</span> <span className="text-gray-400">/</span> {room.max_participants} joined
                                 </p>
                             </div>
                             
@@ -406,7 +417,7 @@ const Room = () => {
 
                 {/* Sidebar: Participants & Chat */}
                 {!examFinished && (
-                    <div className="flex flex-col h-full overflow-hidden glass-panel">
+                    <div className="flex flex-col h-full overflow-hidden playful-panel-sidebar">
                         {/* Tab Navigation */}
                         <div className="flex border-b border-white/20 bg-black/10">
                             <button
