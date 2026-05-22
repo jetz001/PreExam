@@ -75,35 +75,39 @@ exports.submitExam = async (req, res) => {
         });
 
         // Update User Streak & Last Active
-        const { User } = require('../models');
-        const user = await User.findByPk(req.user.id);
+        try {
+            const { User: SqlUser } = require('../models');
+            const user = await SqlUser.findByPk(req.user.id);
 
-        if (user) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            if (user) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
 
-            const lastActive = user.last_active_at ? new Date(user.last_active_at) : null;
-            if (lastActive) lastActive.setHours(0, 0, 0, 0);
+                const lastActive = user.last_active_at ? new Date(user.last_active_at) : null;
+                if (lastActive) lastActive.setHours(0, 0, 0, 0);
 
-            let newStreak = user.streak_count || 0;
+                let newStreak = user.streak_count || 0;
 
-            if (!lastActive) {
-                // First time
-                newStreak = 1;
-            } else if (today.getTime() === lastActive.getTime()) {
-                // Same day, keep streak
-            } else if (today.getTime() - lastActive.getTime() === 86400000) {
-                // Consecutive day
-                newStreak += 1;
-            } else {
-                // Streak broken
-                newStreak = 1;
+                if (!lastActive) {
+                    // First time
+                    newStreak = 1;
+                } else if (today.getTime() === lastActive.getTime()) {
+                    // Same day, keep streak
+                } else if (today.getTime() - lastActive.getTime() === 86400000) {
+                    // Consecutive day
+                    newStreak += 1;
+                } else {
+                    // Streak broken
+                    newStreak = 1;
+                }
+
+                await user.update({
+                    streak_count: newStreak,
+                    last_active_at: new Date()
+                });
             }
-
-            await user.update({
-                streak_count: newStreak,
-                last_active_at: new Date()
-            });
+        } catch (streakErr) {
+            console.warn('Skipping streak update:', streakErr.message);
         }
 
         res.status(201).json({ success: true, data: examResult });
