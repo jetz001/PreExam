@@ -2,390 +2,600 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import roomService from '../services/roomService';
 import authService from '../services/authService';
-import { Plus, Users, Play, Search, Lock } from 'lucide-react';
-import ShinyText from '../components/ui/ShinyText';
-import StarBorder from '../components/ui/StarBorder';
-
-
+import userService from '../services/userService';
 import api from '../services/api';
+import { Search, Play, Users, Lock, ChevronRight } from 'lucide-react';
 import CreateRoomModal from '../components/room/CreateRoomModal';
 
-const Lobby = () => {
-    const [rooms, setRooms] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [joinCode, setJoinCode] = useState('');
-    const [formData, setFormData] = useState({
-        name: '',
-        mode: 'exam',
-        subject: 'thai',
-        max_participants: 20,
-        question_count: 20,
-        time_limit: 60,
-        theme: { background_id: null, frame_id: null }
-    });
-    const [searchTerm, setSearchTerm] = useState('');
-    const [assets, setAssets] = useState({ backgrounds: [], frames: [] });
+export default function Lobby() {
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // User Data for Header & XP
+  const [user, setUser] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [xpInfo, setXpInfo] = useState({ level: 1, currentXP: 0, nextLevelXP: 1000, percentage: 0 });
 
-    // Password Modal State
-    const [showPasswordModal, setShowPasswordModal] = useState(false);
-    const [passwordInput, setPasswordInput] = useState('');
-    const [pendingRoomCode, setPendingRoomCode] = useState(null);
+  // Password Modal
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [pendingRoomCode, setPendingRoomCode] = useState(null);
+  
+  const navigate = useNavigate();
 
-    const navigate = useNavigate();
+  useEffect(() => {
+    fetchRooms(1);
+    loadUserData();
+  }, []);
 
-    const [subjects, setSubjects] = useState([]);
-    const [categories, setCategories] = useState([]);
+  const loadUserData = async () => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) setUser(currentUser);
 
-    useEffect(() => {
-        fetchRooms(1);
-        fetchOptions();
-        fetchAssets();
-    }, []);
+    try {
+      const resStats = await userService.getStats();
+      if (resStats.success && resStats.data) {
+        setStats(resStats.data);
+        const calculatedXP = (resStats.data.totalExams * 50) + (resStats.data.totalQuestions * 10);
+        const level = Math.floor(calculatedXP / 1000) + 1;
+        const nextLevelXP = level * 1000;
+        const currentLevelXP = calculatedXP % 1000;
+        const percentage = (currentLevelXP / 1000) * 100;
+        setXpInfo({ level, currentXP: calculatedXP, nextLevelXP, percentage });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    const fetchAssets = async () => {
-        try {
-            const response = await api.get('/assets');
-            const data = response.data;
-            if (data.success) {
-                const bgs = data.data.filter(a => a.type === 'background');
-                const frms = data.data.filter(a => a.type === 'frame');
-                setAssets({ backgrounds: bgs, frames: frms });
-            }
-        } catch (error) {
-            console.error('Error fetching assets:', error);
+  const fetchRooms = async (page = 1) => {
+    setLoading(true);
+    try {
+      const data = await roomService.getRooms(page, 20);
+      setRooms(data.data);
+      setPagination(data.pagination);
+    } catch (error) {
+      console.error('Error fetching rooms:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateRoom = async (formData) => {
+    try {
+      const response = await roomService.createRoom(formData);
+      if (response.success) {
+        setShowCreateModal(false);
+        navigate(`/room/${response.data.id}`);
+      }
+    } catch (error) {
+      console.error('Error creating room:', error);
+      alert('Failed to create room');
+    }
+  };
+
+  const handleJoinRoom = async (code, password = null) => {
+    try {
+      const response = await roomService.joinRoom(code, password);
+      if (response.success) {
+        setShowPasswordModal(false);
+        setPasswordInput('');
+        setPendingRoomCode(null);
+        navigate(`/room/${response.data.id}`);
+      }
+    } catch (error) {
+      console.error('Error joining room:', error);
+      if (error.response && error.response.status === 403 && error.response.data.requirePassword) {
+        setPendingRoomCode(code);
+        setShowPasswordModal(true);
+      } else {
+        alert(error.response?.data?.message || 'Failed to join room. Check the code.');
+      }
+    }
+  };
+
+  const handleSubmitPassword = (e) => {
+    e.preventDefault();
+    handleJoinRoom(pendingRoomCode, passwordInput);
+  };
+
+  const getCardTheme = (index) => {
+    const themes = [
+      { bg: '#2d0d6b', header: '#46178f', icon: '🪐' }, // Purple
+      { bg: '#e67300', header: '#ff8c00', icon: '🏆' }, // Orange
+      { bg: '#1c7a1c', header: '#26890c', icon: '🏰' }, // Green
+      { bg: '#0e55a3', header: '#1368ce', icon: '⚽' }, // Blue
+    ];
+    return themes[index % themes.length];
+  };
+
+  const filteredRooms = rooms.filter(room =>
+    room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    room.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    room.Host?.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    room.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="lb-wrapper">
+      <style>{`
+        .lb-wrapper {
+          min-height: 100vh;
+          background: #1a0533;
+          padding-top: 80px;
+          padding-bottom: 80px;
+          font-family: 'Nunito', 'Sarabun', sans-serif;
+          position: relative;
+          overflow: hidden;
+          color: white;
         }
-    };
+        /* Floating shapes */
+        .lb-shape { position: absolute; pointer-events: none; z-index: 1; }
+        .lb-circle-1 { width: 40px; height: 40px; background: #e21b3c; border-radius: 50%; top: 15%; left: 25%; opacity: 0.8; filter: blur(2px); animation: float 6s ease-in-out infinite; }
+        .lb-rect-1 { width: 30px; height: 30px; background: #ffcc00; top: 10%; right: 20%; transform: rotate(45deg); opacity: 0.9; animation: float 8s ease-in-out infinite alternate; }
+        .lb-confetti-1 { width: 15px; height: 30px; background: #00c985; top: 30%; right: 10%; transform: rotate(-20deg); opacity: 0.7; animation: float 5s ease-in-out infinite; }
+        .lb-confetti-2 { width: 12px; height: 12px; background: #1368ce; top: 25%; left: 45%; opacity: 0.8; animation: float 7s ease-in-out infinite; }
 
-    const fetchOptions = async () => {
-        try {
-            const [subjRes, catRes] = await Promise.all([
-                api.get('/questions/subjects').then(r => r.data),
-                api.get('/questions/categories').then(r => r.data)
-            ]);
-
-            if (subjRes.success) setSubjects(subjRes.data);
-            if (catRes.success) setCategories(catRes.data);
-        } catch (error) {
-            console.error('Error fetching options:', error);
+        @keyframes float {
+          0% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(10deg); }
+          100% { transform: translateY(0px) rotate(0deg); }
         }
-    };
 
-    const fetchRooms = async (page = 1) => {
-        setLoading(true);
-        try {
-            const data = await roomService.getRooms(page, 20); // Limit 20
-            setRooms(data.data);
-            setPagination(data.pagination);
-        } catch (error) {
-            console.error('Error fetching rooms:', error);
-        } finally {
-            setLoading(false);
+        .lb-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 20px;
+          position: relative;
+          z-index: 10;
         }
-    };
 
-    const handleCreateRoom = async (formData) => {
-        try {
-            const response = await roomService.createRoom(formData);
-            if (response.success) {
-                setShowCreateModal(false);
-                navigate(`/room/${response.data.id}`);
-            }
-        } catch (error) {
-            console.error('Error creating room:', error);
-            alert('Failed to create room');
+        .lb-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 40px;
         }
-    };
 
-    const handleJoinRoom = async (code, password = null) => {
-        try {
-            const response = await roomService.joinRoom(code, password);
-            if (response.success) {
-                setShowPasswordModal(false);
-                setPasswordInput('');
-                setPendingRoomCode(null);
-                navigate(`/room/${response.data.id}`);
-            }
-        } catch (error) {
-            console.error('Error joining room:', error);
-            if (error.response && error.response.status === 403 && error.response.data.requirePassword) {
-                setPendingRoomCode(code);
-                setShowPasswordModal(true);
-            } else {
-                alert(error.response?.data?.message || 'Failed to join room. Check the code.');
-            }
+        .lb-welcome-title {
+          font-size: 1.1rem;
+          color: rgba(255,255,255,0.7);
+          margin-bottom: 4px;
         }
-    };
+        .lb-username {
+          font-size: 2.5rem;
+          font-weight: 900;
+          margin-bottom: 12px;
+          text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        .lb-chips {
+          display: flex;
+          gap: 10px;
+        }
+        .lb-chip {
+          background: rgba(255,255,255,0.15);
+          backdrop-filter: blur(5px);
+          padding: 4px 12px;
+          border-radius: 999px;
+          font-size: 0.8rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          border: 1px solid rgba(255,255,255,0.2);
+        }
 
-    const handleSubmitPassword = (e) => {
-        e.preventDefault();
-        handleJoinRoom(pendingRoomCode, passwordInput);
-    };
+        .btn-create-room {
+          background: #46178f;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 999px;
+          font-weight: 800;
+          font-size: 1rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 4px 0 #2d0d6b;
+          transition: all 0.1s;
+        }
+        .btn-create-room:active { transform: translateY(4px); box-shadow: 0 0 0 #2d0d6b; }
 
-    return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Exam Lobby</h1>
-                <button
-                    onClick={() => {
-                        if (authService.getCurrentUser()?.email?.startsWith('guest_')) {
-                            alert('Guests cannot create rooms. Please register to create a room.');
-                            return;
-                        }
-                        setShowCreateModal(true);
-                    }}
-                    className="bg-primary text-white px-6 py-2 rounded-lg flex items-center hover:bg-blue-700 transition-colors shadow-md"
-                >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Create Room
-                </button>
+        .lb-actions {
+          display: flex;
+          gap: 40px;
+          justify-content: center;
+          margin-bottom: 60px;
+          flex-wrap: wrap;
+        }
+
+        .lb-action-card {
+          background: #fff;
+          border-radius: 24px;
+          padding: 24px;
+          width: 100%;
+          max-width: 450px;
+          box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+          position: relative;
+        }
+        .lb-action-badge {
+          position: absolute;
+          top: -20px;
+          left: 50%;
+          transform: translateX(-50%);
+          padding: 8px 24px;
+          border-radius: 12px;
+          color: white;
+          font-weight: 900;
+          font-size: 1.1rem;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+          white-space: nowrap;
+        }
+        .lb-action-badge.pink { background: #e21b3c; border-bottom: 4px solid #b3142e; }
+        .lb-action-badge.blue { background: #1368ce; border-bottom: 4px solid #0e55a3; }
+        
+        .lb-input-group {
+          margin-top: 16px;
+          display: flex;
+          gap: 12px;
+        }
+        .lb-input {
+          flex: 1;
+          background: rgba(0,0,0,0.05);
+          border: 2px solid rgba(0,0,0,0.1);
+          border-radius: 12px;
+          padding: 14px 16px;
+          font-size: 1rem;
+          font-weight: 700;
+          color: #333;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .lb-input:focus { border-color: #46178f; }
+        
+        .btn-join {
+          background: #e21b3c;
+          color: white;
+          border: none;
+          padding: 0 24px;
+          border-radius: 12px;
+          font-weight: 900;
+          cursor: pointer;
+          box-shadow: 0 4px 0 #b3142e;
+          transition: all 0.1s;
+        }
+        .btn-join:active { transform: translateY(4px); box-shadow: 0 0 0 #b3142e; }
+
+        .lb-rooms-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+        
+        .lb-rooms-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 20px;
+        }
+
+        .lb-room-card {
+          border-radius: 20px;
+          overflow: hidden;
+          position: relative;
+          color: white;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+          transition: transform 0.2s;
+          display: flex;
+          flex-direction: column;
+        }
+        .lb-room-card:hover { transform: translateY(-5px); }
+        
+        .lb-room-header {
+          padding: 40px 20px 20px;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          flex: 1;
+        }
+        .lb-room-icon {
+          font-size: 3rem;
+          margin-bottom: 10px;
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+        }
+        .lb-room-count {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          background: rgba(0,0,0,0.3);
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 0.8rem;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .lb-room-body {
+          background: white;
+          color: #333;
+          padding: 16px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .btn-play-circle {
+          width: 40px; height: 40px;
+          border-radius: 50%;
+          background: #46178f;
+          color: white;
+          display: flex; align-items: center; justify-content: center;
+          border: none; cursor: pointer;
+          box-shadow: 0 4px 0 #2d0d6b;
+        }
+        .btn-play-circle:active { transform: translateY(4px); box-shadow: 0 0 0 #2d0d6b; }
+
+        /* Bottom XP Bar Fixed */
+        .lb-xp-bar-fixed {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: rgba(26,5,51,0.95);
+          backdrop-filter: blur(10px);
+          border-top: 1px solid rgba(255,255,255,0.1);
+          padding: 12px 20px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 100;
+        }
+        .lb-xp-container {
+          width: 100%;
+          max-width: 800px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .lb-xp-badge {
+          width: 46px; height: 46px;
+          background: #ffcc00;
+          color: #2d0d6b;
+          clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+          display: flex; align-items: center; justify-content: center;
+          font-weight: 900;
+          font-size: 1.2rem;
+        }
+        .lb-xp-track {
+          flex: 1;
+          height: 12px;
+          background: rgba(255,255,255,0.1);
+          border-radius: 999px;
+          overflow: hidden;
+          position: relative;
+        }
+        .lb-xp-fill {
+          height: 100%;
+          background: #00c985;
+          border-radius: 999px;
+          transition: width 1s;
+        }
+        .lb-xp-text {
+          font-size: 0.8rem;
+          font-weight: 800;
+          color: rgba(255,255,255,0.7);
+        }
+      `}</style>
+
+      {/* Decorative Shapes */}
+      <div className="lb-shape lb-circle-1"></div>
+      <div className="lb-shape lb-rect-1"></div>
+      <div className="lb-shape lb-confetti-1"></div>
+      <div className="lb-shape lb-confetti-2"></div>
+
+      <div className="lb-container">
+        
+        {/* Header Section */}
+        <div className="lb-header">
+          <div>
+            <div className="lb-welcome-title">Welcome back,</div>
+            <div className="lb-username">
+              {user?.display_name || user?.username || 'Player'} 
+              <span style={{ fontSize: '1.8rem' }}>🎉</span>
             </div>
-
-            {/* Action Bar: Join & Search */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {/* Join by Code */}
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                    <h2 className="text-lg font-bold text-gray-900 mb-4">Join with Code</h2>
-                    <div className="flex space-x-3">
-                        <input
-                            type="text"
-                            placeholder="Enter Code (e.g. ABC123)"
-                            value={joinCode}
-                            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
-                        />
-                        <button
-                            onClick={() => handleJoinRoom(joinCode)}
-                            disabled={!joinCode}
-                            className="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-900 disabled:opacity-50"
-                        >
-                            Join
-                        </button>
-                    </div>
-                </div>
-
-                {/* Search Rooms */}
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                    <h2 className="text-lg font-bold text-gray-900 mb-4">Search Rooms</h2>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                            type="text"
-                            placeholder="Search by name, subject, or host..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
-                        />
-                    </div>
-                </div>
+            <div className="lb-chips">
+              <div className="lb-chip"><span style={{ color: '#ffcc00' }}>⭐</span> Level {xpInfo.level}</div>
+              <div className="lb-chip"><span style={{ color: '#00c985' }}>💎</span> {xpInfo.currentXP.toLocaleString()} XP</div>
+              <div className="lb-chip"><span style={{ color: '#1368ce' }}>🏆</span> Top 12%</div>
             </div>
-
-            {/* Room List */}
-            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                {rooms.filter(room =>
-                    room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    room.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    room.Host?.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    room.code.toLowerCase().includes(searchTerm.toLowerCase())
-                ).map((room) => {
-                    const isPremium = room.Host?.plan_type === 'premium';
-
-                    // Helper to resolve asset URL (handles relative paths)
-                    const getFullUrl = (url) => {
-                        if (!url) return '';
-                        // Strip localhost:3000 to force relative path resolution (fixes mobile view for legacy assets)
-                        const relativeUrl = url.replace(/^http:\/\/localhost:3000/, '');
-                        if (relativeUrl.startsWith('http')) return relativeUrl; // External URLs
-                        // Construct full URL dynamically
-                        return `${window.location.origin}${relativeUrl.startsWith('/') ? '' : '/'}${relativeUrl}`;
-                    };
-
-                    // Resolve Theme Assets
-                    let roomStyle = {};
-                    let frameStyle = {};
-
-                    let themeData = room.theme;
-                    if (typeof themeData === 'string') {
-                        try {
-                            themeData = JSON.parse(themeData);
-                        } catch (e) {
-                            console.error('Error parsing theme JSON:', e);
-                            themeData = null;
-                        }
-                    }
-
-                    if (themeData && assets.backgrounds.length > 0) {
-                        const bg = assets.backgrounds.find(a => a.id == themeData.background_id); // Loose comparison for string/int IDs
-                        if (bg) {
-                            roomStyle = {
-                                backgroundImage: `url(${getFullUrl(bg.url)})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                // color: 'white' // Optional: if BG is dark
-                            };
-                        }
-                    }
-                    if (themeData && assets.frames.length > 0) {
-                        const frm = assets.frames.find(a => a.id == themeData.frame_id); // Loose comparison
-                        if (frm) {
-                            frameStyle = {
-                                borderImage: `url(${getFullUrl(frm.url)}) 30 round`,
-                                borderWidth: '8px',
-                                borderStyle: 'solid',
-                                borderColor: 'transparent'
-                            };
-                        }
-                    }
-
-                    const RoomCard = (
-                        <div key={room.id} style={{ ...roomStyle, ...frameStyle }} className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow flex flex-col md:flex-row md:items-center justify-between gap-4 ${isPremium && !room.theme ? 'h-full bg-gradient-to-r from-violet-50 to-fuchsia-50 border-violet-200' : ''}`}>
-                            {/* Added wrapper for content readability if BG exists */}
-                            <div className={`flex-1 ${roomStyle.backgroundImage ? 'bg-white/50 p-3 rounded backdrop-blur-sm' : ''}`}>
-                                <div className="flex items-center space-x-3 mb-1">
-                                    <h3 className="text-lg font-bold text-gray-900">
-                                        {isPremium ? (
-                                            <ShinyText text={room.name} disabled={false} speed={3} className="font-bold" />
-                                        ) : (
-                                            room.name
-                                        )}
-                                    </h3>
-                                    <span className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${room.status === 'finished' ? 'bg-gray-100 text-gray-800' :
-                                        room.mode === 'exam' ? 'bg-red-100 text-red-800' :
-                                            room.mode === 'tutor' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                                        }`}>
-                                        {room.status === 'finished' ? 'CLOSED' : room.mode.toUpperCase()}
-                                    </span>
-                                    <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                                        {room.code}
-                                    </span>
-                                    {room.password && <Lock className="w-3 h-3 text-gray-400" />}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-gray-600">
-                                    <div className="flex items-center">
-                                        <span className="font-medium mr-1">Subject:</span>
-                                        {room.subject}
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="font-medium mr-1">Host:</span>
-                                        {room.Host?.display_name || 'Unknown'}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className={`flex items-center justify-between md:justify-end gap-6 ${roomStyle.backgroundImage ? 'bg-white/50 p-3 rounded backdrop-blur-sm' : ''}`}>
-                                <div className="flex items-center text-gray-600 text-sm">
-                                    <Users className="w-4 h-4 mr-2" />
-                                    {room.participant_count} / {room.max_participants}
-                                </div>
-
-                                <button
-                                    onClick={() => handleJoinRoom(room.code)}
-                                    className={`px-6 py-2 rounded-lg transition-colors flex items-center whitespace-nowrap ${room.status === 'finished'
-                                        ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        : 'bg-primary text-white hover:bg-blue-700'
-                                        }`}
-                                >
-                                    {room.status === 'finished' ? (
-                                        <>
-                                            <Search className="w-4 h-4 mr-2" />
-                                            View Results
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Play className="w-4 h-4 mr-2" />
-                                            Join Now
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    );
-
-                    // Only use StarBorder if NO custom theme is applied, to avoid clutter
-                    return isPremium && !room.theme ? (
-                        <div key={room.id} className="mb-4">
-                            <StarBorder as="div" color="#8b5cf6" speed="4s" thickness={0.2}>
-                                {RoomCard}
-                            </StarBorder>
-                        </div>
-                    ) : (
-                        <div key={room.id} className="mb-4">
-                            {RoomCard}
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Pagination Controls */}
-            {pagination.totalPages > 1 && (
-                <div className="flex justify-center items-center space-x-4 mt-6">
-                    <button
-                        onClick={() => fetchRooms(pagination.page - 1)}
-                        disabled={pagination.page === 1}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-300"
-                    >
-                        Previous
-                    </button>
-                    <span className="text-gray-600">
-                        Page {pagination.page} of {pagination.totalPages}
-                    </span>
-                    <button
-                        onClick={() => fetchRooms(pagination.page + 1)}
-                        disabled={pagination.page === pagination.totalPages}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-300"
-                    >
-                        Next
-                    </button>
-                </div>
-            )}
-
-            {/* Create Room Modal */}
-            <CreateRoomModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onCreate={handleCreateRoom}
-            />
-
-            {/* Password Modal */}
-            {showPasswordModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
-                        <h2 className="text-xl font-bold mb-4">Enter Room Password</h2>
-                        <form onSubmit={handleSubmitPassword}>
-                            <input
-                                type="password"
-                                value={passwordInput}
-                                onChange={(e) => setPasswordInput(e.target.value)}
-                                className="w-full border border-gray-300 rounded-md p-2 mb-4"
-                                placeholder="Password"
-                                autoFocus
-                            />
-                            <div className="flex justify-end space-x-3">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowPasswordModal(false);
-                                        setPasswordInput('');
-                                        setPendingRoomCode(null);
-                                    }}
-                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-700"
-                                >
-                                    Join
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+          </div>
+          
+          <button 
+            className="btn-create-room"
+            onClick={() => {
+              if (user?.email?.startsWith('guest_')) {
+                alert('Guests cannot create rooms. Please register to create a room.');
+                return;
+              }
+              setShowCreateModal(true);
+            }}
+          >
+            <Plus size={20} strokeWidth={3}/> Create Room
+          </button>
         </div>
-    );
-};
 
-export default Lobby;
+        {/* Action Cards */}
+        <div className="lb-actions">
+          {/* Join Code */}
+          <div className="lb-action-card">
+            <div className="lb-action-badge pink">
+              Join with Code 🎟️
+            </div>
+            <div className="lb-input-group">
+              <input 
+                type="text" 
+                className="lb-input" 
+                placeholder="Enter code (e.g. ABC123)"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              />
+              <button 
+                className="btn-join"
+                onClick={() => handleJoinRoom(joinCode)}
+                disabled={!joinCode}
+                style={{ opacity: joinCode ? 1 : 0.6 }}
+              >
+                Join
+              </button>
+            </div>
+          </div>
+
+          {/* Search Rooms */}
+          <div className="lb-action-card">
+            <div className="lb-action-badge blue">
+              <Search size={18} strokeWidth={3}/> Search Rooms
+            </div>
+            <div className="lb-input-group">
+              <input 
+                type="text" 
+                className="lb-input" 
+                placeholder="Search by name, subject, or host..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Popular Rooms */}
+        <div className="lb-rooms-header">
+          <div style={{ fontSize: '1.2rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            🔥 Popular Rooms
+          </div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            See all <ChevronRight size={16}/>
+          </div>
+        </div>
+
+        <div className="lb-rooms-grid">
+          {filteredRooms.map((room, i) => {
+            const theme = getCardTheme(i);
+            return (
+              <div key={room.id} className="lb-room-card" style={{ background: theme.bg }}>
+                <div className="lb-room-header" style={{ background: theme.header }}>
+                  <div className="lb-room-count">
+                    <Users size={14} strokeWidth={3}/> {room.participant_count}
+                  </div>
+                  <div className="lb-room-icon">{theme.icon}</div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '4px' }}>{room.name}</h3>
+                </div>
+                
+                <div className="lb-room-body">
+                  <div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{room.subject}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#666', fontWeight: 700, marginTop: '2px' }}>
+                      By {room.Host?.display_name || 'Unknown'}
+                    </div>
+                    {room.password && <Lock size={12} className="text-gray-400 mt-1" />}
+                  </div>
+                  
+                  <button 
+                    className="btn-play-circle" 
+                    onClick={() => handleJoinRoom(room.code)}
+                    style={{ background: theme.header, boxShadow: `0 4px 0 ${theme.bg}` }}
+                  >
+                    <Play size={18} strokeWidth={3} fill="currentColor"/>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          
+          {filteredRooms.length === 0 && !loading && (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>
+              No rooms found matching your search.
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* Bottom XP Bar */}
+      <div className="lb-xp-bar-fixed">
+        <div className="lb-xp-container">
+          <div className="lb-xp-badge">{xpInfo.level}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="lb-xp-text">XP to next level</span>
+              <span className="lb-xp-text">{xpInfo.currentXP.toLocaleString()} / {xpInfo.nextLevelXP.toLocaleString()} XP</span>
+            </div>
+            <div className="lb-xp-track">
+              <div className="lb-xp-fill" style={{ width: `${xpInfo.percentage}%` }}></div>
+            </div>
+          </div>
+          <div style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+            🎁
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      <CreateRoomModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreate={handleCreateRoom}
+      />
+
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-sm p-6" style={{ color: '#333' }}>
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Lock size={20}/> Enter Room Password</h2>
+            <form onSubmit={handleSubmitPassword}>
+              <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="lb-input w-full mb-4"
+                placeholder="Password"
+                autoFocus
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowPasswordModal(false); setPasswordInput(''); setPendingRoomCode(null); }}
+                  className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-join"
+                  style={{ padding: '10px 24px' }}
+                >
+                  Join Room
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
