@@ -1,6 +1,6 @@
 const { db: firestore, admin } = require('../config/firebase');
 
-const roomsRef = firestore.collection('rooms');
+const roomsRef = firestore.collection('exam_rooms');
 const examResultsRef = firestore.collection('exam_results');
 
 module.exports = (io) => {

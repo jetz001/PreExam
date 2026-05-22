@@ -68,12 +68,14 @@ exports.getRooms = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
 
-        const snapshot = await roomsRef.where('status', 'in', ['waiting', 'in_progress'])
-                                       .orderBy('created_at', 'desc')
-                                       .limit(limit)
+        const snapshot = await roomsRef.orderBy('created_at', 'desc')
+                                       .limit(50)
                                        .get();
 
-        const data = await Promise.all(snapshot.docs.map(async doc => {
+        let filteredDocs = snapshot.docs.filter(doc => ['waiting', 'in_progress'].includes(doc.data().status));
+        filteredDocs = filteredDocs.slice(0, limit);
+
+        const data = await Promise.all(filteredDocs.map(async doc => {
             const room = doc.data();
             const hostDoc = await usersRef.doc(room.host_user_id).get();
             const pSnap = await doc.ref.collection('participants').get();
