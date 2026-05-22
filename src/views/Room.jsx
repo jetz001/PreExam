@@ -159,47 +159,89 @@ const Room = () => {
     const isHost = currentUser?.id == room.host_user_id;
 
     return (
-        <div className="container mx-auto px-4 py-8 h-screen-minus-navbar flex flex-col relative text-white">
+        <div className="h-screen-minus-navbar flex flex-col relative text-white overflow-hidden font-sans">
             <style>{`
-                .room-wrapper { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
-                .room-btn { padding: 10px 20px; border-radius: 16px; font-weight: 800; transition: all 0.2s; display: flex; align-items: center; border: none; cursor: pointer; }
-                .btn-start { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); color: white; box-shadow: 0 4px 0 #059669; }
-                .btn-start:active { transform: translateY(4px); box-shadow: 0 0 0 #059669; }
-                .btn-leave { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 2px solid rgba(239, 68, 68, 0.4); box-shadow: 0 4px 0 rgba(239, 68, 68, 0.2); }
-                .btn-leave:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
-                .glass-panel { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); }
-                .tab-btn { padding: 12px; font-weight: 800; transition: 0.2s; color: rgba(255,255,255,0.6); }
-                .tab-btn.active { color: white; background: rgba(255,255,255,0.15); border-bottom: 3px solid #a855f7; }
-                .pulse-icon { animation: pulse 2s infinite; }
+                @keyframes gradientBG {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                @keyframes float {
+                    0% { transform: translateY(0px) rotate(0deg); }
+                    50% { transform: translateY(-20px) rotate(5deg); }
+                    100% { transform: translateY(0px) rotate(0deg); }
+                }
+                .room-wrapper { 
+                    position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+                    background: linear-gradient(-45deg, #7e22ce, #c026d3, #2563eb, #0ea5e9);
+                    background-size: 400% 400%;
+                    animation: gradientBG 15s ease infinite;
+                }
+                .room-btn { 
+                    padding: 12px 24px; border-radius: 20px; font-weight: 900; font-size: 1.1rem;
+                    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+                    display: flex; align-items: center; border: 3px solid rgba(255,255,255,0.8); cursor: pointer; 
+                }
+                .btn-start { 
+                    background: #facc15; color: #713f12; 
+                    box-shadow: 0 6px 0 #ca8a04; 
+                    border-color: #fef08a;
+                }
+                .btn-start:hover { background: #fde047; transform: translateY(-2px); box-shadow: 0 8px 0 #ca8a04; }
+                .btn-start:active { transform: translateY(6px); box-shadow: 0 0 0 #ca8a04; }
+                
+                .btn-leave { 
+                    background: #ef4444; color: white; 
+                    box-shadow: 0 6px 0 #b91c1c; 
+                    border-color: #fca5a5;
+                }
+                .btn-leave:hover { background: #f87171; transform: translateY(-2px); box-shadow: 0 8px 0 #b91c1c; }
+                .btn-leave:active { transform: translateY(6px); box-shadow: 0 0 0 #b91c1c; }
+                
+                .glass-panel { 
+                    background: rgba(255, 255, 255, 0.25); 
+                    backdrop-filter: blur(16px); 
+                    border: 4px solid rgba(255, 255, 255, 0.4); 
+                    border-radius: 32px; 
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255,255,255,0.3); 
+                }
+                .tab-btn { padding: 14px; font-weight: 900; font-size: 1.1rem; transition: 0.2s; color: rgba(255,255,255,0.7); }
+                .tab-btn.active { color: white; background: rgba(255,255,255,0.25); border-bottom: 4px solid #facc15; }
+                .pulse-icon { animation: pulse 1.5s infinite; }
+                .float-anim { animation: float 6s ease-in-out infinite; }
             `}</style>
             
             {/* Playful Floating Shapes behind */}
             <div className="room-wrapper">
-                <div className="absolute top-20 right-20 text-6xl opacity-20 animate-bounce">🎈</div>
-                <div className="absolute bottom-20 left-20 text-7xl opacity-20 animate-pulse">✨</div>
-                <div className="absolute top-40 left-10 text-4xl opacity-10 animate-spin" style={{ animationDuration: '10s' }}>⭐</div>
+                <div className="absolute top-10 right-20 text-8xl opacity-40 float-anim" style={{ animationDelay: '0s' }}>☁️</div>
+                <div className="absolute bottom-10 left-10 text-8xl opacity-40 float-anim" style={{ animationDelay: '1s' }}>🚀</div>
+                <div className="absolute top-1/2 right-10 text-6xl opacity-30 float-anim" style={{ animationDelay: '2s' }}>🎮</div>
+                <div className="absolute top-32 left-32 text-6xl opacity-40 float-anim" style={{ animationDelay: '3s' }}>⭐</div>
             </div>
-            {/* Room Header */}
-            <div className="glass-panel p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden">
-                <div className="relative z-10">
-                    <h1 className="text-3xl font-black text-white flex items-center drop-shadow-md">
-                        {room.name}
-                        <span className="ml-4 text-sm font-bold bg-white/20 px-3 py-1.5 rounded-xl text-white border border-white/30 backdrop-blur-sm shadow-sm">
-                            Code: <span className="text-yellow-300 tracking-wider">{room.code}</span>
-                        </span>
-                    </h1>
-                    <p className="text-white/70 mt-2 font-bold flex items-center gap-2">
-                        <span>🔥 โหมด: <span className="text-pink-300 capitalize">{room.mode}</span></span> •
-                        <span>📚 วิชา: <span className="text-blue-300">{room.subject}</span></span>
-                    </p>
-                </div>
+
+            <div className="container mx-auto px-4 py-8 flex flex-col h-full relative z-10">
+                {/* Room Header */}
+                <div className="glass-panel p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden bg-gradient-to-r from-white/30 to-white/10">
+                    <div className="relative z-10 flex-1">
+                        <h1 className="text-4xl font-black text-white flex items-center drop-shadow-lg tracking-wide">
+                            {room.name}
+                            <span className="ml-4 text-base font-black bg-white text-purple-700 px-4 py-2 rounded-2xl shadow-[0_4px_0_rgba(0,0,0,0.2)]">
+                                Code: <span className="text-pink-600 tracking-widest">{room.code}</span>
+                            </span>
+                        </h1>
+                        <p className="text-white mt-3 font-bold flex items-center gap-3 text-lg">
+                            <span className="bg-pink-500/80 px-3 py-1 rounded-xl shadow-sm">🔥 โหมด: <span className="capitalize text-pink-100">{room.mode}</span></span>
+                            <span className="bg-blue-500/80 px-3 py-1 rounded-xl shadow-sm">📚 วิชา: <span className="text-blue-100">{room.subject}</span></span>
+                        </p>
+                    </div>
                 <div className="flex space-x-3 relative z-10">
                     {isHost && !isExamStarted && !examFinished && (
                         <button
                             onClick={handleStartExam}
                             className="room-btn btn-start"
                         >
-                            <Play className="w-5 h-5 mr-2" /> Start {room.mode === 'tutor' ? 'Session' : 'Exam'} 🚀
+                            <Play className="w-6 h-6 mr-2" /> 
+                            <span className="drop-shadow-sm">Start {room.mode === 'tutor' ? 'Session' : 'Exam'} 🚀</span>
                         </button>
                     )}
                     {isHost && room.mode === 'tutor' && !examFinished && (
@@ -226,11 +268,11 @@ const Room = () => {
                         <LogOut className="w-5 h-5 mr-2" /> Leave
                     </button>
                 </div>
-            </div>
+                </div>
 
-            <div className={`grid grid-cols-1 ${examFinished ? '' : 'lg:grid-cols-3'} gap-6 flex-1 overflow-hidden relative z-10`}>
-                {/* Main Content Area (Waiting / Exam) */}
-                <div className={`${examFinished ? 'w-full' : 'lg:col-span-2'} glass-panel p-6 flex flex-col overflow-hidden`}>
+                <div className={`grid grid-cols-1 ${examFinished ? '' : 'lg:grid-cols-3'} gap-6 flex-1 overflow-hidden relative z-10`}>
+                    {/* Main Content Area (Waiting / Exam) */}
+                    <div className={`${examFinished ? 'w-full' : 'lg:col-span-2'} glass-panel bg-white/30 p-2 md:p-6 flex flex-col overflow-hidden shadow-2xl`}>
                     {examFinished ? (
                         <div className="flex flex-col h-full">
                             <div className="flex justify-between items-center mb-6">
@@ -315,24 +357,27 @@ const Room = () => {
                             </div>
                         </div>
                     ) : !isExamStarted ? (
-                        <div className="flex flex-col justify-center items-center text-center h-full relative">
-                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent pointer-events-none rounded-2xl"></div>
+                        <div className="flex flex-col justify-center items-center text-center h-full relative p-8">
                             
-                            <div className="w-32 h-32 bg-white/20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-white backdrop-blur-md border-4 border-white/30 shadow-[0_0_30px_rgba(255,255,255,0.2)] rotate-3 hover:rotate-6 transition-transform">
-                                <Users className="w-16 h-16 pulse-icon" />
+                            <div className="w-40 h-40 bg-white rounded-[3rem] flex items-center justify-center mx-auto mb-8 text-blue-500 shadow-[0_15px_35px_rgba(0,0,0,0.2)] rotate-3 hover:rotate-12 transition-transform duration-300 float-anim border-8 border-yellow-300">
+                                <Users className="w-20 h-20 pulse-icon" />
                             </div>
-                            <h2 className="text-4xl font-black text-white mb-3 drop-shadow-lg tracking-wide">Waiting for Players<span className="animate-pulse">...</span></h2>
+                            <h2 className="text-5xl font-black text-white mb-6 drop-shadow-xl tracking-wide uppercase">Waiting for Players<span className="animate-pulse">...</span></h2>
                             
-                            <div className="bg-white/20 px-6 py-2 rounded-full border border-white/30 backdrop-blur-sm mb-6">
-                                <p className="text-white font-bold text-lg">
-                                    <span className="text-yellow-300">{participants.length}</span> / {room.max_participants} joined
+                            <div className="bg-white px-8 py-4 rounded-full border-4 border-white/80 shadow-xl mb-8 transform hover:scale-105 transition-transform">
+                                <p className="text-purple-800 font-black text-2xl flex items-center gap-3">
+                                    <span className="text-4xl text-pink-500">{participants.length}</span> <span className="text-gray-400">/</span> {room.max_participants} joined
                                 </p>
                             </div>
                             
                             {isHost ? (
-                                <p className="text-white/70 font-bold bg-white/10 px-4 py-2 rounded-xl border border-white/10">👑 You are the host. Click "Start Exam" when ready.</p>
+                                <div className="bg-yellow-400 text-yellow-900 font-black px-6 py-3 rounded-2xl border-4 border-yellow-500 shadow-[0_6px_0_#ca8a04] text-lg animate-bounce">
+                                    👑 You are the host. Click "Start Exam" when ready!
+                                </div>
                             ) : (
-                                <p className="text-white/70 font-bold bg-white/10 px-4 py-2 rounded-xl border border-white/10 animate-pulse">⏳ Waiting for host to start the game...</p>
+                                <div className="bg-blue-500 text-white font-black px-6 py-3 rounded-2xl border-4 border-blue-600 shadow-[0_6px_0_#2563eb] text-lg animate-pulse">
+                                    ⏳ Waiting for host to start the game...
+                                </div>
                             )}
                         </div>
                     ) : room.mode === 'tutor' ? (
@@ -376,31 +421,42 @@ const Room = () => {
                         </div>
 
                         {/* Tab Content */}
-                        <div className="flex-1 overflow-hidden flex flex-col">
+                        <div className="flex-1 overflow-hidden flex flex-col bg-white/20">
                             {activeTab === 'participants' ? (
                                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                                     {isExamStarted && room.mode === 'exam' && !examFinished ? (
                                         <Leaderboard participants={participants} />
                                     ) : (
                                         <ul className="space-y-3">
-                                            {participants.map((p) => (
-                                                <li key={p.id} className="flex items-center justify-between p-3 hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/20">
-                                                    <div className="flex items-center">
-                                                        <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center mr-3 text-sm font-black text-white shadow-sm">
-                                                            {p.User?.display_name?.charAt(0).toUpperCase()}
+                                            {participants.map((p, index) => {
+                                                const colors = [
+                                                    'from-pink-500 to-rose-500', 
+                                                    'from-purple-500 to-indigo-500', 
+                                                    'from-blue-500 to-cyan-500', 
+                                                    'from-green-400 to-emerald-500',
+                                                    'from-orange-400 to-amber-500'
+                                                ];
+                                                const bgGrad = colors[index % colors.length];
+
+                                                return (
+                                                    <li key={p.id} className="flex items-center justify-between p-3 bg-white rounded-2xl transition-all border-4 border-white/50 shadow-md hover:scale-105 hover:shadow-lg">
+                                                        <div className="flex items-center">
+                                                            <div className={`w-12 h-12 bg-gradient-to-br ${bgGrad} rounded-xl flex items-center justify-center mr-4 text-lg font-black text-white shadow-inner border-2 border-white/30`}>
+                                                                {p.User?.display_name?.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span className="font-black text-gray-800 text-xl drop-shadow-sm">{p.User?.display_name}</span>
                                                         </div>
-                                                        <span className="font-bold text-white text-lg drop-shadow-sm">{p.User?.display_name}</span>
-                                                    </div>
-                                                    {p.user_id === room.host_user_id && (
-                                                        <span className="text-xs font-black bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full shadow-sm">👑 HOST</span>
-                                                    )}
-                                                </li>
-                                            ))}
+                                                        {p.user_id === room.host_user_id && (
+                                                            <span className="text-sm font-black bg-yellow-400 text-yellow-900 px-4 py-2 rounded-xl shadow-[0_3px_0_#ca8a04]">👑 HOST</span>
+                                                        )}
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     )}
                                 </div>
                             ) : (
-                                <div className="flex-1 flex flex-col h-full">
+                                <div className="flex-1 flex flex-col h-full bg-white rounded-b-3xl">
                                     <ChatBox
                                         socket={socket}
                                         roomId={id}
@@ -412,6 +468,7 @@ const Room = () => {
                         </div>
                     </div>
                 )}
+            </div>
             </div>
         </div>
     );
