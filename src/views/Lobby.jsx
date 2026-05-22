@@ -126,7 +126,6 @@ export default function Lobby() {
       <style>{`
         .lb-wrapper {
           min-height: 100vh;
-          background: radial-gradient(circle at 50% 50%, #581cba 0%, #371172 100%);
           padding-top: 80px;
           padding-bottom: 80px;
           font-family: 'Nunito', 'Sarabun', sans-serif;
@@ -134,8 +133,14 @@ export default function Lobby() {
           overflow: hidden;
           color: white;
         }
+        /* Fixed background to cover entire screen */
+        .lb-bg {
+          position: fixed; inset: 0; z-index: -1;
+          background: radial-gradient(circle at 50% 50%, #581cba 0%, #371172 100%);
+          pointer-events: none;
+        }
         /* Floating shapes */
-        .lb-shape { position: absolute; pointer-events: none; z-index: 1; }
+        .lb-shape { position: fixed; pointer-events: none; z-index: 0; }
         .lb-circle-1 { width: 40px; height: 40px; background: #e21b3c; border-radius: 50%; top: 15%; left: 15%; opacity: 0.8; filter: blur(2px); animation: float 6s ease-in-out infinite; }
         .lb-circle-2 { width: 25px; height: 25px; background: #00c985; border-radius: 50%; bottom: 25%; left: 5%; opacity: 0.6; filter: blur(1px); animation: float 8s ease-in-out infinite reverse; }
         .lb-rect-1 { width: 30px; height: 30px; background: #ffcc00; top: 10%; right: 20%; transform: rotate(45deg); opacity: 0.9; animation: floatSpin 8s linear infinite alternate; }
@@ -428,6 +433,9 @@ export default function Lobby() {
           color: rgba(255,255,255,0.7);
         }
       `}</style>
+
+      {/* Fixed Background */}
+      <div className="lb-bg"></div>
 
       {/* Decorative Shapes */}
       <div className="lb-shape lb-circle-1"></div>
