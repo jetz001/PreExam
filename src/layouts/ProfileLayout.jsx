@@ -69,7 +69,7 @@ const ProfileLayout = () => {
 
       {/* Sidebar */}
       <nav className="sidebar">
-        <div className="sidebar-logo" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
+        <div className="sidebar-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
           <div className="logo-icon">🎯</div>
           <span>PreExam!</span>
         </div>
