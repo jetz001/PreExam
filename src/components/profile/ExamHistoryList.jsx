@@ -17,7 +17,21 @@ const ExamHistoryList = ({ history, userId }) => {
                     } else {
                         data = await examService.getHistory();
                     }
-                    setExams(data.data || []);
+                    
+                    const fetchedExams = data.data || [];
+                    
+                    if (fetchedExams.length === 0) {
+                        // Mock data for UI preview
+                        const mockExams = [
+                            { id: 'mock1', title: 'แบบทดสอบคณิตศาสตร์ (Mock)', score: 18, total_score: 20, taken_at: new Date().toISOString() },
+                            { id: 'mock2', title: 'วิทยาศาสตร์ ม.ปลาย (Mock)', score: 12, total_score: 20, taken_at: new Date(Date.now() - 86400000).toISOString() },
+                            { id: 'mock3', title: 'ภาษาอังกฤษ O-NET (Mock)', score: 15, total_score: 30, taken_at: new Date(Date.now() - 86400000 * 2).toISOString() }
+                        ];
+                        setExams(mockExams);
+                    } else {
+                        setExams(fetchedExams);
+                    }
+
                 } catch (error) {
                     console.error("Failed to fetch history");
                 } finally {

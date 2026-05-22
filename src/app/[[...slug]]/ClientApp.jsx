@@ -21,8 +21,16 @@ export default function ClientApp() {
   // Avoid hydration mismatch by rendering only on the client
   if (!mounted) return null;
 
+  // Use the correct env variable from .env, or the hardcoded fallback
+  const fallbackClientId = '344062096565-4lrdvepsa1hsp75863jiorll6qp4q78a.apps.googleusercontent.com';
+  let googleClientId = typeof process !== 'undefined' && process?.env?.NEXT_PUBLIC_VITE_GOOGLE_CLIENT_ID
+    ? process.env.NEXT_PUBLIC_VITE_GOOGLE_CLIENT_ID
+    : fallbackClientId;
+    
+  googleClientId = googleClientId?.trim() || fallbackClientId;
+
   return (
-    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 'dummy-client-id'}>
+    <GoogleOAuthProvider clientId={googleClientId}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <SocketProvider>

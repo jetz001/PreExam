@@ -12,9 +12,11 @@ exports.submitExam = async (req, res) => {
         const skill_scores = {}; // New Skill Aggregation
 
         const questionIds = Object.keys(answers);
-        const questions = await Question.findAll({
-            where: { id: questionIds }
-        });
+        const questions = [];
+        await Promise.all(questionIds.map(async (qId) => {
+            const q = await Question.findByPk(qId);
+            if (q) questions.push(q);
+        }));
 
         const questionsDetail = [];
 

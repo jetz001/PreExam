@@ -135,16 +135,20 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
     if (!user) return null;
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
+        <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-6 relative overflow-hidden border-4 border-[#46178f]/10 dark:border-white/5">
+            {/* Playful Background Header */}
+            <div className="absolute top-0 left-0 w-full h-32 bg-[#46178f] dark:bg-[#320b6d]">
+                {/* Decorative circles */}
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#1368ce] rounded-full opacity-50 mix-blend-screen"></div>
+                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#e21b3c] rounded-full opacity-50 mix-blend-screen"></div>
+            </div>
 
-            <div className="relative z-10 flex flex-col items-center mt-4">
-                {/* Avatar */}
+            <div className="relative z-10 flex flex-col items-center mt-8">
+                {/* Avatar with Playful styling */}
                 <div className="relative group">
-                    <div className="w-28 h-28 rounded-full border-4 border-white dark:border-slate-800 overflow-hidden shadow-md bg-white">
+                    <div className="w-32 h-32 rounded-full border-8 border-white dark:border-slate-800 overflow-hidden shadow-[0_4px_15px_rgba(0,0,0,0.15)] bg-white transform transition hover:scale-105 hover:rotate-3">
                         <img
-                            src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`) : "https://ui-avatars.com/api/?name=" + user.display_name}
+                            src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`) : "https://ui-avatars.com/api/?background=ebbf00&color=fff&bold=true&name=" + user.display_name}
                             alt="Profile"
                             className="w-full h-full object-cover"
                         />
@@ -160,63 +164,66 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
                             />
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="absolute bottom-0 right-0 bg-yellow-400 text-white p-2 rounded-full hover:bg-yellow-500 transition shadow-sm"
+                                className="absolute bottom-2 right-0 bg-[#ebbf00] text-white p-3 rounded-full hover:bg-[#d4ac00] transition shadow-[0_4px_0_#b39100] active:translate-y-1 active:shadow-none"
                             >
-                                <Camera size={18} />
+                                <Camera size={20} />
                             </button>
                         </>
                     )}
                 </div>
 
                 {/* Name & Bio */}
-                <h2 className="mt-3 text-2xl font-bold text-gray-800 dark:text-white">{user.display_name}</h2>
-                <p className="text-sm text-blue-500 font-semibold mb-1">@{user.public_id || 'USER'}</p>
-                <p className="text-gray-500 dark:text-gray-400 text-center text-sm px-4 truncate w-full max-w-xs">{user.bio || 'No bio yet.'}</p>
+                <h2 className="mt-5 text-3xl font-black text-[#46178f] dark:text-white tracking-tight">{user.display_name}</h2>
+                <p className="text-sm text-[#1368ce] font-bold mb-2">@{user.public_id || 'USER'}</p>
+                <div className="bg-gray-100 dark:bg-slate-700/50 px-4 py-2 rounded-2xl mt-1">
+                    <p className="text-gray-600 dark:text-gray-300 text-center text-sm font-medium w-full max-w-xs">{user.bio || "Let's play and learn!"}</p>
+                </div>
 
-                {/* Badges / Stats Row */}
-                <div className="flex items-center gap-4 mt-6 w-full justify-center">
-                    {/* Streak */}
-                    <div className="flex flex-col items-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl min-w-[80px]">
-                        <Flame className="text-orange-500 mb-1" size={20} />
-                        <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{user.streak_count || 0}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Day Streak</span>
+                {/* Badges / Stats Row - Kahoot colorful blocks */}
+                <div className="flex items-center gap-3 mt-8 w-full justify-center">
+                    {/* Streak - Red Block */}
+                    <div className="flex flex-col items-center p-3 bg-[#e21b3c] rounded-2xl min-w-[85px] shadow-[0_4px_0_#b5142f] text-white transform transition hover:-translate-y-1">
+                        <Flame className="text-white mb-1" size={24} />
+                        <span className="text-2xl font-black">{user.streak_count || 0}</span>
+                        <span className="text-xs font-bold uppercase tracking-wider opacity-90 mt-1">Streak</span>
                     </div>
 
-                    {/* Target Countdown - Clickable for Quick Edit */}
+                    {/* Target Countdown - Blue Block */}
                     <div
-                        className={`flex flex-col items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl min-w-[80px] flex-grow ${isOwnProfile ? 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition shadow-sm' : ''}`}
+                        className={`flex flex-col items-center p-3 bg-[#1368ce] rounded-2xl min-w-[90px] flex-grow shadow-[0_4px_0_#0e53a3] text-white transform transition ${isOwnProfile ? 'cursor-pointer hover:-translate-y-1' : ''}`}
                         onClick={() => isOwnProfile && setIsEditingTarget(true)}
                         title="Click to set target"
                     >
-                        <Timer className="text-blue-500 mb-1" size={20} />
-                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{timeLeft}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[100px] text-center">
-                            {user.target_exam || 'Set Target'}
+                        <Timer className="text-white mb-1" size={24} />
+                        <span className="text-xl font-black truncate max-w-[120px]">{timeLeft}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-90 mt-1 truncate max-w-[120px]">
+                            {user.target_exam || 'Set Goal'}
                         </span>
                     </div>
 
-                    {/* Membership */}
-                    <div className="flex flex-col items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl min-w-[80px]">
-                        <div className="text-purple-500 mb-1 text-xs font-bold uppercase border border-purple-200 px-1 rounded">
+                    {/* Membership - Green Block */}
+                    <div className="flex flex-col items-center p-3 bg-[#26890c] rounded-2xl min-w-[85px] shadow-[0_4px_0_#1e6c09] text-white transform transition hover:-translate-y-1">
+                        <div className="text-white mb-1 text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-1 rounded-lg">
                             {user.plan_type || 'FREE'}
                         </div>
-                        <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">Status</span>
+                        <span className="text-xl font-black mt-1">Plan</span>
                     </div>
                 </div>
 
                 {isOwnProfile && user.plan_type === 'premium' && (
-                    <div className="mt-4 w-full bg-purple-50 dark:bg-purple-900/10 p-3 rounded-lg border border-purple-100 dark:border-purple-900 text-center">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Subscription Active</p>
-                        <div className="flex justify-between items-center mt-2 text-xs">
-                            <div className="flex flex-col">
-                                <span className="text-gray-400">Since</span>
-                                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                    <div className="mt-6 w-full bg-[#46178f]/5 dark:bg-[#46178f]/20 p-4 rounded-2xl border-2 border-[#46178f]/20 text-center relative overflow-hidden">
+                        <div className="absolute -right-4 -top-4 text-[#ebbf00] opacity-20"><Crown size={64} /></div>
+                        <p className="text-sm font-bold text-[#46178f] dark:text-purple-300 uppercase tracking-widest relative z-10">Premium Active</p>
+                        <div className="flex justify-between items-center mt-3 text-sm font-medium relative z-10">
+                            <div className="flex flex-col text-left">
+                                <span className="text-gray-500">Since</span>
+                                <span className="text-gray-800 dark:text-white">
                                     {user.premium_start_date ? new Date(user.premium_start_date).toLocaleDateString() : '-'}
                                 </span>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="text-gray-400">Expires</span>
-                                <span className="font-semibold text-purple-600 dark:text-purple-400">
+                            <div className="flex flex-col text-right">
+                                <span className="text-gray-500">Expires</span>
+                                <span className="text-[#1368ce] dark:text-blue-400 font-bold">
                                     {user.premium_expiry ? new Date(user.premium_expiry).toLocaleDateString() : '-'}
                                 </span>
                             </div>
@@ -225,31 +232,31 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
                 )}
 
                 {isOwnProfile && (
-                    <div className="mt-6 flex flex-col gap-2 w-full">
+                    <div className="mt-8 flex flex-col gap-3 w-full">
                         {(!user.plan_type || user.plan_type === 'free') && (
                             <button
                                 onClick={() => navigate('/premium-upgrade')}
-                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white py-2 rounded-lg hover:from-yellow-500 hover:to-yellow-700 transition shadow-md font-medium"
+                                className="w-full flex items-center justify-center gap-2 bg-[#ebbf00] text-white text-lg font-black uppercase tracking-wider py-4 rounded-2xl hover:bg-[#d4ac00] shadow-[0_6px_0_#b39100] active:translate-y-[6px] active:shadow-none transition-all"
                             >
-                                <Crown size={18} /> Upgrade to Premium
+                                <Crown size={22} /> Go Premium!
                             </button>
                         )}
                         <button
                             onClick={onEditProfile}
-                            className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-blue-600 transition text-sm font-medium py-1"
+                            className="w-full flex items-center justify-center gap-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 text-sm font-bold uppercase tracking-wider py-3 rounded-2xl hover:bg-gray-200 dark:hover:bg-slate-600 shadow-[0_4px_0_#d1d5db] dark:shadow-[0_4px_0_#334155] active:translate-y-[4px] active:shadow-none transition-all"
                         >
-                            <Edit size={16} /> Edit Profile
+                            <Edit size={18} /> Edit Profile
                         </button>
                     </div>
                 )}
 
                 {!isOwnProfile && (
-                    <div className="mt-6 flex flex-col gap-2 w-full">
+                    <div className="mt-8 flex flex-col gap-3 w-full">
                         <button
                             onClick={() => navigate(`/profile?tab=inbox&user=${user.id}`)}
-                            className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium"
+                            className="w-full flex items-center justify-center gap-2 bg-[#1368ce] text-white text-lg font-black uppercase tracking-wider py-4 rounded-2xl hover:bg-[#0e53a3] shadow-[0_6px_0_#0b4282] active:translate-y-[6px] active:shadow-none transition-all"
                         >
-                            <Mail size={18} /> Send Message
+                            <Mail size={22} /> Send Message
                         </button>
                     </div>
                 )}

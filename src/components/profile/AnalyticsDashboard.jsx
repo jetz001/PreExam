@@ -74,29 +74,37 @@ const AnalyticsDashboard = ({ heatmapData, radarData, user }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
                 {/* Radar Chart */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
-                    <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4">Skill Analysis</h4>
-                    <div className="w-full h-[300px] min-w-0">
+                <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-4 border-[#1368ce]/10 dark:border-white/5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    {/* Decorative element */}
+                    <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-[#1368ce] rounded-full opacity-10 group-hover:scale-150 transition-transform duration-500"></div>
+                    
+                    <h4 className="text-xl font-black text-[#1368ce] dark:text-blue-400 mb-6 uppercase tracking-widest relative z-10 flex items-center gap-2">
+                        <span className="w-3 h-8 bg-[#1368ce] rounded-full inline-block"></span>
+                        Skill Analysis
+                    </h4>
+                    <div className="w-full h-[320px] min-w-0 relative z-10">
                         {radarData && radarData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                                    <PolarGrid />
-                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#888888', fontSize: 12 }} />
+                                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                                    <PolarGrid stroke="#e5e7eb" />
+                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#46178f', fontWeight: 'bold', fontSize: 13 }} />
                                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
                                     <Radar
                                         name="Score"
                                         dataKey="score"
-                                        stroke="#4F46E5"
-                                        fill="#4F46E5"
+                                        stroke="#1368ce"
+                                        strokeWidth={4}
+                                        fill="#1368ce"
                                         fillOpacity={0.6}
+                                        dot={{ r: 4, fill: '#ebbf00', strokeWidth: 2 }}
                                     />
-                                    <Tooltip />
+                                    <Tooltip wrapperStyle={{ borderRadius: '1rem', overflow: 'hidden', fontWeight: 'bold' }} />
                                 </RadarChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex items-center justify-center h-full text-gray-400">
+                            <div className="flex items-center justify-center h-full text-gray-400 font-bold bg-gray-50 dark:bg-slate-700/30 rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-600">
                                 No examination data yet.
                             </div>
                         )}
@@ -104,17 +112,23 @@ const AnalyticsDashboard = ({ heatmapData, radarData, user }) => {
                 </div>
 
                 {/* Heatmap */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
-                    <div className="flex items-center gap-2 mb-4">
-                        <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300">Study Consistency</h4>
-                        <div className="group relative">
-                            <Info size={16} className="text-gray-400 cursor-help" />
-                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-10 text-center">
-                                Heatmap นี้แสดงความสม่ำเสมอในการเรียนของคุณในแต่ละวัน สีที่เข้มขึ้นหมายถึงมีการทำข้อสอบหรือทำโจทย์มากขึ้น
+                <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-4 border-[#26890c]/10 dark:border-white/5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    {/* Decorative element */}
+                    <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-[#26890c] rounded-full opacity-10 group-hover:scale-150 transition-transform duration-500"></div>
+
+                    <div className="flex items-center gap-3 mb-6 relative z-10">
+                        <span className="w-3 h-8 bg-[#26890c] rounded-full inline-block"></span>
+                        <h4 className="text-xl font-black text-[#26890c] dark:text-green-400 uppercase tracking-widest">Study Consistency</h4>
+                        <div className="group/tooltip relative">
+                            <Info size={20} className="text-[#ebbf00] cursor-help" />
+                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-[#46178f] text-white text-xs font-bold rounded-xl shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 pointer-events-none z-20 text-center">
+                                Heatmap นี้แสดงความสม่ำเสมอในการเรียนของคุณ สีที่เข้มขึ้นหมายถึงมีการทำโจทย์มากขึ้นในวันนั้น!
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#46178f]"></div>
                             </div>
                         </div>
                     </div>
-                    <div className="heatmap-container overflow-x-auto">
+                    
+                    <div className="heatmap-container overflow-x-auto relative z-10 bg-gray-50/50 dark:bg-slate-700/20 p-4 rounded-2xl border-2 border-gray-100 dark:border-slate-700">
                         <CalendarHeatmap
                             startDate={new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())}
                             endDate={today}
@@ -123,7 +137,7 @@ const AnalyticsDashboard = ({ heatmapData, radarData, user }) => {
                                 if (!value) {
                                     return 'color-empty fill-current text-gray-200 dark:text-slate-700';
                                 }
-                                return `color-scale-${Math.min(value.count, 4)} fill-current text-blue-600`;
+                                return `color-scale-${Math.min(value.count, 4)} fill-current text-[#26890c] drop-shadow-sm`;
                             }}
                             tooltipDataAttrs={value => {
                                 return {
@@ -133,14 +147,15 @@ const AnalyticsDashboard = ({ heatmapData, radarData, user }) => {
                             showWeekdayLabels={true}
                         />
                     </div>
-                    <div className="flex justify-end items-center gap-2 mt-4 text-xs text-gray-500">
+                    
+                    <div className="flex justify-end items-center gap-3 mt-6 text-xs font-bold text-gray-500 uppercase tracking-wider relative z-10">
                         <span>Less</span>
-                        <div className="flex gap-1">
-                            <div className="w-3 h-3 bg-gray-200 dark:bg-slate-700 rounded-sm"></div>
-                            <div className="w-3 h-3 bg-blue-200 rounded-sm"></div>
-                            <div className="w-3 h-3 bg-blue-400 rounded-sm"></div>
-                            <div className="w-3 h-3 bg-blue-600 rounded-sm"></div>
-                            <div className="w-3 h-3 bg-blue-800 rounded-sm"></div>
+                        <div className="flex gap-2 bg-gray-100 dark:bg-slate-700 p-2 rounded-xl">
+                            <div className="w-4 h-4 bg-gray-200 dark:bg-slate-600 rounded-md"></div>
+                            <div className="w-4 h-4 bg-[#c8e6c9] rounded-md shadow-sm"></div>
+                            <div className="w-4 h-4 bg-[#81c784] rounded-md shadow-sm"></div>
+                            <div className="w-4 h-4 bg-[#4caf50] rounded-md shadow-sm"></div>
+                            <div className="w-4 h-4 bg-[#2e7d32] rounded-md shadow-sm"></div>
                         </div>
                         <span>More</span>
                     </div>
