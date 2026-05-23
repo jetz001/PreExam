@@ -21,8 +21,9 @@ export const SocketProvider = ({ children }) => {
                 : '/'; // Use relative path for production
 
             const newSocket = io(socketUrl, {
+                path: isLocal ? '/socket.io' : '/api/ws',
                 auth: { token: localStorage.getItem('token') },
-                transports: ['websocket', 'polling'], // Try websocket first (or both)
+                transports: ['websocket'], // Force websocket for Cloudflare Worker compatibility
                 reconnection: true,
                 reconnectionAttempts: 10,
                 reconnectionDelay: 1000,
