@@ -298,27 +298,28 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                             <button
                                 type="button"
                                 onClick={() => imageInputRef.current.click()}
-                                className={`p-2 rounded-full transition-colors ${mediaType === 'image' ? 'bg-[#ffcc00] text-[#1a0533]' : 'hover:bg-white/10 text-white/70'}`}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-2xl font-bold transition-all ${mediaType === 'image' ? 'bg-[#ffcc00] text-[#1a0533] shadow-[0_4px_0_#c9a000] -translate-y-1' : 'bg-white/5 text-white/80 hover:bg-white/15 hover:-translate-y-1 hover:shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}
                                 title="เพิ่มรูปภาพ"
                             >
-                                <ImageIcon size={24} />
+                                <span className="text-xl leading-none">🖼️</span> <span className="text-sm hidden sm:inline">รูปภาพ</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => videoInputRef.current.click()}
-                                className={`p-2 rounded-full transition-colors ${mediaType === 'video' ? 'bg-[#ffcc00] text-[#1a0533]' : 'hover:bg-white/10 text-white/70'}`}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-2xl font-bold transition-all ${mediaType === 'video' ? 'bg-[#f72585] text-white shadow-[0_4px_0_#a80f54] -translate-y-1' : 'bg-white/5 text-white/80 hover:bg-white/15 hover:-translate-y-1 hover:shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}
                                 title="เพิ่มวิดีโอ"
                             >
-                                <Video size={24} />
+                                <span className="text-xl leading-none">🎬</span> <span className="text-sm hidden sm:inline">วิดีโอ</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => { setIsPoll(!isPoll); setMedia(null); setMediaType(null); setPreview(null); setBackgroundStyle(null); }}
-                                className={`p-2 rounded-full transition-colors ${isPoll ? 'bg-[#ffcc00] text-[#1a0533]' : 'hover:bg-white/10 text-white/70'}`}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-2xl font-bold transition-all ${isPoll ? 'bg-[#06d6a0] text-[#1a0533] shadow-[0_4px_0_#04966f] -translate-y-1' : 'bg-white/5 text-white/80 hover:bg-white/15 hover:-translate-y-1 hover:shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}
+                                title="สร้างโพล"
                             >
-                                <BarChart2 size={24} />
+                                <span className="text-xl leading-none">📊</span> <span className="text-sm hidden sm:inline">โพล</span>
                             </button>
 
                             <select
