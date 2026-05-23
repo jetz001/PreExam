@@ -1,6 +1,7 @@
 import { RealtimeDO, type Env } from "./realtime";
 import { requireUserId, signJwtHs256 } from "./auth";
 import { hashPassword, verifyPassword } from "./password";
+import { FirestoreClient, parseServiceAccount } from "./firestore";
 
 export { RealtimeDO };
 
@@ -72,6 +73,10 @@ export default {
       return stub.fetch(request);
     }
 
+    const saConfig = parseServiceAccount(env);
+    if (!saConfig) return json({ error: "missing_firebase_config" }, { status: 500 });
+    const firestore = new FirestoreClient(saConfig);
+
     if (url.pathname === "/api/auth/register" && request.method === "POST") {
       const secret = requireJwtSecret(env);
       if (!secret) return json({ error: "missing_jwt_secret" }, { status: 500 });
@@ -85,20 +90,28 @@ export default {
         return json({ success: false, message: "invalid_params" }, { status: 400 });
       }
 
-      const existing = await env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
-      if (existing) return json({ success: false, message: "Email already in use" }, { status: 409 });
+      const existingUsers = await firestore.runQuery({
+        from: [{ collectionId: "users" }],
+        where: { fieldFilter: { field: { fieldPath: "email" }, op: "EQUAL", value: { stringValue: email } } },
+        limit: 1,
+      });
+
+      if (existingUsers.length > 0) return json({ success: false, message: "Email already in use" }, { status: 409 });
 
       const passwordHash = await hashPassword(password);
-      const ins = await env.DB.prepare(
-        "INSERT INTO users (email, password_hash, display_name, role, plan_type, status, guest_device_id, created_at, updated_at) VALUES (?, ?, ?, 'user', 'free', 'active', NULL, datetime('now'), datetime('now'))"
-      )
-        .bind(email, passwordHash, displayName)
-        .run();
+      const user = await firestore.createDocument("users", {
+        email,
+        password_hash: passwordHash,
+        display_name: displayName,
+        role: "user",
+        plan_type: "free",
+        status: "active",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
 
-      const userId = Number(ins.meta.last_row_id);
-      const user = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
       const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
-      const token = await signJwtHs256({ id: userId, exp }, secret);
+      const token = await signJwtHs256({ id: user.id, exp }, secret);
       return json({ success: true, token, user: sanitizeUser(user) });
     }
 
@@ -112,13 +125,19 @@ export default {
       const password = String((body as any).password || "");
       if (!email || !password) return json({ success: false, message: "invalid_params" }, { status: 400 });
 
-      const user = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
-      if (!user || !(user as any).password_hash) return json({ success: false, message: "Invalid credentials" }, { status: 401 });
-      const ok = await verifyPassword(password, String((user as any).password_hash));
+      const users = await firestore.runQuery({
+        from: [{ collectionId: "users" }],
+        where: { fieldFilter: { field: { fieldPath: "email" }, op: "EQUAL", value: { stringValue: email } } },
+        limit: 1,
+      });
+
+      const user = users[0];
+      if (!user || !user.password_hash) return json({ success: false, message: "Invalid credentials" }, { status: 401 });
+      const ok = await verifyPassword(password, String(user.password_hash));
       if (!ok) return json({ success: false, message: "Invalid credentials" }, { status: 401 });
 
       const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
-      const token = await signJwtHs256({ id: (user as any).id, exp }, secret);
+      const token = await signJwtHs256({ id: user.id, exp }, secret);
       return json({ success: true, token, user: sanitizeUser(user) });
     }
 
@@ -132,21 +151,30 @@ export default {
       if (!deviceId) return json({ success: false, message: "invalid_params" }, { status: 400 });
 
       const email = `guest_${deviceId}@guest.local`;
-      let user = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
+      const users = await firestore.runQuery({
+        from: [{ collectionId: "users" }],
+        where: { fieldFilter: { field: { fieldPath: "email" }, op: "EQUAL", value: { stringValue: email } } },
+        limit: 1,
+      });
 
+      let user = users[0];
       if (!user) {
         const displayName = `Guest-${deviceId.slice(0, 6)}`;
-        const ins = await env.DB.prepare(
-          "INSERT INTO users (email, password_hash, display_name, role, plan_type, status, guest_device_id, created_at, updated_at) VALUES (?, NULL, ?, 'user', 'free', 'active', ?, datetime('now'), datetime('now'))"
-        )
-          .bind(email, displayName, deviceId)
-          .run();
-        const userId = Number(ins.meta.last_row_id);
-        user = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
+        user = await firestore.createDocument("users", {
+          email,
+          password_hash: null,
+          display_name: displayName,
+          role: "user",
+          plan_type: "free",
+          status: "active",
+          guest_device_id: deviceId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
       }
 
       const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
-      const token = await signJwtHs256({ id: (user as any).id, exp }, secret);
+      const token = await signJwtHs256({ id: user.id, exp }, secret);
       return json({ success: true, token, user: sanitizeUser(user) });
     }
 
@@ -156,7 +184,7 @@ export default {
       const userId = await requireUserId(request, secret);
       if (!userId) return json({ success: false, message: "Unauthorized" }, { status: 401 });
 
-      const user = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
+      const user = await firestore.getDocument("users", userId);
       if (!user) return json({ success: false, message: "Unauthorized" }, { status: 401 });
       return json({ success: true, user: sanitizeUser(user) });
     }
@@ -167,41 +195,42 @@ export default {
 
       const page = Math.max(1, Number(url.searchParams.get("page") || 1));
       const limit = Math.max(1, Math.min(50, Number(url.searchParams.get("limit") || 20)));
+
+      const recentRooms = await firestore.runQuery({
+        from: [{ collectionId: "rooms" }],
+        orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
+        limit: 100, // Fetch up to 100 to filter in memory
+      });
+
+      const oneDayAgo = oneDayAgoIso();
+      const filteredRooms = recentRooms.filter((r) => {
+        return r.status === "waiting" || r.status === "in_progress" || (r.status === "finished" && r.updated_at >= oneDayAgo);
+      });
+
+      const total = filteredRooms.length;
       const offset = (page - 1) * limit;
+      const rooms = filteredRooms.slice(offset, offset + limit);
 
-      const countRes = await env.DB.prepare(
-        "SELECT COUNT(*) AS total FROM rooms WHERE status IN ('waiting','in_progress') OR (status = 'finished' AND updated_at >= ?)"
-      )
-        .bind(oneDayAgoIso())
-        .first();
-      const total = Number((countRes as any)?.total ?? 0);
-
-      const roomsRes = await env.DB.prepare(
-        "SELECT * FROM rooms WHERE status IN ('waiting','in_progress') OR (status = 'finished' AND updated_at >= ?) ORDER BY created_at DESC LIMIT ? OFFSET ?"
-      )
-        .bind(oneDayAgoIso(), limit, offset)
-        .all();
-
-      const rooms = (roomsRes.results || []) as any[];
       if (rooms.length === 0) {
         return json({ success: true, data: [], pagination: { total, page, totalPages: Math.ceil(total / limit) } });
       }
 
-      const ids = rooms.map((r) => r.id);
-      const placeholders = ids.map(() => "?").join(",");
-      const counts = await env.DB.prepare(
-        `SELECT room_id, COUNT(*) AS cnt FROM room_participants WHERE room_id IN (${placeholders}) GROUP BY room_id`
-      )
-        .bind(...ids)
-        .all();
+      // Fetch participants to count
+      const roomIds = rooms.map((r) => r.id);
+      const participantCounts = new Map<string, number>();
 
-      const map = new Map<string, number>();
-      for (const row of (counts.results || []) as any[]) map.set(String(row.room_id), Number(row.cnt || 0));
+      for (const rId of roomIds) {
+        const parts = await firestore.runQuery({
+          from: [{ collectionId: "room_participants" }],
+          where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: rId } } },
+        });
+        participantCounts.set(rId, parts.length);
+      }
 
       const data = rooms.map((r) => ({
         ...r,
         password: undefined,
-        participant_count: map.get(String(r.id)) || 0,
+        participant_count: participantCounts.get(r.id) || 0,
         RoomParticipants: [],
       }));
 
@@ -235,21 +264,33 @@ export default {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const settings = JSON.stringify({ time_limit: timeLimit });
 
-      const insert = await env.DB.prepare(
-        "INSERT INTO rooms (code, name, mode, host_user_id, subject, category, max_participants, question_count, status, settings, password, question_ids, theme, theme_color, background_url, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'waiting', ?, ?, ?, NULL, NULL, NULL, datetime('now'), datetime('now'))"
-      )
-        .bind(code, name, mode, auth.userId, subject, category, maxParticipants, questionCount, settings, password, "[]")
-        .run();
+      const room = await firestore.createDocument("rooms", {
+        code,
+        name,
+        mode,
+        host_user_id: auth.userId,
+        subject,
+        category,
+        max_participants: maxParticipants,
+        question_count: questionCount,
+        status: "waiting",
+        settings,
+        password,
+        question_ids: "[]",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
 
-      const roomId = Number(insert.meta.last_row_id);
+      await firestore.createDocument("room_participants", {
+        room_id: room.id,
+        user_id: auth.userId,
+        score: 0,
+        status: "joined",
+        current_question_index: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
 
-      await env.DB.prepare(
-        "INSERT INTO room_participants (room_id, user_id, score, status, current_question_index, answers, created_at, updated_at) VALUES (?, ?, 0, 'joined', 0, NULL, datetime('now'), datetime('now'))"
-      )
-        .bind(roomId, auth.userId)
-        .run();
-
-      const room = await env.DB.prepare("SELECT * FROM rooms WHERE id = ?").bind(roomId).first();
       return json({ success: true, data: room }, { status: 201 });
     }
 
@@ -263,47 +304,81 @@ export default {
       const password = (body as any).password ? String((body as any).password) : null;
       if (!code) return json({ success: false, message: "invalid_params" }, { status: 400 });
 
-      const room = await env.DB.prepare("SELECT * FROM rooms WHERE code = ?").bind(code).first();
+      const rooms = await firestore.runQuery({
+        from: [{ collectionId: "rooms" }],
+        where: { fieldFilter: { field: { fieldPath: "code" }, op: "EQUAL", value: { stringValue: code } } },
+        limit: 1,
+      });
+
+      const room = rooms[0];
       if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
 
-      if ((room as any).password) {
+      if (room.password) {
         if (!password) return json({ success: false, message: "Password required", requirePassword: true }, { status: 403 });
-        if (password !== String((room as any).password)) return json({ success: false, message: "Invalid password" }, { status: 403 });
+        if (password !== String(room.password)) return json({ success: false, message: "Invalid password" }, { status: 403 });
       }
 
-      if (String((room as any).status) !== "waiting") {
+      if (String(room.status) !== "waiting") {
         return json({ success: false, message: "Room is already in progress or finished" }, { status: 400 });
       }
 
-      await env.DB.prepare(
-        "INSERT INTO room_participants (room_id, user_id, score, status, current_question_index, answers, created_at, updated_at) VALUES (?, ?, 0, 'joined', 0, NULL, datetime('now'), datetime('now')) ON CONFLICT(room_id, user_id) DO NOTHING"
-      )
-        .bind((room as any).id, auth.userId)
-        .run();
+      // Check if already joined
+      const existingPart = await firestore.runQuery({
+        from: [{ collectionId: "room_participants" }],
+        where: {
+          compositeFilter: {
+            op: "AND",
+            filters: [
+              { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: room.id } } },
+              { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } },
+            ],
+          },
+        },
+        limit: 1,
+      });
+
+      if (existingPart.length === 0) {
+        await firestore.createDocument("room_participants", {
+          room_id: room.id,
+          user_id: auth.userId,
+          score: 0,
+          status: "joined",
+          current_question_index: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
 
       return json({ success: true, data: { ...room, password: undefined } });
     }
 
-    const roomIdMatch = url.pathname.match(/^\/api\/rooms\/(\d+)$/);
+    const roomIdMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)$/);
     if (roomIdMatch && request.method === "GET") {
       const auth = await requireAuthUserId(request, env);
       if ("error" in auth) return auth.error;
 
       const roomId = roomIdMatch[1];
-      const room = await env.DB.prepare("SELECT * FROM rooms WHERE id = ?").bind(roomId).first();
+      const room = await firestore.getDocument("rooms", roomId);
       if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
 
-      const participants = await env.DB.prepare("SELECT * FROM room_participants WHERE room_id = ? ORDER BY score DESC, updated_at ASC")
-        .bind(roomId)
-        .all();
+      const participants = await firestore.runQuery({
+        from: [{ collectionId: "room_participants" }],
+        where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomId } } },
+      });
+
+      // Sort by score DESC, updated_at ASC
+      participants.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+      });
 
       return json({
         success: true,
         data: {
           ...room,
           password: undefined,
-          Host: { id: (room as any).host_user_id, display_name: null },
-          RoomParticipants: participants.results || [],
+          Host: { id: room.host_user_id, display_name: null },
+          RoomParticipants: participants,
           questions: [],
         },
       });
@@ -314,94 +389,44 @@ export default {
       if ("error" in auth) return auth.error;
 
       const roomId = roomIdMatch[1];
-      const room = await env.DB.prepare("SELECT id, host_user_id FROM rooms WHERE id = ?").bind(roomId).first();
+      const room = await firestore.getDocument("rooms", roomId);
       if (!room) return json({ success: true, message: "Room already deleted or not found" });
 
-      if (String((room as any).host_user_id) !== auth.userId) {
+      if (String(room.host_user_id) !== auth.userId) {
         return json({ success: false, message: "Not authorized to delete this room" }, { status: 403 });
       }
 
-      await env.DB.prepare("DELETE FROM room_participants WHERE room_id = ?").bind(roomId).run();
-      await env.DB.prepare("DELETE FROM rooms WHERE id = ?").bind(roomId).run();
+      const participants = await firestore.runQuery({
+        from: [{ collectionId: "room_participants" }],
+        where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomId } } },
+      });
+
+      for (const p of participants) {
+        await firestore.deleteDocument("room_participants", p.id);
+      }
+      await firestore.deleteDocument("rooms", roomId);
       return json({ success: true, message: "Room deleted successfully" });
     }
-    // --- FIREBASE REST API INTEGRATION ---
+
     if (url.pathname === "/api/questions" && request.method === "GET") {
       try {
-        const saJsonStr = (env as any).FIREBASE_SERVICE_ACCOUNT;
-        if (!saJsonStr) return json({ success: false, message: "Missing FIREBASE_SERVICE_ACCOUNT in Cloudflare environment" }, { status: 500 });
-        const sa = JSON.parse(saJsonStr);
+        const limitStr = url.searchParams.get("limit") || "100";
+        const limit = parseInt(limitStr, 10);
         
-        // Generate JWT
-        const header = { alg: "RS256", typ: "JWT" };
-        const now = Math.floor(Date.now() / 1000);
-        const payload = {
-          iss: sa.client_email,
-          scope: "https://www.googleapis.com/auth/datastore",
-          aud: "https://oauth2.googleapis.com/token",
-          exp: now + 3600,
-          iat: now
-        };
-        const strHeader = btoa(JSON.stringify(header));
-        const strPayload = btoa(JSON.stringify(payload));
-        const signatureInput = `${strHeader}.${strPayload}`;
-
-        const pem = sa.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s+/g, "");
-        const binaryDerString = atob(pem);
-        const binaryDer = new Uint8Array(binaryDerString.length);
-        for (let i = 0; i < binaryDerString.length; i++) binaryDer[i] = binaryDerString.charCodeAt(i);
-
-        const key = await crypto.subtle.importKey("pkcs8", binaryDer.buffer, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
-        const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(signatureInput));
-        const strSignature = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-        
-        const jwt = `${signatureInput}.${strSignature}`;
-        const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
-        });
-        const tokenData: any = await tokenRes.json();
-        const accessToken = tokenData.access_token;
-
-        if (!accessToken) return json({ success: false, message: "Failed to get access token" }, { status: 500 });
-
-        // Fetch from Firestore
-        const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${sa.project_id}/databases/(default)/documents/questions?pageSize=100`;
-        const fsRes = await fetch(firestoreUrl, {
-          headers: { "Authorization": `Bearer ${accessToken}` }
-        });
-        const fsData: any = await fsRes.json();
-
-        if (fsData.error) {
-          return json({ success: false, message: fsData.error.message }, { status: 500 });
-        }
-
-        const rows = (fsData.documents || []).map((doc: any) => {
-          const fields = doc.fields || {};
-          const res: any = { id: doc.name.split('/').pop() };
-          for (const [k, v] of Object.entries(fields)) {
-            const val: any = v;
-            if (val.stringValue !== undefined) res[k] = val.stringValue;
-            else if (val.integerValue !== undefined) res[k] = parseInt(val.integerValue, 10);
-            else if (val.booleanValue !== undefined) res[k] = val.booleanValue;
-            else if (val.arrayValue !== undefined) {
-              res[k] = (val.arrayValue.values || []).map((arrVal: any) => arrVal.stringValue || arrVal.integerValue);
-            }
-          }
-          return res;
+        const questions = await firestore.runQuery({
+          from: [{ collectionId: "questions" }],
+          limit,
         });
 
         return json({
           success: true,
           data: {
-            rows: rows,
-            total: rows.length,
+            rows: questions,
+            total: questions.length,
             page: 1,
-            totalPages: 1
-          }
+            totalPages: 1,
+          },
         });
-
       } catch (err: any) {
         return json({ success: false, message: err.message }, { status: 500 });
       }
