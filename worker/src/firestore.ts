@@ -174,7 +174,7 @@ export class FirestoreClient {
 
   async listDocuments(collectionPath: string): Promise<any[]> {
     try {
-      const res = await this.fetchApi(`/${collectionPath}`);
+      const res: any = await this.fetchApi(`/${collectionPath}`);
       return (res.documents || []).map((doc: any) => parseFirestoreDocument(doc));
     } catch (e: any) {
       if (e.message.includes("NOT_FOUND") || e.message.includes("404")) return [];
