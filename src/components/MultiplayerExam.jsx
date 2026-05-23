@@ -52,6 +52,8 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
     const [showReportModal, setShowReportModal] = useState(false);
     const [fontSizeScale, setFontSizeScale] = useState(1);
     const { isPremium } = useUserRole();
+    const [isStarting, setIsStarting] = useState(true);
+    const [countdown, setCountdown] = useState(3);
 
     useImperativeHandle(ref, () => ({
         submitExam: () => {
@@ -60,6 +62,20 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
     }));
 
     useEffect(() => {
+        if (isStarting) {
+            const countdownTimer = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(countdownTimer);
+                        setTimeout(() => setIsStarting(false), 800); // Show "GO!" briefly
+                        return "GO!";
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(countdownTimer);
+        }
+
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
                 if (prev <= 1) {
@@ -71,7 +87,7 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
             });
         }, 1000);
         return () => clearInterval(timer);
-    }, [onFinish, score, answers]);
+    }, [onFinish, score, answers, isStarting]);
 
     const handleFinish = (finalScore, answersOverride) => {
         const timeTaken = initialTime - timeLeft;
@@ -116,7 +132,20 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
         return `${m}:${s < 10 ? '0' : ''}${s}`;
     };
 
-    if (!questions || questions.length === 0) return <div>Loading questions...</div>;
+    if (!questions || questions.length === 0) return (
+        <div className="flex items-center justify-center h-full">
+            <h2 className="text-3xl font-black text-white animate-pulse">Loading questions...</h2>
+        </div>
+    );
+
+    if (isStarting) return (
+        <div className="flex flex-col items-center justify-center h-full">
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-8 drop-shadow-lg">Get Ready!</h2>
+            <div className="text-8xl md:text-[10rem] font-black text-yellow-300 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] animate-bounce">
+                {countdown}
+            </div>
+        </div>
+    );
 
     const currentQuestion = questions[currentIndex];
 
