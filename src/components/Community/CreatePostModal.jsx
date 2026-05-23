@@ -157,11 +157,13 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in max-h-[90vh] flex flex-col">
-                <div className="p-4 border-b flex justify-between items-center bg-indigo-600 text-white flex-shrink-0">
-                    <h2 className="text-lg font-bold">สร้างกระทู้ใหม่</h2>
-                    <button onClick={onClose} className="hover:bg-indigo-700 p-1 rounded-full"><X size={20} /></button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-[#1c2438]/70 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.6)] w-full max-w-lg overflow-hidden animate-fade-in max-h-[90vh] flex flex-col text-white">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center flex-shrink-0">
+                    <h2 className="text-xl font-bold text-[#ffcc00] flex items-center gap-2" style={{ fontFamily: '"Lilita One", cursive' }}>
+                        ✨ สร้างกระทู้ใหม่
+                    </h2>
+                    <button onClick={onClose} className="hover:bg-white/10 p-1.5 rounded-full transition-colors"><X size={20} /></button>
                 </div>
 
                 <div className="overflow-y-auto p-4 flex-grow">
@@ -169,7 +171,7 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                         <input
                             type="text"
                             placeholder={isPoll ? "คำถามโหวต..." : "หัวข้อกระทู้..."}
-                            className="w-full text-lg font-bold border-b border-gray-200 focus:outline-none focus:border-indigo-500 py-2 text-gray-900 placeholder-gray-400"
+                            className="w-full text-lg font-bold border-b border-white/10 focus:outline-none focus:border-[#06d6a0] py-2 bg-transparent text-white placeholder-white/40 transition-colors"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             required
@@ -183,7 +185,7 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                                     placeholder={backgroundStyle ? "พิมพ์ข้อความของคุณ..." : "มีอะไรอยากแชร์ไหม?..."}
                                     className={`w-full resize-none border-none focus:ring-0 bg-transparent ${backgroundStyle
                                         ? 'text-white text-2xl font-bold placeholder-white/70 text-center h-auto overflow-hidden'
-                                        : 'text-gray-900 placeholder-gray-400 h-32'
+                                        : 'text-white placeholder-white/40 h-32'
                                         }`}
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
@@ -233,14 +235,14 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                         )}
 
                         {isPoll && (
-                            <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
-                                <label className="text-sm font-semibold text-gray-700">ตัวเลือกโหวต</label>
+                            <div className="space-y-3 bg-white/5 border border-white/10 p-4 rounded-2xl">
+                                <label className="text-sm font-semibold text-[#06d6a0]">ตัวเลือกโหวต</label>
                                 {pollOptions.map((opt, index) => (
                                     <div key={index} className="flex gap-2">
                                         <input
                                             type="text"
                                             placeholder={`ตัวเลือก ${index + 1}`}
-                                            className="flex-1 px-3 py-2 border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-900 placeholder-gray-400"
+                                            className="flex-1 px-3 py-2 border border-white/10 rounded-xl bg-black/20 focus:ring-2 focus:ring-[#06d6a0] focus:border-[#06d6a0] outline-none text-white placeholder-white/30 transition-all"
                                             value={opt}
                                             onChange={(e) => handleOptionChange(index, e.target.value)}
                                             required
@@ -256,7 +258,7 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                                     <button
                                         type="button"
                                         onClick={handleAddOption}
-                                        className="text-sm text-indigo-600 font-semibold flex items-center hover:text-indigo-800"
+                                        className="text-sm text-[#06d6a0] font-bold flex items-center hover:text-[#ffcc00] transition-colors"
                                     >
                                         <Plus size={16} className="mr-1" /> เพิ่มตัวเลือก
                                     </button>
@@ -271,7 +273,7 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                     </form>
                 </div>
 
-                <div className="p-4 border-t bg-gray-50 flex-shrink-0">
+                <div className="p-4 border-t border-white/10 bg-black/20 flex-shrink-0 rounded-b-3xl">
                     <div className="flex justify-between items-center">
                         <div className="flex space-x-2">
                             {/* Inputs */}
@@ -296,7 +298,7 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                             <button
                                 type="button"
                                 onClick={() => imageInputRef.current.click()}
-                                className={`p-2 rounded-full transition-colors ${mediaType === 'image' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-200 text-gray-600'}`}
+                                className={`p-2 rounded-full transition-colors ${mediaType === 'image' ? 'bg-[#ffcc00] text-[#1a0533]' : 'hover:bg-white/10 text-white/70'}`}
                                 title="เพิ่มรูปภาพ"
                             >
                                 <ImageIcon size={24} />
@@ -305,7 +307,7 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                             <button
                                 type="button"
                                 onClick={() => videoInputRef.current.click()}
-                                className={`p-2 rounded-full transition-colors ${mediaType === 'video' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-200 text-gray-600'}`}
+                                className={`p-2 rounded-full transition-colors ${mediaType === 'video' ? 'bg-[#ffcc00] text-[#1a0533]' : 'hover:bg-white/10 text-white/70'}`}
                                 title="เพิ่มวิดีโอ"
                             >
                                 <Video size={24} />
@@ -314,7 +316,7 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                             <button
                                 type="button"
                                 onClick={() => { setIsPoll(!isPoll); setMedia(null); setMediaType(null); setPreview(null); setBackgroundStyle(null); }}
-                                className={`p-2 rounded-full transition-colors ${isPoll ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-200 text-gray-600'}`}
+                                className={`p-2 rounded-full transition-colors ${isPoll ? 'bg-[#ffcc00] text-[#1a0533]' : 'hover:bg-white/10 text-white/70'}`}
                             >
                                 <BarChart2 size={24} />
                             </button>
@@ -322,19 +324,21 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
                             <select
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
-                                className="bg-white border rounded-full px-3 py-1 text-sm text-gray-700 outline-none shadow-sm"
+                                className="bg-black/30 border border-white/20 rounded-full px-3 py-1 text-sm text-white outline-none shadow-sm focus:border-[#ffcc00] appearance-none cursor-pointer"
+                                style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
                             >
-                                <option value="general">ทั่วไป</option>
-                                <option value="exam_news">ข่าวสอบ</option>
-                                <option value="qa_help">ถามตอบ</option>
-                                <option value="relax">ห้องนั่งเล่น</option>
+                                <option value="general" className="text-black">ทั่วไป</option>
+                                <option value="exam_news" className="text-black">ข่าวสอบ</option>
+                                <option value="qa_help" className="text-black">ถามตอบ</option>
+                                <option value="relax" className="text-black">ห้องนั่งเล่น</option>
                             </select>
                         </div>
 
                         <button
                             onClick={handleSubmit}
                             disabled={mutation.isPending}
-                            className="bg-indigo-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-lg shadow-indigo-200"
+                            className="bg-[#ffcc00] text-[#1a0533] px-6 py-2 rounded-full font-black hover:-translate-y-1 disabled:opacity-50 transition-all shadow-[0_4px_0_#c9a000] hover:shadow-[0_6px_0_#c9a000] active:translate-y-0 active:shadow-[0_0px_0_#c9a000]"
+                            style={{ fontFamily: '"Nunito", sans-serif' }}
                         >
                             {mutation.isPending ? 'กำลังโพสต์...' : 'โพสต์เลย'}
                         </button>
