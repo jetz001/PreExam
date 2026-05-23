@@ -455,19 +455,32 @@ export default {
         where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomId } } },
       });
 
-      // Sort by score DESC, updated_at ASC
-      participants.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
-      });
+      // Fetch users for participants
+      const userIds = participants.map((p: any) => p.user_id);
+      const uniqueUserIds = Array.from(new Set(userIds));
+      const usersMap = new Map();
+      
+      for (let i = 0; i < uniqueUserIds.length; i += 30) {
+        const chunk = uniqueUserIds.slice(i, i + 30);
+        const users = await firestore.runQuery({
+          from: [{ collectionId: "users" }],
+          where: { fieldFilter: { field: { fieldPath: "__name__" }, op: "IN", value: { arrayValue: { values: chunk.map((id: any) => ({ stringValue: `projects/${saConfig.projectId}/databases/(default)/documents/users/${id}` })) } } } }
+        });
+        for (const u of users) usersMap.set(u.id, u);
+      }
+
+      const populatedParticipants = participants.map((p: any) => ({
+        ...p,
+        User: usersMap.get(String(p.user_id)) ? sanitizeUser(usersMap.get(String(p.user_id))) : { display_name: "Unknown", avatar: null }
+      }));
 
       return json({
         success: true,
         data: {
           ...room,
           password: undefined,
-          Host: { id: room.host_user_id, display_name: null },
-          RoomParticipants: participants,
+          Host: usersMap.get(String(room.host_user_id)) ? sanitizeUser(usersMap.get(String(room.host_user_id))) : { id: room.host_user_id, display_name: null },
+          RoomParticipants: populatedParticipants,
           questions: [],
         },
       });
