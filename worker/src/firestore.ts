@@ -172,6 +172,16 @@ export class FirestoreClient {
     await this.fetchApi(`/${collectionPath}/${docId}`, { method: "DELETE" });
   }
 
+  async listDocuments(collectionPath: string): Promise<any[]> {
+    try {
+      const res = await this.fetchApi(`/${collectionPath}`);
+      return (res.documents || []).map((doc: any) => parseFirestoreDocument(doc));
+    } catch (e: any) {
+      if (e.message.includes("NOT_FOUND") || e.message.includes("404")) return [];
+      throw e;
+    }
+  }
+
   async runQuery(query: any): Promise<any[]> {
     const res = await this.fetchApi(`:runQuery`, {
       method: "POST",

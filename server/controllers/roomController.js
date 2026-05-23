@@ -146,6 +146,7 @@ exports.getRoom = async (req, res) => {
             return {
                 user_id: pDoc.id,
                 status: pDoc.data().status,
+                score: pDoc.data().score || 0,
                 User: uDoc.exists ? { display_name: uDoc.data().display_name, public_id: uDoc.data().public_id } : null
             };
         }));

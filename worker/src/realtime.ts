@@ -63,37 +63,24 @@ export class RealtimeDO {
     const score = Number.isFinite(fields.score as number) ? (fields.score as number) : 0;
     const status = fields.status || "joined";
 
-    const existing = await this.firestore.runQuery({
-      from: [{ collectionId: "room_participants" }],
-      where: {
-        compositeFilter: {
-          op: "AND",
-          filters: [
-            { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomId } } },
-            { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: userId } } },
-          ],
-        },
-      },
-      limit: 1,
-    });
+    const docPath = `exam_rooms/${roomId}/participants`;
+    const existing = await this.firestore.getDocument(docPath, userId);
 
-    if (existing.length > 0) {
-      const part = existing[0];
-      await this.firestore.updateDocument("room_participants", part.id, {
-        score: fields.score !== undefined ? score : part.score,
+    if (existing) {
+      await this.firestore.updateDocument(docPath, userId, {
+        score: fields.score !== undefined ? score : existing.score,
         status,
         updated_at: new Date().toISOString(),
       });
     } else {
-      await this.firestore.createDocument("room_participants", {
-        room_id: roomId,
+      await this.firestore.createDocument(docPath, {
         user_id: userId,
         score,
         status,
         current_question_index: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      });
+      }, userId);
     }
   }
 
@@ -347,10 +334,7 @@ export class RealtimeDO {
               taken_at: new Date().toISOString(),
             });
 
-            const parts = await this.firestore.runQuery({
-              from: [{ collectionId: "room_participants" }],
-              where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomKey } } },
-            });
+            const parts = await this.firestore.listDocuments(`exam_rooms/${roomKey}/participants`);
 
             const total = parts.length;
             const finished = parts.filter((p: any) => p.status === "finished").length;
@@ -396,13 +380,10 @@ export class RealtimeDO {
       const roomKey = toRoomKey(roomId);
       if (roomKey && this.firestore) {
         try {
-          const parts = await this.firestore.runQuery({
-            from: [{ collectionId: "room_participants" }],
-            where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomKey } } },
-          });
+          const parts = await this.firestore.listDocuments(`exam_rooms/${roomKey}/participants`);
 
           for (const p of parts) {
-            await this.firestore.updateDocument("room_participants", p.id, {
+            await this.firestore.updateDocument(`exam_rooms/${roomKey}/participants`, p.id, {
               score: 0,
               status: "joined",
               current_question_index: 0,
