@@ -47,7 +47,7 @@ export class RealtimeDO {
 
   private async getRoomInfo(roomId: string) {
     if (!this.firestore) return null;
-    const room = await this.firestore.getDocument("rooms", roomId);
+    const room = await this.firestore.getDocument("exam_rooms", roomId);
     if (!room) return null;
     return {
       id: room.id,
@@ -267,7 +267,7 @@ export class RealtimeDO {
           const info = await this.getRoomInfo(roomKey);
           if (info && info.hostUserId === String(userId)) {
             if (this.firestore) {
-              await this.firestore.updateDocument("rooms", roomKey, {
+              await this.firestore.updateDocument("exam_rooms", roomKey, {
                 status: "in_progress",
                 updated_at: new Date().toISOString(),
               });
@@ -339,7 +339,7 @@ export class RealtimeDO {
             const total = parts.length;
             const finished = parts.filter((p: any) => p.status === "finished").length;
             if (total > 0 && total === finished) {
-              await this.firestore.updateDocument("rooms", roomKey, {
+              await this.firestore.updateDocument("exam_rooms", roomKey, {
                 status: "finished",
                 updated_at: new Date().toISOString(),
               });
@@ -362,7 +362,7 @@ export class RealtimeDO {
         try {
           const info = await this.getRoomInfo(roomKey);
           if (info && info.hostUserId === String(userId)) {
-            await this.firestore.updateDocument("rooms", roomKey, {
+            await this.firestore.updateDocument("exam_rooms", roomKey, {
               status: "finished",
               updated_at: new Date().toISOString(),
             });
