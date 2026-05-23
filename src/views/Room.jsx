@@ -56,7 +56,7 @@ const Room = () => {
                 setParticipants(data.data.RoomParticipants || []);
 
                 // Check if I am already a participant and restore state
-                const myParticipant = data.data.RoomParticipants?.find(p => p.user_id === user.id);
+                const myParticipant = data.data.RoomParticipants?.find(p => p.user_id == user.id);
                 if (myParticipant) {
                     if (myParticipant.status === 'finished') {
                         setExamFinished(true);
@@ -87,7 +87,7 @@ const Room = () => {
 
                 newSocket.on('score_updated', ({ userId, score }) => {
                     setParticipants(prev => prev.map(p =>
-                        p.user_id === userId ? { ...p, score } : p
+                        p.user_id == userId ? { ...p, score } : p
                     ));
                 });
 
@@ -112,7 +112,7 @@ const Room = () => {
                 if (data.data.status === 'finished') {
                     setExamFinished(true);
                     // If I am a participant, show my score
-                    const myParticipant = data.data.RoomParticipants?.find(p => p.user_id === user.id);
+                    const myParticipant = data.data.RoomParticipants?.find(p => p.user_id == user.id);
                     if (myParticipant && myParticipant.status === 'finished') {
                         setFinalScore(myParticipant.score);
                     }
@@ -155,6 +155,10 @@ const Room = () => {
         setExamFinished(true);
         setFinalScore(score);
         setUserAnswers(answers || {});
+        // Also update local participant status to finished so "Your Score" shows up immediately
+        setParticipants(prev => prev.map(p =>
+            p.user_id == currentUser?.id ? { ...p, status: 'finished', score } : p
+        ));
     };
 
     if (loading || !room) return <div className="p-8 text-center">Loading Room...</div>;
@@ -298,7 +302,7 @@ const Room = () => {
                             </div>
 
                             {/* Only show "Your Score" if the user actually participated and finished */}
-                            {participants.find(p => p.user_id === currentUser?.id && p.status === 'finished') && (
+                            {participants.find(p => p.user_id == currentUser?.id && p.status === 'finished') && (
                                 <div className="bg-white/10 p-6 rounded-2xl mb-6 text-center flex flex-col justify-center items-center border-2 border-white/20 shadow-lg backdrop-blur-sm">
                                     <span className="text-lg text-white/80 font-bold mb-1">Your Score</span>
                                     <span className="font-black text-5xl text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{finalScore}</span>
