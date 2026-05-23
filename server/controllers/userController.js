@@ -181,13 +181,6 @@ exports.getStats = async (req, res) => {
         });
 
         const totalExams = results.length;
-        const totalScore = results.reduce((acc, curr) => acc + curr.score, 0); // Assuming 'score' is what maps to 'accumulated_score' logic roughly
-        // Wait, existing code used curr.score, but schema says ExamResult has total_score?
-        // Let's implement based on existing code which probably had 'total_score' as full score and some other field for user score?
-        // Schema in prompt: subject_scores (JSON), total_score, max_score.
-        // Existing code: results.reduce((acc, curr) => acc + curr.score, 0).
-        // I should check ExamResult model.
-        // But for now, let's assume valid fields or fix if I see errors.
 
         // Let's rely on getHeatmapStats and getRadarStats for main dashboard.
         // This endpoint can return the "Key Stats" box data.
