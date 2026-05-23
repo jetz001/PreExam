@@ -128,7 +128,7 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
             content,
             category,
             background_style: backgroundStyle,
-            tags: tags.split(',').map(t => t.trim()).filter(t => t),
+            tags: [],
         };
 
         // Anti-Spam Validation
