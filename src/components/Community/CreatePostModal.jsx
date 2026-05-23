@@ -66,7 +66,7 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
             onClose();
         },
         onError: (error) => {
-            toast.error(error.response?.data?.error || error.message || "Failed to create post");
+            alert(error.response?.data?.error || error.message || "Failed to create post");
         }
     });
 
@@ -109,6 +109,16 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!title.trim()) {
+            alert("กรุณากรอกหัวข้อกระทู้");
+            return;
+        }
+        if (!isPoll && !content.trim() && !media && !backgroundStyle) {
+            alert("กรุณากรอกเนื้อหา หรือเลือกรูปภาพ/วิดีโอ");
+            return;
+        }
+
         const formData = new FormData();
         formData.append('title', title);
         formData.append('content', content);
@@ -119,13 +129,13 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
 
         // Anti-Spam Validation
         if (content.length > 5000) {
-            toast.error('Content exceeds 5,000 characters limit.');
+            alert('Content exceeds 5,000 characters limit.');
             return;
         }
 
         const lineCount = content.split('\n').length;
         if (lineCount > 100) {
-            toast.error('Content exceeds 100 lines limit.');
+            alert('Content exceeds 100 lines limit.');
             return;
         }
 
