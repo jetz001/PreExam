@@ -82,7 +82,11 @@ export default {
     }
 
     if (url.pathname === "/api/health") {
-      return json({ ok: true });
+      const saConfig = parseServiceAccount(env);
+      if (!saConfig) return json({ error: "missing_firebase_config" }, { status: 500 });
+      const firestore = new FirestoreClient(saConfig);
+      const user6 = await firestore.getDocument("users", "6");
+      return json({ ok: true, user6 });
     }
 
     if (url.pathname.startsWith("/api/ws") || url.pathname.startsWith("/api/realtime")) {
@@ -303,7 +307,7 @@ export default {
       const limit = Math.max(1, Math.min(50, Number(url.searchParams.get("limit") || 20)));
 
       const recentRooms = await firestore.runQuery({
-        from: [{ collectionId: "rooms" }],
+        from: [{ collectionId: "exam_rooms" }],
         orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
         limit: 100, // Fetch up to 100 to filter in memory
       });
@@ -326,10 +330,7 @@ export default {
       const participantCounts = new Map<string, number>();
 
       for (const rId of roomIds) {
-        const parts = await firestore.runQuery({
-          from: [{ collectionId: "room_participants" }],
-          where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: rId } } },
-        });
+        const parts = await firestore.listDocuments(`exam_rooms/${rId}/participants`);
         participantCounts.set(rId, parts.length);
       }
 
@@ -389,7 +390,7 @@ export default {
         // Fallback or empty if query fails
       }
 
-      const room = await firestore.createDocument("rooms", {
+      const room = await firestore.createDocument("exam_rooms", {
         code,
         name,
         mode,
@@ -406,15 +407,14 @@ export default {
         updated_at: new Date().toISOString(),
       });
 
-      await firestore.createDocument("room_participants", {
-        room_id: room.id,
+      await firestore.createDocument(`exam_rooms/${room.id}/participants`, {
         user_id: auth.userId,
         score: 0,
         status: "joined",
         current_question_index: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      });
+      }, auth.userId);
 
       return json({ success: true, data: room }, { status: 201 });
     }
@@ -430,7 +430,7 @@ export default {
       if (!code) return json({ success: false, message: "invalid_params" }, { status: 400 });
 
       const rooms = await firestore.runQuery({
-        from: [{ collectionId: "rooms" }],
+        from: [{ collectionId: "exam_rooms" }],
         where: { fieldFilter: { field: { fieldPath: "code" }, op: "EQUAL", value: { stringValue: code } } },
         limit: 1,
       });
@@ -448,30 +448,17 @@ export default {
       }
 
       // Check if already joined
-      const existingPart = await firestore.runQuery({
-        from: [{ collectionId: "room_participants" }],
-        where: {
-          compositeFilter: {
-            op: "AND",
-            filters: [
-              { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: room.id } } },
-              { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } },
-            ],
-          },
-        },
-        limit: 1,
-      });
+      const existingPart = await firestore.getDocument(`exam_rooms/${room.id}/participants`, auth.userId);
 
-      if (existingPart.length === 0) {
-        await firestore.createDocument("room_participants", {
-          room_id: room.id,
+      if (!existingPart) {
+        await firestore.createDocument(`exam_rooms/${room.id}/participants`, {
           user_id: auth.userId,
           score: 0,
           status: "joined",
           current_question_index: 0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        });
+        }, auth.userId);
       }
 
       return json({ success: true, data: { ...room, password: undefined } });
@@ -483,13 +470,10 @@ export default {
       if ("error" in auth) return auth.error;
 
       const roomId = roomIdMatch[1];
-      const room = await firestore.getDocument("rooms", roomId);
+      const room = await firestore.getDocument("exam_rooms", roomId);
       if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
 
-      const participants = await firestore.runQuery({
-        from: [{ collectionId: "room_participants" }],
-        where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomId } } },
-      });
+      const participants = await firestore.listDocuments(`exam_rooms/${roomId}/participants`);
 
       // Fetch users for participants
       const userIds = participants.map((p: any) => p.user_id);
@@ -539,22 +523,19 @@ export default {
       if ("error" in auth) return auth.error;
 
       const roomId = roomIdMatch[1];
-      const room = await firestore.getDocument("rooms", roomId);
+      const room = await firestore.getDocument("exam_rooms", roomId);
       if (!room) return json({ success: true, message: "Room already deleted or not found" });
 
       if (String(room.host_user_id) !== auth.userId) {
         return json({ success: false, message: "Not authorized to delete this room" }, { status: 403 });
       }
 
-      const participants = await firestore.runQuery({
-        from: [{ collectionId: "room_participants" }],
-        where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomId } } },
-      });
+      const participants = await firestore.listDocuments(`exam_rooms/${roomId}/participants`);
 
       for (const p of participants) {
-        await firestore.deleteDocument("room_participants", p.id);
+        await firestore.deleteDocument(`exam_rooms/${roomId}/participants`, p.id);
       }
-      await firestore.deleteDocument("rooms", roomId);
+      await firestore.deleteDocument("exam_rooms", roomId);
       return json({ success: true, message: "Room deleted successfully" });
     }
 
