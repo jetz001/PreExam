@@ -118,8 +118,9 @@ export class RealtimeDO {
       server.serializeAttachment({ ...attachment, token });
 
       // Socket.IO Handshake
-      server.send('0{"sid":"' + Math.random().toString(36).substring(2, 15) + '","upgrades":[],"pingInterval":25000,"pingTimeout":20000}');
-      server.send('40');
+      const sid = Math.random().toString(36).substring(2, 15);
+      server.send(`0{"sid":"${sid}","upgrades":[],"pingInterval":25000,"pingTimeout":20000}`);
+      server.send(`40{"sid":"${sid}"}`);
 
       return new Response(null, { status: 101, webSocket: client });
     }
@@ -172,7 +173,7 @@ export class RealtimeDO {
     }
 
     if (message.startsWith("40")) {
-      ws.send("40");
+      ws.send(`40{"sid":"123456"}`);
       return;
     }
 

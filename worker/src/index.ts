@@ -462,11 +462,11 @@ export default {
       
       for (let i = 0; i < uniqueUserIds.length; i += 30) {
         const chunk = uniqueUserIds.slice(i, i + 30);
-        const users = await firestore.runQuery({
-          from: [{ collectionId: "users" }],
-          where: { fieldFilter: { field: { fieldPath: "__name__" }, op: "IN", value: { arrayValue: { values: chunk.map((id: any) => ({ referenceValue: `projects/${saConfig.projectId}/databases/(default)/documents/users/${id}` })) } } } }
-        });
-        for (const u of users) usersMap.set(u.id, u);
+        const userPromises = chunk.map((id: any) => firestore.getDocument("users", String(id)));
+        const users = await Promise.all(userPromises);
+        for (const u of users) {
+          if (u && u.id) usersMap.set(u.id, u);
+        }
       }
 
       const populatedParticipants = participants.map((p: any) => ({
@@ -663,13 +663,11 @@ export default {
           const questionsMap = new Map();
           for (let i = 0; i < questionIds.length; i += 30) {
             const chunk = questionIds.slice(i, i + 30);
-            const qs = await firestore.runQuery({
-              from: [{ collectionId: "questions" }],
-              where: {
-                fieldFilter: { field: { fieldPath: "__name__" }, op: "IN", value: { arrayValue: { values: chunk.map(id => ({ referenceValue: `projects/${saConfig.projectId}/databases/(default)/documents/questions/${id}` })) } } }
-              }
-            });
-            for (const q of qs) questionsMap.set(q.id, q);
+            const qPromises = chunk.map(id => firestore.getDocument("questions", String(id)));
+            const qs = await Promise.all(qPromises);
+            for (const q of qs) {
+              if (q && q.id) questionsMap.set(q.id, q);
+            }
           }
 
           let score = 0;
