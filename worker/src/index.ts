@@ -351,7 +351,24 @@ export default {
       const password = (body as any).password ? String((body as any).password) : null;
 
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const settings = JSON.stringify({ time_limit: timeLimit });
+      // Fetch random questions based on criteria
+      const filters: any[] = [];
+      if (subject) filters.push({ fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } });
+      if (category) filters.push({ fieldFilter: { field: { fieldPath: "category" }, op: "EQUAL", value: { stringValue: category } } });
+
+      let query: any = { from: [{ collectionId: "questions" }] };
+      if (filters.length === 1) query.where = filters[0];
+      else if (filters.length > 1) query.where = { compositeFilter: { op: "AND", filters } };
+
+      let selectedIds: string[] = [];
+      try {
+        const allQs = await firestore.runQuery(query);
+        // Shuffle and pick
+        const shuffled = allQs.sort(() => Math.random() - 0.5);
+        selectedIds = shuffled.slice(0, questionCount).map((q: any) => q.id);
+      } catch (e) {
+        // Fallback or empty if query fails
+      }
 
       const room = await firestore.createDocument("rooms", {
         code,
@@ -361,11 +378,11 @@ export default {
         subject,
         category,
         max_participants: maxParticipants,
-        question_count: questionCount,
+        question_count: selectedIds.length > 0 ? selectedIds.length : questionCount,
         status: "waiting",
         settings,
         password,
-        question_ids: "[]",
+        question_ids: JSON.stringify(selectedIds),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -474,6 +491,18 @@ export default {
         User: usersMap.get(String(p.user_id)) ? sanitizeUser(usersMap.get(String(p.user_id))) : { display_name: "Unknown", avatar: null }
       }));
 
+      const questionIds = room.question_ids ? JSON.parse(String(room.question_ids)) : [];
+      const questionsMap = new Map();
+      for (let i = 0; i < questionIds.length; i += 30) {
+        const chunk = questionIds.slice(i, i + 30);
+        const qPromises = chunk.map((id: string) => firestore.getDocument("questions", id));
+        const qs = await Promise.all(qPromises);
+        for (const q of qs) {
+          if (q && q.id) questionsMap.set(q.id, q);
+        }
+      }
+      const questions = questionIds.map((id: string) => questionsMap.get(id)).filter(Boolean);
+
       return json({
         success: true,
         data: {
@@ -481,7 +510,7 @@ export default {
           password: undefined,
           Host: usersMap.get(String(room.host_user_id)) ? sanitizeUser(usersMap.get(String(room.host_user_id))) : { id: room.host_user_id, display_name: null },
           RoomParticipants: populatedParticipants,
-          questions: [],
+          questions: questions,
         },
       });
     }
