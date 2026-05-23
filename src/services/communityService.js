@@ -18,8 +18,13 @@ const communityService = {
     },
 
     createThread: async (threadData) => {
-        // threadData should be FormData given the image upload support
-        const response = await api.post('/community/threads', threadData);
+        // By setting Content-Type to undefined, we override the default 'application/json'
+        // and allow Axios to automatically set 'multipart/form-data; boundary=...'
+        const response = await api.post('/community/threads', threadData, {
+            headers: {
+                'Content-Type': undefined
+            }
+        });
         return response.data;
     },
 

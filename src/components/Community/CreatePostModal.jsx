@@ -62,11 +62,12 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
             return await communityService.createThread(formData);
         },
         onSuccess: (newThread) => {
-            queryClient.invalidateQueries(['threads']);
+            queryClient.invalidateQueries({ queryKey: ['threads'] });
             onClose();
         },
         onError: (error) => {
-            alert(error.response?.data?.error || error.message || "Failed to create post");
+            console.error("Create thread error:", error);
+            toast.error(error.response?.data?.error || error.message || "Failed to create post");
         }
     });
 
@@ -111,11 +112,11 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
         e.preventDefault();
 
         if (!title.trim()) {
-            alert("กรุณากรอกหัวข้อกระทู้");
+            toast.error("กรุณากรอกหัวข้อกระทู้");
             return;
         }
         if (!isPoll && !content.trim() && !media && !backgroundStyle) {
-            alert("กรุณากรอกเนื้อหา หรือเลือกรูปภาพ/วิดีโอ");
+            toast.error("กรุณากรอกเนื้อหา หรือเลือกรูปภาพ/วิดีโอ");
             return;
         }
 
@@ -129,13 +130,13 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
 
         // Anti-Spam Validation
         if (content.length > 5000) {
-            alert('Content exceeds 5,000 characters limit.');
+            toast.error('Content exceeds 5,000 characters limit.');
             return;
         }
 
         const lineCount = content.split('\n').length;
         if (lineCount > 100) {
-            alert('Content exceeds 100 lines limit.');
+            toast.error('Content exceeds 100 lines limit.');
             return;
         }
 
