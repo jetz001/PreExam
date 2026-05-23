@@ -56,6 +56,23 @@ const sanitizeUser = (row: any) => {
   };
 };
 
+const normalizeQuestion = (q: any) => {
+  if (!q) return q;
+  const ans = String(q.correct_answer || "").trim();
+  const lowerAns = ans.toLowerCase();
+  if (lowerAns === "a" || lowerAns === "b" || lowerAns === "c" || lowerAns === "d") {
+    return { ...q, correct_answer: ans.toUpperCase() };
+  }
+  
+  let mapped = ans;
+  if (lowerAns === String(q.choice_a || "").trim().toLowerCase()) mapped = "A";
+  else if (lowerAns === String(q.choice_b || "").trim().toLowerCase()) mapped = "B";
+  else if (lowerAns === String(q.choice_c || "").trim().toLowerCase()) mapped = "C";
+  else if (lowerAns === String(q.choice_d || "").trim().toLowerCase()) mapped = "D";
+  
+  return { ...q, correct_answer: mapped.toUpperCase() };
+};
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
@@ -500,7 +517,7 @@ export default {
         const qPromises = chunk.map((id: string) => firestore.getDocument("questions", id));
         const qs = await Promise.all(qPromises);
         for (const q of qs) {
-          if (q && q.id) questionsMap.set(q.id, q);
+          if (q && q.id) questionsMap.set(q.id, normalizeQuestion(q));
         }
       }
       const questions = questionIds.map((id: string) => questionsMap.get(id)).filter(Boolean);
@@ -601,7 +618,7 @@ export default {
         if (qIdMatch && request.method === "GET") {
           const q = await firestore.getDocument("questions", qIdMatch[1]);
           if (!q) return json({ success: false, message: "Question not found" }, { status: 404 });
-          return json({ success: true, data: q });
+          return json({ success: true, data: normalizeQuestion(q) });
         }
 
         // /api/questions (List)
@@ -653,7 +670,7 @@ export default {
               const qCatalogs = Array.isArray(data.catalogs) ? data.catalogs.join(",").toLowerCase() : (data.catalogs || "").toLowerCase();
               if (!qCat.includes(catStr) && !qCatalogs.includes(catStr)) match = false;
             }
-            if (match) rows.push(data);
+            if (match) rows.push(normalizeQuestion(data));
           }
 
           if (orderBy === "random") {
@@ -708,8 +725,9 @@ export default {
           const questionsDetail: any[] = [];
 
           for (const qId of questionIds) {
-            const q = questionsMap.get(qId);
-            if (!q) continue;
+            const rawQ = questionsMap.get(qId);
+            if (!rawQ) continue;
+            const q = normalizeQuestion(rawQ);
 
             total_score++;
             const userAnswer = answers[qId];
