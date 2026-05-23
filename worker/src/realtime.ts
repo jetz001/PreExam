@@ -100,7 +100,7 @@ export class RealtimeDO {
   async fetch(request: Request) {
     const url = new URL(request.url);
 
-    if ((url.pathname.endsWith("/ws") || url.pathname.endsWith("/ws/")) && request.headers.get("upgrade") === "websocket") {
+    if ((url.pathname.endsWith("/ws") || url.pathname.endsWith("/ws/")) && request.headers.get("upgrade")?.toLowerCase() === "websocket") {
       const pair = new WebSocketPair();
       const client = pair[0];
       const server = pair[1];
@@ -118,7 +118,6 @@ export class RealtimeDO {
       server.serializeAttachment({ ...attachment, token });
 
       // Socket.IO Handshake
-      server.accept();
       server.send('0{"sid":"' + Math.random().toString(36).substring(2, 15) + '","upgrades":[],"pingInterval":25000,"pingTimeout":20000}');
       server.send('40');
 
