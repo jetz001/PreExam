@@ -542,6 +542,134 @@ export default {
             },
           });
         }
+        // /api/exams/submit
+        if (url.pathname === "/api/exams/submit" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+
+          const body = await readJson(request);
+          if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
+
+          const { answers, mode, classroom_id, total_time } = body as any;
+          if (!answers || typeof answers !== "object") return json({ success: false, message: "invalid_params" }, { status: 400 });
+
+          const questionIds = Object.keys(answers);
+          if (questionIds.length === 0) return json({ success: false, message: "No answers provided" }, { status: 400 });
+
+          // Fetch questions. Firestore REST API IN operator supports max 30 elements.
+          // Since exams might have up to 50 or 100 questions, we fetch them individually or use multiple queries.
+          const questionsMap = new Map();
+          for (let i = 0; i < questionIds.length; i += 30) {
+            const chunk = questionIds.slice(i, i + 30);
+            const qs = await firestore.runQuery({
+              from: [{ collectionId: "questions" }],
+              where: {
+                fieldFilter: { field: { fieldPath: "__name__" }, op: "IN", value: { arrayValue: { values: chunk.map(id => ({ stringValue: `projects/${saConfig.projectId}/databases/(default)/documents/questions/${id}` })) } } }
+              }
+            });
+            for (const q of qs) questionsMap.set(q.id, q);
+          }
+
+          let score = 0;
+          let total_score = 0;
+          const subject_scores: Record<string, any> = {};
+          const skill_scores: Record<string, any> = {};
+          const questionsDetail: any[] = [];
+
+          for (const qId of questionIds) {
+            const q = questionsMap.get(qId);
+            if (!q) continue;
+
+            total_score++;
+            const userAnswer = answers[qId];
+            const correctNormalized = q.correct_answer ? String(q.correct_answer).trim().toLowerCase() : "";
+            const userNormalized = userAnswer ? String(userAnswer).trim().toLowerCase() : "";
+            const isCorrect = userNormalized === correctNormalized;
+
+            if (isCorrect) score++;
+
+            if (q.subject) {
+              if (!subject_scores[q.subject]) subject_scores[q.subject] = { score: 0, total: 0 };
+              subject_scores[q.subject].total++;
+              if (isCorrect) subject_scores[q.subject].score++;
+            }
+
+            if (q.skill) {
+              if (!skill_scores[q.skill]) skill_scores[q.skill] = { score: 0, total: 0 };
+              skill_scores[q.skill].total++;
+              if (isCorrect) skill_scores[q.skill].score++;
+            }
+
+            questionsDetail.push({
+              question_id: q.id,
+              question_text: q.question_text,
+              user_answer: userAnswer,
+              correct_answer: q.correct_answer,
+              is_correct: isCorrect,
+              explanation: q.explanation,
+              choice_a: q.choice_a,
+              choice_b: q.choice_b,
+              choice_c: q.choice_c,
+              choice_d: q.choice_d,
+              category: q.category,
+              subject: q.subject,
+              skill: q.skill
+            });
+          }
+
+          const examResult = await firestore.createDocument("exam_results", {
+            user_id: auth.userId,
+            classroom_id: classroom_id || null,
+            score,
+            total_score,
+            mode: mode || "solo",
+            subject_scores: JSON.stringify(subject_scores),
+            skill_scores: JSON.stringify(skill_scores),
+            questions: JSON.stringify(questionsDetail),
+            time_taken: total_time || 0,
+            taken_at: new Date().toISOString()
+          });
+
+          return json({ success: true, data: examResult }, { status: 201 });
+        }
+
+        // /api/exams/history
+        if (url.pathname === "/api/exams/history" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+
+          const results = await firestore.runQuery({
+            from: [{ collectionId: "exam_results" }],
+            where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } },
+            orderBy: [{ field: { fieldPath: "taken_at" }, direction: "DESCENDING" }]
+          });
+
+          return json({ success: true, data: results });
+        }
+
+        // /api/exams/:id
+        const examIdMatch = url.pathname.match(/^\/api\/exams\/([a-zA-Z0-9_-]+)$/);
+        if (examIdMatch && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+
+          const result = await firestore.getDocument("exam_results", examIdMatch[1]);
+          if (!result) return json({ success: false, message: "Result not found" }, { status: 404 });
+
+          // Parse stringified JSON back to objects for frontend
+          if (typeof result.subject_scores === "string") {
+            try { result.subject_scores = JSON.parse(result.subject_scores); } catch {}
+          }
+          if (typeof result.skill_scores === "string") {
+            try { result.skill_scores = JSON.parse(result.skill_scores); } catch {}
+          }
+          if (typeof result.questions === "string") {
+            try { result.questions = JSON.parse(result.questions); } catch {}
+          }
+
+          return json({ success: true, data: result });
+        }
+
       } catch (err: any) {
         return json({ success: false, message: err.message }, { status: 500 });
       }
