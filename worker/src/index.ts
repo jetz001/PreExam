@@ -351,6 +351,8 @@ export default {
       const password = (body as any).password ? String((body as any).password) : null;
 
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const settings = JSON.stringify({ time_limit: timeLimit });
+
       // Fetch random questions based on criteria
       const filters: any[] = [];
       if (subject) filters.push({ fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } });
