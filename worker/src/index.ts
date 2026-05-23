@@ -408,25 +408,140 @@ export default {
       return json({ success: true, message: "Room deleted successfully" });
     }
 
-    if (url.pathname === "/api/questions" && request.method === "GET") {
+    if (url.pathname.startsWith("/api/questions")) {
       try {
-        const limitStr = url.searchParams.get("limit") || "100";
-        const limit = parseInt(limitStr, 10);
-        
-        const questions = await firestore.runQuery({
-          from: [{ collectionId: "questions" }],
-          limit,
-        });
+        const saConfig = parseServiceAccount(env);
+        if (!saConfig) return json({ error: "missing_firebase_config" }, { status: 500 });
+        const firestore = new FirestoreClient(saConfig);
 
-        return json({
-          success: true,
-          data: {
-            rows: questions,
-            total: questions.length,
-            page: 1,
-            totalPages: 1,
-          },
-        });
+        // /api/questions/subjects
+        if (url.pathname === "/api/questions/subjects" && request.method === "GET") {
+          const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+          const subjects = new Set<string>();
+          for (const q of qs) if (q.subject) subjects.add(q.subject);
+          return json({ success: true, data: Array.from(subjects).sort() });
+        }
+
+        // /api/questions/years
+        if (url.pathname === "/api/questions/years" && request.method === "GET") {
+          const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+          const years = new Set<string>();
+          for (const q of qs) if (q.exam_year) years.add(String(q.exam_year));
+          return json({ success: true, data: Array.from(years).sort((a, b) => b.localeCompare(a)) });
+        }
+
+        // /api/questions/sets
+        if (url.pathname === "/api/questions/sets" && request.method === "GET") {
+          const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+          const sets = new Set<string>();
+          for (const q of qs) if (q.exam_set) sets.add(q.exam_set);
+          return json({ success: true, data: Array.from(sets).sort() });
+        }
+
+        // /api/questions/categories
+        if (url.pathname === "/api/questions/categories" && request.method === "GET") {
+          const subject = url.searchParams.get("subject");
+          const query: any = { from: [{ collectionId: "questions" }] };
+          if (subject && subject !== "undefined" && subject !== "null") {
+            query.where = { fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } };
+          }
+          const qs = await firestore.runQuery(query);
+          const allTags = new Set<string>();
+          for (const q of qs) {
+            if (q.category) {
+              q.category.split(",").forEach((tag: string) => {
+                const t = tag.trim();
+                if (t) allTags.add(t);
+              });
+            }
+            if (q.catalogs && Array.isArray(q.catalogs)) {
+              q.catalogs.forEach((tag: string) => {
+                if (tag) allTags.add(tag.trim());
+              });
+            }
+          }
+          return json({ success: true, data: Array.from(allTags).sort() });
+        }
+
+        // /api/questions/:id
+        const qIdMatch = url.pathname.match(/^\/api\/questions\/([a-zA-Z0-9_-]+)$/);
+        if (qIdMatch && request.method === "GET") {
+          const q = await firestore.getDocument("questions", qIdMatch[1]);
+          if (!q) return json({ success: false, message: "Question not found" }, { status: 404 });
+          return json({ success: true, data: q });
+        }
+
+        // /api/questions (List)
+        if (url.pathname === "/api/questions" && request.method === "GET") {
+          const category = url.searchParams.get("category");
+          const subject = url.searchParams.get("subject");
+          const exam_year = url.searchParams.get("exam_year");
+          const exam_set = url.searchParams.get("exam_set");
+          const limitStr = url.searchParams.get("limit") || "50";
+          const pageStr = url.searchParams.get("page") || "1";
+          const orderBy = url.searchParams.get("orderBy");
+          const search = url.searchParams.get("search");
+
+          const limit = parseInt(limitStr, 10);
+          const page = parseInt(pageStr, 10);
+          const offset = (page - 1) * limit;
+
+          const filters: any[] = [];
+          if (subject && subject !== "undefined" && subject !== "null") {
+            filters.push({ fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } });
+          }
+          if (exam_year && exam_year !== "undefined" && exam_year !== "null") {
+            filters.push({ fieldFilter: { field: { fieldPath: "exam_year" }, op: "EQUAL", value: { stringValue: exam_year } } });
+          }
+          if (exam_set && exam_set !== "undefined" && exam_set !== "null") {
+            filters.push({ fieldFilter: { field: { fieldPath: "exam_set" }, op: "EQUAL", value: { stringValue: exam_set } } });
+          }
+
+          let query: any = { from: [{ collectionId: "questions" }] };
+          if (filters.length === 1) {
+            query.where = filters[0];
+          } else if (filters.length > 1) {
+            query.where = { compositeFilter: { op: "AND", filters } };
+          }
+
+          const allQs = await firestore.runQuery(query);
+          let rows: any[] = [];
+
+          for (const data of allQs) {
+            let match = true;
+            if (search) {
+              const searchStr = search.toLowerCase();
+              const qText = (data.question_text || "").toLowerCase();
+              if (!qText.includes(searchStr)) match = false;
+            }
+            if (match && category && category !== "undefined" && category !== "null") {
+              const catStr = category.toLowerCase();
+              const qCat = (data.category || "").toLowerCase();
+              const qCatalogs = Array.isArray(data.catalogs) ? data.catalogs.join(",").toLowerCase() : (data.catalogs || "").toLowerCase();
+              if (!qCat.includes(catStr) && !qCatalogs.includes(catStr)) match = false;
+            }
+            if (match) rows.push(data);
+          }
+
+          if (orderBy === "random") {
+            rows.sort(() => Math.random() - 0.5);
+          } else {
+            rows.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+          }
+
+          const count = rows.length;
+          rows = rows.slice(offset, offset + limit);
+
+          return json({
+            success: true,
+            data: {
+              rows,
+              total: count,
+              page,
+              totalPages: Math.ceil(count / limit) || 1,
+            },
+          });
+        }
       } catch (err: any) {
         return json({ success: false, message: err.message }, { status: 500 });
       }
