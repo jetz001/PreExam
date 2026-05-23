@@ -1,7 +1,7 @@
 const { db: firestore } = require('../config/firebase');
-const { User } = require('../models');
 
 const roomsRef = firestore.collection('exam_rooms');
+const usersRef = firestore.collection('users');
 const questionsRef = firestore.collection('questions');
 
 exports.createRoom = async (req, res) => {
@@ -77,14 +77,14 @@ exports.getRooms = async (req, res) => {
 
         const data = await Promise.all(filteredDocs.map(async doc => {
             const room = doc.data();
-            const hostUser = await User.findByPk(room.host_user_id);
+            const hostDoc = await usersRef.doc(room.host_user_id).get();
             const pSnap = await doc.ref.collection('participants').get();
             
             delete room.password; // hide password
             
             return {
                 ...room,
-                Host: hostUser ? { display_name: hostUser.display_name, plan_type: hostUser.plan_type } : null,
+                Host: hostDoc.exists ? { display_name: hostDoc.data().display_name, plan_type: hostDoc.data().plan_type } : null,
                 participant_count: pSnap.size
             };
         }));
@@ -138,16 +138,15 @@ exports.getRoom = async (req, res) => {
         if (!roomDoc.exists) return res.status(404).json({ success: false, message: 'Room not found' });
 
         const room = roomDoc.data();
-        const hostUser = await User.findByPk(room.host_user_id);
+        const hostDoc = await usersRef.doc(room.host_user_id).get();
         const pSnap = await roomDoc.ref.collection('participants').get();
         
         const participants = await Promise.all(pSnap.docs.map(async pDoc => {
-            const dbUser = await User.findByPk(pDoc.id);
+            const uDoc = await usersRef.doc(pDoc.id).get();
             return {
                 user_id: pDoc.id,
                 status: pDoc.data().status,
-                score: pDoc.data().score || 0,
-                User: dbUser ? { display_name: dbUser.display_name, public_id: dbUser.public_id, avatar: dbUser.avatar } : null
+                User: uDoc.exists ? { display_name: uDoc.data().display_name, public_id: uDoc.data().public_id } : null
             };
         }));
 
@@ -163,7 +162,7 @@ exports.getRoom = async (req, res) => {
             success: true,
             data: {
                 ...room,
-                Host: hostUser ? { id: hostUser.id, display_name: hostUser.display_name } : null,
+                Host: hostDoc.exists ? { id: hostDoc.id, display_name: hostDoc.data().display_name } : null,
                 RoomParticipants: participants,
                 questions
             }
