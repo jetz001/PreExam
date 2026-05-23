@@ -4,6 +4,7 @@ import axios from 'axios';
 import { X, Image as ImageIcon, Video, BarChart2, Plus, Trash2 } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
 import toast from 'react-hot-toast';
+import communityService from '../../services/communityService';
 
 const CreatePostModal = ({ onClose, initialImage, ...props }) => {
     const [title, setTitle] = useState('');
@@ -58,21 +59,14 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
 
     const mutation = useMutation({
         mutationFn: async (formData) => {
-            const token = localStorage.getItem('token');
-            const res = await axios.post('/api/community/threads', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            return res.data;
+            return await communityService.createThread(formData);
         },
         onSuccess: (newThread) => {
             queryClient.invalidateQueries(['threads']);
             onClose();
         },
         onError: (error) => {
-            alert(error.response?.data?.error || "Failed to create post");
+            toast.error(error.response?.data?.error || error.message || "Failed to create post");
         }
     });
 
