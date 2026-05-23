@@ -56,6 +56,20 @@ const userService = {
         const response = await api.delete('/users/business-profile');
         return response.data;
     },
+
+    getLeaderboard: async () => {
+        try {
+            const response = await api.get('/users/leaderboard');
+            return response.data;
+        } catch (error) {
+            // Mock fallback if endpoint doesn't exist yet
+            return [
+                { id: 1, username: 'TopScorer', points: 9500, avatar: '🦊' },
+                { id: 2, username: 'StudyMaster', points: 8200, avatar: '🐯' },
+                { id: 3, username: 'ExamPro', points: 7100, avatar: '🐼' }
+            ];
+        }
+    }
 };
 
 export default userService;

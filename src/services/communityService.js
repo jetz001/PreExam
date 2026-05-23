@@ -45,6 +45,11 @@ const communityService = {
         return response.data;
     },
 
+    getGroups: async () => {
+        const response = await api.get('/groups');
+        return response.data;
+    },
+
     deleteThread: async (id) => {
         const response = await api.delete(`/community/threads/${id}`);
         return response.data;
