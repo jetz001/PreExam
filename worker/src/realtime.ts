@@ -100,7 +100,7 @@ export class RealtimeDO {
   async fetch(request: Request) {
     const url = new URL(request.url);
 
-    if (url.pathname.endsWith("/ws") && request.headers.get("upgrade") === "websocket") {
+    if ((url.pathname.endsWith("/ws") || url.pathname.endsWith("/ws/")) && request.headers.get("upgrade") === "websocket") {
       const pair = new WebSocketPair();
       const client = pair[0];
       const server = pair[1];
