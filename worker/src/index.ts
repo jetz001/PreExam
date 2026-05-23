@@ -464,7 +464,7 @@ export default {
         const chunk = uniqueUserIds.slice(i, i + 30);
         const users = await firestore.runQuery({
           from: [{ collectionId: "users" }],
-          where: { fieldFilter: { field: { fieldPath: "__name__" }, op: "IN", value: { arrayValue: { values: chunk.map((id: any) => ({ stringValue: `projects/${saConfig.projectId}/databases/(default)/documents/users/${id}` })) } } } }
+          where: { fieldFilter: { field: { fieldPath: "__name__" }, op: "IN", value: { arrayValue: { values: chunk.map((id: any) => ({ referenceValue: `projects/${saConfig.projectId}/databases/(default)/documents/users/${id}` })) } } } }
         });
         for (const u of users) usersMap.set(u.id, u);
       }
@@ -666,7 +666,7 @@ export default {
             const qs = await firestore.runQuery({
               from: [{ collectionId: "questions" }],
               where: {
-                fieldFilter: { field: { fieldPath: "__name__" }, op: "IN", value: { arrayValue: { values: chunk.map(id => ({ stringValue: `projects/${saConfig.projectId}/databases/(default)/documents/questions/${id}` })) } } }
+                fieldFilter: { field: { fieldPath: "__name__" }, op: "IN", value: { arrayValue: { values: chunk.map(id => ({ referenceValue: `projects/${saConfig.projectId}/databases/(default)/documents/questions/${id}` })) } } }
               }
             });
             for (const q of qs) questionsMap.set(q.id, q);
