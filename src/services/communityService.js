@@ -24,10 +24,10 @@ const communityService = {
         const response = await fetch(`${baseUrl}/community/threads`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`
-                // Do NOT set Content-Type, browser will automatically set it with boundary for FormData
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             },
-            body: threadData
+            body: JSON.stringify(threadData),
         });
 
         if (!response.ok) {

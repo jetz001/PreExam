@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import imageCompression from 'browser-image-compression';
 import axios from 'axios';
 import { X, Image as ImageIcon, Video, BarChart2, Plus, Trash2 } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
@@ -110,8 +111,10 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("1. handleSubmit clicked");
 
         if (!title.trim()) {
+            console.log("Validation failed: no title");
             toast.error("กรุณากรอกหัวข้อกระทู้");
             return;
         }
@@ -120,13 +123,13 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
             return;
         }
 
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('content', content);
-        formData.append('category', category);
-        if (backgroundStyle) {
-            formData.append('background_style', backgroundStyle);
-        }
+        const payload = {
+            title,
+            content,
+            category,
+            background_style: backgroundStyle,
+            tags: tags.split(',').map(t => t.trim()).filter(t => t),
+        };
 
         // Anti-Spam Validation
         if (content.length > 5000) {
@@ -141,24 +144,54 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
         }
 
         if (media) {
-            formData.append('image', media); // Backend expects 'image' field for file, reused for video
+            if (media.type.startsWith('image/')) {
+                try {
+                    const options = {
+                        maxSizeMB: 0.5,
+                        maxWidthOrHeight: 1024,
+                        useWebWorker: true,
+                    };
+                    const compressedFile = await imageCompression(media, options);
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(compressedFile);
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = error => reject(error);
+                    });
+                    payload.image_base64 = base64;
+                } catch (err) {
+                    console.error("Image compression error", err);
+                    toast.error("Failed to process image");
+                    return;
+                }
+            } else {
+                toast.error("Video uploads are not supported on this environment yet.");
+                return;
+            }
         }
 
         if (isPoll) {
+            console.log("Appending poll data");
             const validOptions = pollOptions.filter(opt => opt.trim() !== '');
             if (validOptions.length < 2) {
-                alert("Poll must have at least 2 options");
+                toast.error("Poll must have at least 2 options");
                 return;
             }
-            const pollData = {
+            payload.poll = {
                 question: title,
                 options: validOptions,
-                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
             };
-            formData.append('poll', JSON.stringify(pollData));
         }
 
-        mutation.mutate(formData);
+        console.log("2. Mutating data...");
+        try {
+            mutation.mutate(payload);
+            console.log("3. Mutation called");
+        } catch (err) {
+            console.error("Mutation failed synchronously:", err);
+            alert("Mutation failed synchronously: " + err.message);
+        }
     };
 
     return (

@@ -777,6 +777,79 @@ export default {
           return json({ success: true, data: results });
         }
 
+        // /api/community/threads (GET)
+        if (url.pathname === "/api/community/threads" && request.method === "GET") {
+          const category = url.searchParams.get("category");
+          const search = url.searchParams.get("search");
+          const limitStr = url.searchParams.get("limit") || "10";
+          const limit = parseInt(limitStr, 10);
+          
+          let query: any = { 
+            from: [{ collectionId: "threads" }],
+            orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
+            limit: { value: limit } // FirestoreREST limit expects integer or object? The struct is usually { value: limit } for Protobuf Int32Value. 
+            // Wait, firestore REST API `limit` is just an integer in the query object!
+          };
+          query.limit = limit;
+
+          const filters: any[] = [];
+          if (category && category !== "all" && category !== "undefined" && category !== "null") {
+            filters.push({ fieldFilter: { field: { fieldPath: "category" }, op: "EQUAL", value: { stringValue: category } } });
+          }
+          if (filters.length === 1) {
+            query.where = filters[0];
+          } else if (filters.length > 1) {
+            query.where = { compositeFilter: { op: "AND", filters } };
+          }
+
+          let allThreads = await firestore.runQuery(query);
+          
+          // Client-side search filtering
+          if (search && search !== "undefined") {
+             const searchLower = search.toLowerCase();
+             allThreads = allThreads.filter((t: any) => {
+               if (t.title && t.title.toLowerCase().includes(searchLower)) return true;
+               if (t.tags && Array.isArray(t.tags) && t.tags.some((tag: string) => tag.toLowerCase().includes(searchLower))) return true;
+               return false;
+             });
+          }
+
+          let nextCursor = null;
+          if (allThreads.length > 0) {
+             nextCursor = allThreads[allThreads.length - 1].id;
+          }
+
+          return json({ success: true, threads: allThreads, nextCursor });
+        }
+
+        // /api/community/threads (POST)
+        if (url.pathname === "/api/community/threads" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+
+          const body: any = await readJson(request);
+          if (!body || !body.title) {
+            return json({ success: false, error: "Title is required" }, { status: 400 });
+          }
+
+          const threadData = {
+            user_id: auth.userId,
+            title: body.title,
+            content: body.content || "",
+            category: body.category || "general",
+            background_style: body.background_style || null,
+            tags: body.tags || [],
+            image_url: body.image_base64 || null,
+            likes: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            deleted_at: null,
+          };
+
+          const created = await firestore.createDocument("threads", threadData);
+          return json({ success: true, data: created }, { status: 201 });
+        }
+
         // /api/exams/:id
         const examIdMatch = url.pathname.match(/^\/api\/exams\/([a-zA-Z0-9_-]+)$/);
         if (examIdMatch && request.method === "GET") {
