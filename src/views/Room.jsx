@@ -67,7 +67,10 @@ const Room = () => {
                 // Connect Socket
                 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
                 const socketUrl = isLocal ? 'http://127.0.0.1:3000' : '/';
-                const newSocket = io(socketUrl);
+                const newSocket = io(socketUrl, {
+                    path: isLocal ? '/socket.io' : '/api/ws',
+                    transports: ['websocket']
+                });
                 setSocket(newSocket);
 
                 newSocket.emit('join_room', { roomId: id, userId: user.id });
@@ -456,8 +459,12 @@ const Room = () => {
                                                 return (
                                                     <li key={p.id} className="flex items-center justify-between p-3 bg-white rounded-2xl transition-all border-4 border-white/50 shadow-md hover:scale-105 hover:shadow-lg">
                                                         <div className="flex items-center">
-                                                            <div className={`w-12 h-12 bg-gradient-to-br ${bgGrad} rounded-xl flex items-center justify-center mr-4 text-lg font-black text-white shadow-inner border-2 border-white/30`}>
-                                                                {p.User?.display_name?.charAt(0).toUpperCase()}
+                                                            <div className={`w-12 h-12 bg-gradient-to-br ${bgGrad} rounded-xl flex items-center justify-center mr-4 text-lg font-black text-white shadow-inner border-2 border-white/30 overflow-hidden`}>
+                                                                {p.User?.avatar ? (
+                                                                    <img src={p.User.avatar} alt="avatar" className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    p.User?.display_name?.charAt(0).toUpperCase()
+                                                                )}
                                                             </div>
                                                             <span className="font-black text-gray-800 text-xl drop-shadow-sm">{p.User?.display_name}</span>
                                                         </div>
