@@ -9,7 +9,7 @@ import useUserRole from '../hooks/useUserRole';
 import PacingAlert from './exam/PacingAlert';
 
 import DOMPurify from 'dompurify';
-import HomeNavbar from '../HomeNavbar';
+import HomeNavbar from './HomeNavbar';
 
 const decodeHtml = (html) => {
     const txt = document.createElement("textarea");
