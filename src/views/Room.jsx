@@ -117,7 +117,7 @@ const Room = () => {
                         setFinalScore(myParticipant.score);
                     }
                     // No redirect, just show the finished view (Leaderboard)
-                } else if (data.data.status === 'playing') {
+                } else if (data.data.status === 'in_progress' || data.data.status === 'playing') {
                     // If room is in progress, start the exam for the user immediately
                     setIsExamStarted(true);
                 }
