@@ -49,6 +49,7 @@ const sanitizeUser = (row: any) => {
     id: row.id,
     email: row.email,
     display_name: row.display_name,
+    avatar: row.avatar || null,
     role: row.role,
     plan_type: row.plan_type,
     status: row.status,
@@ -144,7 +145,7 @@ export default {
       }
 
       const token = await signJwtHs256({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET || "default_secret");
-      return json({ success: true, token, user: { id: user.id, email: user.email, display_name: user.display_name, role: user.role, plan_type: user.plan_type } });
+      return json({ success: true, token, user: sanitizeUser(user) });
     }
 
     // /api/auth/google
@@ -200,7 +201,7 @@ export default {
       }
 
       const token = await signJwtHs256({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET || "default_secret");
-      return json({ success: true, token, user: { id: user.id, email: user.email, display_name: user.display_name, role: user.role, plan_type: user.plan_type } });
+      return json({ success: true, token, user: sanitizeUser(user) });
     }
 
     if (url.pathname === "/api/auth/login" && request.method === "POST") {

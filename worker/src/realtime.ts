@@ -117,6 +117,11 @@ export class RealtimeDO {
 
       server.serializeAttachment({ ...attachment, token });
 
+      // Socket.IO Handshake
+      server.accept();
+      server.send('0{"sid":"' + Math.random().toString(36).substring(2, 15) + '","upgrades":[],"pingInterval":25000,"pingTimeout":20000}');
+      server.send('40');
+
       return new Response(null, { status: 101, webSocket: client });
     }
 
@@ -148,19 +153,44 @@ export class RealtimeDO {
 
   private broadcast(msg: { event: string; data?: unknown }, room: string | null) {
     const sockets = this.state.getWebSockets();
+    const payload = `42${JSON.stringify([msg.event, msg.data])}`;
     for (const ws of sockets) {
       const attachment = ws.deserializeAttachment() as SocketAttachment | undefined;
       if (room) {
         const rooms = attachment?.rooms || [];
         if (!rooms.includes(room)) continue;
       }
-      ws.send(JSON.stringify(msg));
+      ws.send(payload);
     }
   }
 
   async webSocketMessage(ws: WebSocket, message: ArrayBuffer | string) {
+    if (typeof message !== "string") return;
+
+    if (message === "2" || message === "2probe") {
+      ws.send("3");
+      return;
+    }
+
+    if (message.startsWith("40")) {
+      ws.send("40");
+      return;
+    }
+
     let payload: RealtimeMessage | null = null;
-    if (typeof message === "string") {
+    
+    // Parse Socket.IO message (e.g. 42["event", data])
+    if (message.startsWith("42")) {
+      try {
+        const parsed = JSON.parse(message.slice(2));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          payload = { event: parsed[0], data: parsed[1] };
+        }
+      } catch {
+        payload = null;
+      }
+    } else {
+      // Fallback for standard JSON webSockets
       try {
         payload = JSON.parse(message);
       } catch {
