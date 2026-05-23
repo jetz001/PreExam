@@ -103,7 +103,7 @@ exports.getThreads = async (req, res) => {
         const { cursor, limit = 10, category, search, sort = 'newest' } = req.query;
         let query = threadsRef.orderBy('created_at', 'desc');
 
-        if (category && category !== 'all') {
+        if (category && category !== 'all' && category !== 'undefined') {
             query = query.where('category', '==', category);
         }
 
