@@ -9,6 +9,7 @@ import useUserRole from '../hooks/useUserRole';
 import PacingAlert from './exam/PacingAlert';
 
 import DOMPurify from 'dompurify';
+import HomeNavbar from '../HomeNavbar';
 
 const decodeHtml = (html) => {
     const txt = document.createElement("textarea");
@@ -134,16 +135,32 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
     };
 
     if (!questions || questions.length === 0) return (
-        <div className="flex items-center justify-center h-full">
-            <h2 className="text-3xl font-black text-white animate-pulse">Loading questions...</h2>
+        <div className="fixed inset-0 z-[100] bg-[#46178f] flex flex-col items-center justify-center">
+            <div className="absolute top-0 left-0 right-0 z-50">
+                <HomeNavbar />
+            </div>
+            <div className="flex flex-col items-center justify-center h-full">
+                <h2 className="text-3xl font-black text-white animate-pulse mb-8">Loading questions...</h2>
+                <button 
+                    onClick={() => window.location.href = '/lobby'} 
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg border-2 border-red-400"
+                >
+                    Exit to Lobby
+                </button>
+            </div>
         </div>
     );
 
     if (isStarting) return (
-        <div className="flex flex-col items-center justify-center h-full">
-            <h2 className="text-4xl md:text-6xl font-black text-white mb-8 drop-shadow-lg">Get Ready!</h2>
-            <div className="text-8xl md:text-[10rem] font-black text-yellow-300 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] animate-bounce">
-                {countdown}
+        <div className="fixed inset-0 z-[100] bg-[#46178f] flex flex-col items-center justify-center">
+            <div className="absolute top-0 left-0 right-0 z-50">
+                <HomeNavbar />
+            </div>
+            <div className="flex flex-col items-center justify-center h-full">
+                <h2 className="text-4xl md:text-6xl font-black text-white mb-8 drop-shadow-lg">Get Ready!</h2>
+                <div className="text-8xl md:text-[10rem] font-black text-yellow-300 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] animate-bounce">
+                    {countdown}
+                </div>
             </div>
         </div>
     );
