@@ -98,9 +98,10 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
 
     const handleAnswer = (choice) => {
         const currentQuestion = questions[currentIndex];
-        // Robust comparison
+        // Robust comparison: check if correct_answer matches the letter (A, B, C, D) OR the actual text of the choice
         const correctNorm = currentQuestion.correct_answer ? String(currentQuestion.correct_answer).trim().toUpperCase() : '';
-        const isCorrect = choice === correctNorm;
+        const choiceText = currentQuestion[`choice_${choice.toLowerCase()}`] ? String(currentQuestion[`choice_${choice.toLowerCase()}`]).trim().toUpperCase() : '';
+        const isCorrect = (choice === correctNorm) || (choiceText === correctNorm);
 
         // Update local state
         const newAnswers = { ...answers, [currentQuestion.id]: choice };

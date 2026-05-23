@@ -102,6 +102,13 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
     const allAnswered = Object.keys(answers).length === questions.length;
     const isReadyToSubmit = isLastQuestion || allAnswered;
 
+    const checkIsCorrect = (q, ansChoice) => {
+        if (!ansChoice) return false;
+        const correctNorm = q.correct_answer ? String(q.correct_answer).trim().toUpperCase() : '';
+        const choiceText = q[`choice_${ansChoice.toLowerCase()}`] ? String(q[`choice_${ansChoice.toLowerCase()}`]).trim().toUpperCase() : '';
+        return (ansChoice.toUpperCase() === correctNorm) || (choiceText === correctNorm);
+    };
+
     // Authentic Kahoot! brand colors & chunky shadows
     const choiceStyles = {
         'A': 'bg-[#e21b3c] hover:bg-[#c91835] shadow-[0_6px_0_#b3152d]', // Triangle (Red)
@@ -257,8 +264,8 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                 {mode === 'practice' && isAnswered && (
                     <div className="max-w-5xl mx-auto w-full mt-8">
                         <div className={`p-8 rounded-[2rem] shadow-xl border border-white/20 bg-white/10 backdrop-blur-md`}>
-                            <h4 className={`font-black text-3xl mb-4 drop-shadow-md ${answers[currentQuestion.id]?.toLowerCase() === currentQuestion.correct_answer?.toLowerCase() ? 'text-[#4ade80]' : 'text-[#f87171]'}`}>
-                                {answers[currentQuestion.id]?.toLowerCase() === currentQuestion.correct_answer?.toLowerCase() ? '🎉 สุดยอด! ตอบถูก' : '❌ อ๊ะ! ยังไม่ถูกนะ'}
+                            <h4 className={`font-black text-3xl mb-4 drop-shadow-md ${checkIsCorrect(currentQuestion, answers[currentQuestion.id]) ? 'text-[#4ade80]' : 'text-[#f87171]'}`}>
+                                {checkIsCorrect(currentQuestion, answers[currentQuestion.id]) ? '🎉 สุดยอด! ตอบถูก' : '❌ อ๊ะ! ยังไม่ถูกนะ'}
                             </h4>
                             <p className="text-white text-xl font-medium leading-relaxed drop-shadow-sm">
                                 <span className="font-black text-white bg-white/20 px-3 py-1 rounded-lg mr-2 border border-white/30">เฉลย: {currentQuestion.correct_answer}</span>
