@@ -19,9 +19,7 @@ const communityService = {
 
     createThread: async (threadData) => {
         // threadData should be FormData given the image upload support
-        const response = await api.post('/community/threads', threadData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        const response = await api.post('/community/threads', threadData);
         return response.data;
     },
 
