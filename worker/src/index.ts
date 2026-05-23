@@ -485,7 +485,7 @@ export default {
         const userPromises = chunk.map((id: any) => firestore.getDocument("users", String(id)));
         const users = await Promise.all(userPromises);
         for (const u of users) {
-          if (u && u.id) usersMap.set(u.id, u);
+          if (u && u.id) usersMap.set(String(u.id), u);
         }
       }
 
