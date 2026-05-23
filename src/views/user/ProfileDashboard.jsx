@@ -62,7 +62,7 @@ const ProfileDashboard = () => {
         <div className="streak-card">
           <div className="streak-fire">🔥</div>
           <div>
-            <div className="streak-num">42</div>
+            <div className="streak-num">{user?.streak_count || 0}</div>
             <div className="streak-label">DAY STREAK — ไม่มีวันหยุด!</div>
             <button className="btn-play" style={{ marginTop: '10px' }}>🎉 เฉลิมฉลอง!</button>
           </div>
@@ -70,61 +70,47 @@ const ProfileDashboard = () => {
         <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '18px', padding: '20px', animation: 'fadeSlideIn 0.5s 0.15s both' }}>
           <div className="section-title" style={{ marginBottom: '14px' }}><div className="dot"></div>Skills Progress</div>
           <div className="progress-row">
-            <div className="progress-label"><span>🔬 Science</span><span>87%</span></div>
-            <div className="progress-track"><div className="progress-fill t" style={{ width: '87%' }}></div></div>
+            <div className="progress-label"><span>🎯 Overall Accuracy</span><span>{stats?.accuracy || 0}%</span></div>
+            <div className="progress-track"><div className="progress-fill t" style={{ width: `${stats?.accuracy || 0}%` }}></div></div>
           </div>
           <div className="progress-row">
-            <div className="progress-label"><span>📐 Math</span><span>72%</span></div>
-            <div className="progress-track"><div className="progress-fill y" style={{ width: '72%' }}></div></div>
-          </div>
-          <div className="progress-row">
-            <div className="progress-label"><span>🌍 Geography</span><span>95%</span></div>
-            <div className="progress-track"><div className="progress-fill b" style={{ width: '95%' }}></div></div>
-          </div>
-          <div className="progress-row" style={{ marginBottom: '0' }}>
-            <div className="progress-label"><span>🎨 Art</span><span>58%</span></div>
-            <div className="progress-track"><div className="progress-fill r" style={{ width: '58%' }}></div></div>
+            <div className="progress-label"><span>🏆 Win Rate</span><span>{stats?.totalExams ? Math.round((stats?.gamesWon / stats?.totalExams) * 100) : 0}%</span></div>
+            <div className="progress-track"><div className="progress-fill y" style={{ width: `${stats?.totalExams ? Math.round((stats?.gamesWon / stats?.totalExams) * 100) : 0}%` }}></div></div>
           </div>
         </div>
       </div>
 
       {/* Stat Cards */}
-      <div className="section-title"><div className="dot"></div>สถิติสัปดาห์นี้</div>
+      <div className="section-title"><div className="dot"></div>สถิติทั้งหมด</div>
       <div className="grid-3">
         <div className="stat-card yellow">
-          <span className="sc-delta up">+18%</span>
           <span className="sc-icon">🏆</span>
-          <div className="sc-value" style={{ color: 'var(--k-yellow)' }}>186</div>
+          <div className="sc-value" style={{ color: 'var(--k-yellow)' }}>{stats?.gamesWon || 0}</div>
           <div className="sc-label">Games Won</div>
         </div>
         <div className="stat-card teal">
-          <span className="sc-delta up">+5%</span>
           <span className="sc-icon">⚡</span>
-          <div className="sc-value" style={{ color: 'var(--k-teal)' }}>1.4s</div>
+          <div className="sc-value" style={{ color: 'var(--k-teal)' }}>{stats?.avgAnswerTime || '0.0'}s</div>
           <div className="sc-label">Avg Answer Time</div>
         </div>
         <div className="stat-card red">
-          <span className="sc-delta down">-2%</span>
           <span className="sc-icon">❤️</span>
-          <div className="sc-value" style={{ color: '#ff6b87' }}>94%</div>
+          <div className="sc-value" style={{ color: '#ff6b87' }}>{stats?.accuracy || 0}%</div>
           <div className="sc-label">Accuracy</div>
         </div>
         <div className="stat-card blue">
-          <span className="sc-delta up">+12</span>
           <span className="sc-icon">🎯</span>
-          <div className="sc-value" style={{ color: '#5a9eff' }}>248</div>
+          <div className="sc-value" style={{ color: '#5a9eff' }}>{stats?.totalExams || 0}</div>
           <div className="sc-label">Total Games</div>
         </div>
         <div className="stat-card orange">
-          <span className="sc-delta up">New!</span>
           <span className="sc-icon">🌟</span>
-          <div className="sc-value" style={{ color: 'var(--k-orange)' }}>32</div>
+          <div className="sc-value" style={{ color: 'var(--k-orange)' }}>{stats?.badgesEarned || 0}</div>
           <div className="sc-label">Badges Earned</div>
         </div>
         <div className="stat-card purple">
-          <span className="sc-delta up">+8</span>
           <span className="sc-icon">👥</span>
-          <div className="sc-value" style={{ color: '#b07fff' }}>156</div>
+          <div className="sc-value" style={{ color: '#b07fff' }}>{stats?.friendsCount || 0}</div>
           <div className="sc-label">Friends</div>
         </div>
       </div>
@@ -157,35 +143,23 @@ const ProfileDashboard = () => {
         <div>
           <div className="section-title"><div className="dot"></div>Leaderboard สัปดาห์นี้</div>
           <div className="lb-card">
-            <div className="lb-row">
+            <div className="lb-row" style={{ opacity: 0.6 }}>
               <div className="lb-rank gold">🥇</div>
-              <div className="lb-avatar" style={{ background: 'rgba(255,204,0,0.2)' }}>😎</div>
-              <div className="lb-name">StarQueen99</div>
-              <div className="lb-score">4,820 XP</div>
+              <div className="lb-avatar" style={{ background: 'rgba(255,204,0,0.2)' }}>👑</div>
+              <div className="lb-name">Top Player 1</div>
+              <div className="lb-score">? XP</div>
             </div>
-            <div className="lb-row">
+            <div className="lb-row" style={{ opacity: 0.6 }}>
               <div className="lb-rank silver">🥈</div>
-              <div className="lb-avatar" style={{ background: 'rgba(192,192,192,0.15)' }}>🐯</div>
-              <div className="lb-name">TigerByte</div>
-              <div className="lb-score">4,210 XP</div>
+              <div className="lb-avatar" style={{ background: 'rgba(192,192,192,0.15)' }}>⚡</div>
+              <div className="lb-name">Top Player 2</div>
+              <div className="lb-score">? XP</div>
             </div>
-            <div className="lb-row">
-              <div className="lb-rank bronze">🥉</div>
-              <div className="lb-avatar" style={{ background: 'rgba(205,127,50,0.15)' }}>🦁</div>
-              <div className="lb-name">LionHeart_TH</div>
-              <div className="lb-score">3,990 XP</div>
-            </div>
-            <div className="lb-row">
-              <div className="lb-rank" style={{ color: 'var(--text-muted)' }}>4</div>
-              <div className="lb-avatar" style={{ background: 'rgba(255,119,0,0.15)' }}>🐉</div>
-              <div className="lb-name">DragonKid</div>
-              <div className="lb-score" style={{ color: 'var(--text-muted)' }}>3,450 XP</div>
-            </div>
-            <div className="lb-row me">
-              <div className="lb-rank me-r">⭐5</div>
-              <div className="lb-avatar" style={{ background: 'rgba(255,119,0,0.2)' }}>🦊</div>
-              <div className="lb-name" style={{ color: 'var(--k-yellow)' }}>NinjaFox9000 (คุณ)</div>
-              <div className="lb-score">2,840 XP</div>
+            <div className="lb-row me" style={{ marginTop: '10px' }}>
+              <div className="lb-rank me-r">⭐</div>
+              <div className="lb-avatar" style={{ background: 'rgba(255,119,0,0.2)' }}>{user?.avatar ? <img src={user.avatar} style={{width:'100%', borderRadius:'50%'}} /> : '🦊'}</div>
+              <div className="lb-name" style={{ color: 'var(--k-yellow)' }}>{user?.display_name || 'You'}</div>
+              <div className="lb-score">{xpInfo?.currentXP?.toLocaleString() || 0} XP</div>
             </div>
           </div>
 
@@ -194,22 +168,7 @@ const ProfileDashboard = () => {
             <div className="section-title"><div className="dot"></div>Badges ล่าสุด</div>
             <div className="achievements-card">
               <div className="badges-grid">
-                <div className="badge-item earned">
-                  <div className="badge-icon" style={{ background: 'rgba(255,204,0,0.15)' }}>🏆</div>
-                  <div className="badge-name">Champion</div>
-                </div>
-                <div className="badge-item earned">
-                  <div className="badge-icon" style={{ background: 'rgba(255,119,0,0.15)' }}>🔥</div>
-                  <div className="badge-name">On Fire</div>
-                </div>
-                <div className="badge-item earned">
-                  <div className="badge-icon" style={{ background: 'rgba(0,201,133,0.15)' }}>⚡</div>
-                  <div className="badge-name">Speed King</div>
-                </div>
-                <div className="badge-item earned">
-                  <div className="badge-icon" style={{ background: 'rgba(19,104,206,0.2)' }}>🌍</div>
-                  <div className="badge-name">World Expert</div>
-                </div>
+                <div style={{ color: 'var(--text-muted)', padding: '10px' }}>ระบบ Badges กำลังจะมาเร็วๆ นี้!</div>
               </div>
             </div>
           </div>

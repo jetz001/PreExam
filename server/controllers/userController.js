@@ -191,16 +191,31 @@ exports.getStats = async (req, res) => {
 
         // Let's rely on getHeatmapStats and getRadarStats for main dashboard.
         // This endpoint can return the "Key Stats" box data.
-        const totalQuestions = results.reduce((acc, curr) => acc + (curr.total_questions || 0), 0); // Guessing field
+        const totalScore = results.reduce((acc, curr) => acc + (curr.score || 0), 0);
+        const totalQuestions = results.reduce((acc, curr) => acc + (curr.total_score || 0), 0); // Assuming total_score is the max possible score for the exam
         const timeTaken = results.reduce((acc, curr) => acc + (curr.time_taken || 0), 0);
+        
+        // Let's say a game is "won" if score >= 80%
+        const gamesWon = results.filter(r => r.score >= (r.total_score || 10) * 0.8).length;
+
+        // Calculate Accuracy
+        const accuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
+
+        // Calculate Average Answer Time (assuming time_taken is in seconds)
+        const avgAnswerTime = totalQuestions > 0 ? (timeTaken / totalQuestions).toFixed(1) : 0;
 
         res.json({
             success: true,
             data: {
                 totalExams,
                 totalQuestions,
+                totalScore,
                 timeTaken,
-                // simplified
+                gamesWon,
+                accuracy,
+                avgAnswerTime,
+                badgesEarned: 0,
+                friendsCount: 0
             }
         });
     } catch (error) {
