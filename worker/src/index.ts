@@ -115,6 +115,94 @@ export default {
       return json({ success: true, token, user: sanitizeUser(user) });
     }
 
+    // /api/auth/guest
+    if (url.pathname === "/api/auth/guest" && request.method === "POST") {
+      const body = (await readJson(request)) as any;
+      if (!body || !body.deviceId) return json({ success: false, message: "invalid_body" }, { status: 400 });
+
+      const deviceId = body.deviceId;
+      const email = `guest_${deviceId}@preexam.com`;
+
+      const existing = await firestore.runQuery({
+        from: [{ collectionId: "users" }],
+        where: { fieldFilter: { field: { fieldPath: "email" }, op: "EQUAL", value: { stringValue: email } } },
+        limit: 1
+      });
+
+      let user;
+      if (existing.length > 0) {
+        user = existing[0];
+      } else {
+        const shortId = deviceId.slice(-5) + Math.floor(100 + Math.random() * 900);
+        user = await firestore.createDocument("users", {
+          email,
+          display_name: `Guest-${shortId}`,
+          role: "user",
+          plan_type: "free",
+          created_at: new Date().toISOString()
+        });
+      }
+
+      const token = await signJwtHs256({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET || "default_secret");
+      return json({ success: true, token, user: { id: user.id, email: user.email, display_name: user.display_name, role: user.role, plan_type: user.plan_type } });
+    }
+
+    // /api/auth/google
+    if (url.pathname === "/api/auth/google" && request.method === "POST") {
+      const body = (await readJson(request)) as any;
+      if (!body || !body.token) return json({ success: false, message: "invalid_body" }, { status: 400 });
+
+      const tokenStr = body.token;
+
+      // Verify token using Google tokeninfo endpoint
+      const googleRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${tokenStr}`);
+      if (!googleRes.ok) return json({ success: false, message: "Google login failed" }, { status: 400 });
+
+      const ticket = await googleRes.json() as any;
+      const { email, name, sub: googleId, picture } = ticket;
+
+      if (!email) return json({ success: false, message: "Email not provided by Google" }, { status: 400 });
+
+      let user;
+      const existingByGoogleId = await firestore.runQuery({
+        from: [{ collectionId: "users" }],
+        where: { fieldFilter: { field: { fieldPath: "google_id" }, op: "EQUAL", value: { stringValue: googleId } } },
+        limit: 1
+      });
+
+      if (existingByGoogleId.length > 0) {
+        user = existingByGoogleId[0];
+        if (picture && user.avatar !== picture) {
+          await firestore.updateDocument("users", user.id, { avatar: picture });
+        }
+      } else {
+        const existingByEmail = await firestore.runQuery({
+          from: [{ collectionId: "users" }],
+          where: { fieldFilter: { field: { fieldPath: "email" }, op: "EQUAL", value: { stringValue: email } } },
+          limit: 1
+        });
+        if (existingByEmail.length > 0) {
+          user = existingByEmail[0];
+          const updates: any = { google_id: googleId };
+          if (picture) updates.avatar = picture;
+          await firestore.updateDocument("users", user.id, updates);
+        } else {
+          user = await firestore.createDocument("users", {
+            email,
+            display_name: name,
+            google_id: googleId,
+            avatar: picture,
+            role: "user",
+            plan_type: "free",
+            created_at: new Date().toISOString()
+          });
+        }
+      }
+
+      const token = await signJwtHs256({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET || "default_secret");
+      return json({ success: true, token, user: { id: user.id, email: user.email, display_name: user.display_name, role: user.role, plan_type: user.plan_type } });
+    }
+
     if (url.pathname === "/api/auth/login" && request.method === "POST") {
       const secret = requireJwtSecret(env);
       if (!secret) return json({ error: "missing_jwt_secret" }, { status: 500 });
@@ -623,9 +711,9 @@ export default {
             score,
             total_score,
             mode: mode || "solo",
-            subject_scores: JSON.stringify(subject_scores),
-            skill_scores: JSON.stringify(skill_scores),
-            questions: JSON.stringify(questionsDetail),
+            subject_scores: subject_scores,
+            skill_scores: skill_scores,
+            questions: questionsDetail,
             time_taken: total_time || 0,
             taken_at: new Date().toISOString()
           });
@@ -655,17 +743,6 @@ export default {
 
           const result = await firestore.getDocument("exam_results", examIdMatch[1]);
           if (!result) return json({ success: false, message: "Result not found" }, { status: 404 });
-
-          // Parse stringified JSON back to objects for frontend
-          if (typeof result.subject_scores === "string") {
-            try { result.subject_scores = JSON.parse(result.subject_scores); } catch {}
-          }
-          if (typeof result.skill_scores === "string") {
-            try { result.skill_scores = JSON.parse(result.skill_scores); } catch {}
-          }
-          if (typeof result.questions === "string") {
-            try { result.questions = JSON.parse(result.questions); } catch {}
-          }
 
           return json({ success: true, data: result });
         }
