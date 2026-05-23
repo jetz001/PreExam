@@ -1,3 +1,5 @@
+import { FirestoreClient, parseServiceAccount } from "./firestore";
+
 type RealtimeMessage =
   | { event: string; data?: unknown }
   | { type: "ping" }
@@ -23,37 +25,76 @@ const parseJson = async (req: Request) => {
   }
 };
 
+export type Env = {
+  REALTIME: DurableObjectNamespace;
+  INTERNAL_API_KEY: string;
+  JWT_SECRET?: string;
+  FIREBASE_SERVICE_ACCOUNT?: string;
+};
+
 export class RealtimeDO {
+  private firestore: FirestoreClient | null = null;
+
   constructor(
     private readonly state: DurableObjectState,
     private readonly env: Env
-  ) {}
+  ) {
+    const config = parseServiceAccount(this.env);
+    if (config) {
+      this.firestore = new FirestoreClient(config);
+    }
+  }
 
   private async getRoomInfo(roomId: string) {
-    const row = await this.env.DB.prepare(
-      "SELECT id, host_user_id, question_count, subject, status FROM rooms WHERE id = ?"
-    )
-      .bind(roomId)
-      .first();
-    if (!row) return null;
+    if (!this.firestore) return null;
+    const room = await this.firestore.getDocument("rooms", roomId);
+    if (!room) return null;
     return {
-      id: String((row as any).id),
-      hostUserId: String((row as any).host_user_id),
-      questionCount: Number((row as any).question_count ?? 0),
-      subject: (row as any).subject ? String((row as any).subject) : null,
-      status: (row as any).status ? String((row as any).status) : null,
+      id: room.id,
+      hostUserId: String(room.host_user_id),
+      questionCount: Number(room.question_count || 0),
+      subject: room.subject ? String(room.subject) : null,
+      status: room.status ? String(room.status) : null,
     };
   }
 
   private async upsertParticipant(roomId: string, userId: string, fields: { score?: number; status?: string }) {
+    if (!this.firestore) return;
     const score = Number.isFinite(fields.score as number) ? (fields.score as number) : 0;
     const status = fields.status || "joined";
 
-    await this.env.DB.prepare(
-      "INSERT INTO room_participants (room_id, user_id, score, status, current_question_index, created_at, updated_at) VALUES (?, ?, ?, ?, 0, datetime('now'), datetime('now')) ON CONFLICT(room_id, user_id) DO UPDATE SET score = excluded.score, status = excluded.status, updated_at = datetime('now')"
-    )
-      .bind(roomId, userId, score, status)
-      .run();
+    const existing = await this.firestore.runQuery({
+      from: [{ collectionId: "room_participants" }],
+      where: {
+        compositeFilter: {
+          op: "AND",
+          filters: [
+            { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomId } } },
+            { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: userId } } },
+          ],
+        },
+      },
+      limit: 1,
+    });
+
+    if (existing.length > 0) {
+      const part = existing[0];
+      await this.firestore.updateDocument("room_participants", part.id, {
+        score: fields.score !== undefined ? score : part.score,
+        status,
+        updated_at: new Date().toISOString(),
+      });
+    } else {
+      await this.firestore.createDocument("room_participants", {
+        room_id: roomId,
+        user_id: userId,
+        score,
+        status,
+        current_question_index: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
   }
 
   async fetch(request: Request) {
@@ -208,9 +249,12 @@ export class RealtimeDO {
         try {
           const info = await this.getRoomInfo(roomKey);
           if (info && info.hostUserId === String(userId)) {
-            await this.env.DB.prepare("UPDATE rooms SET status = 'in_progress', updated_at = datetime('now') WHERE id = ?")
-              .bind(roomKey)
-              .run();
+            if (this.firestore) {
+              await this.firestore.updateDocument("rooms", roomKey, {
+                status: "in_progress",
+                updated_at: new Date().toISOString(),
+              });
+            }
             this.broadcast({ event: "exam_started" }, `room:${roomKey}`);
           }
         } catch {
@@ -248,7 +292,7 @@ export class RealtimeDO {
     if (event === "finish_exam") {
       const roomId = (data as any)?.roomId;
       const roomKey = toRoomKey(roomId);
-      if (roomKey) {
+      if (roomKey && this.firestore) {
         try {
           const userId = (data as any)?.userId;
           const score = Number((data as any)?.score ?? 0);
@@ -260,24 +304,31 @@ export class RealtimeDO {
           const info = await this.getRoomInfo(roomKey);
           if (info) {
             const subjectScores = info.subject ? JSON.stringify({ [info.subject]: score }) : null;
-            await this.env.DB.prepare(
-              "INSERT INTO exam_results (user_id, classroom_id, score, total_score, mode, subject_scores, skill_scores, questions, time_taken, taken_at) VALUES (?, NULL, ?, ?, 'classroom', ?, NULL, NULL, ?, datetime('now'))"
-            )
-              .bind(String(userId), score, info.questionCount, subjectScores, timeTaken)
-              .run();
+            await this.firestore.createDocument("exam_results", {
+              user_id: String(userId),
+              classroom_id: null,
+              score,
+              total_score: info.questionCount,
+              mode: "classroom",
+              subject_scores: subjectScores,
+              skill_scores: null,
+              questions: null,
+              time_taken: timeTaken,
+              taken_at: new Date().toISOString(),
+            });
 
-            const counts = await this.env.DB.prepare(
-              "SELECT COUNT(*) AS total, SUM(CASE WHEN status = 'finished' THEN 1 ELSE 0 END) AS finished FROM room_participants WHERE room_id = ?"
-            )
-              .bind(roomKey)
-              .first();
+            const parts = await this.firestore.runQuery({
+              from: [{ collectionId: "room_participants" }],
+              where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomKey } } },
+            });
 
-            const total = Number((counts as any)?.total ?? 0);
-            const finished = Number((counts as any)?.finished ?? 0);
+            const total = parts.length;
+            const finished = parts.filter((p: any) => p.status === "finished").length;
             if (total > 0 && total === finished) {
-              await this.env.DB.prepare("UPDATE rooms SET status = 'finished', updated_at = datetime('now') WHERE id = ?")
-                .bind(roomKey)
-                .run();
+              await this.firestore.updateDocument("rooms", roomKey, {
+                status: "finished",
+                updated_at: new Date().toISOString(),
+              });
             }
           }
 
@@ -293,13 +344,14 @@ export class RealtimeDO {
       const roomId = (data as any)?.roomId;
       const userId = (data as any)?.userId;
       const roomKey = toRoomKey(roomId);
-      if (roomKey && userId !== undefined && userId !== null) {
+      if (roomKey && userId !== undefined && userId !== null && this.firestore) {
         try {
           const info = await this.getRoomInfo(roomKey);
           if (info && info.hostUserId === String(userId)) {
-            await this.env.DB.prepare("UPDATE rooms SET status = 'finished', updated_at = datetime('now') WHERE id = ?")
-              .bind(roomKey)
-              .run();
+            await this.firestore.updateDocument("rooms", roomKey, {
+              status: "finished",
+              updated_at: new Date().toISOString(),
+            });
             this.broadcast({ event: "room_closed_by_host" }, `room:${roomKey}`);
           }
         } catch {
@@ -312,13 +364,21 @@ export class RealtimeDO {
     if (event === "reset_exam" || event === "exam_reset") {
       const roomId = (data as any)?.roomId;
       const roomKey = toRoomKey(roomId);
-      if (roomKey) {
+      if (roomKey && this.firestore) {
         try {
-          await this.env.DB.prepare(
-            "UPDATE room_participants SET score = 0, status = 'joined', current_question_index = 0, updated_at = datetime('now') WHERE room_id = ?"
-          )
-            .bind(roomKey)
-            .run();
+          const parts = await this.firestore.runQuery({
+            from: [{ collectionId: "room_participants" }],
+            where: { fieldFilter: { field: { fieldPath: "room_id" }, op: "EQUAL", value: { stringValue: roomKey } } },
+          });
+
+          for (const p of parts) {
+            await this.firestore.updateDocument("room_participants", p.id, {
+              score: 0,
+              status: "joined",
+              current_question_index: 0,
+              updated_at: new Date().toISOString(),
+            });
+          }
           this.broadcast({ event: "exam_reset" }, `room:${roomKey}`);
         } catch {
           return;
@@ -328,10 +388,3 @@ export class RealtimeDO {
     }
   }
 }
-
-export type Env = {
-  DB: D1Database;
-  REALTIME: DurableObjectNamespace;
-  INTERNAL_API_KEY: string;
-  JWT_SECRET?: string;
-};
