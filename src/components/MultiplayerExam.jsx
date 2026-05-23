@@ -48,7 +48,9 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState({});
     const [score, setScore] = useState(0);
-    const initialTime = (timeLimit || questions.length) * 60;
+    const parsedTimeLimit = parseInt(timeLimit, 10);
+    const validTimeLimit = (isNaN(parsedTimeLimit) || parsedTimeLimit <= 0) ? questions.length : parsedTimeLimit;
+    const initialTime = validTimeLimit * 60;
     const [timeLeft, setTimeLeft] = useState(initialTime); // Default to 1 min/question if not set
     const [showReportModal, setShowReportModal] = useState(false);
     const [fontSizeScale, setFontSizeScale] = useState(1);
