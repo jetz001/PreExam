@@ -829,14 +829,14 @@ export default {
           allThreads = allThreads.map((t: any) => {
             const u = usersMap.get(String(t.user_id));
             if (u) {
-              t.author = {
+              t.User = {
                 id: u.id,
                 display_name: u.display_name || "Unknown User",
                 avatar: u.avatar || null,
                 plan_type: u.plan_type || "free"
               };
             } else {
-              t.author = { id: t.user_id, display_name: "Unknown User" };
+              t.User = { id: t.user_id, display_name: "Unknown User" };
             }
             if (!t.stats) {
               t.stats = { views: t.views || 0, likes: t.likes || 0, comments_count: 0 };
@@ -902,7 +902,7 @@ export default {
           
           const u = await firestore.getDocument("users", String(threadDoc.user_id));
           if (u) {
-            threadDoc.author = { id: u.id, display_name: u.display_name || "Unknown User", avatar: u.avatar || null, plan_type: u.plan_type || "free" };
+            threadDoc.User = { id: u.id, display_name: u.display_name || "Unknown User", avatar: u.avatar || null, plan_type: u.plan_type || "free" };
           }
           
           return json(threadDoc); // Note: frontend expects raw thread data here
