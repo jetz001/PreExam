@@ -134,7 +134,7 @@ const Community = () => {
                 />
 
                 {/* RIGHT */}
-                <CommunityRightBar onBurst={burst} />
+                <CommunityRightBar onBurst={burst} user={user} />
             </div>
 
             {/* FAB */}
