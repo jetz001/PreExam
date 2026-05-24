@@ -12,9 +12,19 @@
   --n-text-muted: rgba(255, 255, 255, 0.6);
 
   font-family: 'Nunito', 'Sarabun', sans-serif;
-  background: var(--n-bg);
+  background: linear-gradient(-45deg, #2b1154, #1a0533, #3b1877, #1f0b40);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
   color: #fff;
   min-height: 100vh;
+  margin-top: -80px;
+  padding-top: 80px;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .news-page-container {
