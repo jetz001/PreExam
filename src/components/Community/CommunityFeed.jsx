@@ -22,11 +22,11 @@ const CATEGORY_COLORS = {
 };
 
 const PLAYFUL_COLORS = [
-    'linear-gradient(135deg, #ff0055 0%, #ff7b00 100%)', // Orange/Red
-    'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)', // Blue
-    'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', // Green
-    'linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)', // Purple
-    'linear-gradient(135deg, #fc00ff 0%, #00dbde 100%)', // Pink/Cyan
+    'linear-gradient(135deg, #4b1d52 0%, #7d264a 100%)', // Deep magenta
+    'linear-gradient(135deg, #1b386b 0%, #1e5c70 100%)', // Deep ocean
+    'linear-gradient(135deg, #1c4d44 0%, #206d48 100%)', // Deep forest
+    'linear-gradient(135deg, #3f2275 0%, #5a2e9d 100%)', // Deep royal
+    'linear-gradient(135deg, #5c206b 0%, #29387a 100%)', // Deep twilight
 ];
 
 const CommunityFeed = ({ onThreadSelect, onBurst }) => {
@@ -66,7 +66,7 @@ const CommunityFeed = ({ onThreadSelect, onBurst }) => {
         const postBg = PLAYFUL_COLORS[colorIndex];
         
         return (
-            <div className="post border-4 border-white/20 shadow-lg" key={post.id} onClick={() => onThreadSelect && onThreadSelect(post)} style={{ background: postBg }}>
+            <div className="post border border-white/10 shadow-md" key={post.id} onClick={() => onThreadSelect && onThreadSelect(post)} style={{ background: postBg }}>
                 <div className="post-accent" style={{ background: catColor }}></div>
                 
                 <div className="post-top">
