@@ -23,6 +23,21 @@ const News = () => {
     const [agencyJobs, setAgencyJobs] = useState([]);
     const [loadingJobs, setLoadingJobs] = useState(false);
 
+    // Kahoot-style Background Shapes
+    const [shapes, setShapes] = useState([]);
+    useEffect(() => {
+        const shapeTypes = ['k-circle', 'k-square', 'k-triangle'];
+        const newShapes = Array.from({ length: 15 }, (_, i) => ({
+            id: i,
+            type: shapeTypes[Math.floor(Math.random() * shapeTypes.length)],
+            left: `${Math.random() * 100}vw`,
+            size: `${30 + Math.random() * 50}px`,
+            delay: `${Math.random() * 10}s`,
+            duration: `${15 + Math.random() * 15}s`,
+        }));
+        setShapes(newShapes);
+    }, []);
+
     useEffect(() => {
         const fetchInitialData = async () => {
             setLoading(true);
@@ -67,7 +82,23 @@ const News = () => {
 
     return (
         <div className="news-page">
-            <div className="news-page-container space-y-6">
+            {/* Kahoot-style Background Shapes */}
+            {shapes.map(s => (
+                <div 
+                    key={s.id} 
+                    className={`k-shape ${s.type}`} 
+                    style={{ 
+                        left: s.left, 
+                        width: s.type !== 'k-triangle' ? s.size : undefined, 
+                        height: s.type !== 'k-triangle' ? s.size : undefined,
+                        '--s': s.type === 'k-triangle' ? s.size : undefined,
+                        animationDelay: s.delay,
+                        animationDuration: s.duration
+                    }} 
+                />
+            ))}
+
+            <div className="news-page-container relative z-10 space-y-6">
                 
                 {/* Search Bar */}
                 <div className="relative max-w-3xl">

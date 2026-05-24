@@ -12,19 +12,47 @@
   --n-text-muted: rgba(255, 255, 255, 0.6);
 
   font-family: 'Nunito', 'Sarabun', sans-serif;
-  background: linear-gradient(-45deg, #2b1154, #1a0533, #3b1877, #1f0b40);
-  background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite;
+  background: #46178f;
   color: #fff;
   min-height: 100vh;
   margin-top: -80px;
   padding-top: 80px;
+  position: relative;
+  overflow: hidden;
 }
 
-@keyframes gradientBG {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* KAHOOT BACKGROUND SHAPES */
+@keyframes shapeFloat {
+  0% { transform: translateY(120vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.3; }
+  90% { opacity: 0.3; }
+  100% { transform: translateY(-20vh) rotate(720deg); opacity: 0; }
+}
+
+.k-shape {
+  position: absolute;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  animation: shapeFloat linear infinite;
+}
+
+.k-circle {
+  border-radius: 50%;
+  background: #ffcc00; /* Yellow */
+}
+
+.k-square {
+  background: #00b4d8; /* Blue */
+}
+
+.k-triangle {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border-left: calc(var(--s) / 2) solid transparent;
+  border-right: calc(var(--s) / 2) solid transparent;
+  border-bottom: var(--s) solid #f72585; /* Pink */
 }
 
 .news-page-container {
