@@ -21,6 +21,14 @@ const CATEGORY_COLORS = {
     hot: '#ffcc00'
 };
 
+const PLAYFUL_COLORS = [
+    'linear-gradient(135deg, #ff0055 0%, #ff7b00 100%)', // Orange/Red
+    'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)', // Blue
+    'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', // Green
+    'linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)', // Purple
+    'linear-gradient(135deg, #fc00ff 0%, #00dbde 100%)', // Pink/Cyan
+];
+
 const CommunityFeed = ({ onThreadSelect, onBurst }) => {
     const [categoryFilter, setCategoryFilter] = useState('all');
 
@@ -54,9 +62,11 @@ const CommunityFeed = ({ onThreadSelect, onBurst }) => {
 
     const renderPost = (post) => {
         const catColor = CATEGORY_COLORS[post.category] || '#4361ee';
+        const colorIndex = post.id ? String(post.id).charCodeAt(0) % PLAYFUL_COLORS.length : 0;
+        const postBg = PLAYFUL_COLORS[colorIndex];
         
         return (
-            <div className="post" key={post.id} onClick={() => onThreadSelect && onThreadSelect(post)}>
+            <div className="post border-4 border-white/20 shadow-lg" key={post.id} onClick={() => onThreadSelect && onThreadSelect(post)} style={{ background: postBg }}>
                 <div className="post-accent" style={{ background: catColor }}></div>
                 
                 <div className="post-top">
@@ -90,7 +100,7 @@ const CommunityFeed = ({ onThreadSelect, onBurst }) => {
                 </div>
 
                 {post.content && !post.Poll && !post.background_style && (
-                    <div className="text-sm text-gray-300 mb-3 whitespace-pre-line line-clamp-4">
+                    <div className="text-sm text-white/90 mb-3 whitespace-pre-line line-clamp-4">
                         {post.content}
                     </div>
                 )}

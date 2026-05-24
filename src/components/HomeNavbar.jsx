@@ -143,6 +143,9 @@ export default function HomeNavbar() {
         position:'absolute', top:0, left:0, right:0, zIndex:100,
         display:'flex', alignItems:'center', justifyContent:'space-between',
         padding:'14px 20px',
+        background: 'linear-gradient(90deg, rgba(70,23,143,0.95), rgba(168,85,247,0.95))',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '3px solid #ffcc00'
       }}>
 
         {/* ── LEFT : Logo + Hamburger menu ── */}
