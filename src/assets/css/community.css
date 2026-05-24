@@ -1,12 +1,12 @@
 /* COMMUNITY PAGE SCOPED STYLES */
 
 .community-page {
-  --c-bg: #0f1523;
-  --c-nav: #161d2e;
-  --c-card: #1c2438;
-  --c-card2: #222b42;
-  --c-border: rgba(255,255,255,0.08);
-  --c-border2: rgba(255,255,255,0.14);
+  --c-bg: #46178f;
+  --c-nav: #371072;
+  --c-card: #5b21b6;
+  --c-card2: #6d28d9;
+  --c-border: rgba(255,255,255,0.15);
+  --c-border2: rgba(255,255,255,0.25);
   --c-yellow: #ffcc00;
   --c-purple: #7c3aed;
   --c-purple2: #a855f7;

@@ -11,10 +11,10 @@
   --k-teal: #00c985;
   --k-orange: #ff7700;
   --k-white: #ffffff;
-  --k-bg: #1a0533;
-  --card-bg: rgba(255,255,255,0.07);
-  --card-border: rgba(255,255,255,0.12);
-  --text-muted: rgba(255,255,255,0.55);
+  --k-bg: #46178f;
+  --card-bg: rgba(255,255,255,0.12);
+  --card-border: rgba(255,255,255,0.22);
+  --text-muted: rgba(255,255,255,0.7);
 }
 
 .profile-layout-container {
