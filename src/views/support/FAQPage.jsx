@@ -145,42 +145,49 @@ const FAQPage = () => {
                 {/* FAQ List */}
                 <div className="space-y-4">
                     {filteredFaqs.length > 0 ? (
-                        filteredFaqs.map((faq, index) => (
-                            <motion.div
-                                key={index}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                className="c-card p-0 overflow-hidden"
-                            >
-                                <button
-                                    onClick={() => toggleFaq(index)}
-                                    className="w-full flex items-center justify-between p-6 text-left hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+                        filteredFaqs.map((faq, index) => {
+                            const faqColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#864cbf'];
+                            const bgColor = faqColors[index % faqColors.length];
+                            
+                            return (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    className="c-card p-0 overflow-hidden"
+                                    style={{ backgroundColor: bgColor, borderColor: 'rgba(255,255,255,0.3)' }}
                                 >
-                                    <span className="font-bold text-white text-lg pr-4">{faq.q}</span>
-                                    <motion.div
-                                        animate={{ rotate: openIndex === index ? 180 : 0 }}
-                                        className="text-yellow-400"
+                                    <button
+                                        onClick={() => toggleFaq(index)}
+                                        className="w-full flex items-center justify-between p-6 text-left hover:bg-[rgba(255,255,255,0.15)] transition-colors"
                                     >
-                                        <ChevronDown size={24} />
-                                    </motion.div>
-                                </button>
-                                <AnimatePresence>
-                                    {openIndex === index && (
+                                        <span className="font-bold text-white text-lg pr-4" style={{ textShadow: '1px 2px 0px rgba(0,0,0,0.2)' }}>{faq.q}</span>
                                         <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: 'auto', opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            className="overflow-hidden bg-[rgba(0,0,0,0.1)]"
+                                            animate={{ rotate: openIndex === index ? 180 : 0 }}
+                                            className="text-white"
+                                            style={{ filter: 'drop-shadow(1px 2px 0px rgba(0,0,0,0.2))' }}
                                         >
-                                            <div className="p-6 pt-4 text-gray-200 border-t border-[rgba(255,255,255,0.1)] font-medium leading-relaxed italic">
-                                                {faq.a}
-                                            </div>
+                                            <ChevronDown size={28} strokeWidth={3} />
                                         </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </motion.div>
-                        ))
+                                    </button>
+                                    <AnimatePresence>
+                                        {openIndex === index && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="overflow-hidden bg-[rgba(0,0,0,0.2)]"
+                                            >
+                                                <div className="p-6 pt-4 text-white border-t border-[rgba(255,255,255,0.2)] font-medium leading-relaxed italic">
+                                                    {faq.a}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
+                            );
+                        })
                     ) : (
                         <div className="text-center py-20 bg-[rgba(255,255,255,0.05)] rounded-3xl border-2 border-[rgba(255,255,255,0.1)]">
                             <AlertCircle className="mx-auto text-yellow-400 mb-4" size={64} />
