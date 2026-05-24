@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Send, MessageCircle, HelpCircle, Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Lock, Book, Search, FileText, Facebook } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, MessageCircle, HelpCircle, Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Lock, Book, Search, FileText, Globe } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import supportService from '../../services/supportService';
@@ -118,7 +118,7 @@ const ContactPage = () => {
                                 </div>
                                 <div className="c-contact-item">
                                     <div className="c-contact-icon c-icon-blue">
-                                        <Facebook size={24} />
+                                        <Globe size={24} />
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-300">Facebook Page</p>
