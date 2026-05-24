@@ -187,7 +187,7 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
     const isOwner = user && thread.user_id === user.id;
 
     return (
-        <div className="rounded-[20px] shadow-sm border-2 border-white/20 mb-4 overflow-hidden hover:shadow-md transition-all relative" style={{ background: 'var(--c-card, #5b21b6)', color: '#fff' }}>
+        <div className="rounded-[24px] shadow-[0_8px_0_rgba(0,0,0,0.2)] border-4 border-white/30 mb-6 overflow-hidden hover:shadow-[0_12px_0_rgba(0,0,0,0.2)] hover:-translate-y-1 transition-all relative" style={{ background: 'linear-gradient(135deg, #00c6f0 0%, #0077a8 100%)', color: '#fff' }}>
             {/* Header */}
             <div className="p-4 flex justify-between items-start">
                 <div className="flex items-center space-x-3">
