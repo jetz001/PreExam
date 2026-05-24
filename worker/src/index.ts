@@ -814,6 +814,36 @@ export default {
              });
           }
 
+          // Fetch authors for threads
+          const userIds = [...new Set(allThreads.map((t: any) => t.user_id).filter(Boolean))];
+          const usersMap = new Map();
+          for (let i = 0; i < userIds.length; i += 30) {
+            const chunk = userIds.slice(i, i + 30);
+            const userPromises = chunk.map(id => firestore.getDocument("users", String(id)));
+            const users = await Promise.all(userPromises);
+            for (const u of users) {
+              if (u && u.id) usersMap.set(String(u.id), u);
+            }
+          }
+
+          allThreads = allThreads.map((t: any) => {
+            const u = usersMap.get(String(t.user_id));
+            if (u) {
+              t.author = {
+                id: u.id,
+                display_name: u.display_name || "Unknown User",
+                avatar: u.avatar || null,
+                plan_type: u.plan_type || "free"
+              };
+            } else {
+              t.author = { id: t.user_id, display_name: "Unknown User" };
+            }
+            if (!t.stats) {
+              t.stats = { views: t.views || 0, likes: t.likes || 0, comments_count: 0 };
+            }
+            return t;
+          });
+
           let nextCursor = null;
           if (allThreads.length > 0) {
              nextCursor = allThreads[allThreads.length - 1].id;
@@ -861,6 +891,30 @@ export default {
 
           return json({ success: true, data: result });
         }
+
+        // /api/community/threads/:id (GET)
+        const threadIdMatch = url.pathname.match(/^\/api\/community\/threads\/([a-zA-Z0-9_-]+)$/);
+        if (threadIdMatch && request.method === "GET") {
+          const threadDoc = await firestore.getDocument("threads", threadIdMatch[1]);
+          if (!threadDoc) return notFound();
+          
+          if (!threadDoc.stats) threadDoc.stats = { views: threadDoc.views || 0, likes: threadDoc.likes || 0, comments_count: 0 };
+          
+          const u = await firestore.getDocument("users", String(threadDoc.user_id));
+          if (u) {
+            threadDoc.author = { id: u.id, display_name: u.display_name || "Unknown User", avatar: u.avatar || null, plan_type: u.plan_type || "free" };
+          }
+          
+          return json(threadDoc); // Note: frontend expects raw thread data here
+        }
+
+        // Stub missing routes to prevent 404 crashes
+        if (url.pathname === "/api/users/stats") return json({ success: true, stats: { total_tests: 0, avg_score: 0 }});
+        if (url.pathname === "/api/public/settings") return json({ success: true, settings: {} });
+        if (url.pathname === "/api/groups") return json({ success: true, groups: [] });
+        if (url.pathname === "/api/community/tags/trending") return json([]);
+        if (url.pathname === "/api/friends/list") return json({ success: true, friends: [] });
+        if (url.pathname === "/api/users/leaderboard") return json({ success: true, leaderboard: [] });
 
       } catch (err: any) {
         return json({ success: false, message: err.message }, { status: 500 });
