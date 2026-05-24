@@ -913,7 +913,16 @@ export default {
         if (commentsMatch && request.method === "GET") {
           const threadId = commentsMatch[1];
           // Fetch comments
-          let comments = await firestore.queryDocuments("comments", "thread_id", "==", threadId);
+          let comments = await firestore.runQuery({
+            from: [{ collectionId: "comments" }],
+            where: {
+              fieldFilter: {
+                field: { fieldPath: "thread_id" },
+                op: "EQUAL",
+                value: { stringValue: threadId }
+              }
+            }
+          });
           
           // Fetch users for comments
           const userIds = [...new Set(comments.map((c: any) => c.user_id).filter(Boolean))];
