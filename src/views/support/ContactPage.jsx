@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Send, MessageCircle, HelpCircle, Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Lock, Book, Search } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, MessageCircle, HelpCircle, Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Lock, Book, Search, FileText, Facebook } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import supportService from '../../services/supportService';
