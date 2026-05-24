@@ -18,7 +18,7 @@
 }
 
 .news-page-container {
-  max-w-7xl;
+  max-width: 80rem;
   margin: 0 auto;
   padding: 16px 20px;
 }
