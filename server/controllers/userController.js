@@ -221,14 +221,21 @@ exports.getHeatmapStats = async (req, res) => {
     try {
         const results = await ExamResult.findAll({
             where: { user_id: req.user.id },
-            attributes: ['taken_at']
+            attributes: ['taken_at', 'created_at']
         });
 
         // Group by YYYY-MM-DD
         const dateMap = {};
         results.forEach(r => {
-            const date = new Date(r.taken_at).toISOString().split('T')[0];
-            dateMap[date] = (dateMap[date] || 0) + 1;
+            const dateStr = r.taken_at || r.created_at;
+            if (dateStr) {
+                try {
+                    const date = new Date(dateStr).toISOString().split('T')[0];
+                    dateMap[date] = (dateMap[date] || 0) + 1;
+                } catch (e) {
+                    console.warn('Invalid date in heatmap stats:', dateStr);
+                }
+            }
         });
 
         const data = Object.keys(dateMap).map(date => ({

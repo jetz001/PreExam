@@ -85,7 +85,7 @@ app.use(['/api/assets', '/assets'], assetRoutes);
 app.use(['/api/bookmarks', '/bookmarks'], require('./routes/bookmarkRoutes'));
 app.use(['/api/community', '/community'], require('./routes/communityRoutes'));
 app.use(['/api/groups', '/groups'], require('./routes/studyGroupRoutes'));
-app.use(['/api/messages', '/messages'], require('./routes/chatRoutes'));
+app.use(['/api/chat', '/api/messages', '/chat', '/messages'], require('./routes/chatRoutes'));
 app.use(['/api/public', '/public'], publicRoutes);
 app.use(['/api/ads', '/ads'], require('./routes/adsRoutes'));
 app.use('/api/business', require('./routes/businessRoutes')); // Learning Center
