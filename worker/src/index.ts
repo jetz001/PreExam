@@ -10,7 +10,7 @@ const withCors = (res: Response) => {
   headers.set("access-control-allow-origin", "*");
   headers.set("access-control-allow-methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
   headers.set("access-control-allow-headers", "content-type,authorization");
-  return new Response(res.body, { ...res, headers });
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 };
 
 const json = (body: unknown, init?: ResponseInit) => withCors(Response.json(body, init));
@@ -539,7 +539,7 @@ export default {
       return json({ success: true, message: "Room deleted successfully" });
     }
 
-    if (url.pathname.startsWith("/api/questions")) {
+    if (url.pathname.startsWith("/api/")) {
       try {
         const saConfig = parseServiceAccount(env);
         if (!saConfig) return json({ error: "missing_firebase_config" }, { status: 500 });
