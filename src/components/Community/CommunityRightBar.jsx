@@ -61,7 +61,8 @@ const CommunityRightBar = ({ onBurst, user }) => {
         fetchTrending();
     }, []);
 
-    const onBurst = () => {
+    const handleDailyChallenge = () => {
+        if (typeof onBurst === 'function') onBurst();
         // Navigate to daily challenge
         navigate('/exam/daily');
     };
@@ -145,7 +146,7 @@ const CommunityRightBar = ({ onBurst, user }) => {
                 <div style={{ fontSize: '12px', color: 'var(--c-muted)', marginBottom: '4px' }}>ภูมิศาสตร์โลก · 10 ข้อ · 5 นาที</div>
                 <div style={{ fontSize: '11px', color: 'var(--c-muted)', marginBottom: '2px' }}>🏅 รางวัล: +200 XP + Badge พิเศษ</div>
                 <div style={{ fontSize: '11px', color: 'rgba(247,37,133,.8)', fontWeight: 700, marginBottom: '2px' }}>⏳ หมดเวลาใน 08:24:17</div>
-                <button className="play-btn" onClick={onBurst}>▶ เริ่มเลย!</button>
+                <button className="play-btn" onClick={handleDailyChallenge}>▶ เริ่มเลย!</button>
             </div>
         </div>
     );
