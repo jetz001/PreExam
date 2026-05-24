@@ -908,6 +908,76 @@ export default {
           return json(threadDoc); // Note: frontend expects raw thread data here
         }
 
+        // /api/community/comments/:threadId (GET)
+        const commentsMatch = url.pathname.match(/^\/api\/community\/comments\/([a-zA-Z0-9_-]+)$/);
+        if (commentsMatch && request.method === "GET") {
+          const threadId = commentsMatch[1];
+          // Fetch comments
+          let comments = await firestore.queryDocuments("comments", "thread_id", "==", threadId);
+          
+          // Fetch users for comments
+          const userIds = [...new Set(comments.map((c: any) => c.user_id).filter(Boolean))];
+          const usersMap = new Map();
+          for (let i = 0; i < userIds.length; i += 30) {
+            const chunk = userIds.slice(i, i + 30);
+            const userPromises = chunk.map(id => firestore.getDocument("users", String(id)));
+            const users = await Promise.all(userPromises);
+            for (const u of users) {
+              if (u && u.id) usersMap.set(String(u.id), u);
+            }
+          }
+          
+          comments = comments.map((c: any) => {
+            const u = usersMap.get(String(c.user_id));
+            if (u) {
+              c.User = { id: u.id, display_name: u.display_name || "Unknown User", avatar: u.avatar || null, plan_type: u.plan_type || "free" };
+            } else {
+              c.User = { id: c.user_id, display_name: "Unknown User" };
+            }
+            c.likes = c.likes || 0;
+            return c;
+          });
+          
+          return json(comments); // Raw array
+        }
+
+        // /api/community/comments (POST)
+        if (url.pathname === "/api/community/comments" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          
+          const body = (await request.json()) as any;
+          const commentData = {
+             thread_id: body.thread_id,
+             content: body.content,
+             parent_id: body.parent_id || null,
+             user_id: auth.userId,
+             likes: 0,
+             created_at: new Date().toISOString(),
+             updated_at: new Date().toISOString()
+          };
+          
+          const created = await firestore.createDocument("comments", commentData);
+          
+          return json({ success: true, data: created });
+        }
+        
+        // /api/community/comments/:id/like (POST)
+        const commentLikeMatch = url.pathname.match(/^\/api\/community\/comments\/([a-zA-Z0-9_-]+)\/like$/);
+        if (commentLikeMatch && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          
+          const commentId = commentLikeMatch[1];
+          const comment = await firestore.getDocument("comments", commentId);
+          if (!comment) return notFound();
+          
+          const currentLikes = comment.likes || 0;
+          await firestore.updateDocument("comments", commentId, { likes: currentLikes + 1 });
+          
+          return json({ success: true, likes: currentLikes + 1 });
+        }
+
         // Stub missing routes to prevent 404 crashes
         if (url.pathname === "/api/users/stats") return json({ success: true, stats: { total_tests: 0, avg_score: 0 }});
         if (url.pathname === "/api/public/settings") return json({ success: true, settings: {} });
