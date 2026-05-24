@@ -22,6 +22,8 @@
   color: #fff;
   min-height: 100vh;
   overflow-x: hidden;
+  margin-top: -80px;
+  padding-top: 80px;
 }
 
 /* We don't import topnav since navbar is already global */
