@@ -66,7 +66,7 @@ const CommunityFeed = ({ onThreadSelect, onBurst }) => {
         const postBg = PLAYFUL_COLORS[colorIndex];
         
         return (
-            <div className="post border border-white/10 shadow-md" key={post.id} onClick={() => onThreadSelect && onThreadSelect(post)} style={{ background: postBg }}>
+            <div className="post" key={post.id} onClick={() => onThreadSelect && onThreadSelect(post)} style={{ background: postBg }}>
                 <div className="post-accent" style={{ background: catColor }}></div>
                 
                 <div className="post-top">
