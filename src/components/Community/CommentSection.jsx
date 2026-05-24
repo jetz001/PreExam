@@ -40,38 +40,38 @@ const CommentItem = ({ comment, onReply, depth = 0 }) => {
     };
 
     return (
-        <div className={`flex flex-col space-y-2 ${depth > 0 ? 'ml-8 border-l-2 border-gray-100 pl-2' : ''} mt-3`}>
+        <div className={`flex flex-col space-y-2 ${depth > 0 ? 'ml-8 border-l-2 border-white/20 pl-2' : ''} mt-3`}>
             <div className="flex space-x-2">
                 <img
                     src={getImageUrl(comment.User?.avatar)}
                     alt="Avatar"
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
                 />
-                <div className="flex-1 bg-gray-50 rounded-2xl px-4 py-2">
-                    <div className="font-bold text-sm text-gray-900 flex items-center gap-1">
+                <div className="flex-1 bg-white/10 border border-white/20 rounded-2xl px-4 py-2 shadow-sm">
+                    <div className="font-bold text-sm text-white flex items-center gap-1">
                         {comment.User?.display_name}
                         {comment.User?.MyBusiness && (
                             <Link to={`/learning-center/profile/${comment.User.MyBusiness.id}`} title="Visit Store">
-                                <Store size={12} className="text-indigo-600 cursor-pointer hover:scale-110 transition-transform" />
+                                <Store size={12} className="text-[#ffcc00] cursor-pointer hover:scale-110 transition-transform" />
                             </Link>
                         )}
                     </div>
-                    <div className="text-gray-800 text-sm whitespace-pre-wrap">
+                    <div className="text-white/90 text-sm whitespace-pre-wrap">
                         <RichText content={comment.content} />
                     </div>
                 </div>
             </div>
 
-            <div className="flex items-center space-x-4 ml-10 text-xs text-gray-500">
+            <div className="flex items-center space-x-4 ml-10 text-xs text-white/60">
                 <span>{formatDistanceToNow(new Date(comment.created_at), { locale: th })}</span>
                 <button
                     onClick={handleLike}
-                    className={`font-semibold hover:underline flex items-center space-x-1 ${isLiked ? 'text-pink-600' : ''}`}
+                    className={`font-bold hover:text-white transition-colors flex items-center space-x-1 ${isLiked ? 'text-pink-400' : ''}`}
                 >
                     <span>ถูกใจ {likes > 0 && `(${likes})`}</span>
                 </button>
                 {!isTooDeep && (
-                    <button onClick={() => onReply(comment)} className="font-semibold hover:underline">ตอบกลับ</button>
+                    <button onClick={() => onReply(comment)} className="font-bold hover:text-white transition-colors">ตอบกลับ</button>
                 )}
             </div>
 
@@ -158,41 +158,41 @@ const CommentSection = ({ threadId }) => {
     const currentUser = authService.getCurrentUser();
 
     return (
-        <div className="mt-4 pt-4 border-t">
-            <h3 className="text-lg font-bold mb-4 text-gray-900">ความคิดเห็น ({comments.length})</h3>
+        <div className="mt-4 pt-4 border-t border-white/20">
+            <h3 className="text-lg font-bold mb-4 text-white">ความคิดเห็น ({comments.length})</h3>
 
-            {isLoading ? <div className="text-center py-4">กำลังโหลด...</div> : (
+            {isLoading ? <div className="text-center py-4 text-white/60">กำลังโหลด...</div> : (
                 <div className="space-y-4 mb-20">
                     {comments.map(comment => (
                         <CommentItem key={comment.id} comment={comment} onReply={setReplyTo} />
                     ))}
-                    {comments.length === 0 && <p className="text-gray-400 text-center py-4">ยังไม่มีความคิดเห็น เป็นคนแรกเลย!</p>}
+                    {comments.length === 0 && <p className="text-white/50 text-center py-4">ยังไม่มีความคิดเห็น เป็นคนแรกเลย!</p>}
                 </div>
             )}
 
             {/* Input Fixed at Bottom or inline? Inline is better for modal */}
-            <div className="sticky bottom-0 bg-white pt-2 pb-4 border-t mt-4">
+            <div className="sticky bottom-0 pt-2 pb-4 border-t border-white/20 mt-4 backdrop-blur-md" style={{ background: 'var(--c-bg, #46178f)' }}>
                 {replyTo && (
-                    <div className="flex justify-between bg-gray-100 p-2 rounded-lg mb-2 text-sm">
+                    <div className="flex justify-between bg-white/10 border border-white/20 p-2 rounded-lg mb-2 text-sm text-white">
                         <span>ตอบกลับ: <strong>{replyTo.User?.display_name}</strong></span>
-                        <button onClick={() => setReplyTo(null)} className="text-red-500 font-bold">ยกเลิก</button>
+                        <button onClick={() => setReplyTo(null)} className="text-[#ffcc00] hover:text-white font-bold transition-colors">ยกเลิก</button>
                     </div>
                 )}
                 <form onSubmit={handleSubmit} className="flex space-x-2">
                     <img
                         src={getImageUrl(currentUser?.avatar)}
                         alt="My Avatar"
-                        className="w-10 h-10 rounded-full object-cover"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
                     />
                     <div className="flex-1 relative">
                         <textarea
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
                             placeholder={replyTo ? `ตอบกลับคุณ ${replyTo.User?.display_name}...` : "แสดงความคิดเห็น..."}
-                            className="w-full bg-gray-100 rounded-2xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-12 overflow-hidden"
+                            className="w-full bg-white/10 text-white placeholder-white/50 border border-white/20 rounded-2xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-[#ffcc00] focus:bg-white/20 transition-colors resize-none min-h-[48px] overflow-hidden"
                         />
-                        <button type="submit" disabled={mutation.isPending} className="absolute right-2 top-2 p-1 text-indigo-600 hover:bg-indigo-100 rounded-full">
-                            <Send size={20} />
+                        <button type="submit" disabled={mutation.isPending} className="absolute right-2 top-2 p-2 bg-[#ffcc00] text-[#46178f] rounded-full hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-transform transform hover:scale-110 active:scale-95 shadow-[0_3px_0_#e6b800] active:shadow-none active:translate-y-1">
+                            <Send size={16} />
                         </button>
                     </div>
                 </form>

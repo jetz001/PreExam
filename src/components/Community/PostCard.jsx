@@ -187,7 +187,7 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
     const isOwner = user && thread.user_id === user.id;
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 overflow-hidden hover:shadow-md transition-shadow relative">
+        <div className="rounded-[20px] shadow-sm border-2 border-white/20 mb-4 overflow-hidden hover:shadow-md transition-all relative" style={{ background: 'var(--c-card, #5b21b6)', color: '#fff' }}>
             {/* Header */}
             <div className="p-4 flex justify-between items-start">
                 <div className="flex items-center space-x-3">
@@ -207,15 +207,15 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
                     </div>
                     <div>
                         <div className="flex items-center space-x-2">
-                            <h3 className="font-bold text-gray-900 leading-tight">{thread.User?.display_name || 'Anonymous'}</h3>
+                            <h3 className="font-bold text-white leading-tight">{thread.User?.display_name || 'Anonymous'}</h3>
                             {thread.User && <FriendButton targetUserId={thread.User.id} />}
                         </div>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-white/60">
                             {thread.created_at && !isNaN(new Date(thread.created_at).getTime())
                                 ? formatDistanceToNow(new Date(thread.created_at), { addSuffix: true, locale: th })
                                 : 'เมื่อสักครู่'}
                             {' • '}
-                            <span className="text-indigo-600 font-medium">{thread.category}</span>
+                            <span className="text-[#ffcc00] font-medium">{thread.category}</span>
                         </span>
                     </div>
                 </div>
@@ -224,13 +224,13 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
                 <div className="relative" ref={menuRef}>
                     <button
                         onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                        className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                        className="p-1 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
                     >
                         <MoreVertical size={20} />
                     </button>
 
                     {showMenu && (
-                        <div className="absolute right-0 top-8 w-40 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-30 animate-fade-in">
+                        <div className="absolute right-0 top-8 w-40 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-30 animate-fade-in text-gray-900">
                             {isOwner ? (
                                 <>
                                     <button
@@ -261,14 +261,14 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
 
             {/* Content */}
             <div className="px-4 pb-2">
-                <h2 className="text-xl font-bold text-gray-800 mb-2">{thread.title}</h2>
+                <h2 className="text-xl font-bold text-white mb-2">{thread.title}</h2>
 
                 {thread.background_style && BACKGROUND_STYLES[thread.background_style] ? (
                     <div className={`${BACKGROUND_STYLES[thread.background_style]} p-8 rounded-lg min-h-[250px] flex items-center justify-center text-center shadow-inner mb-3`}>
                         <p className="text-white text-xl font-bold whitespace-pre-line break-words">{thread.content}</p>
                     </div>
                 ) : (
-                    <ReadMoreText content={thread.content} forceExpanded={isDetail} className="text-gray-600 leading-relaxed">
+                    <ReadMoreText content={thread.content} forceExpanded={isDetail} className="text-white/90 leading-relaxed">
                         <RichText content={thread.content} />
                     </ReadMoreText>
                 )}
@@ -403,7 +403,7 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
             }
 
             {/* Stats */}
-            <div className="px-4 py-2 flex justify-between text-sm text-gray-500 border-b border-gray-50">
+            <div className="px-4 py-2 flex justify-between text-sm text-white/60 border-b border-white/10">
                 <span>{likes} ถูกใจ</span>
                 <span>{thread.Comments?.length || 0} ความคิดเห็น • {thread.views || 0} อ่าน</span>
             </div>
@@ -412,28 +412,28 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
             <div className="flex justify-between items-center px-2 py-1">
                 <button
                     onClick={handleLike}
-                    className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-gray-50 transition-colors ${isLiked ? 'text-pink-600' : 'text-gray-600'}`}
+                    className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-white/10 transition-colors ${isLiked ? 'text-pink-400' : 'text-white/80 hover:text-white'}`}
                 >
                     <Heart size={20} className={isLiked ? 'fill-current' : ''} />
                     <span>ถูกใจ</span>
                 </button>
                 <button
                     onClick={() => onCommentClick(thread.id)}
-                    className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors"
+                    className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors"
                 >
                     <MessageCircle size={20} />
                     <span>แสดงความคิดเห็น</span>
                 </button>
                 <button
                     onClick={handleBookmark}
-                    className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors"
+                    className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors"
                 >
                     <Bookmark size={20} />
                     <span>บันทึก</span>
                 </button>
                 <button
                     onClick={handleShare}
-                    className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors"
+                    className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors"
                 >
                     <Share2 size={20} />
                     <span>แชร์</span>

@@ -33,13 +33,14 @@ const PostDetailModal = ({ thread: initialThread, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center overflow-y-auto animate-fade-in backdrop-blur-sm">
             <div
-                className="bg-white w-full max-w-2xl min-h-[50vh] max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden relative text-gray-900"
+                className="w-full max-w-2xl min-h-[50vh] max-h-[90vh] rounded-[24px] shadow-2xl flex flex-col overflow-hidden relative text-white border-4 border-[#ffcc00]"
+                style={{ background: 'var(--c-bg, #46178f)' }}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-10 bg-gray-100 p-2 rounded-full hover:bg-gray-200 text-gray-600 shadow-sm transition-colors"
+                    className="absolute top-4 right-4 z-10 bg-red-500 hover:bg-red-600 p-2 rounded-full text-white shadow-[0_3px_0_#991b1b] transition-all transform hover:-translate-y-1 active:translate-y-0 active:shadow-none"
                 >
                     <X size={24} />
                 </button>
