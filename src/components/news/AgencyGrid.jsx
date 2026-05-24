@@ -10,7 +10,7 @@ const icons = [
     { name: 'legal', icon: Scale, color: 'bg-amber-100 text-amber-600' },
 ];
 
-const AgencyGrid = ({ agencies, onAgencyClick }) => {
+const AgencyGrid = ({ agencies, onAgencyClick, selectedAgency }) => {
     // Helper to get a semi-random icon based on agency name text
     const getAgencyIcon = (name) => {
         if (name.includes('ครู') || name.includes('ศึกษา')) return icons[1];
@@ -27,41 +27,41 @@ const AgencyGrid = ({ agencies, onAgencyClick }) => {
     if (!agencies || agencies.length === 0) return null;
 
     return (
-        <div className="grid grid-rows-2 grid-flow-col auto-cols-[calc(50%-8px)] md:auto-cols-[calc(25%-18px)] gap-4 md:gap-6 overflow-x-auto pb-6 snap-x snap-mandatory hide-scrollbar">
+        <div className="flex flex-wrap gap-4 md:gap-6 pb-6">
             {agencies.map((agency, idx) => {
                 const iconData = getAgencyIcon(agency.agency);
                 const Icon = iconData.icon;
+                const isSelected = selectedAgency === agency.agency;
 
                 return (
                     <div
                         key={idx}
                         onClick={() => onAgencyClick(agency.agency)}
-                        className="snap-center shrink-0 group bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:border-indigo-100 transition-all cursor-pointer flex flex-col items-center justify-center text-center relative overflow-hidden"
+                        className={`w-[calc(50%-8px)] md:w-[calc(25%-18px)] lg:w-[calc(20%-19px)] shrink-0 a-card group ${isSelected ? 'selected' : ''}`}
                     >
                         {/* Decorative background circle */}
-                        <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full opacity-5 transition-transform group-hover:scale-150 ${iconData.color.split(' ')[0]}`} />
+                        <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full opacity-10 transition-transform group-hover:scale-150 ${iconData.color.split(' ')[0]}`} />
 
                         {agency.agency_logo ? (
-                            <div className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center mb-3 transition-transform group-hover:scale-110 shadow-none bg-transparent">
+                            <div className="a-icon-wrap bg-white">
                                 <img
                                     src={agency.agency_logo}
                                     alt={agency.agency}
-                                    className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-sm"
+                                    className="w-10 h-10 object-contain drop-shadow-sm"
                                 />
                             </div>
                         ) : (
-                            <div className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110 shadow-sm ${iconData.color}`}>
-                                <Icon className="w-6 h-6 md:w-8 md:h-8" />
+                            <div className={`a-icon-wrap ${iconData.color.replace('text-', 'bg-').replace('100', '500')} text-white`}>
+                                <Icon className="w-8 h-8" />
                             </div>
                         )}
 
-                        <h3 className="font-bold text-slate-800 text-sm md:text-base mb-1 line-clamp-2 md:min-h-[3rem]">
+                        <h3 className="font-bold text-white text-sm md:text-base mb-1 line-clamp-2 md:min-h-[2.5rem]">
                             {agency.agency}
                         </h3>
 
-                        <div className="flex items-center gap-1.5 text-indigo-600 font-bold text-xs md:text-sm mt-1">
-                            <Briefcase className="w-3 h-3 md:w-4 md:h-4" />
-                            {agency.count} ตำแหน่งว่าง
+                        <div className="a-count-pill">
+                            {agency.count} อัตรา
                         </div>
                     </div>
                 );

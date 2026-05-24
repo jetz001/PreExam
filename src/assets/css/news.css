@@ -1,0 +1,233 @@
+/* NEWS PAGE SCOPED STYLES */
+
+.news-page {
+  --n-bg: #2b1154;
+  --n-card-bg: #3b1877;
+  --n-border: rgba(255, 255, 255, 0.15);
+  --n-yellow: #ffcc00;
+  --n-orange: #fb8500;
+  --n-red: #f72585;
+  --n-blue: #4facfe;
+  --n-green: #06d6a0;
+  --n-text-muted: rgba(255, 255, 255, 0.6);
+
+  font-family: 'Nunito', 'Sarabun', sans-serif;
+  background: var(--n-bg);
+  color: #fff;
+  min-height: 100vh;
+}
+
+.news-page-container {
+  max-w-7xl;
+  margin: 0 auto;
+  padding: 16px 20px;
+}
+
+/* TABS */
+.news-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.news-tabs::-webkit-scrollbar {
+  display: none;
+}
+.news-tab {
+  padding: 10px 24px;
+  border-radius: 99px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  background: rgba(255,255,255,0.05);
+  border: 2px solid transparent;
+  color: var(--n-text-muted);
+}
+.news-tab:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+.news-tab.active {
+  background: var(--n-yellow);
+  color: #1a0533;
+  border-color: var(--n-yellow);
+  box-shadow: 0 4px 12px rgba(255, 204, 0, 0.3);
+}
+
+/* PLAYFUL CARDS (General News) */
+.n-card {
+  background: var(--n-card-bg);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 20px;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s, border-color 0.2s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0px 6px 0px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.n-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0px 10px 0px rgba(0, 0, 0, 0.25), 0px 10px 24px rgba(0, 0, 0, 0.3);
+}
+.n-card:active {
+  transform: translateY(2px);
+  box-shadow: 0px 2px 0px rgba(0, 0, 0, 0.25);
+}
+
+/* TOP BORDER ACCENT FOR CARDS */
+.n-card-accent {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  opacity: 0.8;
+}
+
+/* CARD TAG */
+.n-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 12px;
+  align-self: flex-start;
+}
+
+/* HERO CARD */
+.n-card-hero {
+  background: linear-gradient(135deg, #4f257d, #321654);
+  border-color: var(--n-orange);
+  box-shadow: 0px 8px 0px rgba(0, 0, 0, 0.3);
+}
+.n-card-hero:hover {
+  border-color: #ff9e00;
+  box-shadow: 0px 12px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* AGENCY CARDS (Jobs) */
+.a-card {
+  background: var(--n-card-bg);
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0px 6px 0px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+.a-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0px 10px 0px rgba(0, 0, 0, 0.25);
+}
+.a-card.selected {
+  border-color: var(--n-yellow);
+  background: rgba(255, 204, 0, 0.1);
+  box-shadow: 0px 8px 0px rgba(0, 0, 0, 0.3);
+}
+
+.a-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  font-size: 28px;
+}
+
+.a-count-pill {
+  background: var(--n-yellow);
+  color: #1a0533;
+  font-weight: 900;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 99px;
+  margin-top: 8px;
+}
+
+/* JOB LIST PANEL */
+.job-list-panel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 20px;
+  margin-top: 24px;
+}
+.job-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  transition: background 0.15s;
+  cursor: pointer;
+}
+.job-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.job-type-pill {
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 11px;
+  color: #fff;
+  height: max-content;
+  white-space: nowrap;
+}
+.job-type-civil { background: var(--n-red); }
+.job-type-employee { background: var(--n-yellow); color: #1a0533; }
+.job-type-other { background: var(--n-blue); }
+
+/* LOAD MORE BUTTON */
+.n-btn-more {
+  width: 100%;
+  padding: 16px;
+  background: rgba(255,255,255,0.05);
+  border: 2px dashed rgba(255,255,255,0.2);
+  border-radius: 20px;
+  color: var(--n-text-muted);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.n-btn-more:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border-color: rgba(255,255,255,0.3);
+}
+
+/* SEARCH INPUT */
+.n-search {
+  background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 12px 16px 12px 40px;
+  color: #fff;
+  width: 100%;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.n-search:focus {
+  outline: none;
+  border-color: var(--n-blue);
+  background: rgba(255,255,255,0.1);
+}
+.n-search::placeholder {
+  color: rgba(255,255,255,0.4);
+}
