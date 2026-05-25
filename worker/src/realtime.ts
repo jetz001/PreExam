@@ -306,6 +306,42 @@ export class RealtimeDO {
       return;
     }
 
+    if (event === "tutor_show_answer") {
+      const roomId = (data as any)?.roomId;
+      const roomKey = toRoomKey(roomId);
+      if (roomKey) this.broadcast({ event: "tutor_show_answer", data: { questionIndex: (data as any)?.questionIndex } }, `room:${roomKey}`);
+      return;
+    }
+
+    if (event === "tutor_player_answer") {
+      const roomId = (data as any)?.roomId;
+      const roomKey = toRoomKey(roomId);
+      if (roomKey) this.broadcast({ event: "tutor_player_answered", data: { choice: (data as any)?.choice } }, `room:${roomKey}`);
+      return;
+    }
+
+    if (event === "submit_progress") {
+      const roomId = (data as any)?.roomId;
+      const roomKey = toRoomKey(roomId);
+      const userId = (data as any)?.userId;
+      const questionIndex = (data as any)?.questionIndex;
+      
+      if (roomKey && userId !== undefined && userId !== null) {
+        try {
+          if (this.firestore) {
+            await this.firestore.updateDocument(`exam_rooms/${roomKey}/participants`, String(userId), {
+              current_question_index: questionIndex,
+              updated_at: new Date().toISOString(),
+            });
+          }
+          this.broadcast({ event: "progress_updated", data: { userId, questionIndex } }, `room:${roomKey}`);
+        } catch {
+          // ignore
+        }
+      }
+      return;
+    }
+
     if (event === "finish_exam") {
       const roomId = (data as any)?.roomId;
       const roomKey = toRoomKey(roomId);
