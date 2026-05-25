@@ -47,7 +47,7 @@ const MyAds = () => {
     ) : [];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 bg-blue-100 p-6 border-4 border-black rounded-3xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-800">My Campaigns</h1>
                 <div className="relative">
@@ -62,7 +62,7 @@ const MyAds = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-4 border-black border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">

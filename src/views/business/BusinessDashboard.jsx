@@ -7,6 +7,19 @@ import { Wallet, Flame, Eye, MousePointer, TrendingUp, Plus, ArrowUpRight, Dolla
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import DailyBurnList from './DailyBurnList';
+import { motion } from 'framer-motion';
+
+
+const FloatingShapes = () => {
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <motion.div animate={{ y: [0, -20, 0], rotate: [0, 10, -10, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} className="absolute top-10 left-10 w-24 h-24 bg-red-400 rounded-2xl border-4 border-black opacity-30" />
+            <motion.div animate={{ y: [0, 30, 0], rotate: [0, -15, 15, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute top-40 right-20 w-16 h-16 bg-blue-400 rounded-full border-4 border-black opacity-30" />
+            <motion.div animate={{ x: [0, 20, 0], y: [0, 15, 0], rotate: [0, 45, 0] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }} className="absolute bottom-32 left-32 w-20 h-20 bg-yellow-400 border-4 border-black opacity-30" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+            <motion.div animate={{ y: [0, -40, 0], rotate: [0, -20, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute bottom-20 right-40 w-28 h-28 bg-green-400 rounded-3xl border-4 border-black opacity-30" />
+        </div>
+    );
+};
 
 const BusinessDashboard = ({ sponsorId }) => {
     // Queries
@@ -103,23 +116,25 @@ const BusinessDashboard = ({ sponsorId }) => {
     const chartData = statsData.performanceData || [];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 min-h-[calc(100vh-80px)] bg-cyan-100 p-6 rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden font-sans">
+            <FloatingShapes />
+            <div className="relative z-10">
             {/* Dashboard Headers & Tabs */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Business Portal</h1>
-                    <p className="text-gray-500">Manage your business presence and advertising.</p>
+                    <h1 className="text-4xl font-black text-black uppercase tracking-wide drop-shadow-md">Business Portal 🚀</h1>
+                    <p className="text-black font-bold mt-2 text-lg">Manage your business presence and advertising.</p>
                 </div>
-                <div className="flex bg-gray-100 p-1 rounded-lg">
+                <div className="flex bg-white border-4 border-black p-2 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                     <button
                         onClick={() => setActiveTab('ads')}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'ads' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`px-6 py-3 rounded-xl text-lg font-black transition-all ${activeTab === 'ads' ? 'bg-yellow-400 text-black border-4 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'text-gray-600 hover:text-black border-4 border-transparent hover:border-gray-200'}`}
                     >
                         Ads Console
                     </button>
                     <button
                         onClick={() => setActiveTab('page')}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'page' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`px-6 py-3 rounded-xl text-lg font-black transition-all ${activeTab === 'page' ? 'bg-yellow-400 text-black border-4 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'text-gray-600 hover:text-black border-4 border-transparent hover:border-gray-200'}`}
                     >
                         Page Overview
                     </button>
@@ -130,7 +145,7 @@ const BusinessDashboard = ({ sponsorId }) => {
             {activeTab === 'ads' && (
                 <div className="space-y-6 animate-fade-in">
                     <div className="flex justify-end">
-                        <Link to="/business/create-ad" className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                        <Link to="/business/create-ad" className="flex items-center px-6 py-3 bg-green-500 text-white border-4 border-black rounded-2xl font-black text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
                             <Plus size={18} className="mr-2" />
                             Create New Ad
                         </Link>
@@ -139,11 +154,11 @@ const BusinessDashboard = ({ sponsorId }) => {
                     {/* Stats Cards - Ads Specific */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Wallet Balance */}
-                        <Link to="/business/wallet" className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 cursor-pointer col-span-1 md:col-span-2 lg:col-span-1">
+                        <Link to="/business/wallet" className="bg-blue-500 border-4 border-black rounded-3xl p-6 text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all transform hover:translate-y-[4px] hover:translate-x-[4px] cursor-pointer col-span-1 md:col-span-2 lg:col-span-1">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-blue-100 text-sm font-medium mb-1">Wallet Balance</p>
-                                    <h3 className="text-3xl font-bold">
+                                    <p className="text-white font-black uppercase tracking-wider text-sm mb-1">Wallet Balance</p>
+                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md">
                                         ฿{walletData?.balance ? parseFloat(walletData.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                                     </h3>
                                 </div>
@@ -157,13 +172,13 @@ const BusinessDashboard = ({ sponsorId }) => {
                         </Link>
 
                         {/* Active Ads */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="bg-white p-6 rounded-3xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Active Campaigns</p>
-                                    <h3 className="text-3xl font-bold text-gray-800 mt-2">{statsData.activeAds}</h3>
+                                    <p className="text-black font-black uppercase tracking-wider text-sm">Active Campaigns</p>
+                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md text-black mt-2 drop-shadow-md">{statsData.activeAds}</h3>
                                 </div>
-                                <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+                                <div className="p-2 bg-green-400 text-black border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <Flame size={24} />
                                 </div>
                             </div>
@@ -171,13 +186,13 @@ const BusinessDashboard = ({ sponsorId }) => {
                         </div>
 
                         {/* Total Views */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="bg-white p-6 rounded-3xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Total Views</p>
-                                    <h3 className="text-3xl font-bold text-gray-800 mt-2">{statsData.totalViews.toLocaleString()}</h3>
+                                    <p className="text-black font-black uppercase tracking-wider text-sm">Total Views</p>
+                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md text-black mt-2 drop-shadow-md">{statsData.totalViews.toLocaleString()}</h3>
                                 </div>
-                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                                <div className="p-2 bg-indigo-400 text-black border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <Eye size={24} />
                                 </div>
                             </div>
@@ -185,13 +200,13 @@ const BusinessDashboard = ({ sponsorId }) => {
                         </div>
 
                         {/* Total Clicks */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="bg-white p-6 rounded-3xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Total Clicks</p>
-                                    <h3 className="text-3xl font-bold text-gray-800 mt-2">{statsData.totalClicks.toLocaleString()}</h3>
+                                    <p className="text-black font-black uppercase tracking-wider text-sm">Total Clicks</p>
+                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md text-black mt-2 drop-shadow-md">{statsData.totalClicks.toLocaleString()}</h3>
                                 </div>
-                                <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
+                                <div className="p-2 bg-orange-400 text-black border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <MousePointer size={24} />
                                 </div>
                             </div>
@@ -201,9 +216,9 @@ const BusinessDashboard = ({ sponsorId }) => {
 
                     {/* Charts Section */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all">
                             <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-bold text-gray-800 flex items-center">
+                                <h2 className="text-2xl font-black text-black flex items-center uppercase">
                                     <TrendingUp size={20} className="mr-2 text-blue-500" /> Performance
                                 </h2>
                                 <select className="text-sm border-gray-200 rounded-md text-gray-500">
@@ -237,15 +252,15 @@ const BusinessDashboard = ({ sponsorId }) => {
                             </div>
                         </div>
 
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                            <h2 className="text-lg font-bold text-gray-800 mb-4">Quick Actions</h2>
+                        <div className="bg-white p-6 rounded-3xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all flex flex-col">
+                            <h2 className="text-2xl font-black text-black mb-4 uppercase">⚡ Quick Actions</h2>
                             <div className="space-y-3">
                                 <button
                                     onClick={() => setIsTopUpModalOpen(true)}
-                                    className="w-full text-left px-4 py-4 rounded-xl border-2 border-green-100 bg-green-50/50 hover:bg-green-50 hover:border-green-200 transition-all flex items-center justify-between group shadow-sm"
+                                    className="w-full text-left px-4 py-4 rounded-2xl border-4 border-black bg-lime-300 hover:bg-lime-400 transition-all flex items-center justify-between group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:translate-x-[2px]"
                                 >
                                     <div className="flex items-center">
-                                        <div className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center mr-3 shadow-sm group-hover:scale-110 transition-transform">
+                                        <div className="w-12 h-12 rounded-full bg-white text-black border-4 border-black flex items-center justify-center mr-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-hover:scale-110 transition-transform">
                                             <Wallet size={20} />
                                         </div>
                                         <div>
@@ -275,11 +290,11 @@ const BusinessDashboard = ({ sponsorId }) => {
                 <div className="space-y-6 animate-fade-in">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Followers */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 col-span-1">
+                        <div className="bg-white p-6 rounded-3xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all col-span-1">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Followers</p>
-                                    <h3 className="text-3xl font-bold text-gray-800 mt-2">{statsData.totalFollowers || 0}</h3>
+                                    <p className="text-black font-black uppercase tracking-wider text-sm">Followers</p>
+                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md text-black mt-2 drop-shadow-md">{statsData.totalFollowers || 0}</h3>
                                 </div>
                                 <div className="p-2 bg-pink-50 text-pink-600 rounded-lg">
                                     <Users size={24} />
@@ -289,11 +304,11 @@ const BusinessDashboard = ({ sponsorId }) => {
                         </div>
 
                         {/* Total Reviews */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 col-span-1">
+                        <div className="bg-white p-6 rounded-3xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all col-span-1">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Total Reviews</p>
-                                    <h3 className="text-3xl font-bold text-gray-800 mt-2">{statsData.totalReviews || 0}</h3>
+                                    <p className="text-black font-black uppercase tracking-wider text-sm">Total Reviews</p>
+                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md text-black mt-2 drop-shadow-md">{statsData.totalReviews || 0}</h3>
                                 </div>
                                 <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg">
                                     <MessageSquare size={24} />
@@ -303,11 +318,11 @@ const BusinessDashboard = ({ sponsorId }) => {
                         </div>
 
                         {/* Total Page Views */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 col-span-1">
+                        <div className="bg-white p-6 rounded-3xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all col-span-1">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Page Views</p>
-                                    <h3 className="text-3xl font-bold text-gray-800 mt-2">{statsData.totalPageViews?.toLocaleString() || 0}</h3>
+                                    <p className="text-black font-black uppercase tracking-wider text-sm">Page Views</p>
+                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md text-black mt-2 drop-shadow-md">{statsData.totalPageViews?.toLocaleString() || 0}</h3>
                                 </div>
                                 <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
                                     <MousePointer size={24} />
@@ -331,9 +346,9 @@ const BusinessDashboard = ({ sponsorId }) => {
             {/* Top Up Modal */}
             {isTopUpModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                    <div className="bg-yellow-300 rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] w-full max-w-md p-8">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-gray-900">Add Funds</h3>
+                            <h3 className="text-2xl font-black text-black uppercase">💰 Add Funds</h3>
                             <button onClick={() => setIsTopUpModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                                 &times;
                             </button>
@@ -341,15 +356,15 @@ const BusinessDashboard = ({ sponsorId }) => {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Amount (THB)</label>
+                                <label className="block text-lg font-black text-black mb-2">Amount (THB)</label>
                                 <div className="grid grid-cols-3 gap-3 mb-3">
                                     {[100, 500, 1000].map(amt => (
                                         <button
                                             key={amt}
                                             onClick={() => setTopUpAmount(amt)}
-                                            className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${topUpAmount === amt
-                                                ? 'bg-blue-600 text-white border-blue-600'
-                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                                            className={`py-3 px-3 rounded-xl border-4 font-black transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none ${topUpAmount === amt
+                                                ? 'bg-blue-500 text-white border-black'
+                                                : 'bg-white text-black border-black hover:bg-gray-100'
                                                 }`}
                                         >
                                             ฿{amt.toLocaleString()}
@@ -362,7 +377,7 @@ const BusinessDashboard = ({ sponsorId }) => {
                                     </div>
                                     <input
                                         type="number"
-                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md py-3"
+                                        className="focus:ring-0 block w-full pl-8 pr-12 text-lg font-bold border-4 border-black rounded-xl py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                                         placeholder="0.00"
                                         value={topUpAmount}
                                         onChange={(e) => setTopUpAmount(Number(e.target.value))}
@@ -373,7 +388,7 @@ const BusinessDashboard = ({ sponsorId }) => {
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 p-4 rounded-lg flex items-start">
+                            <div className="bg-white border-4 border-black p-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-start">
                                 <CreditCard size={20} className="text-gray-400 mr-3 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-gray-800">Bank Transfer</p>
@@ -385,7 +400,7 @@ const BusinessDashboard = ({ sponsorId }) => {
                             <button
                                 onClick={handleStripeTopUp}
                                 disabled={isSubmitting}
-                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-indigo-500 hover:bg-indigo-600 text-white font-black text-lg border-4 border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all flex items-center justify-center gap-2"
                             >
                                 <div className="flex -space-x-1 mr-1">
                                     <div className="w-3 h-3 rounded-full bg-red-400"></div>
@@ -401,7 +416,7 @@ const BusinessDashboard = ({ sponsorId }) => {
                                 <div className="flex-grow border-t border-gray-200"></div>
                             </div>
 
-                            <div className="bg-gray-50 p-4 rounded-lg flex items-start">
+                            <div className="bg-white border-4 border-black p-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-start">
                                 <CreditCard size={20} className="text-gray-400 mr-3 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-gray-800">Bank Transfer (Manual)</p>
@@ -412,7 +427,7 @@ const BusinessDashboard = ({ sponsorId }) => {
                             {/* Slip Upload */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Upload Transfer Slip</label>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors bg-gray-50">
+                                <div className="border-4 border-dashed border-black rounded-2xl p-6 text-center hover:bg-white transition-colors bg-white/50 cursor-pointer">
                                     {slipPreview ? (
                                         <div className="relative">
                                             <img src={slipPreview} alt="Slip Preview" className="max-h-32 mx-auto rounded shadow-sm" />
@@ -438,7 +453,7 @@ const BusinessDashboard = ({ sponsorId }) => {
                             <button
                                 onClick={handleTopUp}
                                 disabled={isSubmitting}
-                                className={`w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-md transition-all transform active:scale-95 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                className={`w-full py-4 bg-green-500 text-white font-black text-xl border-4 border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
                                 {isSubmitting ? 'Submitting...' : 'Confirm Top-up'}
                             </button>
@@ -446,6 +461,7 @@ const BusinessDashboard = ({ sponsorId }) => {
                     </div>
                 </div>
             )}
+        </div>
         </div>
     );
 };

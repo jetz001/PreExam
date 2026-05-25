@@ -1,8 +1,43 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import businessApi from '../../services/businessApi';
-import { BookOpen, ShoppingBag, TrendingUp, CheckCircle } from 'lucide-react';
+import { BookOpen, ShoppingBag, TrendingUp, CheckCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
+
+const FloatingShapes = () => {
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            {/* Shapes */}
+            <motion.div
+                animate={{ y: [0, -20, 0], rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute top-20 left-10 w-24 h-24 bg-red-500 rounded-2xl border-4 border-black"
+            />
+            <motion.div
+                animate={{ y: [0, 30, 0], rotate: [0, -15, 15, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                className="absolute top-40 right-20 w-16 h-16 bg-blue-500 rounded-full border-4 border-black"
+            />
+            <motion.div
+                animate={{ x: [0, 20, 0], y: [0, 15, 0], rotate: [0, 45, 0] }}
+                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+                className="absolute bottom-32 left-32 w-20 h-20 bg-yellow-400 border-4 border-black"
+                style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }}
+            />
+            <motion.div
+                animate={{ y: [0, -40, 0], rotate: [0, -20, 0] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                className="absolute bottom-20 right-40 w-28 h-28 bg-green-500 rounded-3xl border-4 border-black"
+            />
+            <motion.div
+                animate={{ scale: [1, 1.1, 1], rotate: [0, 10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+                className="absolute top-1/2 left-1/4 w-12 h-12 bg-purple-500 rounded-full border-4 border-black"
+            />
+        </div>
+    );
+};
 
 const BusinessWelcome = () => {
     const navigate = useNavigate();
@@ -20,46 +55,56 @@ const BusinessWelcome = () => {
         e.preventDefault();
         try {
             await businessApi.createBusiness(formData);
-            toast.success('Business Page Created Successfully!');
-            // Redirect to dashboard or force reload to update layout context
+            toast.success('Business Page Created Successfully!', {
+                style: { border: '2px solid black', fontWeight: 'bold' }
+            });
             navigate('/business/dashboard');
-            window.location.reload(); // Simple way to refresh context/layout state
+            window.location.reload(); 
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to create business page');
+            toast.error(error.response?.data?.message || 'Failed to create business page', {
+                style: { border: '2px solid black', fontWeight: 'bold', backgroundColor: '#fee2e2' }
+            });
         }
     };
 
     if (isRegistering) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                <div className="bg-white max-w-lg w-full rounded-2xl shadow-xl p-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">สร้างเพจผู้เชี่ยวชาญของคุณ</h2>
-                    <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="min-h-screen bg-cyan-100 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+                <FloatingShapes />
+                <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="bg-white max-w-lg w-full rounded-3xl border-4 border-black p-8 relative z-10 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                >
+                    <h2 className="text-3xl font-black text-black mb-6 text-center uppercase tracking-wide">
+                        🌟 สร้างเพจของคุณ
+                    </h2>
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">ชื่อเพจ</label>
+                            <label className="block text-lg font-bold text-black mb-1">ชื่อเพจ</label>
                             <input
                                 required
                                 type="text"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border text-gray-900"
+                                className="block w-full rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-y-[2px] focus:translate-x-[2px] p-3 text-black font-medium outline-none transition-all"
                                 placeholder="เช่น Kru P'Nan English"
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">สโลแกน / คำอธิบายสั้นๆ</label>
+                            <label className="block text-lg font-bold text-black mb-1">สโลแกน / คำอธิบายสั้นๆ</label>
                             <input
                                 type="text"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border text-gray-900"
+                                className="block w-full rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-y-[2px] focus:translate-x-[2px] p-3 text-black font-medium outline-none transition-all"
                                 placeholder="ช่วยให้คุณสอบผ่าน TOEIC"
                                 value={formData.tagline}
                                 onChange={e => setFormData({ ...formData, tagline: e.target.value })}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">หมวดหมู่</label>
+                            <label className="block text-lg font-bold text-black mb-1">หมวดหมู่</label>
                             <select
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border text-gray-900"
+                                className="block w-full rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-y-[2px] focus:translate-x-[2px] p-3 text-black font-medium outline-none transition-all bg-white appearance-none cursor-pointer"
                                 value={formData.category}
                                 onChange={e => setFormData({ ...formData, category: e.target.value })}
                             >
@@ -67,94 +112,125 @@ const BusinessWelcome = () => {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">ลิงก์ติดต่อ (Line OA / Facebook)</label>
+                            <label className="block text-lg font-bold text-black mb-1">ลิงก์ติดต่อ (Line OA / Facebook)</label>
                             <input
                                 type="url"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border text-gray-900"
+                                className="block w-full rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-y-[2px] focus:translate-x-[2px] p-3 text-black font-medium outline-none transition-all"
                                 placeholder="https://line.me/..."
                                 value={formData.contact_link}
                                 onChange={e => setFormData({ ...formData, contact_link: e.target.value })}
                             />
                         </div>
-                        <div className="pt-4 flex gap-3">
+                        <div className="pt-6 flex gap-4">
                             <button
                                 type="button"
                                 onClick={() => setIsRegistering(false)}
-                                className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                                className="flex-1 py-3 bg-white border-4 border-black text-black rounded-xl font-bold text-lg hover:bg-gray-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px] active:translate-x-[4px] transition-all"
                             >
                                 ยกเลิก
                             </button>
                             <button
                                 type="submit"
-                                className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                                className="flex-1 py-3 bg-purple-500 border-4 border-black text-white rounded-xl font-bold text-lg hover:bg-purple-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px] active:translate-x-[4px] transition-all"
                             >
-                                สร้างเพจ
+                                สร้างเพจ 🚀
                             </button>
                         </div>
                     </form>
-                </div>
+                </motion.div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-yellow-300 relative overflow-hidden font-sans">
+            <FloatingShapes />
+            
+            <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8 relative z-10">
                 {/* Back Button */}
                 <button
                     onClick={() => navigate('/')}
-                    className="flex items-center text-gray-600 hover:text-indigo-600 font-medium mb-8 transition-colors"
+                    className="flex items-center text-black hover:text-white hover:bg-black font-bold mb-12 transition-colors border-2 border-transparent hover:border-black rounded-full px-4 py-2"
                 >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
+                    <ArrowLeft className="w-5 h-5 mr-2" />
                     กลับสู่หน้าหลัก
                 </button>
 
                 <div className="text-center">
-                    <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                        แบ่งปันความรู้ <span className="text-indigo-600">สร้างธุรกิจให้เติบโต</span>
-                    </h1>
-                    <p className="mt-6 max-w-2xl mx-auto text-xl text-gray-500">
-                        เข้าร่วมตลาดแห่งการเรียนรู้ แบ่งปันความเชี่ยวชาญเพื่อสร้างความน่าเชื่อถือ (70%) และโปรโมทคอร์สเรียนหรือสินค้าของคุณ (30%) อย่างมีประสิทธิภาพ
-                    </p>
-                    <div className="mt-10 flex justify-center gap-4">
+                    <motion.div 
+                        initial={{ y: -50, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 100 }}
+                        className="inline-block bg-white border-4 border-black rounded-3xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-8"
+                    >
+                        <h1 className="text-4xl font-black text-black sm:text-5xl md:text-6xl uppercase tracking-tighter">
+                            แบ่งปันความรู้ <br />
+                            <span className="text-blue-600 block mt-2">สร้างธุรกิจให้เติบโต!</span>
+                        </h1>
+                    </motion.div>
+                    
+                    <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="mt-6 max-w-2xl mx-auto text-xl text-black font-bold bg-white/50 p-4 rounded-xl border-2 border-black inline-block"
+                    >
+                        เข้าร่วมตลาดแห่งการเรียนรู้ แบ่งปันความเชี่ยวชาญเพื่อสร้างความน่าเชื่อถือ และโปรโมทคอร์สเรียนหรือสินค้าของคุณอย่างสนุกสนาน!
+                    </motion.p>
+                    
+                    <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.4, type: "spring", stiffness: 150 }}
+                        className="mt-12 flex flex-col sm:flex-row justify-center gap-6"
+                    >
                         <button
                             onClick={() => setIsRegistering(true)}
-                            className="px-8 py-3 rounded-lg bg-indigo-600 text-white font-bold text-lg hover:bg-indigo-700 shadow-lg transition-transform transform hover:-translate-y-1"
+                            className="px-8 py-4 rounded-2xl bg-green-500 text-white font-black text-xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all"
                         >
-                            สร้างเพจผู้เชี่ยวชาญ
+                            สร้างเพจผู้เชี่ยวชาญ 🎯
                         </button>
                         <button
                             onClick={() => window.location.href = 'https://preexam.online/faq'}
-                            className="px-8 py-3 rounded-lg bg-gray-100 text-gray-700 font-bold text-lg hover:bg-gray-200"
+                            className="px-8 py-4 rounded-2xl bg-white text-black font-black text-xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all"
                         >
-                            เรียนรู้เพิ่มเติม
+                            เรียนรู้เพิ่มเติม 💡
                         </button>
-                    </div>
+                    </motion.div>
 
-                    <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-                        <div className="p-6 bg-gray-50 rounded-2xl">
-                            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mb-4">
-                                <BookOpen size={24} />
+                    <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 text-center pb-20">
+                        <motion.div 
+                            whileHover={{ y: -10 }}
+                            className="p-8 bg-blue-100 rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative"
+                        >
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-blue-500 rounded-full border-4 border-black flex items-center justify-center text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <BookOpen size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900">เนื้อหาต้องมาก่อน</h3>
-                            <p className="mt-2 text-gray-600">ให้คุณค่าก่อนที่จะรับ แบ่งปันเทคนิคการสอบ สรุป และวิดีโอ เพื่อดึงดูดผู้ติดตาม</p>
-                        </div>
-                        <div className="p-6 bg-gray-50 rounded-2xl">
-                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600 mb-4">
-                                <ShoppingBag size={24} />
+                            <h3 className="text-2xl font-black text-black mt-4 mb-2">เนื้อหาต้องมาก่อน</h3>
+                            <p className="text-black font-medium">ให้คุณค่าก่อนที่จะรับ แบ่งปันเทคนิคการสอบ สรุป เพื่อดึงดูดผู้ติดตาม</p>
+                        </motion.div>
+                        
+                        <motion.div 
+                            whileHover={{ y: -10 }}
+                            className="p-8 bg-pink-100 rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative mt-12 md:mt-0"
+                        >
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-pink-500 rounded-full border-4 border-black flex items-center justify-center text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <ShoppingBag size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900">ร้านค้าในตัว</h3>
-                            <p className="mt-2 text-gray-600">ขาย E-books คอร์สเรียน และชีทสรุปได้โดยตรงบนแท็บโปรไฟล์ของคุณ</p>
-                        </div>
-                        <div className="p-6 bg-gray-50 rounded-2xl">
-                            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 mb-4">
-                                <TrendingUp size={24} />
+                            <h3 className="text-2xl font-black text-black mt-4 mb-2">ร้านค้าในตัว</h3>
+                            <p className="text-black font-medium">ขาย E-books คอร์สเรียน และชีทสรุปได้โดยตรงบนหน้าโปรไฟล์ของคุณ</p>
+                        </motion.div>
+
+                        <motion.div 
+                            whileHover={{ y: -10 }}
+                            className="p-8 bg-purple-100 rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative mt-12 md:mt-0"
+                        >
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-purple-500 rounded-full border-4 border-black flex items-center justify-center text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <TrendingUp size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900">โฆษณาอัจฉริยะ</h3>
-                            <p className="mt-2 text-gray-600">ดันเนื้อหาของคุณขึ้นสู่ด้านบนของฟีดด้วยพื้นที่โฆษณาที่ตรงกลุ่มเป้าหมาย</p>
-                        </div>
+                            <h3 className="text-2xl font-black text-black mt-4 mb-2">โฆษณาอัจฉริยะ</h3>
+                            <p className="text-black font-medium">ดันเนื้อหาของคุณขึ้นสู่ด้านบนของฟีดด้วยระบบพื้นที่โฆษณา</p>
+                        </motion.div>
                     </div>
                 </div>
             </div>

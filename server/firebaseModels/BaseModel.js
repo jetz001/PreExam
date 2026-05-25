@@ -139,6 +139,30 @@ class BaseModel {
         }
         return 0;
     }
+
+    async update(data, options = {}) {
+        let query = this.collection;
+        if (options.where) {
+            for (const [key, value] of Object.entries(options.where)) {
+                if (key === 'id') {
+                    const { admin } = require('../config/firebase');
+                    query = query.where(admin.firestore.FieldPath.documentId(), '==', value.toString());
+                } else {
+                    query = query.where(key, '==', value);
+                }
+            }
+        }
+        const snapshot = await query.get();
+        if (snapshot.empty) return [0];
+
+        const batch = firestore.batch();
+        snapshot.docs.forEach(doc => {
+            batch.update(doc.ref, data);
+        });
+        await batch.commit();
+        
+        return [snapshot.size];
+    }
 }
 
 module.exports = BaseModel;

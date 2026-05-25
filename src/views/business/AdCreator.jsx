@@ -198,7 +198,7 @@ const AdCreator = () => {
     const renderStep2 = () => (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeIn">
             {/* Form */}
-            <div className="space-y-6">
+            <div className="space-y-6 bg-yellow-100 p-6 border-4 border-black rounded-3xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <h2 className="text-xl font-bold text-gray-800">Design your Creative</h2>
 
                 <div>

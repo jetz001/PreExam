@@ -46,17 +46,17 @@ const BusinessLayout = () => {
     ];
 
     return (
-        <div className="flex h-screen bg-gray-50 text-slate-800 font-sans">
+        <div className="flex h-screen bg-[#f3f4f6] text-black font-sans">
             {/* Sidebar */}
-            <aside className={`bg-white shadow-xl transition-all duration-300 z-20 flex flex-col ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
-                <div className="flex items-center justify-center h-16 border-b border-gray-100">
+            <aside className={`bg-white border-r-4 border-black z-20 flex flex-col ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
+                <div className="flex items-center justify-center h-20 border-b-4 border-black bg-yellow-300">
                     {isSidebarOpen ? (
-                        <div className="flex items-center space-x-2 text-blue-600 font-bold text-xl tracking-tight">
-                            <Building2 size={28} />
+                        <div className="flex items-center space-x-2 text-black font-black text-2xl tracking-tight uppercase">
+                            <Building2 size={32} />
                             <span>Business Portal</span>
                         </div>
                     ) : (
-                        <Building2 size={28} className="text-blue-600" />
+                        <Building2 size={32} className="text-black" />
                     )}
                 </div>
 
@@ -67,13 +67,13 @@ const BusinessLayout = () => {
                                 key={item.path}
                                 to={item.path}
                                 className={({ isActive }) =>
-                                    `flex items-center px-4 py-3 rounded-lg transition-colors group ${isActive
-                                        ? 'bg-blue-50 text-blue-600 font-medium'
-                                        : 'text-gray-600 hover:bg-gray-100'
+                                    `flex items-center px-4 py-3 rounded-xl transition-all group border-4 ${isActive
+                                        ? 'bg-cyan-300 text-black font-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]'
+                                        : 'bg-white text-gray-700 font-bold border-transparent hover:border-black hover:bg-gray-50 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
                                     }`
                                 }
                             >
-                                <span className="flex-shrink-0 group-hover:text-blue-500 transition-colors">{item.icon}</span>
+                                <span className="flex-shrink-0 text-black">{item.icon}</span>
                                 {isSidebarOpen && <span className="ml-3 text-sm">{item.name}</span>}
                             </NavLink>
                         ))}
@@ -82,7 +82,7 @@ const BusinessLayout = () => {
                     <div className="px-2 mt-auto">
                         <NavLink
                             to="/"
-                            className="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors group border border-gray-200 bg-white shadow-sm mt-4"
+                            className="flex items-center px-4 py-3 rounded-xl text-black font-bold hover:bg-pink-300 transition-all group border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mt-4"
                         >
                             <span className="flex-shrink-0 group-hover:text-blue-500 transition-colors"><ArrowLeft size={20} /></span>
                             {isSidebarOpen && <span className="ml-3 text-sm font-medium">Back to PreExam</span>}
@@ -91,23 +91,23 @@ const BusinessLayout = () => {
                 </div>
 
                 {/* User Profile Summary */}
-                <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                <div className="p-4 border-t-4 border-black bg-lime-300">
                     <div className={`flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'}`}>
                         {isSidebarOpen && (
                             <div className="flex items-center truncate mr-2">
-                                <div className="bg-blue-100 p-2 rounded-full text-blue-600 mr-3">
+                                <div className="bg-white border-2 border-black p-2 rounded-full text-black mr-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <User size={18} />
                                 </div>
                                 <div className="truncate">
-                                    <p className="text-sm font-medium text-gray-800 truncate">{user?.name || 'Sponsor'}</p>
-                                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                                    <p className="text-base font-black text-black truncate">{user?.name || 'Sponsor'}</p>
+                                    <p className="text-xs font-bold text-gray-800 truncate">{user?.email}</p>
                                 </div>
                             </div>
                         )}
                         <button
                             onClick={handleLogout}
                             title="Logout"
-                            className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                            className="p-2 text-black bg-white border-2 border-black hover:bg-red-400 hover:text-white rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-y-[1px] hover:translate-x-[1px]"
                         >
                             <LogOut size={20} />
                         </button>
@@ -123,7 +123,7 @@ const BusinessLayout = () => {
                 {/* Header (optional, maybe specific page headers, keeping clean for now) */}
 
                 {/* Content Body */}
-                <div className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6 md:p-8">
+                <div className="flex-1 overflow-x-hidden overflow-y-auto bg-[#ffb347] p-6 md:p-8 relative">
                     <Outlet />
                 </div>
             </main>

@@ -104,9 +104,9 @@ const BusinessInbox = () => {
     if (isLoadingInbox) return <div className="p-10 text-center">Loading Inbox...</div>;
 
     return (
-        <div className="flex h-[calc(100vh-100px)] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex h-[calc(100vh-100px)] bg-green-200 rounded-3xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] border-4 border-black overflow-hidden">
             {/* Chat List Sidebar */}
-            <div className="w-80 border-r border-gray-200 flex flex-col bg-gray-50">
+            <div className="w-80 border-r-4 border-black flex flex-col bg-white">
                 <div className="p-4 border-b border-gray-200 bg-white">
                     <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <MessageSquare size={20} className="text-blue-600" /> Inbox
@@ -160,7 +160,7 @@ const BusinessInbox = () => {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col bg-white">
+            <div className="flex-1 flex flex-col bg-cyan-100">
                 {!activeConversation ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
                         <MessageSquare size={48} className="mb-4 opacity-50" />
@@ -169,7 +169,7 @@ const BusinessInbox = () => {
                 ) : (
                     <>
                         {/* Chat Header */}
-                        <div className="h-16 border-b border-gray-200 px-6 flex items-center justify-between">
+                        <div className="h-16 border-b-4 border-black bg-yellow-300 px-6 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold overflow-hidden">
                                     {activeConversation.user.avatar ? <img src={getImageUrl(activeConversation.user.avatar)} className="w-full h-full object-cover" /> : activeConversation.user.display_name.charAt(0)}
@@ -185,7 +185,7 @@ const BusinessInbox = () => {
                         </div>
 
                         {/* Messages */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-cyan-100">
                             {messages.map((msg, index) => {
                                 // In Business Inbox:
                                 // 'user' sender = Customer (Received, Left)
@@ -202,8 +202,8 @@ const BusinessInbox = () => {
                                         </div>
                                         <div>
                                             <div className={`p-4 rounded-2xl shadow-sm border ${isMe
-                                                ? 'bg-blue-600 text-white rounded-tr-none border-blue-600'
-                                                : 'bg-white text-gray-800 rounded-tl-none border-gray-100'
+                                                ? 'bg-blue-400 text-black font-bold rounded-tr-none border-4 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                                : 'bg-white text-black font-bold rounded-tl-none border-4 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                                                 }`}>
                                                 <p>{msg.message}</p>
                                             </div>

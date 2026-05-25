@@ -20,6 +20,8 @@ const BusinessSettings = () => {
     });
 
     const [profileData, setProfileData] = useState({
+        page_name: '', // Added for Business Page Name
+        page_tagline: '', // Added for Business Page Tagline
         business_name: user?.business_name || '',
         tax_id: user?.tax_id || '',
         website: user?.business_info?.website || '',
@@ -40,7 +42,14 @@ const BusinessSettings = () => {
         const fetchBusiness = async () => {
             try {
                 const res = await businessApi.getMyBusiness();
-                if (res.success) setBusinessInfo(res.business);
+                if (res.success) {
+                    setBusinessInfo(res.business);
+                    setProfileData(prev => ({
+                        ...prev,
+                        page_name: res.business.name || '',
+                        page_tagline: res.business.tagline || ''
+                    }));
+                }
             } catch (err) {
                 console.error("Failed to fetch business info", err);
             }
@@ -59,9 +68,19 @@ const BusinessSettings = () => {
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            // Update User Profile
             const payload = { ...profileData, notification_settings: notifSettings };
             const updated = await userService.updateProfile(payload);
             updateUser(updated.data);
+
+            // Update Business Page Info
+            if (businessInfo && businessInfo.id) {
+                await businessApi.updateBusiness({
+                    name: profileData.page_name,
+                    tagline: profileData.page_tagline,
+                });
+            }
+
             toast.success('Business profile updated');
         } catch (error) {
             console.error(error);
@@ -140,15 +159,41 @@ const BusinessSettings = () => {
                 {activeTab === 'profile' && (
                     <div className="space-y-8 max-w-2xl">
                         <div>
-                            <h3 className="text-lg font-bold border-b pb-2 mb-4">Identity</h3>
+                            <h3 className="text-lg font-bold border-b pb-2 mb-4">Business Page Info</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Business Name</label>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Page Name</label>
+                                    <input
+                                        name="page_name"
+                                        value={profileData.page_name}
+                                        onChange={handleChange}
+                                        className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 border-4 border-black focus:border-black focus:ring-0 focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-gray-900 dark:text-white"
+                                        placeholder="Business Page Name"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Tagline / Short Bio</label>
+                                    <input
+                                        name="page_tagline"
+                                        value={profileData.page_tagline}
+                                        onChange={handleChange}
+                                        className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 border-4 border-black focus:border-black focus:ring-0 focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-gray-900 dark:text-white"
+                                        placeholder="E.g. The best tutoring center in town"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 className="text-lg font-bold border-b pb-2 mb-4">Billing Identity</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Company Name (For Tax)</label>
                                     <input
                                         name="business_name"
                                         value={profileData.business_name}
                                         onChange={handleChange}
-                                        className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white"
+                                        className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 border-4 border-black focus:border-black focus:ring-0 focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-gray-900 dark:text-white"
                                         placeholder="Company Name Co., Ltd."
                                     />
                                 </div>
@@ -256,7 +301,7 @@ const BusinessSettings = () => {
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+                                className=" px-6 py-2 bg-yellow-400 text-black font-black border-4 border-black rounded-xl hover:bg-yellow-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none  flex items-center gap-2 disabled:opacity-50"
                             >
                                 <Save size={18} />
                                 {isSaving ? 'Saving...' : 'Save Changes'}
@@ -318,7 +363,7 @@ const BusinessSettings = () => {
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+                                className=" px-6 py-2 bg-yellow-400 text-black font-black border-4 border-black rounded-xl hover:bg-yellow-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none  flex items-center gap-2 disabled:opacity-50"
                             >
                                 <Save size={18} />
                                 {isSaving ? 'Saving...' : 'Save Preferences'}

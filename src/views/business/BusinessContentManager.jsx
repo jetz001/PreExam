@@ -158,9 +158,9 @@ const BusinessContentManager = () => {
     };
 
     return (
-        <div className="p-6">
+        <div className="p-6 bg-pink-200 border-4 border-black rounded-3xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] min-h-[calc(100vh-80px)]">
             {/* Storefront Header Section */}
-            <div className="bg-white rounded-xl shadow-sm border mb-8 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-4 border-black mb-8 overflow-hidden relative">
                 {/* Cover Image */}
                 <div className="h-48 md:h-64 bg-gray-100 relative group">
                     {business?.cover_image ? (
