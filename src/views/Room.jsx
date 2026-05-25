@@ -467,7 +467,7 @@ const Room = () => {
                                                 const bgGrad = colors[index % colors.length];
 
                                                 return (
-                                                    <li key={p.id} className="flex items-center justify-between p-3 bg-white rounded-2xl transition-all border-4 border-white/50 shadow-md hover:scale-105 hover:shadow-lg">
+                                                    <li key={p.user_id || `participant-${index}`} className="flex items-center justify-between p-3 bg-white rounded-2xl transition-all border-4 border-white/50 shadow-md hover:scale-105 hover:shadow-lg">
                                                         <div className="flex items-center">
                                                             <div className={`w-12 h-12 bg-gradient-to-br ${bgGrad} rounded-xl flex items-center justify-center mr-4 text-lg font-black text-white shadow-inner border-2 border-white/30 overflow-hidden`}>
                                                                 {p.User?.avatar ? (

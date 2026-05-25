@@ -22,7 +22,7 @@ const Leaderboard = ({ participants }) => {
                     </thead>
                     <tbody>
                         {sortedParticipants.map((p, index) => (
-                            <tr key={p.id} className="border-b hover:bg-gray-50">
+                            <tr key={p.user_id || index} className="border-b hover:bg-gray-50">
                                 <td className="px-4 py-2 font-medium">
                                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
                                 </td>
