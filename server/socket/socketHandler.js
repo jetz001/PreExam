@@ -116,13 +116,13 @@ module.exports = (io) => {
         });
 
         // Participant finishes exam
-        socket.on('finish_exam', async ({ roomId, userId, score, timeTaken }) => {
+        socket.on('finish_exam', async ({ roomId, userId, score, timeTaken, answers }) => {
             console.log(`[DEBUG] finish_exam called for room ${roomId}, user ${userId}, score ${score}`);
             try {
                 const rDocRef = roomsRef.doc(roomId.toString());
                 const pDocRef = rDocRef.collection('participants').doc(userId.toString());
                 
-                await pDocRef.update({ score, status: 'finished' });
+                await pDocRef.update({ score, status: 'finished', answers });
 
                 const roomDoc = await rDocRef.get();
                 if (roomDoc.exists) {

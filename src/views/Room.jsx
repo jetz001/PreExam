@@ -61,6 +61,9 @@ const Room = () => {
                     if (myParticipant.status === 'finished') {
                         setExamFinished(true);
                         setFinalScore(myParticipant.score);
+                        if (myParticipant.answers) {
+                            setUserAnswers(typeof myParticipant.answers === 'string' ? JSON.parse(myParticipant.answers) : myParticipant.answers);
+                        }
                     }
                 }
 
@@ -115,6 +118,9 @@ const Room = () => {
                     const myParticipant = data.data.RoomParticipants?.find(p => p.user_id == user.id);
                     if (myParticipant && myParticipant.status === 'finished') {
                         setFinalScore(myParticipant.score);
+                        if (myParticipant.answers) {
+                            setUserAnswers(typeof myParticipant.answers === 'string' ? JSON.parse(myParticipant.answers) : myParticipant.answers);
+                        }
                     }
                     // No redirect, just show the finished view (Leaderboard)
                 } else if (data.data.status === 'in_progress' || data.data.status === 'playing') {

@@ -95,7 +95,7 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
     const handleFinish = (finalScore, answersOverride) => {
         const timeTaken = initialTime - timeLeft;
         const finalAnswers = answersOverride || answers;
-        socket.emit('finish_exam', { roomId, userId, score: finalScore, timeTaken });
+        socket.emit('finish_exam', { roomId, userId, score: finalScore, timeTaken, answers: finalAnswers });
         onFinish(finalScore, finalAnswers);
     };
 
