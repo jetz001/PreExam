@@ -88,6 +88,15 @@ module.exports = (io) => {
         // Tutor Navigation
         socket.on('tutor_navigate', ({ roomId, questionIndex }) => {
             io.to(roomId).emit('navigate_question', { questionIndex });
+            io.to(roomId).emit('tutor_navigate', { questionIndex });
+        });
+
+        socket.on('tutor_show_answer', ({ roomId, questionIndex }) => {
+            io.to(roomId).emit('tutor_show_answer', { questionIndex });
+        });
+
+        socket.on('tutor_player_answer', ({ roomId, choice }) => {
+            io.to(roomId).emit('tutor_player_answered', { choice });
         });
 
         // Submit Score (Real-time leaderboard)
@@ -97,6 +106,16 @@ module.exports = (io) => {
                 io.to(roomId).emit('score_updated', { userId, score });
             } catch (error) {
                 console.error('Score update error:', error);
+            }
+        });
+
+        // Submit Progress
+        socket.on('submit_progress', async ({ roomId, userId, questionIndex }) => {
+            try {
+                await roomsRef.doc(roomId.toString()).collection('participants').doc(userId.toString()).update({ current_question_index: questionIndex });
+                io.to(roomId).emit('progress_updated', { userId, questionIndex });
+            } catch (error) {
+                console.error('Progress update error:', error);
             }
         });
 

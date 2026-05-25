@@ -6,7 +6,7 @@ const questionsRef = firestore.collection('questions');
 
 exports.createRoom = async (req, res) => {
     try {
-        const { name, mode, subject, category, max_participants, question_count, time_limit, password } = req.body;
+        const { name, mode, subject, category, max_participants, question_count, time_limit, password, custom_questions, tutor_submode } = req.body;
         const userId = req.user.id.toString();
 
         if (req.user.email && req.user.email.startsWith('guest_')) {
@@ -16,13 +16,20 @@ exports.createRoom = async (req, res) => {
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
         const limitParticipants = max_participants ? Math.min(parseInt(max_participants), 20) : 20;
 
-        // Fetch questions - simplified for Firestore. In real app, we'd need better random picking.
-        let qQuery = questionsRef;
-        if (subject) qQuery = qQuery.where('subject', '==', subject);
-        
-        const qSnap = await qQuery.limit(50).get(); // fetch 50 and pick random
-        let availableQuestions = qSnap.docs.map(d => d.id);
-        availableQuestions = availableQuestions.sort(() => 0.5 - Math.random()).slice(0, question_count || 20);
+        let availableQuestions = [];
+        let finalQuestionCount = question_count || 20;
+
+        if (custom_questions && Array.isArray(custom_questions) && custom_questions.length > 0) {
+            finalQuestionCount = custom_questions.length;
+        } else {
+            // Fetch questions from bank
+            let qQuery = questionsRef;
+            if (subject) qQuery = qQuery.where('subject', '==', subject);
+            
+            const qSnap = await qQuery.limit(50).get(); // fetch 50 and pick random
+            availableQuestions = qSnap.docs.map(d => d.id);
+            availableQuestions = availableQuestions.sort(() => 0.5 - Math.random()).slice(0, finalQuestionCount);
+        }
 
         let theme = req.body.theme || null;
         if (theme && req.user.plan_type !== 'premium') theme = null;
@@ -33,13 +40,15 @@ exports.createRoom = async (req, res) => {
             code,
             name,
             mode,
+            tutor_submode: tutor_submode || 'step',
             host_user_id: userId,
             subject,
             category: category || null,
             max_participants: limitParticipants,
-            question_count: question_count || 20,
+            question_count: finalQuestionCount,
             status: 'waiting',
             question_ids: availableQuestions,
+            custom_questions: custom_questions || null,
             settings: {
                 time_limit: time_limit ? Math.max(5, Math.min(parseInt(time_limit), 60)) : 60
             },
@@ -178,10 +187,12 @@ exports.getRoom = async (req, res) => {
         }));
 
         let questions = [];
-        if (room.question_ids && room.question_ids.length > 0) {
+        if (room.custom_questions && room.custom_questions.length > 0) {
+            questions = room.custom_questions.map((q, idx) => ({ ...q, id: `custom_${idx}` }));
+        } else if (room.question_ids && room.question_ids.length > 0) {
             for (const qid of room.question_ids) {
                 const qDoc = await questionsRef.doc(qid).get();
-                if (qDoc.exists) questions.push(qDoc.data());
+                if (qDoc.exists) questions.push({ ...qDoc.data(), id: qDoc.id });
             }
         }
 

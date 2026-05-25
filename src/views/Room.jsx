@@ -7,6 +7,8 @@ import ChatBox from '../components/ChatBox';
 import MultiplayerExam from '../components/MultiplayerExam';
 import Leaderboard from '../components/Leaderboard';
 import TutorView from '../components/TutorView';
+import TutorPlayerView from '../components/TutorPlayerView';
+import TutorDashboard from '../components/TutorDashboard';
 import { Users, Play, LogOut } from 'lucide-react';
 import AdSlot from '../components/ads/AdSlot';
 import DOMPurify from 'dompurify';
@@ -37,6 +39,8 @@ const Room = () => {
     const [examFinished, setExamFinished] = useState(false);
     const [finalScore, setFinalScore] = useState(0);
     const [tutorQuestionIndex, setTutorQuestionIndex] = useState(0);
+    const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
+    const [currentAnswerCounts, setCurrentAnswerCounts] = useState({ A: 0, B: 0, C: 0, D: 0 });
     const [activeTab, setActiveTab] = useState('participants');
     const [userAnswers, setUserAnswers] = useState({});
     const examRef = useRef(null);
@@ -96,6 +100,28 @@ const Room = () => {
 
                 newSocket.on('navigate_question', ({ questionIndex }) => {
                     setTutorQuestionIndex(questionIndex);
+                    setIsAnswerRevealed(false);
+                    setCurrentAnswerCounts({ A: 0, B: 0, C: 0, D: 0 });
+                });
+
+                newSocket.on('tutor_show_answer', ({ questionIndex }) => {
+                    setIsAnswerRevealed(true);
+                });
+
+                newSocket.on('tutor_player_answered', ({ choice }) => {
+                    setCurrentAnswerCounts(prev => ({ ...prev, [choice]: (prev[choice] || 0) + 1 }));
+                });
+
+                newSocket.on('tutor_navigate', ({ questionIndex }) => {
+                    setTutorQuestionIndex(questionIndex);
+                    setIsAnswerRevealed(false);
+                    setCurrentAnswerCounts({ A: 0, B: 0, C: 0, D: 0 });
+                });
+
+                newSocket.on('progress_updated', ({ userId, questionIndex }) => {
+                    setParticipants(prev => prev.map(p =>
+                        p.user_id == userId ? { ...p, current_question_index: questionIndex } : p
+                    ));
                 });
 
                 newSocket.on('exam_reset', () => {
@@ -165,6 +191,27 @@ const Room = () => {
         setParticipants(prev => prev.map(p =>
             p.user_id == currentUser?.id ? { ...p, status: 'finished', score } : p
         ));
+    };
+
+    const handleTutorAnswer = (questionId, choice, isCorrect) => {
+        const newAnswers = { ...userAnswers, [questionId]: choice };
+        setUserAnswers(newAnswers);
+
+        let newScore = finalScore;
+        if (isCorrect) {
+            newScore += 1;
+            setFinalScore(newScore);
+        }
+
+        // Update local participant array
+        setParticipants(prev => prev.map(p =>
+            p.user_id == currentUser?.id ? { ...p, score: newScore } : p
+        ));
+
+        if (socket) {
+            socket.emit('submit_score', { roomId: id, userId: currentUser.id, score: newScore });
+            socket.emit('tutor_player_answer', { roomId: id, choice });
+        }
     };
 
     if (loading || !room) return <div className="p-8 text-center">Loading Room...</div>;
@@ -409,13 +456,54 @@ const Room = () => {
                             )}
                         </div>
                     ) : room.mode === 'tutor' ? (
-                        <TutorView
-                            questions={room.questions}
-                            socket={socket}
-                            roomId={id}
-                            isHost={isHost}
-                            currentQuestionIndex={tutorQuestionIndex}
-                        />
+                        room.tutor_submode === 'independent' ? (
+                            isHost ? (
+                                <TutorDashboard 
+                                    participants={participants}
+                                    totalQuestions={room.questions?.length || room.question_count || 0}
+                                    onEndExam={() => {
+                                        if(window.confirm('ต้องการจบเกมและเฉลยหรือไม่?')) {
+                                            socket.emit('close_room', { roomId: id, userId: currentUser.id });
+                                        }
+                                    }}
+                                />
+                            ) : (
+                                <MultiplayerExam
+                                    ref={examRef}
+                                    questions={room.questions}
+                                    socket={socket}
+                                    roomId={id}
+                                    userId={currentUser.id}
+                                    onFinish={(finalScore, finalAnswers) => {
+                                        setFinalScore(finalScore);
+                                        setUserAnswers(finalAnswers);
+                                        // Emit that user is finished to server so dashboard shows 100%
+                                        socket.emit('submit_progress', { roomId: id, userId: currentUser.id, questionIndex: room.questions.length });
+                                    }}
+                                    timeLimit={room.settings?.time_limit || 60}
+                                />
+                            )
+                        ) : (
+                            isHost ? (
+                                <TutorView
+                                    questions={room.questions}
+                                    socket={socket}
+                                    roomId={id}
+                                    isHost={isHost}
+                                    currentQuestionIndex={tutorQuestionIndex}
+                                    participantCount={participants.length}
+                                    answerCounts={currentAnswerCounts}
+                                />
+                            ) : (
+                                <TutorPlayerView
+                                    questions={room.questions}
+                                    currentQuestionIndex={tutorQuestionIndex}
+                                    isAnswerRevealed={isAnswerRevealed}
+                                    onAnswer={handleTutorAnswer}
+                                    score={finalScore}
+                                />
+                            )
+                        )
                     ) : (
                         <MultiplayerExam
                             ref={examRef}

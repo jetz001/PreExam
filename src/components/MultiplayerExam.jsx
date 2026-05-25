@@ -123,8 +123,11 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
         // Auto advance after short delay
         setTimeout(() => {
             if (currentIndex < questions.length - 1) {
-                setCurrentIndex(currentIndex + 1);
+                const nextIndex = currentIndex + 1;
+                setCurrentIndex(nextIndex);
+                socket.emit('submit_progress', { roomId, userId, questionIndex: nextIndex });
             } else {
+                socket.emit('submit_progress', { roomId, userId, questionIndex: questions.length });
                 handleFinish(newScore, newAnswers);
             }
         }, 500);

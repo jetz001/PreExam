@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Lock, ArrowRight, ArrowLeft, Gamepad2, GraduationCap, Sparkles, Wand2 } from 'lucide-react';
 import useUserRole from '../../hooks/useUserRole';
 import api from '../../services/api';
+import CustomQuestionBuilder from './CustomQuestionBuilder';
 
 const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
     const { isPremium } = useUserRole();
@@ -16,8 +17,12 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
         time_limit: 60,
         exam_year: '',
         exam_set: '',
-        theme: { background_id: null, frame_id: null }
+        theme: { background_id: null, frame_id: null },
+        tutor_submode: 'step' // 'step' or 'independent'
     });
+
+    const [questionSource, setQuestionSource] = useState('platform');
+    const [customQuestions, setCustomQuestions] = useState([]);
 
     const [subjects, setSubjects] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -28,6 +33,8 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
     useEffect(() => {
         if (isOpen) {
             setStep(1);
+            setQuestionSource('platform');
+            setCustomQuestions([]);
             setFormData({
                 name: '',
                 mode: 'exam',
@@ -38,7 +45,8 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                 time_limit: 60,
                 exam_year: '',
                 exam_set: '',
-                theme: { background_id: null, frame_id: null }
+                theme: { background_id: null, frame_id: null },
+                tutor_submode: 'step'
             });
             fetchOptions();
             fetchAssets();
@@ -88,7 +96,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
             }
             setStep(step + 1);
         } else {
-            onCreate(formData);
+            onCreate({ ...formData, custom_questions: questionSource === 'custom' ? customQuestions : null });
         }
     };
 
@@ -182,54 +190,94 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                                     </div>
                                 </div>
                             </div>
+                            
+                            {/* Tutor Sub-mode Selection */}
+                            {formData.mode === 'tutor' && (
+                                <div className="mt-6 p-4 bg-white/10 rounded-2xl border border-white/20 animate-in fade-in slide-in-from-top-2">
+                                    <h4 className="text-white font-bold mb-3 text-center">เลือกรูปแบบการติว</h4>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, tutor_submode: 'step' }))}
+                                            className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all text-sm font-bold flex flex-col items-center gap-1 ${formData.tutor_submode === 'step' ? 'border-[#00c985] bg-[#00c985]/20 text-white shadow-[0_4px_0_#00a86b]' : 'border-white/20 text-white/60 hover:bg-white/10 hover:translate-y-[-2px]'}`}
+                                        >
+                                            <span className="text-xl">🧑‍🏫</span>
+                                            ไปพร้อมกันทีละข้อ
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, tutor_submode: 'independent' }))}
+                                            className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all text-sm font-bold flex flex-col items-center gap-1 ${formData.tutor_submode === 'independent' ? 'border-[#00c985] bg-[#00c985]/20 text-white shadow-[0_4px_0_#00a86b]' : 'border-white/20 text-white/60 hover:bg-white/10 hover:translate-y-[-2px]'}`}
+                                        >
+                                            <span className="text-xl">🏃‍♂️</span>
+                                            ต่างคนต่างทำ (เฉลยตอนจบ)
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
-                    {/* STEP 2: BASIC INFO */}
+                    {/* STEP 2: BASIC INFO & QUESTIONS */}
                     {step === 2 && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div>
                                 <label className="crm-label">💬 ชื่อห้อง</label>
                                 <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="crm-input" placeholder="ตั้งชื่อห้องเก๋ๆ ของคุณ..." required autoFocus />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="crm-label">📚 วิชา</label>
-                                    <select value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className="crm-input">
-                                        <option value="">เลือกวิชา</option>
-                                        {subjects.map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="crm-label">📁 หมวดหมู่</label>
-                                    <select value={formData.category || ''} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="crm-input">
-                                        <option value="">เลือกหมวดหมู่</option>
-                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
+                            
+                            <div>
+                                <label className="crm-label">📖 แหล่งที่มาของข้อสอบ</label>
+                                <div className="flex gap-2 p-1 bg-white/10 rounded-xl border border-white/20">
+                                    <button type="button" onClick={() => setQuestionSource('platform')} className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${questionSource === 'platform' ? 'bg-white text-[#2d0d6b] shadow-sm' : 'text-white/70 hover:text-white'}`}>คลังข้อสอบระบบ</button>
+                                    <button type="button" onClick={() => setQuestionSource('custom')} className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${questionSource === 'custom' ? 'bg-[#00c985] text-white shadow-sm' : 'text-white/70 hover:text-white'}`}>พิมพ์/นำเข้าเอง (Custom)</button>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <label className="crm-label !mb-0">📅 ปีข้อสอบ</label>
-                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-[#ffcc00] text-[#333]">PREMIUM</span>
+
+                            {questionSource === 'platform' ? (
+                                <>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="crm-label">📚 วิชา</label>
+                                            <select value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className="crm-input">
+                                                <option value="">เลือกวิชา</option>
+                                                {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="crm-label">📁 หมวดหมู่</label>
+                                            <select value={formData.category || ''} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="crm-input">
+                                                <option value="">เลือกหมวดหมู่</option>
+                                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
                                     </div>
-                                    <select value={formData.exam_year} onChange={(e) => setFormData({ ...formData, exam_year: e.target.value })} disabled={!isPremium} className={`crm-input ${!isPremium ? 'opacity-60 cursor-not-allowed bg-gray-200' : ''}`}>
-                                        <option value="">ทั้งหมด</option>
-                                        {years.map(y => <option key={y} value={y}>{y}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <label className="crm-label !mb-0">📑 ชุดข้อสอบ</label>
-                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-[#ffcc00] text-[#333]">PREMIUM</span>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <label className="crm-label !mb-0">📅 ปีข้อสอบ</label>
+                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-[#ffcc00] text-[#333]">PREMIUM</span>
+                                            </div>
+                                            <select value={formData.exam_year} onChange={(e) => setFormData({ ...formData, exam_year: e.target.value })} disabled={!isPremium} className={`crm-input ${!isPremium ? 'opacity-60 cursor-not-allowed bg-gray-200' : ''}`}>
+                                                <option value="">ทั้งหมด</option>
+                                                {years.map(y => <option key={y} value={y}>{y}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <label className="crm-label !mb-0">📑 ชุดข้อสอบ</label>
+                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-[#ffcc00] text-[#333]">PREMIUM</span>
+                                            </div>
+                                            <select value={formData.exam_set} onChange={(e) => setFormData({ ...formData, exam_set: e.target.value })} disabled={!isPremium} className={`crm-input ${!isPremium ? 'opacity-60 cursor-not-allowed bg-gray-200' : ''}`}>
+                                                <option value="">ทั้งหมด</option>
+                                                {sets.map(s => <option key={s} value={s}>{s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}</option>)}
+                                            </select>
+                                        </div>
                                     </div>
-                                    <select value={formData.exam_set} onChange={(e) => setFormData({ ...formData, exam_set: e.target.value })} disabled={!isPremium} className={`crm-input ${!isPremium ? 'opacity-60 cursor-not-allowed bg-gray-200' : ''}`}>
-                                        <option value="">ทั้งหมด</option>
-                                        {sets.map(s => <option key={s} value={s}>{s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}</option>)}
-                                    </select>
-                                </div>
-                            </div>
+                                </>
+                            ) : (
+                                <CustomQuestionBuilder customQuestions={customQuestions} setCustomQuestions={setCustomQuestions} />
+                            )}
                         </div>
                     )}
 
@@ -238,11 +286,17 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div>
                                 <label className="crm-label">🎯 จำนวนข้อ</label>
-                                <div className="crm-number-wrapper">
-                                    <button type="button" className="crm-number-btn btn-red" onClick={() => setFormData(prev => ({ ...prev, question_count: Math.max(5, prev.question_count - 1) }))}>-</button>
-                                    <input type="number" value={formData.question_count} onChange={(e) => setFormData({ ...formData, question_count: e.target.value === '' ? '' : parseInt(e.target.value) })} min="5" max="100" />
-                                    <button type="button" className="crm-number-btn" onClick={() => setFormData(prev => ({ ...prev, question_count: Math.min(100, prev.question_count + 1) }))}>+</button>
-                                </div>
+                                {questionSource === 'custom' ? (
+                                    <div className="crm-input opacity-70 bg-white/5 border-white/20 text-center">
+                                        ใช้ข้อสอบ Custom จำนวน {customQuestions.length} ข้อ
+                                    </div>
+                                ) : (
+                                    <div className="crm-number-wrapper">
+                                        <button type="button" className="crm-number-btn btn-red" onClick={() => setFormData(prev => ({ ...prev, question_count: Math.max(5, prev.question_count - 1) }))}>-</button>
+                                        <input type="number" value={formData.question_count} onChange={(e) => setFormData({ ...formData, question_count: e.target.value === '' ? '' : parseInt(e.target.value) })} min="5" max="100" />
+                                        <button type="button" className="crm-number-btn" onClick={() => setFormData(prev => ({ ...prev, question_count: Math.min(100, prev.question_count + 1) }))}>+</button>
+                                    </div>
+                                )}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

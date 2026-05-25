@@ -54,6 +54,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.JSON, // Array of question IDs
             allowNull: true,
         },
+        custom_questions: {
+            type: DataTypes.JSON, // Array of custom question objects [{ question_text, choices, correct_answer }]
+            allowNull: true,
+        },
         theme: {
             type: DataTypes.JSON, // { background_id: 1, frame_id: 2 }
             allowNull: true,
