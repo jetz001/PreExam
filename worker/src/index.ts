@@ -1000,6 +1000,6 @@ export default {
       }
     }
 
-    return notFound();
+    return fetch(request);
   },
 };
