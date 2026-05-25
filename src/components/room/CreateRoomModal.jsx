@@ -97,42 +97,43 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
     return (
         <div className="fixed inset-0 flex items-center justify-center z-[100] p-4" style={{ background: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(5px)' }}>
             <style>{`
-                .crm-input { width: 100%; border: 2px solid #e0e0e0; border-radius: 16px; padding: 14px 20px; background: #f2f2f2; font-weight: 800; color: #333; transition: all 0.2s; outline: none; font-size: 1rem; }
-                .crm-input::placeholder { color: #aaa; }
-                .crm-input:focus { border-color: #46178f; background: #fff; box-shadow: 0 0 0 4px rgba(70, 23, 143, 0.1); }
-                .crm-label { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 800; color: #555; margin-bottom: 8px; }
+                .crm-input { width: 100%; border: 2px solid rgba(255,255,255,0.3); border-radius: 16px; padding: 14px 20px; background: rgba(255,255,255,0.1); font-weight: 800; color: white; transition: all 0.2s; outline: none; font-size: 1rem; }
+                .crm-input::placeholder { color: rgba(255,255,255,0.5); }
+                .crm-input option { color: #333; }
+                .crm-input:focus { border-color: white; background: rgba(255,255,255,0.2); box-shadow: 0 0 0 4px rgba(255,255,255,0.2); }
+                .crm-label { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 800; color: white; margin-bottom: 8px; }
                 .crm-btn { padding: 16px 32px; border-radius: 16px; font-weight: 900; cursor: pointer; transition: all 0.1s; border: none; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 1.2rem; flex: 1; }
                 .crm-btn-primary { background: #00c985; color: white; box-shadow: 0 6px 0 #009e69; }
                 .crm-btn-primary:active { transform: translateY(6px); box-shadow: 0 0 0 #009e69; }
-                .crm-btn-secondary { background: #e0e0e0; color: #555; box-shadow: 0 6px 0 #ccc; }
-                .crm-btn-secondary:active { transform: translateY(6px); box-shadow: 0 0 0 #ccc; }
+                .crm-btn-secondary { background: rgba(255,255,255,0.2); color: white; box-shadow: 0 6px 0 rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); }
+                .crm-btn-secondary:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(255,255,255,0.1); }
                 
-                .crm-mode-btn { border: 3px solid #e0e0e0; border-radius: 24px; padding: 32px; background: #fff; cursor: pointer; transition: all 0.2s; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-                .crm-mode-btn.active.exam { border-color: #e21b3c; background: #fef0f2; box-shadow: 0 8px 0 #e21b3c; transform: translateY(-4px); }
-                .crm-mode-btn.active.tutor { border-color: #1368ce; background: #f0f6fe; box-shadow: 0 8px 0 #1368ce; transform: translateY(-4px); }
-                .crm-mode-btn:hover:not(.active) { background: #f9f9f9; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+                .crm-mode-btn { border: 3px solid rgba(255,255,255,0.3); border-radius: 24px; padding: 32px; background: rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+                .crm-mode-btn.active.exam { border-color: #e21b3c; background: rgba(226, 27, 60, 0.2); box-shadow: 0 8px 0 #e21b3c; transform: translateY(-4px); }
+                .crm-mode-btn.active.tutor { border-color: #1368ce; background: rgba(19, 104, 206, 0.2); box-shadow: 0 8px 0 #1368ce; transform: translateY(-4px); }
+                .crm-mode-btn:hover:not(.active) { background: rgba(255,255,255,0.2); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
                 
-                .crm-number-wrapper { position: relative; display: flex; align-items: center; background: #f2f2f2; border: 2px solid #e0e0e0; border-radius: 16px; padding: 6px; }
-                .crm-number-wrapper:focus-within { border-color: #46178f; background: #fff; }
-                .crm-number-wrapper input { width: 100%; background: transparent; border: none; text-align: center; color: #333; font-weight: 900; outline: none; font-size: 1.2rem; }
+                .crm-number-wrapper { position: relative; display: flex; align-items: center; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 16px; padding: 6px; }
+                .crm-number-wrapper:focus-within { border-color: white; background: rgba(255,255,255,0.2); }
+                .crm-number-wrapper input { width: 100%; background: transparent; border: none; text-align: center; color: white; font-weight: 900; outline: none; font-size: 1.2rem; }
                 .crm-number-btn { width: 40px; height: 40px; border-radius: 12px; border: none; background: #1368ce; color: white; font-weight: 900; cursor: pointer; transition: 0.1s; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 0 #0e55a3; }
                 .crm-number-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #0e55a3; }
                 .crm-number-btn.btn-red { background: #e21b3c; box-shadow: 0 4px 0 #b3142e; }
                 .crm-number-btn.btn-red:active { box-shadow: 0 0 0 #b3142e; }
                 input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
                 
-                .crm-step-dot { width: 12px; height: 12px; border-radius: 50%; background: #e0e0e0; transition: all 0.3s; }
-                .crm-step-dot.active { background: #46178f; transform: scale(1.3); }
+                .crm-step-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: all 0.3s; }
+                .crm-step-dot.active { background: #00c985; transform: scale(1.3); }
             `}</style>
 
-            <div className="relative rounded-[32px] shadow-[0_12px_40px_rgba(0,0,0,0.3)] w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto custom-scrollbar bg-white">
+            <div className="relative rounded-[32px] shadow-[0_12px_40px_rgba(0,0,0,0.5)] w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto custom-scrollbar bg-[#2d0d6b]/95 backdrop-blur-xl border border-white/20">
                 <div className="flex items-center gap-4 mb-6 relative">
-                    <div className="w-16 h-16 bg-[#46178f] rounded-[20px] flex items-center justify-center text-3xl shadow-[0_4px_0_#2d0d6b] rotate-[-5deg]">🎮</div>
+                    <div className="w-16 h-16 bg-white/20 rounded-[20px] flex items-center justify-center text-3xl shadow-[0_4px_0_rgba(255,255,255,0.2)] rotate-[-5deg] backdrop-blur-sm">🎮</div>
                     <div>
-                        <h2 className="text-3xl font-black text-[#333] tracking-tight">สร้างห้องสอบใหม่</h2>
-                        <p className="text-gray-500 text-sm font-bold mt-1">ขั้นตอนที่ {step}/4 ✨</p>
+                        <h2 className="text-3xl font-black text-white tracking-tight">สร้างห้องสอบใหม่</h2>
+                        <p className="text-white/80 text-sm font-bold mt-1">ขั้นตอนที่ {step}/4 ✨</p>
                     </div>
-                    <button onClick={onClose} className="absolute right-0 top-0 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-2xl transition-all shadow-sm">&times;</button>
+                    <button onClick={onClose} className="absolute right-0 top-0 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-2xl transition-all shadow-sm border border-white/20">&times;</button>
                 </div>
                 
                 <div className="flex justify-center gap-2 mb-8">
@@ -145,7 +146,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                     {/* STEP 1: MODE */}
                     {step === 1 && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <h3 className="text-xl font-black text-[#333] text-center mb-2">เลือกโหมดการเล่นของคุณ!</h3>
+                            <h3 className="text-xl font-black text-white text-center mb-2">เลือกโหมดการเล่นของคุณ!</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <div 
                                     className={`crm-mode-btn exam ${formData.mode === 'exam' ? 'active' : ''}`}
@@ -156,7 +157,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                                     </div>
                                     <div>
                                         <h4 className="text-xl font-black text-[#e21b3c] mb-1">แข่งขัน</h4>
-                                        <p className="text-sm font-bold text-gray-500">โหมดสอบแข่งทำเวลา</p>
+                                        <p className="text-sm font-bold text-white/70">โหมดสอบแข่งทำเวลา</p>
                                     </div>
                                 </div>
                                 <div 
@@ -168,7 +169,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                                     </div>
                                     <div>
                                         <h4 className="text-xl font-black text-[#1368ce] mb-1">ติวเตอร์</h4>
-                                        <p className="text-sm font-bold text-gray-500">เน้นเรียนรู้ ดูเฉลย</p>
+                                        <p className="text-sm font-bold text-white/70">เน้นเรียนรู้ ดูเฉลย</p>
                                     </div>
                                 </div>
                             </div>
@@ -258,14 +259,14 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                     {/* STEP 4: DECORATE & SUBMIT */}
                     {step === 4 && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <h3 className="text-xl font-black mb-4 text-[#333] flex items-center gap-2 drop-shadow-sm">🎨 ปรับแต่งห้อง <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-[#ffcc00] text-[#333] shadow-sm">PREMIUM</span></h3>
+                            <h3 className="text-xl font-black mb-4 text-white flex items-center gap-2 drop-shadow-sm">🎨 ปรับแต่งห้อง <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-[#ffcc00] text-[#333] shadow-sm">PREMIUM</span></h3>
                             <div className="space-y-5">
                                 <div>
                                     <label className="crm-label">🌌 พื้นหลัง</label>
                                     <div className="flex space-x-3 overflow-x-auto p-2 -mx-2 custom-scrollbar">
-                                        <div onClick={() => setFormData(prev => ({ ...prev, theme: { ...prev.theme, background_id: null } }))} className={`flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer flex items-center justify-center bg-gray-100 font-bold text-gray-500 transition-all ${!formData.theme?.background_id ? 'border-[#46178f] scale-105 shadow-[0_4px_10px_rgba(70,23,143,0.3)]' : 'border-transparent hover:bg-gray-200'}`}>ไม่มี</div>
+                                        <div onClick={() => setFormData(prev => ({ ...prev, theme: { ...prev.theme, background_id: null } }))} className={`flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer flex items-center justify-center bg-white/10 font-bold text-white/70 transition-all ${!formData.theme?.background_id ? 'border-white scale-105 shadow-[0_4px_10px_rgba(255,255,255,0.3)]' : 'border-transparent hover:bg-white/20'}`}>ไม่มี</div>
                                         {assets.backgrounds.map(bg => (
-                                            <div key={bg.id} onClick={() => { if (!isPremium) { alert('Premium Feature'); return; } setFormData(prev => ({ ...prev, theme: { ...prev.theme, background_id: bg.id } })); }} className={`relative flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer overflow-hidden group transition-all ${formData.theme?.background_id === bg.id ? 'border-[#46178f] scale-105 shadow-[0_4px_10px_rgba(70,23,143,0.3)]' : 'border-transparent hover:opacity-80'}`}>
+                                            <div key={bg.id} onClick={() => { if (!isPremium) { alert('Premium Feature'); return; } setFormData(prev => ({ ...prev, theme: { ...prev.theme, background_id: bg.id } })); }} className={`relative flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer overflow-hidden group transition-all ${formData.theme?.background_id === bg.id ? 'border-white scale-105 shadow-[0_4px_10px_rgba(255,255,255,0.3)]' : 'border-transparent hover:opacity-80'}`}>
                                                 <img src={bg.url} alt={bg.name} className="w-full h-full object-cover" />
                                                 {!isPremium && <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center"><Lock className="text-white w-6 h-6" /></div>}
                                             </div>
@@ -275,9 +276,9 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                                 <div>
                                     <label className="crm-label">🖼️ กรอบรูป</label>
                                     <div className="flex space-x-3 overflow-x-auto p-2 -mx-2 custom-scrollbar">
-                                        <div onClick={() => setFormData(prev => ({ ...prev, theme: { ...prev.theme, frame_id: null } }))} className={`flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer flex items-center justify-center bg-gray-100 font-bold text-gray-500 transition-all ${!formData.theme?.frame_id ? 'border-[#46178f] scale-105 shadow-[0_4px_10px_rgba(70,23,143,0.3)]' : 'border-transparent hover:bg-gray-200'}`}>ไม่มี</div>
+                                        <div onClick={() => setFormData(prev => ({ ...prev, theme: { ...prev.theme, frame_id: null } }))} className={`flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer flex items-center justify-center bg-white/10 font-bold text-white/70 transition-all ${!formData.theme?.frame_id ? 'border-white scale-105 shadow-[0_4px_10px_rgba(255,255,255,0.3)]' : 'border-transparent hover:bg-white/20'}`}>ไม่มี</div>
                                         {assets.frames.map(frm => (
-                                            <div key={frm.id} onClick={() => { if (!isPremium) { alert('Premium Feature'); return; } setFormData(prev => ({ ...prev, theme: { ...prev.theme, frame_id: frm.id } })); }} className={`relative flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer overflow-hidden p-2 transition-all bg-gray-50 ${formData.theme?.frame_id === frm.id ? 'border-[#46178f] scale-105 shadow-[0_4px_10px_rgba(70,23,143,0.3)]' : 'border-transparent hover:bg-gray-100'}`}>
+                                            <div key={frm.id} onClick={() => { if (!isPremium) { alert('Premium Feature'); return; } setFormData(prev => ({ ...prev, theme: { ...prev.theme, frame_id: frm.id } })); }} className={`relative flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer overflow-hidden p-2 transition-all bg-white/10 ${formData.theme?.frame_id === frm.id ? 'border-white scale-105 shadow-[0_4px_10px_rgba(255,255,255,0.3)]' : 'border-transparent hover:bg-white/20'}`}>
                                                 <div className="absolute inset-0 border-[6px]" style={{ borderImage: `url(${frm.url}) 30 round` }}></div>
                                                 {!isPremium && <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10"><Lock className="text-white w-6 h-6" /></div>}
                                             </div>
