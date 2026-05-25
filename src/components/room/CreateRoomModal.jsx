@@ -107,10 +107,19 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                 .crm-btn-primary:active { transform: translateY(6px); box-shadow: 0 0 0 #009e69; }
                 .crm-btn-secondary { background: rgba(255,255,255,0.2); color: white; box-shadow: 0 6px 0 rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); }
                 .crm-btn-secondary:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(255,255,255,0.1); }
-                
+                @keyframes jelly {
+                    0% { transform: scale(1, 1) translateY(-4px); }
+                    30% { transform: scale(1.05, 0.95) translateY(-4px); }
+                    40% { transform: scale(0.95, 1.05) translateY(-4px); }
+                    50% { transform: scale(1.02, 0.98) translateY(-4px); }
+                    65% { transform: scale(0.98, 1.02) translateY(-4px); }
+                    75% { transform: scale(1.01, 0.99) translateY(-4px); }
+                    100% { transform: scale(1, 1) translateY(-4px); }
+                }
+
                 .crm-mode-btn { border: 3px solid rgba(255,255,255,0.3); border-radius: 24px; padding: 32px; background: rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-                .crm-mode-btn.active.exam { border-color: #e21b3c; background: rgba(226, 27, 60, 0.2); box-shadow: 0 8px 0 #e21b3c; transform: translateY(-4px); }
-                .crm-mode-btn.active.tutor { border-color: #1368ce; background: rgba(19, 104, 206, 0.2); box-shadow: 0 8px 0 #1368ce; transform: translateY(-4px); }
+                .crm-mode-btn.active.exam { border-color: #e21b3c; background: rgba(226, 27, 60, 0.2); box-shadow: 0 8px 0 #e21b3c; transform: translateY(-4px); animation: jelly 0.6s ease-in-out; }
+                .crm-mode-btn.active.tutor { border-color: #1368ce; background: rgba(19, 104, 206, 0.2); box-shadow: 0 8px 0 #1368ce; transform: translateY(-4px); animation: jelly 0.6s ease-in-out; }
                 .crm-mode-btn:hover:not(.active) { background: rgba(255,255,255,0.2); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
                 
                 .crm-number-wrapper { position: relative; display: flex; align-items: center; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 16px; padding: 6px; }
