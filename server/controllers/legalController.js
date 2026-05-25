@@ -1,16 +1,15 @@
-const { SystemSetting } = require('../models');
+const { db: firestore } = require('../config/firebase');
 
-// Key for Privacy Policy in SystemSettings
+const settingsRef = firestore.collection('system_settings');
 const SETTING_KEY_PRIVACY_POLICY = 'privacy_policy_content';
 
 exports.getPrivacyPolicy = async (req, res) => {
     try {
-        const setting = await SystemSetting.findByPk(SETTING_KEY_PRIVACY_POLICY);
-        if (!setting) {
-            // Return empty or null if not set, frontend handles default
+        const doc = await settingsRef.doc(SETTING_KEY_PRIVACY_POLICY).get();
+        if (!doc.exists) {
             return res.status(200).json({ content: null });
         }
-        res.status(200).json({ content: setting.value });
+        res.status(200).json({ content: doc.data().value });
     } catch (error) {
         console.error('Error fetching privacy policy:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -21,21 +20,16 @@ exports.updatePrivacyPolicy = async (req, res) => {
     try {
         const { content } = req.body;
 
-        if (!content) {
+        if (content === undefined) {
             return res.status(400).json({ message: 'Content is required' });
         }
 
-        const [setting, created] = await SystemSetting.findOrCreate({
-            where: { key: SETTING_KEY_PRIVACY_POLICY },
-            defaults: { value: content }
-        });
+        await settingsRef.doc(SETTING_KEY_PRIVACY_POLICY).set({
+            value: content,
+            updated_at: new Date().toISOString()
+        }, { merge: true });
 
-        if (!created) {
-            setting.value = content;
-            await setting.save();
-        }
-
-        res.status(200).json({ message: 'Privacy policy updated successfully', content: setting.value });
+        res.status(200).json({ message: 'Privacy policy updated successfully', content });
     } catch (error) {
         console.error('Error updating privacy policy:', error);
         res.status(500).json({ message: 'Internal server error' });

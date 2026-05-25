@@ -263,7 +263,7 @@ exports.serveAd = async (req, res) => {
         if (candidates.length === 0) return res.json({ served: false });
 
         const winner = candidates[Math.floor(Math.random() * candidates.length)];
-        const sponsorDoc = await usersRef.doc(winner.sponsor_id).get();
+        const sponsorDoc = await usersRef.doc(String(winner.sponsor_id)).get();
         if (!sponsorDoc.exists || (sponsorDoc.data().wallet_balance || 0) <= 0) return res.json({ served: false });
 
         res.json({
@@ -286,13 +286,13 @@ exports.recordView = async (req, res) => {
         const cost = 0.1;
         const { adId } = req.body;
         await firestore.runTransaction(async (t) => {
-            const adDoc = await t.get(adsRef.doc(adId));
+            const adDoc = await t.get(adsRef.doc(String(adId)));
             if (!adDoc.exists) return;
-            const uDoc = await t.get(usersRef.doc(adDoc.data().sponsor_id));
+            const uDoc = await t.get(usersRef.doc(String(adDoc.data().sponsor_id)));
             if (!uDoc.exists || uDoc.data().wallet_balance <= 0) return;
 
-            t.update(usersRef.doc(adDoc.data().sponsor_id), { wallet_balance: admin.firestore.FieldValue.increment(-cost) });
-            t.update(adsRef.doc(adId), { 
+            t.update(usersRef.doc(String(adDoc.data().sponsor_id)), { wallet_balance: admin.firestore.FieldValue.increment(-cost) });
+            t.update(adsRef.doc(String(adId)), { 
                 budget_spent: admin.firestore.FieldValue.increment(cost),
                 views_count: admin.firestore.FieldValue.increment(1) 
             });

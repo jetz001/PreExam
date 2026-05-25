@@ -327,7 +327,7 @@ const QuestionManager = () => {
                                         <td className="px-6 py-4 text-xs text-slate-500">{q.skill || '-'}</td>
                                         <td className="px-6 py-4">{q.subject}</td>
                                         <td className="px-6 py-4">
-                                            {(q.catalogs && q.catalogs.length > 0) ? (
+                                            {(Array.isArray(q.catalogs) && q.catalogs.length > 0) ? (
                                                 <div className="flex flex-wrap gap-1">
                                                     {q.catalogs.slice(0, 2).map((cat, idx) => (
                                                         <span key={idx} className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-600">{cat}</span>
@@ -335,7 +335,7 @@ const QuestionManager = () => {
                                                     {q.catalogs.length > 2 && <span className="text-xs text-slate-400">+{q.catalogs.length - 2}</span>}
                                                 </div>
                                             ) : (
-                                                <span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-600">{q.category}</span>
+                                                <span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-600">{typeof q.catalogs === 'string' ? q.catalogs : q.category}</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">

@@ -77,14 +77,18 @@ exports.getRooms = async (req, res) => {
 
         const data = await Promise.all(filteredDocs.map(async doc => {
             const room = doc.data();
-            const hostDoc = await usersRef.doc(room.host_user_id).get();
+            let hostDoc = null;
+            if (room.host_user_id) {
+                hostDoc = await usersRef.doc(String(room.host_user_id)).get();
+            }
             const pSnap = await doc.ref.collection('participants').get();
             
             delete room.password; // hide password
             
             return {
                 ...room,
-                Host: hostDoc.exists ? { display_name: hostDoc.data().display_name, plan_type: hostDoc.data().plan_type } : null,
+                id: doc.id, // Ensure document id is returned
+                Host: hostDoc && hostDoc.exists ? { display_name: hostDoc.data().display_name, plan_type: hostDoc.data().plan_type } : null,
                 participant_count: pSnap.size
             };
         }));
@@ -95,6 +99,7 @@ exports.getRooms = async (req, res) => {
             pagination: { total: 100, page, totalPages: 5 } // mocked pagination totals
         });
     } catch (error) {
+        console.error('Error fetching rooms:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
@@ -118,15 +123,16 @@ exports.joinRoom = async (req, res) => {
         const partRef = roomDoc.ref.collection('participants').doc(userId);
         const partDoc = await partRef.get();
 
-        if (partDoc.exists) return res.json({ success: true, data: room });
+        if (partDoc.exists) return res.json({ success: true, data: { ...room, id: roomDoc.id } });
 
         if (room.status !== 'waiting') {
             return res.status(400).json({ success: false, message: 'Room is already in progress or finished' });
         }
 
         await partRef.set({ user_id: userId, status: 'joined', joined_at: new Date().toISOString() });
-        res.json({ success: true, data: room });
+        res.json({ success: true, data: { ...room, id: roomDoc.id } });
     } catch (error) {
+        console.error('Error joining room:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
@@ -138,7 +144,10 @@ exports.getRoom = async (req, res) => {
         if (!roomDoc.exists) return res.status(404).json({ success: false, message: 'Room not found' });
 
         const room = roomDoc.data();
-        const hostDoc = await usersRef.doc(room.host_user_id).get();
+        let hostDoc = null;
+        if (room.host_user_id) {
+            hostDoc = await usersRef.doc(String(room.host_user_id)).get();
+        }
         const pSnap = await roomDoc.ref.collection('participants').get();
         
         const participants = await Promise.all(pSnap.docs.map(async pDoc => {

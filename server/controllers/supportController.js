@@ -69,8 +69,13 @@ const supportController = {
     getMyTickets: async (req, res) => {
         try {
             const userId = req.user.id.toString();
-            const snapshot = await ticketsRef.where('user_id', '==', userId).orderBy('created_at', 'desc').get();
-            const tickets = snapshot.docs.map(doc => doc.data());
+            // Avoid composite index by sorting in memory
+            const snapshot = await ticketsRef.where('user_id', '==', userId).get();
+            let tickets = snapshot.docs.map(doc => doc.data());
+            
+            // Sort in memory by created_at desc
+            tickets.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+            
             res.json({ success: true, data: tickets });
         } catch (error) {
             console.error('Error fetching tickets:', error);
@@ -89,7 +94,7 @@ const supportController = {
                 return res.status(403).json({ success: false, message: 'Unauthorized' });
             }
 
-            const userDoc = await usersRef.doc(ticket.user_id).get();
+            const userDoc = await usersRef.doc(String(ticket.user_id)).get();
             if (userDoc.exists) {
                 const u = userDoc.data();
                 ticket.user = { id: ticket.user_id, display_name: u.display_name, email: u.email, avatar: u.avatar, role: u.role, plan_type: u.plan_type };
@@ -98,7 +103,7 @@ const supportController = {
             const msgSnapshot = await ticketDoc.ref.collection('messages').orderBy('created_at', 'asc').get();
             ticket.messages = await Promise.all(msgSnapshot.docs.map(async doc => {
                 const msg = doc.data();
-                const senderDoc = await usersRef.doc(msg.sender_id).get();
+                const senderDoc = await usersRef.doc(String(msg.sender_id)).get();
                 if (senderDoc.exists) {
                     msg.sender = { id: msg.sender_id, display_name: senderDoc.data().display_name, avatar: senderDoc.data().avatar, role: senderDoc.data().role };
                 }
@@ -185,12 +190,27 @@ const supportController = {
 
     getAllTickets: async (req, res) => {
         try {
-            const snapshot = await ticketsRef.orderBy('priority', 'desc').orderBy('updated_at', 'desc').get();
-            const tickets = await Promise.all(snapshot.docs.map(async doc => {
-                const ticket = doc.data();
-                const userDoc = await usersRef.doc(ticket.user_id).get();
-                if (userDoc.exists) {
-                    ticket.user = { display_name: userDoc.data().display_name, avatar: userDoc.data().avatar };
+            // Avoid composite index by getting all and sorting in memory
+            const snapshot = await ticketsRef.get();
+            
+            let rawTickets = snapshot.docs.map(doc => doc.data());
+            
+            // Priority ordering: high > normal > low
+            const priorityWeight = { high: 3, normal: 2, low: 1 };
+            
+            rawTickets.sort((a, b) => {
+                const wA = priorityWeight[a.priority] || 0;
+                const wB = priorityWeight[b.priority] || 0;
+                if (wA !== wB) return wB - wA;
+                return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+            });
+            
+            const tickets = await Promise.all(rawTickets.map(async ticket => {
+                if (ticket.user_id) {
+                    const userDoc = await usersRef.doc(String(ticket.user_id)).get();
+                    if (userDoc.exists) {
+                        ticket.user = { display_name: userDoc.data().display_name, avatar: userDoc.data().avatar };
+                    }
                 }
                 return ticket;
             }));

@@ -1,12 +1,18 @@
-const { RoomAsset } = require('../models');
+const { db: firestore } = require('../config/firebase');
+const assetsRef = firestore.collection('room_assets');
 
 exports.getAssets = async (req, res) => {
     try {
         const { type } = req.query;
-        const where = {};
-        if (type) where.type = type;
+        let snapshot;
+        
+        if (type) {
+            snapshot = await assetsRef.where('type', '==', type).get();
+        } else {
+            snapshot = await assetsRef.get();
+        }
 
-        const assets = await RoomAsset.findAll({ where });
+        const assets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         res.json({ success: true, data: assets });
     } catch (error) {
         console.error('Get Assets Error:', error);
@@ -25,14 +31,18 @@ exports.createAsset = async (req, res) => {
             url = `/uploads/${req.file.filename}`;
         }
 
-        const asset = await RoomAsset.create({
-            type,
-            name,
-            url,
+        const newAssetRef = assetsRef.doc();
+        const assetData = {
+            type: type || 'background',
+            name: name || 'Unnamed Asset',
+            url: url || '',
             is_premium: is_premium === 'true' || is_premium === true, // Handle string 'true' from FormData
-        });
+            created_at: new Date().toISOString()
+        };
 
-        res.status(201).json({ success: true, data: asset });
+        await newAssetRef.set(assetData);
+
+        res.status(201).json({ success: true, data: { id: newAssetRef.id, ...assetData } });
     } catch (error) {
         console.error('Create Asset Error:', error);
         res.status(500).json({ success: false, message: 'Server error' });
@@ -42,7 +52,7 @@ exports.createAsset = async (req, res) => {
 exports.deleteAsset = async (req, res) => {
     try {
         const { id } = req.params;
-        await RoomAsset.destroy({ where: { id } });
+        await assetsRef.doc(String(id)).delete();
         res.json({ success: true, message: 'Asset deleted' });
     } catch (error) {
         console.error('Delete Asset Error:', error);

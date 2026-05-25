@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
-const { sequelize, SystemLog } = require('../models');
+const { db: firestore } = require('../config/firebase');
+
+const logsRef = firestore.collection('system_logs');
 
 // Configuration
 const BACKUP_DIR = '/backups'; // On VPS
@@ -36,13 +38,10 @@ exports.getBackups = async (req, res) => {
 
 exports.getBackupLogs = async (req, res) => {
     try {
-        const logs = await SystemLog.findAll({
-            where: {
-                action: ['BACKUP_CREATE', 'BACKUP_RESTORE']
-            },
-            order: [['created_at', 'DESC']],
-            limit: 50
-        });
+        // Since 'action' uses 'in' clause on multiple items, it's easier to query in memory or use two queries.
+        const snapshot = await logsRef.orderBy('created_at', 'desc').get();
+        let logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        logs = logs.filter(log => log.action === 'BACKUP_CREATE' || log.action === 'BACKUP_RESTORE').slice(0, 50);
         res.json({ success: true, logs });
     } catch (error) {
         console.error('Get Backup Logs Error:', error);
@@ -52,16 +51,18 @@ exports.getBackupLogs = async (req, res) => {
 
 exports.createBackup = async (req, res) => {
     try {
-        // Execute shell script
-        // Execute shell script
+        const logId = logsRef.doc().id;
+        // Mock execution for Firebase or keep the bash script call for legacy support.
+        // We'll keep the script call but handle Firebase logging.
         exec(`bash ${BACKUP_SCRIPT}`, async (error, stdout, stderr) => {
             if (error) {
                 console.error(`Backup Script Error: ${error.message}`);
-                await SystemLog.create({
+                await logsRef.doc(logId).set({
                     action: 'BACKUP_CREATE',
                     status: 'FAILED',
                     details: { error: error.message },
-                    user_id: req.user ? req.user.id : null
+                    user_id: req.user ? req.user.id.toString() : null,
+                    created_at: new Date().toISOString()
                 });
                 return res.status(500).json({ success: false, message: 'Backup failed', error: error.message });
             }
@@ -87,7 +88,6 @@ exports.createBackup = async (req, res) => {
 
                     if (files.length > 0) {
                         const newestFile = files[0].name;
-                        // Avoid double versioning if script already adds it (unlikely but safe)
                         if (!newestFile.includes(`_v${version}`)) {
                             const newName = newestFile.replace('.zip', `_v${version}.zip`);
                             fs.renameSync(path.join(BACKUP_DIR, newestFile), path.join(BACKUP_DIR, newName));
@@ -102,11 +102,12 @@ exports.createBackup = async (req, res) => {
                 }
             }
 
-            await SystemLog.create({
+            await logsRef.doc(logId).set({
                 action: 'BACKUP_CREATE',
                 status: 'SUCCESS',
                 details: { output: stdout, version: version, filename: finalFilename },
-                user_id: req.user ? req.user.id : null
+                user_id: req.user ? req.user.id.toString() : null,
+                created_at: new Date().toISOString()
             });
 
             // Return success immediately
@@ -120,16 +121,12 @@ exports.createBackup = async (req, res) => {
 
 exports.restoreBackup = async (req, res) => {
     try {
-        const { filename } = req.body; // If restoring from existing
+        const { filename } = req.body;
         let filePath;
 
-        // Verify Admin Password/Security? (Middleware handles auth)
-
         if (req.file) {
-            // Uploaded file
             filePath = req.file.path;
         } else if (filename) {
-            // Existing file in /backups
             filePath = path.join(BACKUP_DIR, filename);
             if (!fs.existsSync(filePath)) {
                 return res.status(404).json({ success: false, message: 'Backup file not found' });
@@ -138,51 +135,44 @@ exports.restoreBackup = async (req, res) => {
             return res.status(400).json({ success: false, message: 'No backup file provided' });
         }
 
-        // Create Temp Dir for Restore
         const RESTORE_TEMP = path.join(__dirname, '../../restore_temp_' + Date.now());
         if (!fs.existsSync(RESTORE_TEMP)) fs.mkdirSync(RESTORE_TEMP);
 
-        // This assumes specific zip password from script
         const ZIP_PASSWORD = 'CHANGE_ME_TO_STRONG_PASSWORD';
-
-        // Command to unzip and run restore
         const cmd = `unzip -o -P "${ZIP_PASSWORD}" "${filePath}" -d "${RESTORE_TEMP}" && node "${RESTORE_SCRIPT}" "${path.join(RESTORE_TEMP, 'temp.sqlite')}"`;
 
         console.log('Restoring executing:', cmd);
+        
+        const logId = logsRef.doc().id;
 
         exec(cmd, async (error, stdout, stderr) => {
-            // Cleanup temp dir
             fs.rmSync(RESTORE_TEMP, { recursive: true, force: true });
-            // If uploaded file, delete it too
             if (req.file) fs.unlinkSync(req.file.path);
 
             if (error) {
                 console.error(`Restore Error: ${error.message}`);
-                await SystemLog.create({
+                await logsRef.doc(logId).set({
                     action: 'BACKUP_RESTORE',
                     status: 'FAILED',
                     details: { error: error.message, filename: filename || (req.file ? req.file.originalname : 'unknown') },
-                    user_id: req.user ? req.user.id : null
+                    user_id: req.user ? req.user.id.toString() : null,
+                    created_at: new Date().toISOString()
                 });
                 return res.status(500).json({ success: false, message: 'Restore failed', error: error.message, logs: stderr });
             }
 
             console.log(`Restore Output: ${stdout}`);
 
-            await SystemLog.create({
+            await logsRef.doc(logId).set({
                 action: 'BACKUP_RESTORE',
                 status: 'SUCCESS',
                 details: { output: stdout, filename: filename || (req.file ? req.file.originalname : 'unknown') },
-                user_id: req.user ? req.user.id : null
+                user_id: req.user ? req.user.id.toString() : null,
+                created_at: new Date().toISOString()
             });
-
-            // Restart PM2 to reload DB connection/cache
-            // exec('pm2 restart all'); // Dangerous to do inside request, response might fail.
-            // Better to respond first.
 
             res.json({ success: true, message: 'Restore successful. Server restarting...' });
 
-            // Trigger restart after delay
             setTimeout(() => {
                 exec('pm2 restart all');
             }, 2000);

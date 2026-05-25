@@ -44,18 +44,18 @@ exports.deleteSource = async (req, res) => {
 exports.getNews = async (req, res) => {
     try {
         const { category, agency, search } = req.query;
-        let query = newsRef;
 
-        if (category) query = query.where('category', '==', category);
-        if (agency) query = query.where('agency', '==', agency);
-
-        const snapshot = await query.orderBy('published_at', 'desc').get();
+        // Fetch all ordered by published_at to avoid composite index requirement
+        const snapshot = await newsRef.orderBy('published_at', 'desc').get();
         let newsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         const today = new Date().toISOString().split('T')[0];
         
-        // Manual filter for search and date due to Firestore limitations
+        // Manual filter for search, category, agency and date due to Firestore limitations
         newsList = newsList.filter(news => {
+            if (category && news.category !== category) return false;
+            if (agency && news.agency !== agency) return false;
+
             const isValidDate = !news.end_date || news.end_date >= today;
             if (!isValidDate) return false;
 
@@ -150,7 +150,13 @@ exports.updateNews = async (req, res) => {
         const doc = await docRef.get();
         if (!doc.exists) return res.status(404).json({ success: false, message: 'News not found' });
         
-        await docRef.update(req.body);
+        // Remove undefined fields before updating
+        const updateData = {};
+        for (const [key, value] of Object.entries(req.body)) {
+            if (value !== undefined) updateData[key] = value;
+        }
+
+        await docRef.update(updateData);
         const updated = await docRef.get();
         res.json({ success: true, data: { id: updated.id, ...updated.data() } });
     } catch (error) {
@@ -254,12 +260,14 @@ exports.getLandingPageNews = async (req, res) => {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-        let snapshot = await newsRef.where('is_featured', '==', true)
-                                    .orderBy('featured_at', 'desc')
-                                    .limit(5)
-                                    .get();
-        
+        // Avoid composite index requirement (where + orderBy)
+        let snapshot = await newsRef.where('is_featured', '==', true).get();
         let newsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Sort by featured_at desc in memory and limit to 5
+        newsList.sort((a, b) => new Date(b.featured_at || 0) - new Date(a.featured_at || 0));
+        newsList = newsList.slice(0, 5);
+
         let useFallback = false;
 
         if (newsList.length === 0 || !newsList[0].featured_at || new Date(newsList[0].featured_at) < sevenDaysAgo) {
@@ -268,6 +276,7 @@ exports.getLandingPageNews = async (req, res) => {
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             
+            // This only uses one field (published_at), so it uses a single-field index which is fine
             snapshot = await newsRef.where('published_at', '>=', thirtyDaysAgo.toISOString())
                                     .orderBy('published_at', 'desc')
                                     .get();
@@ -296,13 +305,24 @@ exports.toggleFeature = async (req, res) => {
         const doc = await docRef.get();
         if (!doc.exists) return res.status(404).json({ success: false, message: 'News not found' });
         
-        const newStatus = !doc.data().is_featured;
-        await docRef.update({
-            is_featured: newStatus,
-            featured_at: newStatus ? new Date().toISOString() : doc.data().featured_at
-        });
+        const currentData = doc.data();
+        const newStatus = !currentData.is_featured;
+        
+        const updateData = {
+            is_featured: newStatus
+        };
+        
+        if (newStatus) {
+            updateData.featured_at = new Date().toISOString();
+        } else if (currentData.featured_at !== undefined) {
+            updateData.featured_at = currentData.featured_at;
+        } else {
+            updateData.featured_at = null;
+        }
 
-        res.json({ success: true, data: { ...doc.data(), is_featured: newStatus } });
+        await docRef.update(updateData);
+
+        res.json({ success: true, data: { ...currentData, ...updateData } });
     } catch (error) {
         console.error('Error toggling feature:', error);
         res.status(500).json({ success: false, message: 'Server error' });
