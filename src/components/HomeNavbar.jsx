@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 import publicService from '../services/publicService';
 
@@ -36,6 +36,9 @@ export default function HomeNavbar() {
   const menuRef    = useRef(null);
   const profileRef = useRef(null);
   const navigate   = useNavigate();
+  const location   = useLocation();
+
+  const isLightMode = location.pathname.startsWith('/pricing');
 
   /* load user */
   useEffect(() => {
@@ -60,7 +63,7 @@ export default function HomeNavbar() {
     navigate('/login');
   };
 
-  const avatar = user?.avatar_url;
+  const avatar = user?.avatar || user?.avatar_url;
   const displayName = user?.display_name || user?.username || 'ผู้ใช้';
   const initial = displayName.charAt(0).toUpperCase();
 
@@ -137,9 +140,16 @@ export default function HomeNavbar() {
         .hn-hamburger.open span:nth-child(1) { transform:translateY(7.5px) rotate(45deg); }
         .hn-hamburger.open span:nth-child(2) { opacity:0; transform:scaleX(0); }
         .hn-hamburger.open span:nth-child(3) { transform:translateY(-7.5px) rotate(-45deg); }
+
+        .hn-light-mode .hn-hamburger {
+          background: rgba(0,0,0,0.05);
+          border-color: rgba(0,0,0,0.15);
+        }
+        .hn-light-mode .hn-hamburger:hover { background: rgba(0,0,0,0.1); }
+        .hn-light-mode .hn-hamburger span { background: #46178f; }
       `}</style>
 
-      <nav style={{
+      <nav className={isLightMode ? 'hn-light-mode' : ''} style={{
         position:'absolute', top:0, left:0, right:0, zIndex:100,
         display:'flex', alignItems:'center', justifyContent:'space-between',
         padding:'14px 20px',
@@ -151,8 +161,8 @@ export default function HomeNavbar() {
           {/* Logo pill */}
           <Link to="/" style={{
             display:'flex', alignItems:'center', gap:8,
-            background:'rgba(255,255,255,0.15)',
-            border:'2px solid rgba(255,255,255,0.3)',
+            background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)',
+            border: isLightMode ? '2px solid rgba(0,0,0,0.15)' : '2px solid rgba(255,255,255,0.3)',
             backdropFilter:'blur(10px)',
             borderRadius:999,
             padding:'7px 16px 7px 10px',
@@ -161,9 +171,9 @@ export default function HomeNavbar() {
             <span style={{ fontSize:22 }}>🎯</span>
             <span style={{
               fontFamily:"'Nunito','Sarabun',sans-serif",
-              fontWeight:900, color:'#fff', fontSize:'1.05rem', letterSpacing:'-0.5px',
+              fontWeight:900, color: isLightMode ? '#46178f' : '#fff', fontSize:'1.05rem', letterSpacing:'-0.5px',
             }}>PreExam</span>
-            <span style={{ color:'#ffcc00', fontWeight:900, fontSize:'1.05rem' }}>!</span>
+            <span style={{ color: isLightMode ? '#e21b3c' : '#ffcc00', fontWeight:900, fontSize:'1.05rem' }}>!</span>
           </Link>
 
           {/* Hamburger toggle */}
@@ -241,7 +251,7 @@ export default function HomeNavbar() {
               >
                 {avatar
                   ? <img src={avatar} alt={displayName} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-                  : initial
+                  : <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=b6e3f4,c0aede,d1d4f9`} alt={displayName} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 }
               </button>
 
@@ -275,9 +285,9 @@ export default function HomeNavbar() {
             /* ── Not logged in: Login + Register pills ── */
             <>
               <Link to="/login" className="hn-pill" style={{
-                background:'rgba(255,255,255,0.15)',
-                border:'2px solid rgba(255,255,255,0.35)',
-                color:'#fff',
+                background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)',
+                border: isLightMode ? '2px solid rgba(0,0,0,0.15)' : '2px solid rgba(255,255,255,0.35)',
+                color: isLightMode ? '#46178f' : '#fff',
                 backdropFilter:'blur(10px)',
               }}>
                 เข้าสู่ระบบ

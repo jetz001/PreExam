@@ -62,6 +62,7 @@ exports.register = async (req, res) => {
                 display_name: user.display_name,
                 role: user.role,
                 public_id: user.public_id,
+                avatar: user.avatar,
             },
         });
 
@@ -120,6 +121,7 @@ exports.login = async (req, res) => {
                 role: user.role,
                 public_id: user.public_id,
                 plan_type: user.plan_type,
+                avatar: user.avatar,
             },
         });
     } catch (error) {
@@ -190,6 +192,7 @@ exports.googleLogin = async (req, res) => {
                 role: user.role,
                 public_id: user.public_id,
                 plan_type: user.plan_type,
+                avatar: user.avatar,
             },
         });
     } catch (error) {
@@ -276,6 +279,7 @@ exports.facebookLogin = async (req, res) => {
                 role: user.role,
                 public_id: user.public_id,
                 plan_type: user.plan_type,
+                avatar: user.avatar,
             },
         });
     } catch (error) {
@@ -346,6 +350,7 @@ exports.guestLogin = async (req, res) => {
                 role: user.role,
                 public_id: user.public_id,
                 plan_type: user.plan_type,
+                avatar: user.avatar,
             },
         });
     } catch (error) {

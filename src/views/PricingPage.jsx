@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Star, Shield, Zap } from 'lucide-react';
+import { Check, Star, Shield, Zap, X } from 'lucide-react';
 import api from '../services/api';
 import paymentService from '../services/paymentService'; // Import payment service
-import Navbar from '../components/Navbar';
 import SlipUploadModal from '../components/payment/SlipUploadModal';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import '../assets/css/pricing.css'; // Import the new CSS
 
 const PricingPage = () => {
     const [plans, setPlans] = useState([]);
@@ -38,15 +38,6 @@ const PricingPage = () => {
 
     const createTransaction = async (planId) => {
         try {
-            // Default to 'transfer_slip' for now
-            // But we can now switch to Stripe if plan name matches or we add a toggle
-            // For this specific 'Premium' flow with 59/590, let's assume we want Stripe for convenience
-            // BUT allow fallback to slip.
-
-            // For now, let's try Stripe first if user wants.
-            // Let's modify handleSelectPlan to ask or just default to showing both options.
-            // Simplified: Just use the existing logic to set Plan, then in the UI below, offer choice.
-
             const res = await api.post('/payments/checkout', {
                 plan_id: planId,
                 payment_method: 'transfer_slip'
@@ -61,52 +52,61 @@ const PricingPage = () => {
         }
     };
 
-    if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
+    if (loading) return (
+        <div className="min-h-screen bg-[#f2f2f2] flex items-center justify-center kahoot-bg">
+            <div className="text-4xl font-black text-gray-700 animate-pulse uppercase tracking-widest">Loading...</div>
+        </div>
+    );
 
     // Payment Flow Step 2: Show Bank Details & Upload
     if (transaction) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar />
-                <div className="flex-1 container mx-auto px-4 py-8 max-w-2xl">
-                    <div className="bg-white rounded-2xl shadow-xl p-8">
-                        <h2 className="text-2xl font-bold text-center mb-6">Complete Your Payment</h2>
+            <div className="min-h-screen bg-[#f2f2f2] kahoot-bg flex flex-col relative overflow-hidden">
+                {/* Background Shapes */}
+                <div className="shape shape-triangle" style={{ top: '10%', left: '10%' }}></div>
+                <div className="shape shape-circle" style={{ top: '20%', right: '15%' }}></div>
+                <div className="shape shape-square" style={{ bottom: '15%', left: '20%' }}></div>
+                <div className="shape shape-diamond" style={{ bottom: '25%', right: '10%' }}></div>
 
-                        <div className="bg-blue-50 p-6 rounded-xl mb-6">
-                            <h3 className="font-bold text-lg mb-4 text-blue-900">Bank Transfer Details</h3>
-                            <div className="space-y-2 text-blue-800">
-                                <div className="flex justify-between">
+                <div className="flex-1 container mx-auto px-4 pt-28 pb-8 max-w-2xl z-10 relative">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 border-b-8 border-gray-300">
+                        <h2 className="text-4xl font-black text-center mb-6 text-gray-800 uppercase tracking-wide">Checkout</h2>
+
+                        <div className="bg-[#e5f2ff] p-6 rounded-2xl mb-8 border-4 border-[#b3d9ff]">
+                            <h3 className="font-black text-2xl mb-4 text-[#0066cc] uppercase">Bank Transfer</h3>
+                            <div className="space-y-3 text-lg text-gray-700 font-bold">
+                                <div className="flex justify-between items-center">
                                     <span>Bank:</span>
-                                    <span className="font-bold">Kasikorn Bank (K-Bank)</span>
+                                    <span className="bg-[#26890c] text-white px-3 py-1 rounded-lg shadow-sm">K-Bank</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex justify-between items-center">
                                     <span>Account Name:</span>
-                                    <span className="font-bold">PreExam Co., Ltd.</span>
+                                    <span>PreExam Co., Ltd.</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex justify-between items-center">
                                     <span>Account Number:</span>
-                                    <span className="font-bold text-xl">123-4-56789-0</span>
+                                    <span className="text-2xl font-black tracking-wider text-gray-800">123-4-56789-0</span>
                                 </div>
-                                <div className="flex justify-between pt-2 border-t border-blue-200 mt-2">
+                                <div className="flex justify-between items-center pt-4 border-t-4 border-[#b3d9ff] mt-2">
                                     <span>Amount to Pay:</span>
-                                    <span className="font-bold text-2xl text-primary">{transaction.amount} THB</span>
+                                    <span className="font-black text-4xl text-[#e21b3c]">{transaction.amount} THB</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="text-center space-y-4">
-                            <p className="text-gray-600">Please transfer the exact amount and upload your slip.</p>
+                            <p className="text-gray-500 font-bold mb-4 text-lg">Please transfer the exact amount and upload your slip.</p>
                             <button
                                 onClick={() => setShowUploadModal(true)}
-                                className="bg-primary text-white w-full py-3 rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
+                                className="bg-[#26890c] text-white w-full py-4 rounded-xl font-black text-xl btn-kahoot border-b-4 border-[#1a5c08] hover:bg-[#2eaa10] transition-colors"
                             >
-                                Upload Payment Slip
+                                UPLOAD SLIP
                             </button>
 
-                            <div className="relative flex py-5 items-center">
-                                <div className="flex-grow border-t border-gray-200"></div>
-                                <span className="flex-shrink-0 mx-4 text-gray-400">OR</span>
-                                <div className="flex-grow border-t border-gray-200"></div>
+                            <div className="relative flex py-6 items-center">
+                                <div className="flex-grow border-t-4 border-gray-200 rounded"></div>
+                                <span className="flex-shrink-0 mx-4 text-gray-400 font-black">OR</span>
+                                <div className="flex-grow border-t-4 border-gray-200 rounded"></div>
                             </div>
 
                             <button
@@ -125,16 +125,19 @@ const PricingPage = () => {
                                         alert('Stripe Error: ' + err.message);
                                     }
                                 }}
-                                className="bg-indigo-600 text-white w-full py-3 rounded-xl font-bold text-lg shadow-lg hover:bg-indigo-700 transition-transform transform hover:scale-105"
+                                className="bg-[#46178f] text-white w-full py-4 rounded-xl font-black text-xl btn-kahoot border-b-4 border-[#331166] hover:bg-[#5c1ecc] transition-colors"
                             >
-                                Pay with Credit Card / QR Code (Auto)
+                                PAY WITH CREDIT CARD / AUTO
                             </button>
-                            <button
-                                onClick={() => { setTransaction(null); setSelectedPlan(null); }}
-                                className="text-gray-400 hover:text-gray-600 font-medium"
-                            >
-                                Cancel / Change Plan
-                            </button>
+                            
+                            <div className="pt-6">
+                                <button
+                                    onClick={() => { setTransaction(null); setSelectedPlan(null); }}
+                                    className="text-gray-400 hover:text-gray-600 font-black uppercase tracking-wider transition-colors"
+                                >
+                                    Cancel / Go Back
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -153,64 +156,81 @@ const PricingPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Navbar />
-            <div className="flex-1 container mx-auto px-4 py-12">
-                <div className="text-center max-w-3xl mx-auto mb-12">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Upgrade to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Premium</span></h1>
-                    <p className="text-lg text-gray-600">Unlock your full potential with exclusive features, unlimited customization, and smart growth tools.</p>
+        <div className="min-h-screen bg-[#f2f2f2] kahoot-bg flex flex-col relative overflow-hidden font-sans">
+            {/* Background Shapes */}
+            <div className="shape shape-triangle" style={{ top: '5%', left: '5%' }}></div>
+            <div className="shape shape-circle" style={{ top: '15%', right: '10%' }}></div>
+            <div className="shape shape-square" style={{ bottom: '10%', left: '15%' }}></div>
+            <div className="shape shape-diamond" style={{ bottom: '20%', right: '5%' }}></div>
+            <div className="shape shape-circle" style={{ top: '60%', left: '45%', backgroundColor: '#cc66ff', width: '60px', height: '60px' }}></div>
+
+            <div className="flex-1 container mx-auto px-4 pt-28 pb-12 z-10 relative">
+                <div className="text-center max-w-4xl mx-auto mb-16">
+                    <h1 className="text-5xl md:text-7xl font-black text-gray-800 mb-6 drop-shadow-sm tracking-tight uppercase" style={{ fontFamily: 'Inter, Montserrat, sans-serif' }}>
+                        Ready to <span className="text-[#46178f]">Play</span> & <span className="text-[#e21b3c]">Learn?</span>
+                    </h1>
+                    <p className="text-xl md:text-2xl text-gray-600 font-bold">Pick the plan that works for you and let the fun begin!</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                     {/* Free Plan */}
-                    <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 flex flex-col">
+                    <div className="bg-white rounded-[2rem] p-8 border-b-8 border-gray-300 shadow-xl flex flex-col transform hover:-translate-y-2 transition-transform duration-300">
                         <div className="mb-4">
-                            <h3 className="text-xl font-bold text-gray-900">Member</h3>
-                            <p className="text-gray-500">For casual learners</p>
+                            <h3 className="text-3xl font-black text-[#26890c] uppercase">Free Pass</h3>
+                            <p className="text-gray-500 font-bold text-lg">For casual players</p>
                         </div>
-                        <div className="text-3xl font-bold mb-6">Free</div>
-                        <ul className="space-y-3 mb-8 flex-1">
-                            <li className="flex items-center text-gray-600"><Check size={18} className="text-green-500 mr-2" /> Access Public Exams</li>
-                            <li className="flex items-center text-gray-600"><Check size={18} className="text-green-500 mr-2" /> Create Basic Rooms</li>
-                            <li className="flex items-center text-gray-600"><Check size={18} className="text-green-500 mr-2" /> View Basic Stats</li>
-                            <li className="flex items-center text-gray-400"><X size={18} className="mr-2" /> Custom Themes</li>
-                            <li className="flex items-center text-gray-400"><X size={18} className="mr-2" /> Smart Growth Tools</li>
+                        <div className="text-6xl font-black mb-6 text-gray-800">0 <span className="text-2xl text-gray-500 font-bold">THB</span></div>
+                        <ul className="space-y-4 mb-8 flex-1 font-bold text-gray-700 text-lg">
+                            <li className="flex items-center"><Check size={28} strokeWidth={3} className="text-[#26890c] mr-3" /> Access Public Exams</li>
+                            <li className="flex items-center"><Check size={28} strokeWidth={3} className="text-[#26890c] mr-3" /> Create Basic Rooms</li>
+                            <li className="flex items-center"><Check size={28} strokeWidth={3} className="text-[#26890c] mr-3" /> View Basic Stats</li>
+                            <li className="flex items-center text-gray-400"><X size={28} strokeWidth={3} className="mr-3" /> Custom Themes</li>
+                            <li className="flex items-center text-gray-400"><X size={28} strokeWidth={3} className="mr-3" /> Smart Growth Tools</li>
                         </ul>
-                        <button className="w-full py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200">Current Plan</button>
+                        <button className="w-full py-4 bg-gray-200 text-gray-400 font-black text-2xl rounded-xl btn-kahoot border-gray-300 border-b-4 cursor-not-allowed uppercase">Current Plan</button>
                     </div>
 
                     {/* Premium Plans */}
-                    {plans.map((plan) => (
-                        <div key={plan.id} className="relative bg-white rounded-2xl shadow-xl p-8 border-2 border-primary transform hover:-translate-y-2 transition-all flex flex-col">
-                            {plan.duration_days > 30 && (
-                                <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">
-                                    BEST VALUE
+                    {plans.map((plan, index) => {
+                        const colors = [
+                            { bg: 'bg-[#46178f]', text: 'text-[#46178f]', border: 'border-[#331166]', highlight: 'text-yellow-400', hoverBg: 'hover:bg-[#5c1ecc]' },
+                            { bg: 'bg-[#1368ce]', text: 'text-[#1368ce]', border: 'border-[#0e4e9a]', highlight: 'text-yellow-400', hoverBg: 'hover:bg-[#1a80fa]' },
+                            { bg: 'bg-[#e21b3c]', text: 'text-[#e21b3c]', border: 'border-[#b3152f]', highlight: 'text-yellow-400', hoverBg: 'hover:bg-[#f23555]' },
+                        ];
+                        const theme = colors[index % colors.length];
+                        
+                        return (
+                            <div key={plan.id} className="relative bg-white rounded-[2rem] p-8 border-b-8 shadow-2xl flex flex-col transform hover:-translate-y-2 transition-transform duration-300" style={{ borderColor: theme.border.replace('border-[', '').replace(']', '') }}>
+                                {plan.duration_days > 30 && (
+                                    <div className="absolute -top-5 -right-3 bg-[#eb670f] text-white text-md font-black px-4 py-2 rounded-xl border-b-4 border-[#b84c06] shadow-lg transform rotate-6 uppercase">
+                                        BEST VALUE!
+                                    </div>
+                                )}
+                                <div className="mb-4">
+                                    <h3 className={`text-3xl font-black uppercase flex items-center ${theme.text}`}>
+                                        {plan.name} <Star size={28} fill="currentColor" strokeWidth={0} className={`ml-2 ${theme.highlight}`} />
+                                    </h3>
+                                    <p className="text-gray-500 font-bold text-lg">{plan.duration_days} Days VIP Access</p>
                                 </div>
-                            )}
-                            <div className="mb-4">
-                                <h3 className="text-xl font-bold text-primary flex items-center">
-                                    {plan.name} <Star size={16} fill="currentColor" className="ml-2" />
-                                </h3>
-                                <p className="text-gray-500">{plan.duration_days} Days Access</p>
+                                <div className="text-6xl font-black mb-2 text-gray-800">{plan.price} <span className="text-2xl text-gray-500 font-bold">THB</span></div>
+                                <p className="text-gray-400 text-md font-black mb-8 uppercase tracking-widest">One-time payment</p>
+
+                                <ul className="space-y-4 mb-8 flex-1 font-bold text-gray-700 text-lg">
+                                    <li className="flex items-center"><Check size={28} strokeWidth={3} className={`${theme.text} mr-3`} /> All Free Features</li>
+                                    <li className="flex items-center"><Zap size={28} strokeWidth={3} className={`${theme.text} mr-3`} /> Unlimited Custom Themes</li>
+                                    <li className="flex items-center"><Shield size={28} strokeWidth={3} className={`${theme.text} mr-3`} /> Ad-Free Experience</li>
+                                    <li className="flex items-center"><Star size={28} strokeWidth={3} className={`${theme.text} mr-3`} /> Mistake Review Notebook</li>
+                                </ul>
+
+                                <button
+                                    onClick={() => handleSelectPlan(plan)}
+                                    className={`w-full py-4 ${theme.bg} text-white font-black text-2xl rounded-xl btn-kahoot border-b-4 ${theme.border} uppercase transition-colors`}
+                                >
+                                    GET PREMIUM
+                                </button>
                             </div>
-                            <div className="text-4xl font-bold mb-2">{plan.price} <span className="text-lg text-gray-400 font-normal">THB</span></div>
-                            <p className="text-gray-400 text-sm mb-6">Billed once</p>
-
-                            <ul className="space-y-3 mb-8 flex-1">
-                                <li className="flex items-center text-gray-700 font-medium"><Check size={18} className="text-primary mr-2" /> All Free Features</li>
-                                <li className="flex items-center text-gray-700 font-medium"><Zap size={18} className="text-primary mr-2" /> Unlimited Custom Themes</li>
-                                <li className="flex items-center text-gray-700 font-medium"><Shield size={18} className="text-primary mr-2" /> Ad-Free Experience</li>
-                                <li className="flex items-center text-gray-700 font-medium"><Star size={18} className="text-primary mr-2" /> Mistake Review Notebook</li>
-                            </ul>
-
-                            <button
-                                onClick={() => handleSelectPlan(plan)}
-                                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-purple-700 transition-all"
-                            >
-                                Get Premium
-                            </button>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </div>

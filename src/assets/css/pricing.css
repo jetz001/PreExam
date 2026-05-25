@@ -1,0 +1,78 @@
+/* src/assets/css/pricing.css */
+@keyframes float {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(15deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+@keyframes floatReverse {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(30px) rotate(-15deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+.kahoot-bg {
+  background-color: #f2f2f2;
+  position: relative;
+  overflow: hidden;
+}
+
+.kahoot-bg::before,
+.kahoot-bg::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+/* Floating shapes */
+.shape {
+  position: absolute;
+  z-index: 0;
+  opacity: 0.7;
+}
+.shape-triangle {
+  width: 0;
+  height: 0;
+  border-left: 60px solid transparent;
+  border-right: 60px solid transparent;
+  border-bottom: 120px solid #ff3355;
+  animation: float 6s ease-in-out infinite;
+}
+.shape-circle {
+  width: 120px;
+  height: 120px;
+  background-color: #33ccff;
+  border-radius: 50%;
+  animation: floatReverse 8s ease-in-out infinite;
+}
+.shape-square {
+  width: 90px;
+  height: 90px;
+  background-color: #ffcc00;
+  animation: float 7s ease-in-out infinite;
+  transform: rotate(15deg);
+}
+.shape-diamond {
+  width: 80px;
+  height: 80px;
+  background-color: #66cc33;
+  transform: rotate(45deg);
+  animation: floatReverse 9s ease-in-out infinite;
+}
+
+/* Kahoot-like button */
+.btn-kahoot {
+  transition: transform 0.1s, border-width 0.1s;
+  cursor: pointer;
+}
+.btn-kahoot:active:not(:disabled) {
+  transform: translateY(4px);
+  border-bottom-width: 0px !important;
+  margin-bottom: 4px;
+}
+.btn-kahoot.cursor-not-allowed:active {
+  transform: none;
+  border-bottom-width: 4px !important;
+  margin-bottom: 0;
+}
