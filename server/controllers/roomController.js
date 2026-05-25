@@ -85,10 +85,18 @@ exports.getRooms = async (req, res) => {
             
             delete room.password; // hide password
             
+            let hostDisplayName = 'Unknown';
+            let hostPlanType = 'free';
+            if (hostDoc && hostDoc.exists) {
+                const hd = hostDoc.data();
+                hostDisplayName = hd.display_name || hd.username || hd.email || 'Player';
+                hostPlanType = hd.plan_type || 'free';
+            }
+
             return {
                 ...room,
                 id: doc.id, // Ensure document id is returned
-                Host: hostDoc && hostDoc.exists ? { display_name: hostDoc.data().display_name, plan_type: hostDoc.data().plan_type } : null,
+                Host: { display_name: hostDisplayName, plan_type: hostPlanType },
                 participant_count: pSnap.size
             };
         }));
@@ -125,8 +133,16 @@ exports.joinRoom = async (req, res) => {
 
         if (partDoc.exists) return res.json({ success: true, data: { ...room, id: roomDoc.id } });
 
+        if (room.host_user_id === userId) {
+            return res.json({ success: true, data: { ...room, id: roomDoc.id } });
+        }
+
+        if (room.status === 'finished') {
+            return res.json({ success: true, data: { ...room, id: roomDoc.id } });
+        }
+
         if (room.status !== 'waiting') {
-            return res.status(400).json({ success: false, message: 'Room is already in progress or finished' });
+            return res.status(400).json({ success: false, message: 'Room is already in progress' });
         }
 
         await partRef.set({ user_id: userId, status: 'joined', joined_at: new Date().toISOString() });
@@ -173,7 +189,7 @@ exports.getRoom = async (req, res) => {
             success: true,
             data: {
                 ...room,
-                Host: hostDoc.exists ? { id: hostDoc.id, display_name: hostDoc.data().display_name } : null,
+                Host: hostDoc && hostDoc.exists ? { id: hostDoc.id, display_name: hostDoc.data().display_name || hostDoc.data().username || hostDoc.data().email || 'Player' } : { display_name: 'Unknown' },
                 RoomParticipants: participants,
                 questions
             }
