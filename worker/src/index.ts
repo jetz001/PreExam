@@ -995,6 +995,31 @@ export default {
         if (url.pathname === "/api/friends/list") return json({ success: true, friends: [] });
         if (url.pathname === "/api/users/leaderboard") return json({ success: true, leaderboard: [] });
 
+        // Admin and System Stubs / Simple Implementation
+        if (url.pathname === "/api/admin/stats") return json({ revenue: { total: 0, monthly: 0, yearly: 0, pending: 0, trend: [] }, conversionRate: 0, activeUsers: 0, commercialViability: [], painPoints: [], communityHealth: {} });
+        if (url.pathname === "/api/admin/users" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const users = await firestore.runQuery({ from: [{ collectionId: "users" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
+          return json(users);
+        }
+        if (url.pathname === "/api/admin/businesses" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const businesses = await firestore.runQuery({ from: [{ collectionId: "businesses" }], limit: 1000 });
+          businesses.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+          return json(businesses);
+        }
+        if (url.pathname === "/api/admin/payments" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
+          return json(payments);
+        }
+        if (url.pathname === "/api/admin/generator/status") return json({ status: 'idle' });
+        if (url.pathname === "/api/terminal/command") return json({ output: '' });
+
+
       } catch (err: any) {
         return json({ success: false, message: err.message }, { status: 500 });
       }
