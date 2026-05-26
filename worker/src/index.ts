@@ -987,6 +987,83 @@ export default {
           return json({ success: true, likes: currentLikes + 1 });
         }
 
+        // /api/news
+        if (url.pathname === "/api/news" && request.method === "GET") {
+          try {
+            const agency = url.searchParams.get("agency");
+            const search = url.searchParams.get("search");
+            const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 100 });
+            let filteredNews = news;
+            if (agency && agency !== 'undefined') {
+                filteredNews = filteredNews.filter((n: any) => n.agency === agency || (n.metadata && n.metadata.organization === agency));
+            }
+            if (search && search !== 'undefined') {
+                const sLower = search.toLowerCase();
+                filteredNews = filteredNews.filter((n: any) => n.title?.toLowerCase().includes(sLower) || n.summary?.toLowerCase().includes(sLower));
+            }
+            filteredNews.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+            return json({ success: true, data: filteredNews });
+          } catch(e) {
+            return json({ success: true, data: [] });
+          }
+        }
+
+        // /api/news/agency-stats
+        if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
+          try {
+            const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 1000 });
+            const agencies = new Map();
+            news.forEach((item: any) => {
+              const agency = item.agency || (item.metadata && item.metadata.organization);
+              if (agency) {
+                  agencies.set(agency, (agencies.get(agency) || 0) + 1);
+              }
+            });
+            const stats = Array.from(agencies.entries()).map(([name, count]) => ({ name, job_count: count }));
+            return json({ success: true, data: stats });
+          } catch(e) {
+            return json({ success: true, data: [] });
+          }
+        }
+
+        // /api/news/popular-keywords
+        if (url.pathname === "/api/news/popular-keywords" && request.method === "GET") {
+            return json({ success: true, data: [] });
+        }
+
+        // /api/news/sources/all
+        if (url.pathname === "/api/news/sources/all" && request.method === "GET") {
+            try {
+              const sources = await firestore.runQuery({ from: [{ collectionId: "news_sources" }] });
+              return json({ success: true, data: sources });
+            } catch(e) {
+              return json({ success: true, data: [] });
+            }
+        }
+
+        // /api/admin/scraper/status
+        if (url.pathname === "/api/admin/scraper/status" && request.method === "GET") {
+            return json({ success: true, status: 'idle', last_run: new Date().toISOString() });
+        }
+
+        // /api/scraper/jobs
+        if (url.pathname === "/api/scraper/jobs" && request.method === "POST") {
+            const body = await readJson(request);
+            if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
+            
+            // Check API Key
+            const apiKey = request.headers.get("x-api-key");
+            if (apiKey !== "dev_scraper_key") {
+                return json({ success: false, message: "Unauthorized" }, { status: 401 });
+            }
+
+            const jobData: any = body;
+            jobData.created_at = new Date().toISOString();
+            jobData.published_at = new Date().toISOString();
+            const created = await firestore.createDocument("news", jobData);
+            return json({ success: true, data: created });
+        }
+
         // Stub missing routes to prevent 404 crashes
         if (url.pathname === "/api/users/stats") return json({ success: true, stats: { total_tests: 0, avg_score: 0 }});
         if (url.pathname === "/api/public/settings") return json({ success: true, settings: {} });
