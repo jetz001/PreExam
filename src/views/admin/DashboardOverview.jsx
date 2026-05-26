@@ -92,7 +92,7 @@ const DashboardOverview = () => {
                     </div>
                 </div>
                 <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                         <AreaChart data={stats?.revenue?.trend}>
                             <defs>
                                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -125,7 +125,7 @@ const DashboardOverview = () => {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                     <h3 className="text-lg font-semibold text-slate-800 mb-4">Commercial Viability Score</h3>
                     <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                             <LineChart data={stats?.commercialViability}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                 <XAxis dataKey="name" stroke="#64748b" />
@@ -151,7 +151,7 @@ const DashboardOverview = () => {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                     <h3 className="text-lg font-semibold text-slate-800 mb-4">Weakest Subjects (Pain Points)</h3>
                     <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                             <BarChart data={stats?.painPoints} layout="vertical">
                                 <CartesianGrid strokeDasharray="3 3" horizontal={true} stroke="#e2e8f0" />
                                 <XAxis type="number" hide />
