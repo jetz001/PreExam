@@ -1093,7 +1093,17 @@ export default {
           const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
           return json(payments);
         }
+        if (url.pathname === "/api/admin/threads" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const threads = await firestore.runQuery({ from: [{ collectionId: "threads" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
+          return json(threads);
+        }
+        if (url.pathname === "/api/admin/scraper/start" && request.method === "POST") {
+            return json({ success: true, message: "Scraper started" });
+        }
         if (url.pathname === "/api/admin/generator/status") return json({ status: 'idle' });
+        if (url.pathname === "/api/terminal/status") return json({ status: 'online' });
         if (url.pathname === "/api/terminal/command") return json({ output: '' });
 
 
