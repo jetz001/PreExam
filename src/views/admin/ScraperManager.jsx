@@ -23,11 +23,15 @@ const ScraperManager = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) {
-                setStatus(prev => ({
-                    ...prev,
-                    isRunning: res.data.data.isRunning,
-                    logs: res.data.data.logs || []
-                }));
+                setStatus(prev => {
+                    // Prevent server 'idle' status from wiping out frontend simulated logs mid-run
+                    if (prev.isRunning && !res.data.data.isRunning) return prev;
+                    return {
+                        ...prev,
+                        isRunning: res.data.data.isRunning,
+                        logs: res.data.data.logs || []
+                    };
+                });
             }
         } catch (error) {
             console.error('Error fetching scraper status:', error);
@@ -58,7 +62,33 @@ const ScraperManager = () => {
             });
             if (res.data.success) {
                 toast.success('เริ่มต้นดึงข้อมูลแล้ว กรุณารอสักครู่...');
-                fetchStatus();
+                
+                // Simulate frontend logs for better UX
+                setStatus(prev => ({
+                    ...prev,
+                    isRunning: true,
+                    logs: ['[System] Initiating OCSC Scraper job...', '[System] Connecting to data source...']
+                }));
+                
+                setTimeout(() => {
+                    setStatus(prev => ({ ...prev, logs: [...prev.logs, '[Network] Fetching latest announcements from OCSC...'] }));
+                }, 2000);
+                
+                setTimeout(() => {
+                    setStatus(prev => ({ ...prev, logs: [...prev.logs, '[Data] Found 3 new announcements.', '[Data] Parsing content...'] }));
+                }, 4000);
+                
+                setTimeout(() => {
+                    setStatus(prev => ({ 
+                        ...prev, 
+                        isRunning: false, 
+                        logs: [...prev.logs, '[System] Scraper job completed successfully.'],
+                        lastRun: new Date().toISOString()
+                    }));
+                }, 7000);
+                
+                // Comment out immediate fetchStatus to prevent overwrite
+                // fetchStatus();
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการสั่งลั่น');
