@@ -13,6 +13,12 @@ const withCors = (res: Response) => {
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 };
 
+let mockScraperRunning = false;
+let mockScraperLogs: string[] = [];
+
+let mockGeneratorRunning = false;
+let mockGeneratorLogs: string[] = [];
+
 const json = (body: unknown, init?: ResponseInit) => withCors(Response.json(body, init));
 
 const readJson = async (req: Request) => {
@@ -1097,13 +1103,56 @@ export default {
           return json({ threads, pagination: { page: 1, totalPages: 1, total: threads.length } });
         }
         if (url.pathname === "/api/admin/scraper/start" && request.method === "POST") {
+            mockScraperRunning = true;
+            mockScraperLogs = ['[System] Initiating OCSC Scraper job...', '[System] Connecting to data source...'];
+            
+            const runMock = async () => {
+                await new Promise(r => setTimeout(r, 2000));
+                mockScraperLogs.push('[Network] Fetching latest announcements from OCSC...');
+                await new Promise(r => setTimeout(r, 2000));
+                mockScraperLogs.push('[Data] Found 3 new announcements. Parsing content...');
+                await new Promise(r => setTimeout(r, 3000));
+                mockScraperRunning = false;
+                mockScraperLogs.push('[System] Scraper job completed successfully.');
+            };
+            
+            // Start in background without awaiting
+            if ('waitUntil' in request && typeof (request as any).waitUntil === 'function') {
+                (request as any).waitUntil(runMock());
+            } else {
+                runMock();
+            }
+
             return json({ success: true, message: "Scraper started" });
         }
         if (url.pathname === "/api/admin/scraper/status") {
-            return json({ success: true, data: { isRunning: false, logs: [] } });
+            return json({ success: true, data: { isRunning: mockScraperRunning, logs: mockScraperLogs } });
+        }
+        
+        if (url.pathname === "/api/admin/generator/start" && request.method === "POST") {
+            mockGeneratorRunning = true;
+            mockGeneratorLogs = ['[System] Initiating Generator job...', '[AI] Connecting to Gemini API...'];
+            
+            const runMock = async () => {
+                await new Promise(r => setTimeout(r, 2000));
+                mockGeneratorLogs.push('[AI] Generating 50 new Math questions...');
+                await new Promise(r => setTimeout(r, 3000));
+                mockGeneratorLogs.push('[AI] Validating questions and choices...');
+                await new Promise(r => setTimeout(r, 2000));
+                mockGeneratorRunning = false;
+                mockGeneratorLogs.push('[System] Generator job completed. 50 questions added.');
+            };
+            
+            if ('waitUntil' in request && typeof (request as any).waitUntil === 'function') {
+                (request as any).waitUntil(runMock());
+            } else {
+                runMock();
+            }
+
+            return json({ success: true, message: "Generator started" });
         }
         if (url.pathname === "/api/admin/generator/status") {
-            return json({ success: true, data: { isRunning: false, logs: [] } });
+            return json({ success: true, data: { isRunning: mockGeneratorRunning, logs: mockGeneratorLogs } });
         }
         if (url.pathname === "/api/terminal/status") return json({ status: 'online' });
         if (url.pathname === "/api/terminal/command") return json({ message: ">>> Status: Idle (Active Provider: Google Gemini)" });
