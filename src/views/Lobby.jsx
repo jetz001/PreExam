@@ -362,6 +362,30 @@ export default function Lobby() {
           gap: 6px;
         }
 
+        .lb-room-mode {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 0.75rem;
+          font-weight: 900;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          text-shadow: none;
+        }
+        .lb-room-mode.tutor {
+          background: #1368ce;
+          color: white;
+        }
+        .lb-room-mode.exam {
+          background: #e21b3c;
+          color: white;
+        }
+
+
         .lb-room-body {
           background: white;
           color: #333;
@@ -541,6 +565,9 @@ export default function Lobby() {
                 <div className="lb-room-header" style={{ background: theme.header }}>
                   <div className="lb-room-count">
                     <Users size={14} strokeWidth={3}/> {room.participant_count}
+                  </div>
+                  <div className={`lb-room-mode ${room.mode === 'tutor' ? 'tutor' : 'exam'}`}>
+                    {room.mode === 'tutor' ? '🎓 ติวเตอร์' : '🎮 แข่งขัน'}
                   </div>
                   <div className="lb-room-icon">{theme.icon}</div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '4px' }}>{room.name}</h3>
