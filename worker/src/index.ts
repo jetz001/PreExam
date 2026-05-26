@@ -1041,10 +1041,7 @@ export default {
             }
         }
 
-        // /api/admin/scraper/status
-        if (url.pathname === "/api/admin/scraper/status" && request.method === "GET") {
-            return json({ success: true, status: 'idle', last_run: new Date().toISOString() });
-        }
+
 
         // /api/scraper/jobs
         if (url.pathname === "/api/scraper/jobs" && request.method === "POST") {
