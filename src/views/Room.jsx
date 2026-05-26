@@ -43,6 +43,8 @@ const Room = () => {
     const [currentAnswerCounts, setCurrentAnswerCounts] = useState({ A: 0, B: 0, C: 0, D: 0 });
     const [activeTab, setActiveTab] = useState('participants');
     const [userAnswers, setUserAnswers] = useState({});
+    const [showNicknameModal, setShowNicknameModal] = useState(false);
+    const [nicknameInput, setNicknameInput] = useState('');
     const examRef = useRef(null);
 
     useEffect(() => {
@@ -61,6 +63,12 @@ const Room = () => {
 
                 // Check if I am already a participant and restore state
                 const myParticipant = data.data.RoomParticipants?.find(p => p.user_id == user.id);
+                const isUserHost = data.data.host_user_id == user.id;
+
+                if (!isUserHost && (!myParticipant || !myParticipant.nickname)) {
+                    setShowNicknameModal(true);
+                }
+
                 if (myParticipant) {
                     if (myParticipant.status === 'finished') {
                         setExamFinished(true);
@@ -137,6 +145,12 @@ const Room = () => {
                     alert('The host has closed the room.');
                 });
 
+                newSocket.on('nickname_updated', ({ userId, nickname }) => {
+                    setParticipants(prev => prev.map(p =>
+                        p.user_id == userId ? { ...p, nickname } : p
+                    ));
+                });
+
                 // Check if room is already finished when joining
                 if (data.data.status === 'finished') {
                     setExamFinished(true);
@@ -180,6 +194,20 @@ const Room = () => {
     const handleStartExam = () => {
         if (socket) {
             socket.emit('start_exam', { roomId: id, userId: currentUser.id });
+        }
+    };
+
+    const handleSetNickname = (e) => {
+        e.preventDefault();
+        if (!nicknameInput.trim()) return;
+        if (socket) {
+            socket.emit('set_nickname', { roomId: id, userId: currentUser.id, nickname: nicknameInput.trim() });
+            setShowNicknameModal(false);
+            
+            // Optimistically update local participant list
+            setParticipants(prev => prev.map(p =>
+                p.user_id == currentUser?.id ? { ...p, nickname: nicknameInput.trim() } : p
+            ));
         }
     };
 
@@ -564,7 +592,7 @@ const Room = () => {
                                                                     p.User?.display_name?.charAt(0).toUpperCase()
                                                                 )}
                                                             </div>
-                                                            <span className="font-black text-gray-800 text-xl drop-shadow-sm">{p.User?.display_name}</span>
+                                                            <span className="font-black text-gray-800 text-xl drop-shadow-sm">{p.nickname || p.User?.display_name}</span>
                                                         </div>
                                                         {p.user_id === room.host_user_id && (
                                                             <span className="text-sm font-black bg-yellow-400 text-yellow-900 px-4 py-2 rounded-xl shadow-[0_3px_0_#ca8a04]">👑 HOST</span>
@@ -589,7 +617,36 @@ const Room = () => {
                     </div>
                 )}
             </div>
-            </div>
+
+        </div>
+
+            {/* Nickname Modal */}
+            {showNicknameModal && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl border-4 border-yellow-400 transform transition-all text-center">
+                        <div className="text-5xl mb-4 animate-bounce">👾</div>
+                        <h2 className="text-3xl font-black text-gray-800 mb-2">ตั้งชื่อเล่นสำหรับห้องนี้</h2>
+                        <p className="text-gray-500 mb-6 font-bold">ชื่อนี้จะแสดงให้โฮสต์และเพื่อนๆ เห็น</p>
+                        <form onSubmit={handleSetNickname}>
+                            <input
+                                type="text"
+                                value={nicknameInput}
+                                onChange={(e) => setNicknameInput(e.target.value)}
+                                placeholder="พิมพ์ชื่อเล่นของคุณ..."
+                                className="w-full bg-gray-100 border-2 border-gray-300 rounded-xl px-4 py-3 text-xl font-bold text-gray-800 focus:outline-none focus:border-blue-500 mb-6 text-center"
+                                autoFocus
+                                required
+                            />
+                            <button
+                                type="submit"
+                                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-black text-xl py-3 px-4 rounded-xl shadow-[0_6px_0_#1d4ed8] active:translate-y-[6px] active:shadow-none transition-all"
+                            >
+                                ลุยเลย! 🚀
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

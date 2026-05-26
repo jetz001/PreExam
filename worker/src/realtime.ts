@@ -342,6 +342,28 @@ export class RealtimeDO {
       return;
     }
 
+    if (event === "set_nickname") {
+      const roomId = (data as any)?.roomId;
+      const roomKey = toRoomKey(roomId);
+      const userId = (data as any)?.userId;
+      const nickname = (data as any)?.nickname;
+      
+      if (roomKey && userId !== undefined && userId !== null && nickname) {
+        try {
+          if (this.firestore) {
+            await this.firestore.updateDocument(`exam_rooms/${roomKey}/participants`, String(userId), {
+              nickname: String(nickname),
+              updated_at: new Date().toISOString(),
+            });
+          }
+          this.broadcast({ event: "nickname_updated", data: { userId, nickname } }, `room:${roomKey}`);
+        } catch {
+          // ignore
+        }
+      }
+      return;
+    }
+
     if (event === "finish_exam") {
       const roomId = (data as any)?.roomId;
       const roomKey = toRoomKey(roomId);

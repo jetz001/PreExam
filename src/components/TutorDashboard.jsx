@@ -1,8 +1,21 @@
-import React from 'react';
-import { Users, Flag, CheckCircle2, Trophy } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { Users, Flag, Trophy, Maximize, Minimize } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 
 const TutorDashboard = ({ participants = [], totalQuestions = 0, onEndExam }) => {
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const dashboardRef = useRef(null);
+
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            dashboardRef.current?.requestFullscreen().catch(err => console.log(err));
+            setIsFullscreen(true);
+        } else {
+            document.exitFullscreen();
+            setIsFullscreen(false);
+        }
+    };
+
     // Sort participants by score (desc), then by progress (desc)
     const sortedParticipants = [...participants].sort((a, b) => {
         const scoreDiff = (b.score || 0) - (a.score || 0);
@@ -13,113 +26,154 @@ const TutorDashboard = ({ participants = [], totalQuestions = 0, onEndExam }) =>
         return progB - progA;
     });
 
-    return (
-        <div className="flex flex-col h-full bg-[#f2f2f2] font-sans p-6 overflow-hidden">
-            <div className="bg-white p-6 rounded-2xl shadow-md mb-6 flex justify-between items-center border-b-4 border-gray-200">
-                <div>
-                    <h2 className="text-2xl font-black text-gray-800 flex items-center gap-3">
-                        <Users className="text-[#1368ce]" size={28} />
-                        สถานะผู้เข้าร่วมสอบ (Dashboard)
-                    </h2>
-                    <p className="text-gray-500 font-bold mt-1 text-sm">
-                        เรียงลำดับตามคะแนนและความคืบหน้าแบบ Real-time
+    const chartData = sortedParticipants.map(p => {
+        const isFinished = p.status === 'finished';
+        let progressCount = isFinished ? totalQuestions : (p.current_question_index || 0);
+        if (progressCount > totalQuestions) progressCount = totalQuestions;
+
+        return {
+            name: p.nickname || p.User?.display_name || 'Player',
+            score: p.score || 0,
+            progress: progressCount
+        };
+    });
+
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-white p-4 rounded-xl shadow-xl border-2 border-gray-100">
+                    <p className="font-black text-lg text-gray-800 mb-2">{label}</p>
+                    <p className="font-bold text-blue-600">คะแนน: {payload[0].value}</p>
+                    <p className="font-bold text-gray-500">
+                        ทำไปแล้ว: {payload[0].payload.progress} / {totalQuestions} ข้อ
                     </p>
                 </div>
-                <button
-                    onClick={onEndExam}
-                    className="bg-[#e21b3c] hover:bg-[#c91835] text-white px-6 py-3 rounded-xl font-black shadow-[0_6px_0_#b3152d] active:translate-y-[6px] active:shadow-none transition-all flex items-center gap-2"
-                >
-                    <Flag size={20} />
-                    จบเกมและดูเฉลย
-                </button>
+            );
+        }
+        return null;
+    };
+
+    return (
+        <div ref={dashboardRef} className="relative flex flex-col h-full bg-[#fdfbf7] font-sans p-6 overflow-hidden">
+            {/* Animated Background */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-40 h-40 bg-pink-300 rounded-3xl opacity-40 animate-[spin_20s_linear_infinite]" />
+                <div className="absolute top-[20%] right-[-5%] w-60 h-60 bg-blue-300 rounded-[3rem] opacity-30 animate-[spin_30s_linear_infinite_reverse]" />
+                <div className="absolute bottom-[-15%] left-[20%] w-52 h-52 bg-yellow-300 rounded-full opacity-40 animate-pulse" />
+                <div className="absolute bottom-[30%] right-[10%] w-32 h-32 bg-green-300 rounded-2xl opacity-40 animate-[bounce_5s_infinite]" />
+                <div className="absolute top-[40%] left-[30%] w-24 h-24 bg-purple-300 rounded-[2rem] opacity-30 animate-[spin_15s_linear_infinite]" />
+                
+                {/* Floating boxes */}
+                {[...Array(12)].map((_, i) => (
+                    <div 
+                        key={`box-${i}`}
+                        className="absolute bg-white/60 backdrop-blur-md border border-white/50 rounded-2xl shadow-lg"
+                        style={{
+                            width: Math.random() * 80 + 30 + 'px',
+                            height: Math.random() * 80 + 30 + 'px',
+                            left: Math.random() * 100 + '%',
+                            top: Math.random() * 100 + '%',
+                            animation: `float-up ${Math.random() * 15 + 15}s ease-in-out infinite`,
+                            animationDelay: `-${Math.random() * 15}s`
+                        }}
+                    />
+                ))}
+                <style>{`
+                    @keyframes float-up {
+                        0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+                        50% { transform: translateY(-150px) rotate(180deg) scale(1.1); }
+                    }
+                `}</style>
             </div>
 
-            <div className="flex-1 bg-white rounded-2xl shadow-lg border-2 border-gray-100 p-6 overflow-y-auto">
+            {/* Main Content */}
+            <div className="relative z-10 flex flex-col h-full">
+                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-xl mb-6 flex justify-between items-center border-b-4 border-gray-200">
+                    <div>
+                        <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 flex items-center gap-3">
+                            <Users className="text-blue-600" size={32} />
+                            Live Scoreboard
+                        </h2>
+                        <p className="text-gray-500 font-bold mt-1 text-sm">
+                            แสดงคะแนนของผู้เล่นทั้งหมดแบบ Real-time
+                        </p>
+                    </div>
+                    <button
+                        onClick={onEndExam}
+                        className="bg-gradient-to-r from-[#e21b3c] to-[#ff4b6a] hover:from-[#c91835] hover:to-[#e21b3c] text-white px-8 py-4 rounded-2xl font-black text-lg shadow-[0_6px_0_#b3152d] active:translate-y-[6px] active:shadow-none transition-all flex items-center gap-3"
+                    >
+                        <Flag size={24} />
+                        จบเกมและดูเฉลย
+                    </button>
+                </div>
+
+                <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-3xl shadow-2xl border-4 border-white p-6 flex flex-col">
                 {sortedParticipants.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-400">
                         <Users size={64} className="mb-4 opacity-50" />
                         <h3 className="text-xl font-bold">ยังไม่มีผู้เข้าร่วม</h3>
                     </div>
                 ) : (
-                    <motion.div layout className="flex flex-col gap-4">
-                        <AnimatePresence>
-                            {sortedParticipants.map((p, idx) => {
-                                const isFinished = p.status === 'finished';
-                                let progressCount = isFinished ? totalQuestions : (p.current_question_index || 0);
-                                if (progressCount > totalQuestions) progressCount = totalQuestions;
-
-                                const percent = totalQuestions > 0 ? (progressCount / totalQuestions) * 100 : 0;
-                                const isCompleted = percent === 100 || isFinished;
-                                const avatarInitial = p.User?.display_name?.charAt(0).toUpperCase() || '?';
-                                const rank = idx + 1;
-
-                                return (
-                                    <motion.div 
-                                        key={p.user_id}
-                                        layout
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.9 }}
-                                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                                        className={`p-4 rounded-xl border-2 flex items-center gap-4 transition-shadow relative overflow-hidden ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}
-                                    >
-                                        {/* Rank Badge */}
-                                        <div className="flex flex-col items-center justify-center w-8">
-                                            {rank === 1 ? (
-                                                <Trophy className="text-yellow-500 mb-1" size={24} />
-                                            ) : rank === 2 ? (
-                                                <Trophy className="text-gray-400 mb-1" size={20} />
-                                            ) : rank === 3 ? (
-                                                <Trophy className="text-amber-600 mb-1" size={18} />
-                                            ) : (
-                                                <span className="font-bold text-gray-400">#{rank}</span>
-                                            )}
-                                        </div>
-
-                                        {/* Avatar */}
-                                        <div className={`w-14 h-14 shrink-0 rounded-full flex items-center justify-center font-black text-white text-xl shadow-inner ${isCompleted ? 'bg-green-500' : 'bg-blue-500'}`}>
-                                            {p.User?.avatar ? (
-                                                <img src={p.User.avatar} alt="avatar" className="w-full h-full object-cover rounded-full" />
-                                            ) : (
-                                                avatarInitial
-                                            )}
-                                        </div>
-
-                                        {/* Details */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-black text-lg text-gray-800 truncate">{p.User?.display_name || 'ผู้เล่น'}</span>
-                                                    {isCompleted && <CheckCircle2 className="text-green-500" size={20} />}
-                                                </div>
-                                                <div className="flex gap-4 items-center">
-                                                    <div className="text-right">
-                                                        <span className="text-xs font-bold text-gray-500 block uppercase tracking-wider">คะแนน</span>
-                                                        <span className="font-black text-xl text-blue-600">{p.score || 0}</span>
-                                                    </div>
-                                                    <div className="text-right w-20">
-                                                        <span className="text-xs font-bold text-gray-500 block uppercase tracking-wider">ความคืบหน้า</span>
-                                                        <span className={`font-black text-lg ${isCompleted ? 'text-green-600' : 'text-gray-700'}`}>
-                                                            {progressCount}/{totalQuestions}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Progress Bar */}
-                                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner relative">
-                                                <div 
-                                                    className={`h-full transition-all duration-700 ease-out ${isCompleted ? 'bg-green-500' : 'bg-blue-500'}`}
-                                                    style={{ width: `${percent}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
-                        </AnimatePresence>
-                    </motion.div>
+                    <>
+                        <div className="flex justify-between items-center mb-6 px-4">
+                            <h3 className="text-xl font-black text-gray-700 flex items-center gap-2">
+                                <Trophy className="text-yellow-500" />
+                                อันดับคะแนน
+                            </h3>
+                            <div className="flex items-center gap-4">
+                                <div className="text-sm font-bold text-gray-500">
+                                    รวม {sortedParticipants.length} คน
+                                </div>
+                                <button
+                                    onClick={toggleFullScreen}
+                                    className="p-2 bg-white/50 hover:bg-white/80 rounded-xl transition-colors text-gray-600 shadow-sm"
+                                    title="สลับเต็มจอ"
+                                >
+                                    {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex-1 min-h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    data={chartData}
+                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                    <XAxis 
+                                        dataKey="name" 
+                                        tick={{ fill: '#4b5563', fontWeight: 'bold', fontSize: 14 }}
+                                        tickLine={false}
+                                        axisLine={{ stroke: '#cbd5e1', strokeWidth: 2 }}
+                                        interval={0}
+                                        angle={-45}
+                                        textAnchor="end"
+                                        height={60}
+                                    />
+                                    <YAxis 
+                                        allowDecimals={false}
+                                        tick={{ fill: '#4b5563', fontWeight: 'bold' }}
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+                                    <Bar dataKey="score" radius={[8, 8, 0, 0]} animationDuration={1000}>
+                                        {chartData.map((entry, index) => {
+                                            // Assign different colors based on rank
+                                            let color = '#3b82f6'; // default blue
+                                            if (index === 0) color = '#eab308'; // gold
+                                            else if (index === 1) color = '#94a3b8'; // silver
+                                            else if (index === 2) color = '#d97706'; // bronze
+                                            
+                                            return <Cell key={`cell-${index}`} fill={color} />;
+                                        })}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </>
                 )}
+            </div>
             </div>
         </div>
     );

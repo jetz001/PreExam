@@ -183,6 +183,16 @@ module.exports = (io) => {
             }
         });
 
+        // Player sets nickname
+        socket.on('set_nickname', async ({ roomId, userId, nickname }) => {
+            try {
+                await roomsRef.doc(roomId.toString()).collection('participants').doc(userId.toString()).update({ nickname });
+                io.to(roomId).emit('nickname_updated', { userId, nickname });
+            } catch (error) {
+                console.error('Set nickname error:', error);
+            }
+        });
+
         socket.on('disconnect', () => {
             console.log('User disconnected:', socket.id);
             broadcastOnlineUsers();
