@@ -1097,14 +1097,14 @@ export default {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const threads = await firestore.runQuery({ from: [{ collectionId: "threads" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
-          return json(threads);
+          return json({ threads, pagination: { page: 1, totalPages: 1, total: threads.length } });
         }
         if (url.pathname === "/api/admin/scraper/start" && request.method === "POST") {
             return json({ success: true, message: "Scraper started" });
         }
         if (url.pathname === "/api/admin/generator/status") return json({ status: 'idle' });
         if (url.pathname === "/api/terminal/status") return json({ status: 'online' });
-        if (url.pathname === "/api/terminal/command") return json({ output: '' });
+        if (url.pathname === "/api/terminal/command") return json({ message: ">>> Status: Idle (Active Provider: Google Gemini)" });
 
 
       } catch (err: any) {
