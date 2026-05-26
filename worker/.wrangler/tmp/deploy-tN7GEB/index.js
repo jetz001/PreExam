@@ -1606,7 +1606,12 @@ var index_default = {
         if (url.pathname === "/api/admin/scraper/start" && request.method === "POST") {
           return json({ success: true, message: "Scraper started" });
         }
-        if (url.pathname === "/api/admin/generator/status") return json({ status: "idle" });
+        if (url.pathname === "/api/admin/scraper/status") {
+          return json({ success: true, data: { isRunning: false, logs: [] } });
+        }
+        if (url.pathname === "/api/admin/generator/status") {
+          return json({ success: true, data: { isRunning: false, logs: [] } });
+        }
         if (url.pathname === "/api/terminal/status") return json({ status: "online" });
         if (url.pathname === "/api/terminal/command") return json({ message: ">>> Status: Idle (Active Provider: Google Gemini)" });
       } catch (err) {
