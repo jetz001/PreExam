@@ -63,32 +63,13 @@ const ScraperManager = () => {
             if (res.data.success) {
                 toast.success('เริ่มต้นดึงข้อมูลแล้ว กรุณารอสักครู่...');
                 
-                // Simulate frontend logs for better UX
+                // Set initial status and let the polling fetch the real logs
                 setStatus(prev => ({
                     ...prev,
-                    isRunning: true,
-                    logs: ['[System] Initiating OCSC Scraper job...', '[System] Connecting to data source...']
+                    isRunning: true
                 }));
                 
-                setTimeout(() => {
-                    setStatus(prev => ({ ...prev, logs: [...prev.logs, '[Network] Fetching latest announcements from OCSC...'] }));
-                }, 2000);
-                
-                setTimeout(() => {
-                    setStatus(prev => ({ ...prev, logs: [...prev.logs, '[Data] Found 3 new announcements.', '[Data] Parsing content...'] }));
-                }, 4000);
-                
-                setTimeout(() => {
-                    setStatus(prev => ({ 
-                        ...prev, 
-                        isRunning: false, 
-                        logs: [...prev.logs, '[System] Scraper job completed successfully.'],
-                        lastRun: new Date().toISOString()
-                    }));
-                }, 7000);
-                
-                // Comment out immediate fetchStatus to prevent overwrite
-                // fetchStatus();
+                fetchStatus();
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการสั่งลั่น');
