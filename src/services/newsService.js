@@ -1,11 +1,12 @@
 import api from './api';
 
 const newsService = {
-    getNews: async (category, search, agency) => {
+    getNews: async (category, search, agency, ministry) => {
         const params = {};
         if (category) params.category = category;
         if (search) params.search = search;
         if (agency) params.agency = agency;
+        if (ministry) params.ministry = ministry;
 
         const response = await api.get('/news', { params });
         return response.data;

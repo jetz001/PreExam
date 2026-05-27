@@ -66,7 +66,7 @@ const AgencyGrid = ({ agencies }) => {
                                         return (
                                             <div
                                                 key={dIdx}
-                                                onClick={() => navigate('/news/agency/' + encodeURIComponent(dep.department))}
+                                                onClick={() => navigate('/news/agency/' + encodeURIComponent(dep.department) + '?ministry=' + encodeURIComponent(ministryGroup.ministry))}
                                                 className={`w-[calc(50%-8px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] shrink-0 a-card group cursor-pointer bg-white/5 hover:bg-white/10 rounded-xl p-4 relative overflow-hidden transition-all`}
                                             >
                                                 {/* Decorative background circle */}

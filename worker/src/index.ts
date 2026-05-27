@@ -1008,6 +1008,10 @@ export default {
                     filteredNews = filteredNews.filter((n: any) => n.category === category);
                 }
             }
+            const ministry = url.searchParams.get('ministry');
+            if (ministry && ministry !== 'undefined') {
+                filteredNews = filteredNews.filter((n: any) => (n.metadata && n.metadata.ministry === ministry));
+            }
             if (agency && agency !== 'undefined') {
                 filteredNews = filteredNews.filter((n: any) => n.agency === agency || (n.metadata && n.metadata.organization === agency) || (n.metadata && n.metadata.department === agency));
             }

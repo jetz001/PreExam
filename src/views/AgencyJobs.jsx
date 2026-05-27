@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Briefcase } from 'lucide-react';
 import newsService from '../services/newsService';
 import PlayfulNewsCard from '../components/news/PlayfulNewsCard';
@@ -7,6 +7,8 @@ import '../assets/css/news.css';
 
 const AgencyJobs = () => {
     const { agencyId } = useParams();
+    const [searchParams] = useSearchParams();
+    const ministry = searchParams.get('ministry');
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     
@@ -29,7 +31,7 @@ const AgencyJobs = () => {
         const fetchJobs = async () => {
             setLoading(true);
             try {
-                const res = await newsService.getNews('งานราชการ', null, agencyId);
+                const res = await newsService.getNews('งานราชการ', null, agencyId, ministry);
                 if (res.success) {
                     setJobs(res.data);
                 }
