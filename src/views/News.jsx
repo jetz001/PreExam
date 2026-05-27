@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom';
 
 const News = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('general');
     
     // General News State
     const [newsList, setNewsList] = useState([]);
@@ -108,83 +107,64 @@ const News = () => {
                     </button>
                 </div>
 
-                {/* Tabs */}
-                <div className="news-tabs">
-                    <div 
-                        className={`news-tab ${activeTab === 'general' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('general')}
-                    >
-                        ข่าวทั่วไป
+                {/* JOBS SECTION (TOP) */}
+                <div className="animate-in fade-in duration-500 mb-12">
+                    
+                    {/* Filters */}
+                    <div className="flex flex-wrap gap-3 mb-6">
+                        <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
+                            <span className="bg-[#ffcc00] text-[#1a0533] px-1.5 rounded text-[10px]">{jobTypesCount.civil || 0}</span> ข้าราชการพลเรือน
+                        </div>
+                        <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
+                            <span className="bg-[#00b4d8] text-white px-1.5 rounded text-[10px]">{jobTypesCount.employee || 0}</span> พนักงานราชการ
+                        </div>
+                        <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
+                            <span className="bg-[#f72585] text-white px-1.5 rounded text-[10px]">{jobTypesCount.other || 0}</span> บุคลากรอื่น
+                        </div>
                     </div>
-                    <div 
-                        className={`news-tab ${activeTab === 'jobs' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('jobs')}
-                    >
-                        ข่าวสมัครงานราชการ
-                    </div>
+
+                    <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                        📁 เลือกกรมเพื่อดูตำแหน่ง (ข่าวสมัครสอบราชการ)
+                    </h3>
+
+                    <AgencyGrid agencies={agencyStats} />
+
+                    <button className="n-btn-more mt-6 hidden">
+                        ดูทุกกรมและตำแหน่ง →
+                    </button>
                 </div>
 
-                {/* TAB 1: GENERAL NEWS */}
-                {activeTab === 'general' && (
-                    <div className="animate-in fade-in duration-500">
-                        {loading ? (
-                            <div className="text-center py-20 text-white/50">Loading news...</div>
-                        ) : newsList.length > 0 ? (
-                            <>
-                                {/* Hero Card */}
-                                {!searchQuery && <PlayfulNewsCard news={newsList[0]} isHero={true} />}
-                                
-                                {/* Grid Cards */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                                    {(searchQuery ? displayNews : displayNews.slice(1)).map((news, index) => (
-                                        <PlayfulNewsCard key={news.id} news={news} index={index} />
-                                    ))}
-                                </div>
-
-                                {/* Load More */}
-                                {hasMore && (
-                                    <button 
-                                        className="n-btn-more"
-                                        onClick={() => setVisibleCount(v => v + 6)}
-                                    >
-                                        โหลดข่าวเพิ่มเติม ↓
-                                    </button>
-                                )}
-                            </>
-                        ) : (
-                            <div className="text-center py-20 text-white/50">ไม่พบข่าวสาร</div>
-                        )}
-                    </div>
-                )}
-
-                {/* TAB 2: JOBS */}
-                {activeTab === 'jobs' && (
-                    <div className="animate-in fade-in duration-500">
-                        
-                        {/* Filters */}
-                        <div className="flex flex-wrap gap-3 mb-6">
-                            <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
-                                <span className="bg-[#ffcc00] text-[#1a0533] px-1.5 rounded text-[10px]">{jobTypesCount.civil || 0}</span> ข้าราชการพลเรือน
+                {/* GENERAL NEWS SECTION (BOTTOM) */}
+                <div className="animate-in fade-in duration-500 border-t border-white/10 pt-10">
+                    <h3 className="font-bold text-white mb-6 text-xl">📰 ข่าวทั่วไป</h3>
+                    {loading ? (
+                        <div className="text-center py-20 text-white/50">Loading news...</div>
+                    ) : newsList.length > 0 ? (
+                        <>
+                            {/* Hero Card */}
+                            {!searchQuery && <PlayfulNewsCard news={newsList[0]} isHero={true} />}
+                            
+                            {/* Grid Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 mt-6">
+                                {(searchQuery ? displayNews : displayNews.slice(1)).map((news, index) => (
+                                    <PlayfulNewsCard key={news.id} news={news} index={index} />
+                                ))}
                             </div>
-                            <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
-                                <span className="bg-[#00b4d8] text-white px-1.5 rounded text-[10px]">{jobTypesCount.employee || 0}</span> พนักงานราชการ
-                            </div>
-                            <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
-                                <span className="bg-[#f72585] text-white px-1.5 rounded text-[10px]">{jobTypesCount.other || 0}</span> บุคลากรอื่น
-                            </div>
-                        </div>
 
-                        <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                            📁 เลือกกรมเพื่อดูตำแหน่ง
-                        </h3>
-
-                        <AgencyGrid agencies={agencyStats} />
-
-                        <button className="n-btn-more mt-6">
-                            ดูทุกกรมและตำแหน่ง →
-                        </button>
-                    </div>
-                )}
+                            {/* Load More */}
+                            {hasMore && (
+                                <button 
+                                    className="n-btn-more"
+                                    onClick={() => setVisibleCount(v => v + 6)}
+                                >
+                                    โหลดข่าวเพิ่มเติม ↓
+                                </button>
+                            )}
+                        </>
+                    ) : (
+                        <div className="text-center py-20 text-white/50">ไม่พบข่าวสาร</div>
+                    )}
+                </div>
             </div>
         </div>
     );
