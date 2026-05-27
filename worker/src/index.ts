@@ -1421,6 +1421,11 @@ export default {
         if (url.pathname === "/api/terminal/status") return json({ status: 'online' });
         if (url.pathname === "/api/terminal/command") return json({ message: ">>> Status: Idle (Active Provider: Google Gemini)" });
 
+        if (url.pathname === "/api/admin/jobs/cleanup" && request.method === "POST") {
+            const result = await cleanupExpiredJobs(env);
+            return json({ success: true, count: result });
+        }
+
 
       } catch (err: any) {
         return json({ success: false, message: err.message }, { status: 500 });
@@ -1432,6 +1437,11 @@ export default {
   
   async scheduled(event: any, env: Env, ctx: ExecutionContext) {
     console.log("Running scheduled job cleanup at", new Date().toISOString());
+    await cleanupExpiredJobs(env);
+  }
+};
+
+async function cleanupExpiredJobs(env: Env) {
     const firestore = new FirestoreClient(env);
     
     // Helper to parse Thai date e.g. "15 มิ.ย. 2569"
@@ -1467,8 +1477,9 @@ export default {
             }
         }
         console.log(`Job cleanup completed. Marked ${expiredCount} jobs as expired.`);
+        return expiredCount;
     } catch (e) {
         console.error("Scheduled job cleanup failed", e);
+        return 0;
     }
-  }
-};
+}

@@ -99,13 +99,33 @@ const NewsManager = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">จัดการข่าวสาร</h2>
-                <button
-                    onClick={handleCreate}
-                    className="bg-primary text-white px-4 py-2 rounded-lg flex items-center hover:bg-indigo-700 transition"
-                >
-                    <Plus className="h-5 w-5 mr-2" />
-                    เพิ่มข่าวใหม่
-                </button>
+                <div className="flex space-x-2">
+                    <button
+                        onClick={async () => {
+                            if (!window.confirm("ยืนยันการเคลียร์ตำแหน่งงานที่หมดเขต?")) return;
+                            try {
+                                const res = await api.post('/admin/jobs/cleanup');
+                                if (res.data.success) {
+                                    alert(`เคลียร์สำเร็จ! อัปเดตสถานะ ${res.data.count} รายการ`);
+                                    fetchNews();
+                                }
+                            } catch (e) {
+                                alert("เกิดข้อผิดพลาดในการเคลียร์ข้อมูล");
+                            }
+                        }}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-red-600 transition"
+                    >
+                        <Trash2 className="h-5 w-5 mr-2" />
+                        เคลียร์งานที่หมดเขต
+                    </button>
+                    <button
+                        onClick={handleCreate}
+                        className="bg-primary text-white px-4 py-2 rounded-lg flex items-center hover:bg-indigo-700 transition"
+                    >
+                        <Plus className="h-5 w-5 mr-2" />
+                        เพิ่มข่าวใหม่
+                    </button>
+                </div>
             </div>
 
             <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
