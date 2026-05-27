@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import newsService from '../services/newsService';
-import { ArrowLeft, Calendar, Eye, FileText, ShoppingBag, ExternalLink, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, Eye, FileText, ShoppingBag, ExternalLink, MessageCircle, Briefcase } from 'lucide-react';
 import ShareNewsModal from '../components/Community/ShareNewsModal';
 import AdSlot from '../components/ads/AdSlot';
 
@@ -10,6 +10,7 @@ const NewsDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [news, setNews] = useState(null);
+    const [ocscDetails, setOcscDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -20,6 +21,18 @@ const NewsDetail = () => {
                 const response = await newsService.getNewsById(id);
                 if (response.success) {
                     setNews(response.data);
+                    
+                    // Fetch OCSC details if applicable
+                    if (response.data.external_link && response.data.external_link.includes('job.ocsc.go.th/portal/jobs/')) {
+                        const ocscId = response.data.external_link.split('/').pop();
+                        if (ocscId) {
+                            newsService.getOcscJob(ocscId).then(ocscRes => {
+                                if (ocscRes.success) {
+                                    setOcscDetails(ocscRes.data);
+                                }
+                            }).catch(console.error);
+                        }
+                    }
                 } else {
                     setError('News not found');
                 }
@@ -132,6 +145,49 @@ const NewsDetail = () => {
                         <div className="prose prose-lg max-w-none text-gray-800 mb-10 whitespace-pre-wrap">
                             {news.content}
                         </div>
+
+                        {/* OCSC Details Expansion */}
+                        {ocscDetails && (
+                            <div className="bg-indigo-50/50 rounded-xl p-6 mb-10 border border-indigo-100">
+                                <h3 className="text-xl font-bold text-indigo-900 mb-4 flex items-center">
+                                    <Briefcase className="w-5 h-5 mr-2 text-indigo-600" />
+                                    รายละเอียดเพิ่มเติมจาก ก.พ.
+                                </h3>
+                                
+                                {ocscDetails.civilJobEducation && (
+                                    <div className="mb-6">
+                                        <h4 className="font-bold text-indigo-800 mb-2">วุฒิการศึกษา / คุณสมบัติเฉพาะสำหรับตำแหน่ง</h4>
+                                        <div className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
+                                            {ocscDetails.civilJobEducation || ocscDetails.employeeJobSpecification || 'ไม่ระบุ'}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(ocscDetails.civilJobDescription || ocscDetails.employeeJobDescription) && (
+                                    <div className="mb-6">
+                                        <h4 className="font-bold text-indigo-800 mb-2">ลักษณะงานที่ปฏิบัติ</h4>
+                                        <div className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
+                                            {ocscDetails.civilJobDescription || ocscDetails.employeeJobDescription || 'ไม่ระบุ'}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-6 border-t border-indigo-100 pt-4">
+                                    {ocscDetails.salaryMin && (
+                                        <div>
+                                            <span className="font-semibold text-indigo-700">เงินเดือน:</span>{' '}
+                                            {ocscDetails.salaryMin.toLocaleString()} - {ocscDetails.salaryMax ? ocscDetails.salaryMax.toLocaleString() : ''} บาท
+                                        </div>
+                                    )}
+                                    {ocscDetails.applicationStartPrint && (
+                                        <div>
+                                            <span className="font-semibold text-indigo-700">รับสมัคร:</span>{' '}
+                                            {ocscDetails.applicationStartPrint} ถึง {ocscDetails.applicationEndPrint}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* External Links / PDF / Product */}
                         <div className="flex flex-col space-y-3 mb-8">

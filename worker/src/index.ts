@@ -1065,6 +1065,21 @@ export default {
             }
         }
 
+        const ocscJobMatch = url.pathname.match(/^\/api\/news\/ocsc-job\/(\d+)$/);
+        if (ocscJobMatch && request.method === "GET") {
+            try {
+                const id = ocscJobMatch[1];
+                const response = await fetch(`https://jobapp.ocsc.go.th/jobapi/portal/jobs/${id}`);
+                if (!response.ok) {
+                    return json({ success: false, message: "failed_to_fetch_ocsc" }, { status: response.status });
+                }
+                const data = await response.json();
+                return json({ success: true, data });
+            } catch (e) {
+                return json({ success: false, message: "error" }, { status: 500 });
+            }
+        }
+
         const newsIdMatch = url.pathname.match(/^\/api\/news\/([a-zA-Z0-9_-]+)$/);
         if (newsIdMatch && request.method === "GET") {
             try {

@@ -21,6 +21,11 @@ const newsService = {
         return response.data;
     },
 
+    getOcscJob: async (ocscId) => {
+        const response = await api.get(`/news/ocsc-job/${ocscId}`);
+        return response.data;
+    },
+
     getPopularKeywords: async () => {
         const response = await api.get('/news/popular-keywords');
         return response.data;

@@ -37,6 +37,7 @@ import Community from './views/Community';
 import News from './views/News';
 
 import NewsDetail from './views/NewsDetail';
+import AgencyJobs from './views/AgencyJobs';
 
 import PremiumUpgrade from './views/PremiumUpgrade';
 import Lobby from './views/Lobby';
@@ -175,6 +176,7 @@ function App() {
           <Route path="/learning-center/profile/:id" element={<BusinessProfile />} />
 
           <Route path="/news" element={<News />} />
+          <Route path="/news/agency/:agencyId" element={<AgencyJobs />} />
           <Route path="/news/:id" element={<NewsDetail />} />
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/room/:id" element={<Room />} />

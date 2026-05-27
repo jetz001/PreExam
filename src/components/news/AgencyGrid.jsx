@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronDown, Building2, Briefcase, GraduationCap, Shield, Landmark, Stethoscope, Scale } from 'lucide-react';
 
 const icons = [
@@ -10,8 +11,9 @@ const icons = [
     { name: 'legal', icon: Scale, color: 'bg-amber-100 text-amber-600' },
 ];
 
-const AgencyGrid = ({ agencies, onAgencyClick, selectedAgency }) => {
+const AgencyGrid = ({ agencies }) => {
     const [expandedMinistry, setExpandedMinistry] = useState(null);
+    const navigate = useNavigate();
 
     const getAgencyIcon = (name) => {
         if (!name) return icons[0];
@@ -61,13 +63,11 @@ const AgencyGrid = ({ agencies, onAgencyClick, selectedAgency }) => {
                                     {ministryGroup.departments.map((dep, dIdx) => {
                                         const iconData = getAgencyIcon(dep.department);
                                         const Icon = iconData.icon;
-                                        const isSelected = selectedAgency === dep.department;
-
                                         return (
                                             <div
                                                 key={dIdx}
-                                                onClick={() => onAgencyClick(dep.department)}
-                                                className={`w-[calc(50%-8px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] shrink-0 a-card group cursor-pointer ${isSelected ? 'selected ring-2 ring-[#ffcc00] bg-white/10' : 'bg-white/5 hover:bg-white/10'} rounded-xl p-4 relative overflow-hidden transition-all`}
+                                                onClick={() => navigate('/news/agency/' + encodeURIComponent(dep.department))}
+                                                className={`w-[calc(50%-8px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] shrink-0 a-card group cursor-pointer bg-white/5 hover:bg-white/10 rounded-xl p-4 relative overflow-hidden transition-all`}
                                             >
                                                 {/* Decorative background circle */}
                                                 <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full opacity-10 transition-transform group-hover:scale-150 ${iconData.color.split(' ')[0]}`} />

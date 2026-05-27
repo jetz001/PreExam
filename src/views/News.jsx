@@ -19,9 +19,6 @@ const News = () => {
 
     // Jobs State
     const [agencyStats, setAgencyStats] = useState([]);
-    const [selectedAgency, setSelectedAgency] = useState(null);
-    const [agencyJobs, setAgencyJobs] = useState([]);
-    const [loadingJobs, setLoadingJobs] = useState(false);
 
     // Kahoot-style Background Shapes
     const [shapes, setShapes] = useState([]);
@@ -57,21 +54,7 @@ const News = () => {
         fetchInitialData();
     }, [searchQuery]);
 
-    useEffect(() => {
-        const fetchAgencyJobs = async () => {
-            if (!selectedAgency) return;
-            setLoadingJobs(true);
-            try {
-                const res = await newsService.getNews('งานราชการ', null, selectedAgency);
-                if (res.success) setAgencyJobs(res.data);
-            } catch (err) {
-                console.error("Failed to fetch agency jobs", err);
-            } finally {
-                setLoadingJobs(false);
-            }
-        };
-        fetchAgencyJobs();
-    }, [selectedAgency]);
+
 
     const handleSearch = (e) => {
         if (e.key === 'Enter') setSearchQuery(tempSearch);
@@ -123,7 +106,7 @@ const News = () => {
                 <div className="news-tabs">
                     <div 
                         className={`news-tab ${activeTab === 'general' ? 'active' : ''}`}
-                        onClick={() => { setActiveTab('general'); setSelectedAgency(null); }}
+                        onClick={() => setActiveTab('general')}
                     >
                         ข่าวทั่วไป
                     </div>
@@ -189,54 +172,7 @@ const News = () => {
                             📁 เลือกกรมเพื่อดูตำแหน่ง
                         </h3>
 
-                        <AgencyGrid 
-                            agencies={agencyStats} 
-                            onAgencyClick={(name) => setSelectedAgency(name === selectedAgency ? null : name)} 
-                            selectedAgency={selectedAgency}
-                        />
-
-                        {/* Selected Agency Job List */}
-                        {selectedAgency && (
-                            <div className="job-list-panel animate-in slide-in-from-bottom-4 duration-300 relative">
-                                <button 
-                                    className="absolute right-4 top-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white"
-                                    onClick={() => setSelectedAgency(null)}
-                                >
-                                    <X size={16} />
-                                </button>
-                                
-                                <h4 className="font-extrabold text-xl text-white flex items-center gap-2 mb-6">
-                                    👮‍♂️ {selectedAgency} - {agencyJobs.length} อัตรา
-                                </h4>
-
-                                {loadingJobs ? (
-                                    <div className="text-center py-10 text-white/50">กำลังโหลดข้อมูล...</div>
-                                ) : agencyJobs.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {agencyJobs.map((job) => (
-                                            <div key={job.id} className="job-item" onClick={() => navigate(`/news/${job.id}`)}>
-                                                <div className={`job-type-pill ${job.metadata?.position_type?.includes('พนักงาน') ? 'job-type-employee' : 'job-type-civil'}`}>
-                                                    {job.metadata?.position_type || 'พลเรือน'}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <h5 className="font-bold text-white mb-1 line-clamp-1">{job.title.split(' - ')[0]}</h5>
-                                                    <div className="text-xs text-white/50 mb-1">{selectedAgency} {job.metadata?.location || 'สำนักงานใหญ่'}</div>
-                                                    <div className="text-[10px] text-white/40 flex items-center gap-1">
-                                                        📅 {new Date(job.published_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} - เหลือ 27 วัน
-                                                    </div>
-                                                </div>
-                                                <div className="text-xs font-bold text-[#4facfe] flex items-center gap-1">
-                                                    <span className="w-1.5 h-1.5 bg-[#4facfe] rounded-full"></span>
-                                                    {job.metadata?.vacancy_count || '1'} อัตรา
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-10 text-white/50">ไม่พบประกาศพ้นกำหนดหรือกำลังจะมาถึง</div>
-                                )}
-                            </div>
-                        )}
+                        <AgencyGrid agencies={agencyStats} />
 
                         <button className="n-btn-more mt-6">
                             ดูทุกกรมและตำแหน่ง →
