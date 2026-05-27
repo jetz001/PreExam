@@ -14,7 +14,6 @@ import toast from 'react-hot-toast';
 import HomeNavbar from './HomeNavbar'; // Import Navbar!
 import Lottie from 'lottie-react';
 import successAnimation from '../assets/97e2f756-37dc-459e-a539-eb11daa2cd1c.json';
-import alligatorAnimation from '../assets/810a9f21-2589-48cd-9f5f-ae4ee8f0a3c0.json';
 
 const decodeHtml = (html) => {
     const txt = document.createElement("textarea");
