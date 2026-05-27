@@ -57,7 +57,7 @@ const PlayfulNewsCard = ({ news, isHero = false, index = 0 }) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>
                         <Calendar size={14} />
                         {new Date((news.published_date || news.created_at)).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        <span>- {news.agency_name || 'สำนักงาน ก.พ.'}</span>
+                        {news.agency ? <span>- {news.agency}</span> : null}
                     </div>
                 </div>
                 {/* Placeholder icon/image for hero */}
@@ -86,7 +86,7 @@ const PlayfulNewsCard = ({ news, isHero = false, index = 0 }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: 'auto' }}>
                 <Calendar size={14} />
                 {new Date((news.published_date || news.created_at)).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
-                <span>• {news.agency_name || 'PreExam'}</span>
+                {news.agency ? <span>• {news.agency}</span> : null}
                 
                 {news.views > 0 && (
                     <>
