@@ -1014,6 +1014,66 @@ export default {
           }
         }
 
+        if (url.pathname === "/api/news" && request.method === "POST") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const body = await readJson(request) as any;
+            if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
+            body.created_at = new Date().toISOString();
+            body.updated_at = new Date().toISOString();
+            body.views = 0;
+            const created = await firestore.createDocument("news", body);
+            return json({ success: true, data: created });
+        }
+
+        const newsIdMatch = url.pathname.match(/^\/api\/news\/([a-zA-Z0-9_-]+)$/);
+        if (newsIdMatch && request.method === "PUT") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const id = newsIdMatch[1];
+            const body = await readJson(request) as any;
+            body.updated_at = new Date().toISOString();
+            const updated = await firestore.updateDocument("news", id, body);
+            return json({ success: true, data: updated });
+        }
+
+        if (newsIdMatch && request.method === "DELETE") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const id = newsIdMatch[1];
+            await firestore.deleteDocument("news", id);
+            return json({ success: true, message: "Deleted" });
+        }
+
+        const newsFeatureMatch = url.pathname.match(/^\/api\/news\/([a-zA-Z0-9_-]+)\/feature$/);
+        if (newsFeatureMatch && request.method === "PUT") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const id = newsFeatureMatch[1];
+            const item = await firestore.getDocument("news", id);
+            if (!item) return json({ success: false, message: "Not found" }, { status: 404 });
+            const updated = await firestore.updateDocument("news", id, { is_featured: !item.is_featured });
+            return json({ success: true, data: updated });
+        }
+
+        if (url.pathname === "/api/news/scrape" && request.method === "POST") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const body = await readJson(request) as any;
+            return json({ 
+                success: true, 
+                data: {
+                    title: "ข้อมูลดึงอัตโนมัติ",
+                    summary: "ดึงเนื้อหาจาก " + (body?.url || ""),
+                    agency: "อ้างอิงจาก URL",
+                    metadata: {
+                        announcement_url: body?.url || ""
+                    }
+                } 
+            });
+        }
+
+
         // /api/news/agency-stats
         if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
           try {
@@ -1104,23 +1164,121 @@ export default {
         }
         if (url.pathname === "/api/admin/scraper/start" && request.method === "POST") {
             mockScraperRunning = true;
-            mockScraperLogs = ['[System] Initiating OCSC Scraper job...', '[System] Connecting to data source...'];
+            mockScraperLogs = ['[System] Initiating Real OCSC Scraper job...', '[System] Connecting to data source (job.ocsc.go.th)...'];
             
-            const runMock = async () => {
-                await new Promise(r => setTimeout(r, 2000));
-                mockScraperLogs.push('[Network] Fetching latest announcements from OCSC...');
-                await new Promise(r => setTimeout(r, 2000));
-                mockScraperLogs.push('[Data] Found 3 new announcements. Parsing content...');
-                await new Promise(r => setTimeout(r, 3000));
-                mockScraperRunning = false;
-                mockScraperLogs.push('[System] Scraper job completed successfully.');
+            const runScraper = async () => {
+                try {
+                    mockScraperLogs.push('[Network] Fetching latest announcements from OCSC...');
+                    
+                    // target a specific department or the search page to get job cards
+                    const targetUrl = "https://job.ocsc.go.th/portal/search?department=กรมการแพทย์";
+                    const res = await fetch(targetUrl, {
+                        headers: {
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                        }
+                    });
+                    
+                    if (!res.ok) {
+                        mockScraperLogs.push(`[Error] OCSC returned status ${res.status}. Scraper might be blocked by Cloudflare.`);
+                        mockScraperRunning = false;
+                        return;
+                    }
+
+                    const html = await res.text();
+                    mockScraperLogs.push('[Data] Parsing HTML elements...');
+                    
+                    const regex = /<a class="job-card" href="([^"]+)"[\s\S]*?id="category">([^<]+)<\/p>[\s\S]*?id="position">([^<]+)<\/p>[\s\S]*?id="department-link"[^>]*>[\s\S]*?<p[^>]*>([^<]+)<\/p>[\s\S]*?<label[^>]*>[^<]*<\/label>\s*<span>([^<]+)<\/span>\s*<span>[^<]*<\/span>\s*<span[^>]*>([^<]+)<\/span>[\s\S]*?<p class="position-chip[^"]*">([^<]+)<\/p>/g;
+                    
+                    let match;
+                    let parsedJobs = [];
+                    while ((match = regex.exec(html)) !== null) {
+                        parsedJobs.push({
+                            href: match[1],
+                            category: match[2].trim(),
+                            position: match[3].trim(),
+                            department: match[4].trim(),
+                            start_date: match[5].trim(),
+                            end_date: match[6].trim(),
+                            vacancy: match[7].trim()
+                        });
+                    }
+
+                    if (parsedJobs.length === 0) {
+                        mockScraperLogs.push('[Warning] No jobs found or HTML structure changed.');
+                        mockScraperRunning = false;
+                        return;
+                    }
+
+                    mockScraperLogs.push(`[Data] Extracted ${parsedJobs.length} jobs. Checking for duplicates in Database...`);
+                    
+                    let addedCount = 0;
+                    let skipCount = 0;
+
+                    for (const job of parsedJobs) {
+                        const externalLink = "https://job.ocsc.go.th" + job.href;
+                        
+                        // Duplicate Check by external_link
+                        const existing = await firestore.runQuery({
+                            from: [{ collectionId: "news" }],
+                            where: {
+                                compositeFilter: {
+                                    op: "AND",
+                                    filters: [
+                                        {
+                                            fieldFilter: {
+                                                field: { fieldPath: "external_link" },
+                                                op: "EQUAL",
+                                                value: { stringValue: externalLink }
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            limit: 1
+                        });
+
+                        if (existing && existing.length > 0) {
+                            skipCount++;
+                            continue;
+                        }
+
+                        // Insert new
+                        const newDoc = {
+                            title: job.position,
+                            content: `${job.category} - ${job.position} ${job.department}`,
+                            category: "งานราชการ",
+                            agency: job.department,
+                            external_link: externalLink,
+                            metadata: {
+                                organization: job.department,
+                                vacancy_count: job.vacancy,
+                                position_type: job.category,
+                                recruitment_type: job.category,
+                                application_start: job.start_date,
+                                application_end: job.end_date
+                            },
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        };
+
+                        await firestore.createDocument("news", newDoc);
+                        addedCount++;
+                    }
+                    
+                    mockScraperLogs.push(`[Data] Saved ${addedCount} new announcements. Skipped ${skipCount} duplicates.`);
+                    mockScraperRunning = false;
+                    mockScraperLogs.push('[System] Scraper job completed successfully.');
+                } catch (e) {
+                    mockScraperLogs.push('[Error] Failed to process scraper job: ' + String(e));
+                    mockScraperRunning = false;
+                }
             };
             
             // Start in background without awaiting
             if ('waitUntil' in request && typeof (request as any).waitUntil === 'function') {
-                (request as any).waitUntil(runMock());
+                (request as any).waitUntil(runScraper());
             } else {
-                runMock();
+                runScraper();
             }
 
             return json({ success: true, message: "Scraper started" });
