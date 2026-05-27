@@ -115,18 +115,6 @@ const NewsDetail = () => {
             </div>
 
             <div className="relative z-10 max-w-4xl mx-auto px-4 py-4">
-                <article className="bg-white/95 backdrop-blur-md rounded-3xl shadow-xl overflow-hidden border border-white/50">
-                    {news.image_url && (
-                        <div className="h-64 sm:h-80 w-full bg-gray-200">
-                            <img
-                                src={news.image_url}
-                                alt={news.title}
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-                    )}
-
-            <div className="relative z-10 max-w-4xl mx-auto px-4 py-4">
                 <article className="bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/40 ring-1 ring-black/5 relative">
                     {/* Decorative Top Gradient Line */}
                     <div className="h-2 w-full bg-gradient-to-r from-pink-500 via-purple-500 to-yellow-500 absolute top-0 left-0"></div>
