@@ -1170,8 +1170,8 @@ export default {
                 try {
                     mockScraperLogs.push('[Network] Fetching latest announcements from OCSC...');
                     
-                    // target a specific department or the search page to get job cards
-                    const targetUrl = "https://job.ocsc.go.th/portal/search?department=กรมการแพทย์";
+                    // target the real JSON API from OCSC instead of the HTML page
+                    const targetUrl = "https://jobapp.ocsc.go.th/jobapi/portal/jobs?department=กรมการแพทย์";
                     const res = await fetch(targetUrl, {
                         headers: {
                             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -1179,34 +1179,31 @@ export default {
                     });
                     
                     if (!res.ok) {
-                        mockScraperLogs.push(`[Error] OCSC returned status ${res.status}. Scraper might be blocked by Cloudflare.`);
+                        mockScraperLogs.push(`[Error] OCSC API returned status ${res.status}.`);
                         mockScraperRunning = false;
                         return;
                     }
 
-                    const html = await res.text();
-                    mockScraperLogs.push('[Data] Parsing HTML elements...');
+                    const jsonResponse = await res.json();
+                    mockScraperLogs.push('[Data] Parsing JSON elements...');
                     
-                    const regex = /<a class="job-card" href="([^"]+)"[\s\S]*?id="category">([^<]+)<\/p>[\s\S]*?id="position">([^<]+)<\/p>[\s\S]*?id="department-link"[^>]*>[\s\S]*?<p[^>]*>([^<]+)<\/p>[\s\S]*?<label[^>]*>[^<]*<\/label>\s*<span>([^<]+)<\/span>\s*<span>[^<]*<\/span>\s*<span[^>]*>([^<]+)<\/span>[\s\S]*?<p class="position-chip[^"]*">([^<]+)<\/p>/g;
-                    
-                    let match;
+                    if (!Array.isArray(jsonResponse) || jsonResponse.length === 0) {
+                        mockScraperLogs.push('[Warning] No jobs found or API structure changed.');
+                        mockScraperRunning = false;
+                        return;
+                    }
+
                     let parsedJobs = [];
-                    while ((match = regex.exec(html)) !== null) {
+                    for (const item of jsonResponse) {
                         parsedJobs.push({
-                            href: match[1],
-                            category: match[2].trim(),
-                            position: match[3].trim(),
-                            department: match[4].trim(),
-                            start_date: match[5].trim(),
-                            end_date: match[6].trim(),
-                            vacancy: match[7].trim()
+                            id: item.id,
+                            category: item.jobCategoryId === 1 ? 'ข้าราชการพลเรือน' : 'งานราชการ', // simplify category mapping
+                            position: item.position,
+                            department: item.department,
+                            start_date: item.applicationStartPrint,
+                            end_date: item.applicationEndPrint,
+                            vacancy: item.positionAmount ? `${item.positionAmount} อัตรา` : 'ไม่ระบุ'
                         });
-                    }
-
-                    if (parsedJobs.length === 0) {
-                        mockScraperLogs.push('[Warning] No jobs found or HTML structure changed.');
-                        mockScraperRunning = false;
-                        return;
                     }
 
                     mockScraperLogs.push(`[Data] Extracted ${parsedJobs.length} jobs. Checking for duplicates in Database...`);
@@ -1215,7 +1212,7 @@ export default {
                     let skipCount = 0;
 
                     for (const job of parsedJobs) {
-                        const externalLink = "https://job.ocsc.go.th" + job.href;
+                        const externalLink = "https://job.ocsc.go.th/portal/jobs/" + job.id;
                         
                         // Duplicate Check by external_link
                         const existing = await firestore.runQuery({
