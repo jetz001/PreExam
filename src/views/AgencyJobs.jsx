@@ -75,7 +75,7 @@ const AgencyJobs = () => {
                         </div>
                         <div>
                             <h1 className="text-3xl font-bold text-white mb-2">{agencyId}</h1>
-                            <p className="text-white/80">พบ {jobs.length} ตำแหน่งที่เปิดรับสมัคร</p>
+                            <p className="text-white/80">พบ {jobs.length} ตำแหน่ง ({jobs.reduce((sum, job) => sum + (job.metadata?.vacancy_count ? parseInt(job.metadata.vacancy_count) : 1) || 1, 0)} อัตรา) ที่เปิดรับสมัคร</p>
                         </div>
                     </div>
                 </div>

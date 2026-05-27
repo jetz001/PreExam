@@ -1053,10 +1053,12 @@ export default {
                     const ministry = (job.metadata && job.metadata.ministry) || "ไม่ระบุกระทรวง";
                     const department = (job.metadata && job.metadata.department) || job.agency || "ไม่ระบุกรม";
                     
+                    let jobCount = (job.metadata && job.metadata.vacancy_count) ? parseInt(job.metadata.vacancy_count) : 1;
+                    if (isNaN(jobCount)) jobCount = 1;
                     const pType = (job.metadata && job.metadata.position_type) || job.recruitment_type || "";
-                    if (pType.includes("ข้าราชการ")) countCivil += 1;
-                    else if (pType.includes("พนักงานราชการ")) countEmployee += 1;
-                    else countOther += 1;
+                    if (pType.includes("ข้าราชการ")) countCivil += jobCount;
+                    else if (pType.includes("พนักงานราชการ")) countEmployee += jobCount;
+                    else countOther += jobCount;
                     
                     if (!statsMap[ministry]) {
                         statsMap[ministry] = { ministry, departments: {} };
@@ -1064,7 +1066,7 @@ export default {
                     if (!statsMap[ministry].departments[department]) {
                         statsMap[ministry].departments[department] = { department, count: 0, logo: (job.metadata && job.metadata.agency_logo) || null };
                     }
-                    statsMap[ministry].departments[department].count += 1;
+                    statsMap[ministry].departments[department].count += jobCount;
                 });
                 
                 const formattedStats = Object.values(statsMap).map((m: any) => ({
