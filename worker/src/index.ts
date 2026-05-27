@@ -1000,7 +1000,7 @@ export default {
             const search = url.searchParams.get("search");
             const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 100 });
             const category = url.searchParams.get("category");
-            let filteredNews = news;
+            let filteredNews = news.filter((n: any) => n.status !== 'expired');
             if (category && category !== 'undefined') {
                 if (category === '!งานราชการ') {
                     filteredNews = filteredNews.filter((n: any) => n.category !== 'งานราชการ');
@@ -1038,12 +1038,21 @@ export default {
         if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
             try {
                 const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 1000 });
-                const govNews = news.filter((n: any) => n.category === "งานราชการ");
+                const govNews = news.filter((n: any) => n.category === "งานราชการ" && n.status !== "expired");
                 const statsMap: any = {};
+                
+                let countCivil = 0;
+                let countEmployee = 0;
+                let countOther = 0;
                 
                 govNews.forEach((job: any) => {
                     const ministry = (job.metadata && job.metadata.ministry) || "ไม่ระบุกระทรวง";
                     const department = (job.metadata && job.metadata.department) || job.agency || "ไม่ระบุกรม";
+                    
+                    const pType = (job.metadata && job.metadata.position_type) || job.recruitment_type || "";
+                    if (pType.includes("ข้าราชการ")) countCivil += 1;
+                    else if (pType.includes("พนักงานราชการ")) countEmployee += 1;
+                    else countOther += 1;
                     
                     if (!statsMap[ministry]) {
                         statsMap[ministry] = { ministry, departments: {} };
@@ -1056,10 +1065,15 @@ export default {
                 
                 const formattedStats = Object.values(statsMap).map((m: any) => ({
                     ministry: m.ministry,
-                    departments: Object.values(m.departments)
-                }));
+                    totalCount: Object.values(m.departments).reduce((sum: any, d: any) => sum + d.count, 0),
+                    departments: Object.values(m.departments).sort((a: any, b: any) => b.count - a.count)
+                })).sort((a: any, b: any) => b.totalCount - a.totalCount);
                 
-                return json({ success: true, data: formattedStats });
+                return json({ 
+                    success: true, 
+                    data: formattedStats,
+                    jobTypes: { civil: countCivil, employee: countEmployee, other: countOther }
+                });
             } catch (e) {
                 return json({ success: false, data: [] });
             }
@@ -1190,6 +1204,24 @@ export default {
             jobData.published_at = new Date().toISOString();
             const created = await firestore.createDocument("news", jobData);
             return json({ success: true, data: created });
+        }
+
+        // /api/ads/serve
+        const adsServeMatch = url.pathname.match(/^\/api\/ads\/serve/);
+        if (adsServeMatch && request.method === "GET") {
+            // We just return served: false to force fallback House Ads on frontend
+            return json({ success: true, served: false });
+        }
+
+        // /api/ads/admin/config
+        if (url.pathname === "/api/ads/admin/config" && request.method === "GET") {
+            return json({ 
+                success: true, 
+                houseAdTitle: "เตรียมสอบ ก.พ. ผ่านฉลุย",
+                houseAdDescription: "เข้ากลุ่มติวฟรี แจกข้อสอบแม่นๆ ติวเตอร์อันดับ 1",
+                houseAdImage: "https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+                houseAdUrl: "/lobby"
+            });
         }
 
         // Stub missing routes to prevent 404 crashes
@@ -1397,4 +1429,46 @@ export default {
 
     return fetch(request);
   },
+  
+  async scheduled(event: any, env: Env, ctx: ExecutionContext) {
+    console.log("Running scheduled job cleanup at", new Date().toISOString());
+    const firestore = new FirestoreClient(env);
+    
+    // Helper to parse Thai date e.g. "15 มิ.ย. 2569"
+    const parseThaiDate = (dateStr: string) => {
+        if (!dateStr) return null;
+        const parts = dateStr.split(' ');
+        if (parts.length < 3) return null;
+        const day = parseInt(parts[0], 10);
+        const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+        const monthIndex = months.findIndex(m => parts[1].includes(m));
+        if (monthIndex === -1) return null;
+        let year = parseInt(parts[2], 10);
+        if (year > 2500) year -= 543;
+        
+        const d = new Date();
+        d.setFullYear(year, monthIndex, day);
+        d.setHours(23, 59, 59, 999);
+        return d;
+    };
+    
+    try {
+        const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 500 });
+        const now = new Date();
+        let expiredCount = 0;
+        
+        for (const job of news) {
+            if (job.category === "งานราชการ" && job.status !== "expired" && job.application_end) {
+                const endD = parseThaiDate(job.application_end);
+                if (endD && endD < now) {
+                    await firestore.updateDocument("news", job.id, { status: "expired" });
+                    expiredCount++;
+                }
+            }
+        }
+        console.log(`Job cleanup completed. Marked ${expiredCount} jobs as expired.`);
+    } catch (e) {
+        console.error("Scheduled job cleanup failed", e);
+    }
+  }
 };

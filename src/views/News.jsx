@@ -19,6 +19,7 @@ const News = () => {
 
     // Jobs State
     const [agencyStats, setAgencyStats] = useState([]);
+    const [jobTypesCount, setJobTypesCount] = useState({ civil: 0, employee: 0, other: 0 });
 
     // Kahoot-style Background Shapes
     const [shapes, setShapes] = useState([]);
@@ -44,7 +45,12 @@ const News = () => {
                     newsService.getAgencyStats()
                 ]);
                 if (newsRes.success) setNewsList(newsRes.data);
-                if (statsRes.success) setAgencyStats(statsRes.data);
+                if (statsRes.success) {
+                    setAgencyStats(statsRes.data);
+                    if (statsRes.jobTypes) {
+                        setJobTypesCount(statsRes.jobTypes);
+                    }
+                }
             } catch (err) {
                 console.error("Failed to fetch news data", err);
             } finally {
@@ -155,16 +161,16 @@ const News = () => {
                 {activeTab === 'jobs' && (
                     <div className="animate-in fade-in duration-500">
                         
-                        {/* Filters (Mocked for visual) */}
+                        {/* Filters */}
                         <div className="flex flex-wrap gap-3 mb-6">
                             <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
-                                <span className="bg-[#ffcc00] text-[#1a0533] px-1.5 rounded text-[10px]">594</span> ข้าราชการพลเรือน
+                                <span className="bg-[#ffcc00] text-[#1a0533] px-1.5 rounded text-[10px]">{jobTypesCount.civil || 0}</span> ข้าราชการพลเรือน
                             </div>
                             <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
-                                <span className="bg-[#00b4d8] text-white px-1.5 rounded text-[10px]">234</span> พนักงานราชการ
+                                <span className="bg-[#00b4d8] text-white px-1.5 rounded text-[10px]">{jobTypesCount.employee || 0}</span> พนักงานราชการ
                             </div>
                             <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
-                                <span className="bg-[#f72585] text-white px-1.5 rounded text-[10px]">16</span> บุคลากรอื่น
+                                <span className="bg-[#f72585] text-white px-1.5 rounded text-[10px]">{jobTypesCount.other || 0}</span> บุคลากรอื่น
                             </div>
                         </div>
 

@@ -19,3 +19,6 @@ bindings = [{ name = "REALTIME", class_name = "RealtimeDO" }]
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["RealtimeDO"]
+
+[triggers]
+crons = ["0 0 * * *"]

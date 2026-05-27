@@ -19,10 +19,27 @@ const BORDER_COLORS = [
 ];
 
 const PlayfulNewsCard = ({ news, isHero = false, index = 0 }) => {
-    // Pick a tag randomly or based on category
     const cat = news.category || 'ข้อมูล';
-    // Fallback if tag is not mapped
-    const tagConfig = CATEGORY_TAG_COLORS[cat] || { bg: '#06d6a0', icon: '📌' };
+    let displayTag = cat;
+    let tagConfig = CATEGORY_TAG_COLORS[cat] || { bg: '#06d6a0', icon: '📌' };
+    
+    // Override tag for Government Jobs to show position type
+    if (cat === 'งานราชการ') {
+        const posType = (news.metadata && news.metadata.position_type) || news.recruitment_type;
+        if (posType) {
+            displayTag = posType;
+            if (posType.includes('ข้าราชการ')) {
+                tagConfig = { bg: '#ffcc00', text: '#1a0533', icon: '🏛️' };
+            } else if (posType.includes('พนักงานราชการ')) {
+                tagConfig = { bg: '#00b4d8', text: '#fff', icon: '💼' };
+            } else {
+                tagConfig = { bg: '#f72585', text: '#fff', icon: '📌' };
+            }
+        } else {
+            displayTag = 'งานราชการ';
+            tagConfig = { bg: '#ffcc00', text: '#1a0533', icon: '🏛️' };
+        }
+    }
     
     // Choose border accent color
     const borderColor = BORDER_COLORS[index % BORDER_COLORS.length];
@@ -59,7 +76,7 @@ const PlayfulNewsCard = ({ news, isHero = false, index = 0 }) => {
             <div className="n-card-accent" style={{ background: borderColor }}></div>
             
             <div className="n-tag" style={{ background: tagConfig.bg, color: tagConfig.text || '#fff' }}>
-                {tagConfig.icon} {cat}
+                {tagConfig.icon} {displayTag}
             </div>
 
             <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '16px', lineHeight: 1.4, flex: 1 }}>
