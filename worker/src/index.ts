@@ -1232,7 +1232,11 @@ export default {
 
         // Stub missing routes to prevent 404 crashes
         if (url.pathname === "/api/users/stats") return json({ success: true, stats: { total_tests: 0, avg_score: 0 }});
-        if (url.pathname === "/api/public/settings") return json({ success: true, settings: {} });
+        
+if (url.pathname === "/api/payments/plans" && request.method === "GET") {
+  return json({ success: true, plans: [{ id: "pro_monthly", name: "Pro Pass", price: 99, duration_days: 30 }, { id: "premium_yearly", name: "Premium Pass", price: 890, duration_days: 365 }, { id: "lifetime", name: "Lifetime VIP", price: 2990, duration_days: 9999 }] });
+}
+if (url.pathname === "/api/public/settings") return json({ success: true, settings: {} });
         if (url.pathname === "/api/groups") return json({ success: true, groups: [] });
         if (url.pathname === "/api/community/tags/trending") return json([]);
         if (url.pathname === "/api/friends/list") return json({ success: true, friends: [] });
