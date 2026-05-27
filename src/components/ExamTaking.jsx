@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import HomeNavbar from './HomeNavbar'; // Import Navbar!
 import Lottie from 'lottie-react';
 import successAnimation from '../assets/97e2f756-37dc-459e-a539-eb11daa2cd1c.json';
+import alligatorAnimation from '../assets/810a9f21-2589-48cd-9f5f-ae4ee8f0a3c0.json';
 
 const decodeHtml = (html) => {
     const txt = document.createElement("textarea");
@@ -40,6 +41,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
     const [fontSizeScale, setFontSizeScale] = useState(1);
     const [showFontMenu, setShowFontMenu] = useState(false);
     const [showAnimation, setShowAnimation] = useState(false);
+    const [fullScreenImage, setFullScreenImage] = useState(null);
     const { isPremium } = useUserRole();
 
     useEffect(() => {
@@ -250,7 +252,12 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                             <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }} />
                         </h3>
                         {currentQuestion.question_image && (
-                            <img src={currentQuestion.question_image} alt="Question" className="mt-6 mx-auto max-w-full h-64 object-contain rounded-xl border border-white/20 shadow-lg" />
+                            <img 
+                                src={currentQuestion.question_image} 
+                                alt="Question" 
+                                onClick={() => setFullScreenImage(currentQuestion.question_image)}
+                                className="mt-6 mx-auto max-w-full h-64 object-contain rounded-xl border border-white/20 shadow-lg cursor-pointer hover:scale-105 transition" 
+                            />
                         )}
                     </div>
                 </div>
@@ -308,13 +315,9 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                     
                     <button 
                         onClick={isReadyToSubmit ? handleSubmit : () => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))} 
-                        className={`rounded-full font-black shadow-lg transform active:scale-95 transition flex items-center justify-center ${
-                            isReadyToSubmit 
-                            ? 'px-8 py-4 text-xl text-white bg-[#26890c] hover:bg-[#20750a] shadow-[0_6px_0_#1a5e08] active:translate-y-[6px] active:shadow-none' 
-                            : 'w-14 h-14 text-[#46178f] bg-white hover:bg-gray-100'
-                        }`}
+                        className="transition transform active:scale-95 hover:scale-110 drop-shadow-2xl"
                     >
-                        {isReadyToSubmit ? 'ส่งคำตอบเลย!' : <ChevronRight className="w-8 h-8" />}
+                        <Lottie animationData={alligatorAnimation} loop={true} style={{ width: 80, height: 80 }} />
                     </button>
                 </div>
             </div>
@@ -326,6 +329,16 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
             </PermissionGate>
             <PacingAlert timeUsed={(questions.length * 60) - timeLeft} totalTime={questions.length * 60} />
             {showReportModal && <ReportModal questionId={currentQuestion.id} onClose={() => setShowReportModal(false)} />}
+            
+            {/* Full Screen Image Modal */}
+            {fullScreenImage && (
+                <div 
+                    className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 cursor-pointer p-4 backdrop-blur-sm"
+                    onClick={() => setFullScreenImage(null)}
+                >
+                    <img src={fullScreenImage} alt="Full Screen Question" className="max-w-full max-h-full object-contain drop-shadow-2xl rounded-xl" />
+                </div>
+            )}
         </div>
     );
 };
