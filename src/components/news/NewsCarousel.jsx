@@ -53,7 +53,7 @@ const NewsCarousel = ({ newsList }) => {
                                 </span>
                                 <div className="flex items-center text-xs text-white/70">
                                     <Calendar className="w-3 h-3 mr-1" />
-                                    {new Date(item.published_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    {new Date((item.published_date || item.created_at)).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </div>
                             </div>
                             <h2 className="text-2xl md:text-4xl lg:text-5xl font-extrabold mb-4 leading-tight line-clamp-2 drop-shadow-md">

@@ -78,7 +78,7 @@ const AgencyModal = ({ agencyName, onClose }) => {
                                         </div>
                                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 capitalize">
                                             <Calendar className="w-3 h-3" />
-                                            {new Date(item.published_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
+                                            {new Date((item.published_date || item.created_at)).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
                                         </div>
                                     </div>
 

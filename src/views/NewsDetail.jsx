@@ -160,7 +160,7 @@ const NewsDetail = () => {
                         <div className="flex flex-wrap items-center gap-4 text-sm font-medium mb-10 pb-8 border-b-2 border-gray-100 border-dashed">
                             <div className="flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-xl">
                                 <Calendar className="w-4 h-4 mr-2" />
-                                {news.published_at && !isNaN(new Date(news.published_at)) ? new Date(news.published_at).toLocaleDateString('th-TH', {
+                                {(news.published_date || news.created_at) && !isNaN(new Date((news.published_date || news.created_at))) ? new Date((news.published_date || news.created_at)).toLocaleDateString('th-TH', {
                                     year: 'numeric',
                                     month: 'long',
                                     day: 'numeric',

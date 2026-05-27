@@ -150,7 +150,7 @@ const NewsManager = () => {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {new Date(item.published_at || item.created_at).toLocaleDateString()}
+                                    {new Date((item.published_date || item.created_at) || item.created_at).toLocaleDateString()}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button onClick={() => handleEdit(item)} className="text-indigo-600 hover:text-indigo-900 mr-4">

@@ -37,7 +37,7 @@ const NewsCard = ({ news }) => {
                 <div className="flex items-center justify-between mt-4 text-xs text-gray-500 pt-4 border-t border-gray-100">
                     <div className="flex items-center">
                         <Calendar className="w-3 h-3 mr-1" />
-                        {new Date(news.published_at).toLocaleDateString('th-TH', {
+                        {new Date((news.published_date || news.created_at)).toLocaleDateString('th-TH', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric',
