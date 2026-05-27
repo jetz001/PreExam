@@ -999,9 +999,17 @@ export default {
             const agency = url.searchParams.get("agency");
             const search = url.searchParams.get("search");
             const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 100 });
+            const category = url.searchParams.get("category");
             let filteredNews = news;
+            if (category && category !== 'undefined') {
+                if (category === '!งานราชการ') {
+                    filteredNews = filteredNews.filter((n: any) => n.category !== 'งานราชการ');
+                } else {
+                    filteredNews = filteredNews.filter((n: any) => n.category === category);
+                }
+            }
             if (agency && agency !== 'undefined') {
-                filteredNews = filteredNews.filter((n: any) => n.agency === agency || (n.metadata && n.metadata.organization === agency));
+                filteredNews = filteredNews.filter((n: any) => n.agency === agency || (n.metadata && n.metadata.organization === agency) || (n.metadata && n.metadata.department === agency));
             }
             if (search && search !== 'undefined') {
                 const sLower = search.toLowerCase();
@@ -1026,7 +1034,49 @@ export default {
             return json({ success: true, data: created });
         }
 
+        // /api/news/agency-stats
+        if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
+            try {
+                const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 1000 });
+                const govNews = news.filter((n: any) => n.category === "งานราชการ");
+                const statsMap: any = {};
+                
+                govNews.forEach((job: any) => {
+                    const ministry = (job.metadata && job.metadata.ministry) || "ไม่ระบุกระทรวง";
+                    const department = (job.metadata && job.metadata.department) || job.agency || "ไม่ระบุกรม";
+                    
+                    if (!statsMap[ministry]) {
+                        statsMap[ministry] = { ministry, departments: {} };
+                    }
+                    if (!statsMap[ministry].departments[department]) {
+                        statsMap[ministry].departments[department] = { department, count: 0, logo: (job.metadata && job.metadata.agency_logo) || null };
+                    }
+                    statsMap[ministry].departments[department].count += 1;
+                });
+                
+                const formattedStats = Object.values(statsMap).map((m: any) => ({
+                    ministry: m.ministry,
+                    departments: Object.values(m.departments)
+                }));
+                
+                return json({ success: true, data: formattedStats });
+            } catch (e) {
+                return json({ success: false, data: [] });
+            }
+        }
+
         const newsIdMatch = url.pathname.match(/^\/api\/news\/([a-zA-Z0-9_-]+)$/);
+        if (newsIdMatch && request.method === "GET") {
+            try {
+                const id = newsIdMatch[1];
+                const doc = await firestore.getDocument("news", id);
+                if (!doc) return json({ success: false, message: "not_found" }, { status: 404 });
+                return json({ success: true, data: doc });
+            } catch (e) {
+                return json({ success: false, message: "error" }, { status: 500 });
+            }
+        }
+
         if (newsIdMatch && request.method === "PUT") {
             const auth = await requireAuthUserId(request, env);
             if ("error" in auth) return auth.error;
@@ -1171,7 +1221,8 @@ export default {
                     mockScraperLogs.push('[Network] Fetching latest announcements from OCSC...');
                     
                     // target the real JSON API from OCSC instead of the HTML page
-                    const targetUrl = "https://jobapp.ocsc.go.th/jobapi/portal/jobs?department=กรมการแพทย์";
+                    const targetUrl = "https://jobapp.ocsc.go.th/jobapi/portal/jobs";
+                    console.log("Fetching URL:", targetUrl);
                     const res = await fetch(targetUrl, {
                         headers: {
                             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -1188,6 +1239,7 @@ export default {
                     mockScraperLogs.push('[Data] Parsing JSON elements...');
                     
                     if (!Array.isArray(jsonResponse) || jsonResponse.length === 0) {
+                        console.log("Warning: No jobs found or API structure changed.");
                         mockScraperLogs.push('[Warning] No jobs found or API structure changed.');
                         mockScraperRunning = false;
                         return;
@@ -1197,9 +1249,14 @@ export default {
                     for (const item of jsonResponse) {
                         parsedJobs.push({
                             id: item.id,
-                            category: item.jobCategoryId === 1 ? 'ข้าราชการพลเรือน' : 'งานราชการ', // simplify category mapping
+                            category: 'งานราชการ', // Force this category
                             position: item.position,
                             department: item.department,
+                            ministry: item.ministry,
+                            recruitment_type: item.jobCategoryId === 1 ? 'ข้าราชการพลเรือน' : 'พนักงานราชการ',
+                            agency_logo: item.seal,
+                            location: item.address,
+                            vacancy_count: item.positionAmount,
                             start_date: item.applicationStartPrint,
                             end_date: item.applicationEndPrint,
                             vacancy: item.positionAmount ? `${item.positionAmount} อัตรา` : 'ไม่ระบุ'
@@ -1213,6 +1270,8 @@ export default {
 
                     for (const job of parsedJobs) {
                         const externalLink = "https://job.ocsc.go.th/portal/jobs/" + job.id;
+                        
+                        console.log("Checking duplicates for:", externalLink);
                         
                         // Duplicate Check by external_link
                         const existing = await firestore.runQuery({
@@ -1242,18 +1301,27 @@ export default {
                         // Insert new
                         const newDoc = {
                             title: job.position,
-                            content: `${job.category} - ${job.position} ${job.department}`,
-                            category: "งานราชการ",
+                            content: `รับสมัคร ${job.vacancy}`,
+                            category: job.category,
                             agency: job.department,
+                            author: "ระบบอัตโนมัติ (OCSC)",
+                            published_date: new Date().toISOString(),
+                            status: "published",
+                            thumbnail: null,
+                            featured: false,
                             external_link: externalLink,
                             metadata: {
+                                ministry: job.ministry,
+                                department: job.department,
                                 organization: job.department,
-                                vacancy_count: job.vacancy,
-                                position_type: job.category,
-                                recruitment_type: job.category,
-                                application_start: job.start_date,
-                                application_end: job.end_date
+                                position_type: job.recruitment_type,
+                                agency_logo: job.agency_logo,
+                                location: job.location,
+                                vacancy_count: job.vacancy_count
                             },
+                            recruitment_type: job.recruitment_type,
+                            application_start: job.start_date,
+                            application_end: job.end_date,
                             created_at: new Date().toISOString(),
                             updated_at: new Date().toISOString()
                         };
@@ -1262,10 +1330,12 @@ export default {
                         addedCount++;
                     }
                     
+                    console.log(`Saved ${addedCount} new announcements. Skipped ${skipCount} duplicates.`);
                     mockScraperLogs.push(`[Data] Saved ${addedCount} new announcements. Skipped ${skipCount} duplicates.`);
                     mockScraperRunning = false;
                     mockScraperLogs.push('[System] Scraper job completed successfully.');
                 } catch (e) {
+                    console.error("Scraper Error Caught:", e);
                     mockScraperLogs.push('[Error] Failed to process scraper job: ' + String(e));
                     mockScraperRunning = false;
                 }

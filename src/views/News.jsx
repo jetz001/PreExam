@@ -43,7 +43,7 @@ const News = () => {
             setLoading(true);
             try {
                 const [newsRes, statsRes] = await Promise.all([
-                    newsService.getNews(null, searchQuery),
+                    newsService.getNews('!งานราชการ', searchQuery),
                     newsService.getAgencyStats()
                 ]);
                 if (newsRes.success) setNewsList(newsRes.data);
@@ -62,7 +62,7 @@ const News = () => {
             if (!selectedAgency) return;
             setLoadingJobs(true);
             try {
-                const res = await newsService.getNews(null, null, selectedAgency);
+                const res = await newsService.getNews('งานราชการ', null, selectedAgency);
                 if (res.success) setAgencyJobs(res.data);
             } catch (err) {
                 console.error("Failed to fetch agency jobs", err);
