@@ -315,9 +315,13 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                     
                     <button 
                         onClick={isReadyToSubmit ? handleSubmit : () => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))} 
-                        className="transition transform active:scale-95 hover:scale-110 drop-shadow-2xl"
+                        className={`rounded-full font-black shadow-lg transform active:scale-95 transition flex items-center justify-center ${
+                            isReadyToSubmit 
+                            ? 'px-8 py-4 text-xl text-white bg-[#26890c] hover:bg-[#20750a] shadow-[0_6px_0_#1a5e08] active:translate-y-[6px] active:shadow-none' 
+                            : 'w-14 h-14 text-[#46178f] bg-white hover:bg-gray-100'
+                        }`}
                     >
-                        <Lottie animationData={alligatorAnimation} loop={true} style={{ width: 80, height: 80 }} />
+                        {isReadyToSubmit ? 'ส่งคำตอบเลย!' : <ChevronRight className="w-8 h-8" />}
                     </button>
                 </div>
             </div>
