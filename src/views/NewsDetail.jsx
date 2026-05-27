@@ -46,27 +46,56 @@ const NewsDetail = () => {
         fetchNews();
     }, [id]);
 
+    const [shapes, setShapes] = useState([]);
+    useEffect(() => {
+        const shapeTypes = ['k-circle', 'k-square', 'k-triangle'];
+        const newShapes = Array.from({ length: 15 }, (_, i) => ({
+            id: i,
+            type: shapeTypes[Math.floor(Math.random() * shapeTypes.length)],
+            left: `${Math.random() * 100}vw`,
+            size: `${30 + Math.random() * 50}px`,
+            delay: `${Math.random() * 10}s`,
+            duration: `${15 + Math.random() * 15}s`,
+        }));
+        setShapes(newShapes);
+    }, []);
+
     const handleShareSuccess = () => {
         setIsShareModalOpen(false);
         navigate('/community');
     };
 
     if (loading) return (
-        <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex justify-center items-center py-20 news-page min-h-screen">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
         </div>
     );
 
     if (error || !news) return (
-        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
-            <h2 className="text-2xl font-bold text-red-500">Error</h2>
-            <p className="text-gray-600 mt-2">{error || 'News item not found'}</p>
-            <Link to="/news" className="text-primary hover:underline mt-4 inline-block">Back to News</Link>
+        <div className="news-page min-h-screen px-4 py-8 text-center flex flex-col items-center justify-center">
+            <h2 className="text-2xl font-bold text-[#ffcc00] drop-shadow-md">Error</h2>
+            <p className="text-white/80 mt-2">{error || 'News item not found'}</p>
+            <Link to="/news" className="text-white bg-white/20 px-4 py-2 rounded-full hover:bg-white/30 transition-colors mt-4 inline-block font-bold">Back to News</Link>
         </div>
     );
 
     return (
-        <div className="bg-gray-50 min-h-screen pb-12">
+        <div className="news-page min-h-screen pb-12 relative overflow-hidden">
+            {/* Kahoot-style Background Shapes */}
+            {shapes.map(s => (
+                <div 
+                    key={s.id} 
+                    className={`k-shape ${s.type}`} 
+                    style={{ 
+                        left: s.left, 
+                        width: s.type !== 'k-triangle' ? s.size : undefined, 
+                        height: s.type !== 'k-triangle' ? s.size : undefined,
+                        '--s': s.type === 'k-triangle' ? s.size : undefined,
+                        animationDelay: s.delay,
+                        animationDuration: s.duration
+                    }} 
+                />
+            ))}
             <Helmet>
                 <title>{news.title} | PreExam Thailand</title>
                 <meta name="description" content={news.summary || news.title} />
@@ -78,17 +107,15 @@ const NewsDetail = () => {
                 <meta name="twitter:card" content="summary_large_image" />
             </Helmet>
 
-            <div className="bg-white shadow">
-                <div className="max-w-4xl mx-auto px-4 py-4">
-                    <Link to="/news" className="text-gray-500 hover:text-primary flex items-center text-sm">
-                        <ArrowLeft className="w-4 h-4 mr-1" />
-                        Back to News
-                    </Link>
-                </div>
+            <div className="relative z-10 max-w-4xl mx-auto px-4 py-4 mb-4">
+                <Link to="/news" className="text-white/80 hover:text-white flex items-center text-sm font-bold bg-white/10 w-max px-4 py-2 rounded-full backdrop-blur-md border border-white/20 transition-all hover:bg-white/20">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to News
+                </Link>
             </div>
 
-            <div className="max-w-4xl mx-auto px-4 py-8">
-                <article className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="relative z-10 max-w-4xl mx-auto px-4 py-4">
+                <article className="bg-white/95 backdrop-blur-md rounded-3xl shadow-xl overflow-hidden border border-white/50">
                     {news.image_url && (
                         <div className="h-64 sm:h-80 w-full bg-gray-200">
                             <img
