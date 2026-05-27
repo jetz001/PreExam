@@ -1010,10 +1010,10 @@ export default {
             }
             const ministry = url.searchParams.get('ministry');
             if (ministry && ministry !== 'undefined') {
-                filteredNews = filteredNews.filter((n: any) => (n.metadata && n.metadata.ministry === ministry));
+                filteredNews = filteredNews.filter((n: any) => ((n.metadata && n.metadata.ministry) || "ไม่ระบุกระทรวง") === ministry);
             }
             if (agency && agency !== 'undefined') {
-                filteredNews = filteredNews.filter((n: any) => n.agency === agency || (n.metadata && n.metadata.organization === agency) || (n.metadata && n.metadata.department === agency));
+                filteredNews = filteredNews.filter((n: any) => ((n.metadata && n.metadata.department) || n.agency || "ไม่ระบุกรม") === agency);
             }
             if (search && search !== 'undefined') {
                 const sLower = search.toLowerCase();
