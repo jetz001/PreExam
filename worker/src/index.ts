@@ -1236,6 +1236,14 @@ export default {
 if (url.pathname === "/api/payments/plans" && request.method === "GET") {
   return json({ success: true, plans: [{ id: "pro_monthly", name: "Pro Pass", price: 99, duration_days: 30 }, { id: "premium_yearly", name: "Premium Pass", price: 890, duration_days: 365 }, { id: "lifetime", name: "Lifetime VIP", price: 2990, duration_days: 9999 }] });
 }
+
+if (url.pathname === "/api/assets" && request.method === "GET") {
+  return json({ success: true, data: [
+    { id: 'bg1', type: 'background', url: '/assets/bgs/bg1.jpg', name: 'Classic' },
+    { id: 'bg2', type: 'background', url: '/assets/bgs/bg2.jpg', name: 'Space' },
+    { id: 'fr1', type: 'frame', url: '/assets/frames/fr1.png', name: 'Gold' }
+  ] });
+}
 if (url.pathname === "/api/public/settings") return json({ success: true, settings: {} });
         if (url.pathname === "/api/groups") return json({ success: true, groups: [] });
         if (url.pathname === "/api/community/tags/trending") return json([]);
