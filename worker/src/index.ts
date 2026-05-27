@@ -1239,9 +1239,9 @@ if (url.pathname === "/api/payments/plans" && request.method === "GET") {
 
 if (url.pathname === "/api/assets" && request.method === "GET") {
   return json({ success: true, data: [
-    { id: 'bg1', type: 'background', url: '/assets/bgs/bg1.jpg', name: 'Classic' },
-    { id: 'bg2', type: 'background', url: '/assets/bgs/bg2.jpg', name: 'Space' },
-    { id: 'fr1', type: 'frame', url: '/assets/frames/fr1.png', name: 'Gold' }
+    { id: 'bg1', type: 'background', url: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80', name: 'Classic' },
+    { id: 'bg2', type: 'background', url: 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80', name: 'Space' },
+    { id: 'fr1', type: 'frame', url: 'https://via.placeholder.com/800x800.png?text=Gold+Frame', name: 'Gold' }
   ] });
 }
 if (url.pathname === "/api/public/settings") return json({ success: true, settings: {} });
