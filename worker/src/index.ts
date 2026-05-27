@@ -1272,11 +1272,7 @@ export default {
             };
             
             // Start in background without awaiting
-            if ('waitUntil' in request && typeof (request as any).waitUntil === 'function') {
-                (request as any).waitUntil(runScraper());
-            } else {
-                runScraper();
-            }
+            ctx.waitUntil(runScraper());
 
             return json({ success: true, message: "Scraper started" });
         }
@@ -1298,11 +1294,7 @@ export default {
                 mockGeneratorLogs.push('[System] Generator job completed. 50 questions added.');
             };
             
-            if ('waitUntil' in request && typeof (request as any).waitUntil === 'function') {
-                (request as any).waitUntil(runMock());
-            } else {
-                runMock();
-            }
+            ctx.waitUntil(runMock());
 
             return json({ success: true, message: "Generator started" });
         }
