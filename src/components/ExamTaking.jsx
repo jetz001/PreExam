@@ -204,7 +204,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
 
             {/* Main Content Area */}
             {showAnimation && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
                     <Lottie animationData={successAnimation} loop={false} style={{ width: 400, height: 400 }} />
                 </div>
             )}
