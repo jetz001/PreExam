@@ -12,6 +12,8 @@ import PacingAlert from './exam/PacingAlert';
 import bookmarkService from '../services/bookmarkService';
 import toast from 'react-hot-toast';
 import HomeNavbar from './HomeNavbar'; // Import Navbar!
+import Lottie from 'lottie-react';
+import successAnimation from '../assets/97e2f756-37dc-459e-a539-eb11daa2cd1c.json';
 
 const decodeHtml = (html) => {
     const txt = document.createElement("textarea");
@@ -37,6 +39,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
     const [showReportModal, setShowReportModal] = useState(false);
     const [fontSizeScale, setFontSizeScale] = useState(1);
     const [showFontMenu, setShowFontMenu] = useState(false);
+    const [showAnimation, setShowAnimation] = useState(false);
     const { isPremium } = useUserRole();
 
     useEffect(() => {
@@ -57,10 +60,20 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
 
     const handleAnswer = (choice) => {
         setAnswers({ ...answers, [questions[currentIndex].id]: choice });
-        // Auto-advance after a tiny delay if not the last question and in practice mode
-        if (mode !== 'practice' && currentIndex < questions.length - 1) {
-            setTimeout(() => setCurrentIndex(currentIndex + 1), 300);
-        }
+        setShowAnimation(true);
+        
+        setTimeout(() => {
+            setShowAnimation(false);
+            if (mode !== 'practice') {
+                const unanswered = questions.map((_, i) => i).filter(i => i !== currentIndex && !answers[questions[i].id]);
+                if (unanswered.length > 0) {
+                    const randomIndex = unanswered[Math.floor(Math.random() * unanswered.length)];
+                    setCurrentIndex(randomIndex);
+                } else if (currentIndex < questions.length - 1) {
+                    setCurrentIndex(currentIndex + 1);
+                }
+            }
+        }, 1200);
     };
 
     const toggleFlag = () => {
@@ -190,6 +203,11 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
             </div>
 
             {/* Main Content Area */}
+            {showAnimation && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                    <Lottie animationData={successAnimation} loop={false} style={{ width: 400, height: 400 }} />
+                </div>
+            )}
             <div className="relative z-10 flex-grow flex flex-col pt-20 px-4 md:px-8 pb-32">
                 
                 {/* Top Info Bar (Timer, Progress) */}
