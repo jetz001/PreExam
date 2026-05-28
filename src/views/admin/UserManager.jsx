@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone, Globe, FileText, Activity, Mail } from 'lucide-react';
+import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone, Globe, FileText, Activity, Mail, ArrowUp, ArrowDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
 
@@ -381,6 +381,16 @@ const UserManager = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 50;
 
+    const [sortConfig, setSortConfig] = useState({ key: 'last_active_at', direction: 'desc' });
+
+    const handleSort = (key) => {
+        let direction = 'desc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'desc') {
+            direction = 'asc';
+        }
+        setSortConfig({ key, direction });
+    };
+
     const { data: users = [], isLoading } = useQuery({
         queryKey: ['users'],
         queryFn: adminApi.getUsers
@@ -559,9 +569,29 @@ const UserManager = () => {
         return true;
     });
 
+    // Sorting Logic
+    const sortedUsers = [...filteredUsers].sort((a, b) => {
+        if (!sortConfig) return 0;
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        if (sortConfig.key === 'last_active_at') {
+            aValue = aValue || a.updated_at || a.created_at || '';
+            bValue = bValue || b.updated_at || b.created_at || '';
+        }
+
+        if (aValue < bValue) {
+            return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+            return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+    });
+
     // Pagination Logic
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-    const paginatedUsers = filteredUsers.slice(
+    const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
+    const paginatedUsers = sortedUsers.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
@@ -680,7 +710,21 @@ const UserManager = () => {
                                     {activeTab === 'sponsors' ? 'ข้อมูลธุรกิจ' : 'ข้อมูลผู้ใช้'}
                                 </th>
                                 <th className="px-6 py-4 font-semibold">สถานะ/บทบาท</th>
-                                <th className="px-6 py-4 font-semibold">Last Active</th>
+                                <th 
+                                    className="px-6 py-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors group select-none"
+                                    onClick={() => handleSort('last_active_at')}
+                                >
+                                    <div className="flex items-center">
+                                        Last Active
+                                        <span className="ml-1 text-slate-400 group-hover:text-slate-600">
+                                            {sortConfig.key === 'last_active_at' ? (
+                                                sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                                            ) : (
+                                                <ArrowDown size={14} className="opacity-0 group-hover:opacity-100" />
+                                            )}
+                                        </span>
+                                    </div>
+                                </th>
                                 <th className="px-6 py-4 font-semibold">Location</th>
                                 <th className="px-6 py-4 font-semibold">สถานะบัญชี</th>
                                 <th className="px-6 py-4 font-semibold text-right">จัดการ</th>
@@ -763,7 +807,13 @@ const UserManager = () => {
                                                 className="hover:text-indigo-600 hover:underline focus:outline-none transition-colors text-left"
                                                 title="View Activity Logs"
                                             >
-                                                {user.last_active_at ? new Date(user.last_active_at).toLocaleString() : (user.created_at ? `Created: ${new Date(user.created_at).toLocaleString()}` : '-')}
+                                                {user.last_active_at 
+                                                    ? new Date(user.last_active_at).toLocaleString() 
+                                                    : (user.updated_at 
+                                                        ? new Date(user.updated_at).toLocaleString() 
+                                                        : (user.created_at ? `Created: ${new Date(user.created_at).toLocaleString()}` : '-')
+                                                    )
+                                                }
                                             </button>
                                         </td>
                                         <td className="px-6 py-4">
