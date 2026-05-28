@@ -1310,7 +1310,8 @@ if (url.pathname === "/api/public/settings") return json({ success: true, settin
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
 
-                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                const thTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+                const todayStart = Date.UTC(thTime.getUTCFullYear(), thTime.getUTCMonth(), thTime.getUTCDate(), -7, 0, 0);
 
                 let realActiveUsers = 0;
                 users.forEach((u: any) => {
@@ -1321,6 +1322,9 @@ if (url.pathname === "/api/public/settings") return json({ success: true, settin
                     } else if (u.updated_at) {
                         if (typeof u.updated_at === 'string') ts = new Date(u.updated_at).getTime();
                         else if (u.updated_at._seconds) ts = u.updated_at._seconds * 1000;
+                    } else if (u.created_at) {
+                        if (typeof u.created_at === 'string') ts = new Date(u.created_at).getTime();
+                        else if (u.created_at._seconds) ts = u.created_at._seconds * 1000;
                     }
                     if (ts >= todayStart) realActiveUsers++;
                 });
