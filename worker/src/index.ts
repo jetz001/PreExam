@@ -1181,7 +1181,7 @@ export default {
                         scrapeData.agency = "สำนักงาน ก.พ.";
                         
                         if (data.image1) {
-                             scrapeData.image_url = `https://job.ocsc.go.th/upload2/${data.image1}`;
+                             scrapeData.image_url = data.image1.startsWith("http") ? data.image1 : `https://job.ocsc.go.th/upload2/${data.image1}`;
                         } else if (data.banner) {
                              scrapeData.image_url = data.banner.startsWith("http") ? data.banner : `https://job.ocsc.go.th/upload2/${data.banner}`;
                         }
