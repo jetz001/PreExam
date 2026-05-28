@@ -1177,7 +1177,18 @@ export default {
                     if (response.ok) {
                         const data = await response.json() as any;
                         if (data.headline) scrapeData.title = data.headline;
-                        if (data.text1 || data.text2) scrapeData.summary = (data.text1 || "") + "\n" + (data.text2 || "");
+                        if (data.text1 || data.text2) {
+                             const rawHtml = (data.text1 || "") + "\n" + (data.text2 || "");
+                             scrapeData.summary = rawHtml
+                                 .replace(/<br\s*[\/]?>/gi, '\n')
+                                 .replace(/<\/p>/gi, '\n\n')
+                                 .replace(/<\/h[1-6]>/gi, '\n\n')
+                                 .replace(/<\/li>/gi, '\n')
+                                 .replace(/<li>/gi, '- ')
+                                 .replace(/<[^>]+>/g, '')
+                                 .replace(/\n\s*\n/g, '\n\n')
+                                 .trim();
+                        }
                         scrapeData.agency = "สำนักงาน ก.พ.";
                         
                         if (data.image1) {
