@@ -1335,6 +1335,59 @@ if (url.pathname === "/api/public/settings") return json({ success: true, settin
           return json({ success: true });
         }
 
+        if (url.pathname === "/api/admin/messages" && request.method === "GET") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            try {
+                const messages = await firestore.runQuery({
+                    from: [{ collectionId: "contact_messages" }],
+                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
+                    limit: 100
+                });
+                
+                const formattedMessages = messages.map((doc: any) => ({
+                    id: doc.id,
+                    type: doc.type || (doc.user_id ? 'User' : 'Visitor'),
+                    subject: doc.subject || 'No Subject',
+                    from: doc.email || doc.name || 'Unknown',
+                    content: doc.message || doc.content || '',
+                    is_read: doc.is_read || false,
+                    created_at: doc.created_at
+                }));
+                return json(formattedMessages);
+            } catch (e: any) {
+                // If missing index, fetch without order
+                try {
+                    const messages = await firestore.runQuery({
+                        from: [{ collectionId: "contact_messages" }],
+                        limit: 100
+                    });
+                    const formattedMessages = messages.map((doc: any) => ({
+                        id: doc.id,
+                        type: doc.type || (doc.user_id ? 'User' : 'Visitor'),
+                        subject: doc.subject || 'No Subject',
+                        from: doc.email || doc.name || 'Unknown',
+                        content: doc.message || doc.content || '',
+                        is_read: doc.is_read || false,
+                        created_at: doc.created_at
+                    }));
+                    return json(formattedMessages.sort((a: any, b: any) => {
+                        const aSec = a.created_at?._seconds || 0;
+                        const bSec = b.created_at?._seconds || 0;
+                        return bSec - aSec;
+                    }));
+                } catch (err) {
+                    return json({ error: "failed to fetch messages" }, { status: 500 });
+                }
+            }
+        }
+
+        if (url.pathname === "/api/admin/messages/broadcast" && request.method === "POST") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            return json({ success: true, message: 'Broadcast sent' });
+        }
+
         if (url.pathname === "/api/admin/users" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
