@@ -42,11 +42,11 @@ const adminApi = {
     // Payment Verification
     getPendingPayments: async () => {
         const response = await api.get('/admin/payments');
-        return response.data.filter(p => p.status === 'pending');
+        return (response.data || []).filter(p => p.status === 'pending');
     },
     getPaymentHistory: async () => {
         const response = await api.get('/admin/payments');
-        return response.data.filter(p => p.status !== 'pending');
+        return (response.data || []).filter(p => p.status !== 'pending');
     },
     approvePayment: async (id, type) => {
         const response = await api.post(`/admin/payments/${id}/approve`, { type });

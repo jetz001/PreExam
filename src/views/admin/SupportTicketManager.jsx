@@ -69,7 +69,7 @@ const SupportTicketManager = () => {
         }
     };
 
-    const filteredTickets = tickets.filter(t => {
+    const filteredTickets = (tickets || []).filter(t => {
         const matchesSearch = t.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
             t.id.toString().includes(searchQuery) ||
             t.user?.display_name?.toLowerCase().includes(searchQuery.toLowerCase());

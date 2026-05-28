@@ -68,7 +68,7 @@ const ContactPage = () => {
         }
     };
 
-    const filteredTickets = tickets.filter(t => {
+    const filteredTickets = (tickets || []).filter(t => {
         if (filter === 'all') return true;
         if (filter === 'active') return ['open', 'in_progress'].includes(t.status);
         if (filter === 'done') return ['resolved', 'closed'].includes(t.status);
@@ -211,7 +211,7 @@ const ContactPage = () => {
                             <div className="c-stat-card">
                                 <div>
                                     <p className="c-stat-label">กำลังดำเนินการ</p>
-                                    <p className="c-stat-value c-stat-value-orange">{tickets.filter(t => ['open', 'in_progress'].includes(t.status)).length}</p>
+                                    <p className="c-stat-value c-stat-value-orange">{(tickets || []).filter(t => ['open', 'in_progress'].includes(t.status)).length}</p>
                                 </div>
                                 <div className="c-contact-icon c-icon-yellow">
                                     <Clock size={24} />
@@ -220,7 +220,7 @@ const ContactPage = () => {
                             <div className="c-stat-card">
                                 <div>
                                     <p className="c-stat-label">เสร็จสิ้นแล้ว</p>
-                                    <p className="c-stat-value c-stat-value-green">{tickets.filter(t => ['resolved', 'closed'].includes(t.status)).length}</p>
+                                    <p className="c-stat-value c-stat-value-green">{(tickets || []).filter(t => ['resolved', 'closed'].includes(t.status)).length}</p>
                                 </div>
                                 <div className="c-contact-icon c-icon-green">
                                     <CheckCircle size={24} />

@@ -82,7 +82,7 @@ const AddAdminModal = ({ users, onClose, onPromote }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUserId, setSelectedUserId] = useState(null);
 
-    const nonAdminUsers = users.filter(u => u.role !== 'admin' && u.role !== 'sponsor');
+    const nonAdminUsers = (users || []).filter(u => u.role !== 'admin' && u.role !== 'sponsor');
     const displayUsers = nonAdminUsers.filter(u =>
         (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (u.display_name && u.display_name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -526,14 +526,14 @@ const UserManager = () => {
 
     // Category Counts
     const counts = {
-        users: users.filter(u => u.role !== 'admin' && u.role !== 'sponsor' && !isGuest(u)).length,
-        guests: users.filter(u => isGuest(u) && !isForeignGuest(u)).length, // Local/Unknown Guests
-        foreignGuests: users.filter(u => isForeignGuest(u)).length, // Foreign Guests
-        sponsors: users.filter(u => u.role === 'sponsor').length,
-        admins: users.filter(u => u.role === 'admin').length
+        users: (users || []).filter(u => u.role !== 'admin' && u.role !== 'sponsor' && !isGuest(u)).length,
+        guests: (users || []).filter(u => isGuest(u) && !isForeignGuest(u)).length, // Local/Unknown Guests
+        foreignGuests: (users || []).filter(u => isForeignGuest(u)).length, // Foreign Guests
+        sponsors: (users || []).filter(u => u.role === 'sponsor').length,
+        admins: (users || []).filter(u => u.role === 'admin').length
     };
 
-    const filteredUsers = users.filter(user => {
+    const filteredUsers = (users || []).filter(user => {
         // Tab Filter
         if (activeTab === 'sponsors' && user.role !== 'sponsor') return false;
         if (activeTab === 'admins' && user.role !== 'admin') return false;
