@@ -1264,9 +1264,57 @@ if (url.pathname === "/api/public/settings") return json({ success: true, settin
 
         // Admin and System Stubs / Simple Implementation
         if (url.pathname === "/api/admin/stats") return json({ revenue: { total: 0, monthly: 0, yearly: 0, pending: 0, trend: [] }, conversionRate: 0, activeUsers: 0, commercialViability: [], painPoints: [], communityHealth: {} });
+        const adminUserLogsMatch = url.pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)\/logs$/);
+        if (adminUserLogsMatch && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const logs = await firestore.runQuery({ from: [{ collectionId: "logs" }], where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: adminUserLogsMatch[1] } } }, limit: 50 });
+          return json({ success: true, logs });
+        }
+
+        const adminUserHistoryMatch = url.pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)\/history$/);
+        if (adminUserHistoryMatch && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const id = adminUserHistoryMatch[1];
+          const userDoc = await firestore.getDocument("users", id);
+          if (!userDoc) return json({ message: "User not found" }, { status: 404 });
+          const examHistory = await firestore.runQuery({ from: [{ collectionId: "exam_results" }], where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: id } } }, limit: 20 });
+          const paymentHistory = await firestore.runQuery({ from: [{ collectionId: "payments" }], where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: id } } }, limit: 10 });
+          return json({ success: true, user: userDoc, examHistory, paymentHistory });
+        }
+
+        const adminUserStatusMatch = url.pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)\/status$/);
+        if (adminUserStatusMatch && request.method === "PUT") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const body = await request.json() as any;
+          await firestore.updateDocument("users", adminUserStatusMatch[1], { status: body.status });
+          return json({ success: true });
+        }
+
+        const adminUserPermMatch = url.pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)\/permissions$/);
+        if (adminUserPermMatch && request.method === "PUT") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const body = await request.json() as any;
+          await firestore.updateDocument("users", adminUserPermMatch[1], { admin_permissions: body.permissions });
+          return json({ success: true });
+        }
+
+        const adminUserUpdateMatch = url.pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)$/);
+        if (adminUserUpdateMatch && request.method === "PUT") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const body = await request.json() as any;
+          await firestore.updateDocument("users", adminUserUpdateMatch[1], body);
+          return json({ success: true });
+        }
+
         if (url.pathname === "/api/admin/users" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
+
           const users = await firestore.runQuery({ from: [{ collectionId: "users" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
           return json(users);
         }
@@ -1425,6 +1473,10 @@ if (url.pathname === "/api/public/settings") return json({ success: true, settin
         }
         if (url.pathname === "/api/admin/scraper/status") {
             return json({ success: true, data: { isRunning: mockScraperRunning, logs: mockScraperLogs } });
+        }
+        if (url.pathname === "/api/admin/scraper/schedule" && request.method === "POST") {
+            const body = await request.json() as any;
+            return json({ success: true, message: 'Schedule updated to ' + (body.frequency || 'unknown') });
         }
         
         if (url.pathname === "/api/admin/generator/start" && request.method === "POST") {
