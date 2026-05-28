@@ -1164,6 +1164,7 @@ export default {
                 title: "ข้อมูลดึงอัตโนมัติ",
                 summary: "ดึงเนื้อหาจาก " + targetUrl,
                 agency: "อ้างอิงจาก URL",
+                external_link: targetUrl,
                 metadata: {
                     announcement_url: targetUrl
                 }

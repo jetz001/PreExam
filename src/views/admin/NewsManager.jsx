@@ -119,6 +119,7 @@ const NewsManager = () => {
                 content: data.summary || data.description || prev.content,
                 keywords: data.keywords || prev.keywords,
                 agency: data.agency || prev.agency,
+                external_link: data.external_link || prev.external_link,
                 metadata: data.metadata ? { ...prev.metadata, ...data.metadata } : prev.metadata
             }));
             // if (data.metadata) {
