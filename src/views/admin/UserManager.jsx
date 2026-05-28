@@ -808,10 +808,10 @@ const UserManager = () => {
                                                 title="View Activity Logs"
                                             >
                                                 {user.last_active_at 
-                                                    ? new Date(user.last_active_at).toLocaleString() 
+                                                    ? new Date(user.last_active_at).toLocaleString('en-GB') 
                                                     : (user.updated_at 
-                                                        ? new Date(user.updated_at).toLocaleString() 
-                                                        : (user.created_at ? new Date(user.created_at).toLocaleString() : '-')
+                                                        ? new Date(user.updated_at).toLocaleString('en-GB') 
+                                                        : (user.created_at ? new Date(user.created_at).toLocaleString('en-GB') : '-')
                                                     )
                                                 }
                                             </button>
