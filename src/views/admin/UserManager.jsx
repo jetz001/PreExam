@@ -763,7 +763,7 @@ const UserManager = () => {
                                                 className="hover:text-indigo-600 hover:underline focus:outline-none transition-colors text-left"
                                                 title="View Activity Logs"
                                             >
-                                                {user.last_active_at ? new Date(user.last_active_at).toLocaleString() : '-'}
+                                                {user.last_active_at ? new Date(user.last_active_at).toLocaleString() : (user.created_at ? `Created: ${new Date(user.created_at).toLocaleString()}` : '-')}
                                             </button>
                                         </td>
                                         <td className="px-6 py-4">

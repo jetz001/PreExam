@@ -160,6 +160,10 @@ export default {
       let user;
       if (existing.length > 0) {
         user = existing[0];
+        try { 
+          await firestore.updateDocument("users", user.id, { last_active_at: new Date().toISOString() }); 
+          user.last_active_at = new Date().toISOString(); 
+        } catch(e){}
       } else {
         const shortId = deviceId.slice(-5) + Math.floor(100 + Math.random() * 900);
         user = await firestore.createDocument("users", {
@@ -167,7 +171,8 @@ export default {
           display_name: `Guest-${shortId}`,
           role: "user",
           plan_type: "free",
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString()
         });
       }
 
@@ -200,9 +205,14 @@ export default {
 
       if (existingByGoogleId.length > 0) {
         user = existingByGoogleId[0];
+        const updates: any = { last_active_at: new Date().toISOString() };
         if (picture && user.avatar !== picture) {
-          await firestore.updateDocument("users", user.id, { avatar: picture });
+          updates.avatar = picture;
         }
+        try { 
+          await firestore.updateDocument("users", user.id, updates); 
+          user.last_active_at = updates.last_active_at; 
+        } catch(e){}
       } else {
         const existingByEmail = await firestore.runQuery({
           from: [{ collectionId: "users" }],
@@ -251,6 +261,8 @@ export default {
       if (!user || !user.password_hash) return json({ success: false, message: "Invalid credentials" }, { status: 401 });
       const ok = await verifyPassword(password, String(user.password_hash));
       if (!ok) return json({ success: false, message: "Invalid credentials" }, { status: 401 });
+
+      try { await firestore.updateDocument("users", user.id, { last_active_at: new Date().toISOString() }); user.last_active_at = new Date().toISOString(); } catch(e){}
 
       const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
       const token = await signJwtHs256({ id: user.id, exp }, secret);
