@@ -1334,6 +1334,10 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/admin/messages") return json([]);
         if (url.pathname === "/api/admin/reports") return json([]);
         if (url.pathname === "/api/support/tickets/my") return json([]);
+        if (url.pathname === "/api/admin/payments") return json([]);
+        if (url.pathname === "/api/admin/ads/pending") return json([]);
+        if (url.pathname === "/api/news/sources/all") return json({ success: true, data: [] });
+        if (url.pathname === "/api/assets") return json({ success: true, data: [] });
 
         // Admin and System Stubs / Simple Implementation
         if (url.pathname === "/api/admin/stats" && request.method === "GET") {
