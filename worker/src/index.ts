@@ -1306,6 +1306,25 @@ if (url.pathname === "/api/public/settings") return json({ success: true, settin
             try {
                 // Fetch users
                 const users = await firestore.runQuery({ from: [{ collectionId: "users" }], limit: 1000 });
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+
+                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+                let realActiveUsers = 0;
+                users.forEach((u: any) => {
+                    let ts = 0;
+                    if (u.last_active_at) {
+                        if (typeof u.last_active_at === 'string') ts = new Date(u.last_active_at).getTime();
+                        else if (u.last_active_at._seconds) ts = u.last_active_at._seconds * 1000;
+                    } else if (u.updated_at) {
+                        if (typeof u.updated_at === 'string') ts = new Date(u.updated_at).getTime();
+                        else if (u.updated_at._seconds) ts = u.updated_at._seconds * 1000;
+                    }
+                    if (ts >= todayStart) realActiveUsers++;
+                });
+
                 const totalUsers = users.length;
                 const premiumUsers = users.filter((u: any) => u.plan_type === 'premium').length;
 
@@ -1316,10 +1335,6 @@ if (url.pathname === "/api/public/settings") return json({ success: true, settin
                 let monthlyRevenue = 0;
                 let yearlyRevenue = 0;
                 let pendingRevenue = 0;
-                
-                const now = new Date();
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
 
                 const trendMap: any = {};
                 for (let i = 5; i >= 0; i--) {
@@ -1363,7 +1378,7 @@ if (url.pathname === "/api/public/settings") return json({ success: true, settin
                         trend: Object.values(trendMap) 
                     },
                     conversionRate: totalUsers > 0 ? ((premiumUsers / totalUsers) * 100).toFixed(1) : 0,
-                    activeUsers: Math.floor(totalUsers * 0.2) + 5,
+                    activeUsers: realActiveUsers,
                     commercialViability: [
                         { name: 'Jan', value: 65 }, { name: 'Feb', value: 75 }, { name: 'Mar', value: 85 }
                     ],
