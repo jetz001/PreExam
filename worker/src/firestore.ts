@@ -134,7 +134,8 @@ export class FirestoreClient {
       const doc = await this.fetchApi(`/${collectionPath}/${docId}`);
       return parseFirestoreDocument(doc);
     } catch (e: any) {
-      if (e.message.includes("NOT_FOUND") || e.message.includes("404")) return null;
+      const msg = e.message ? e.message.toLowerCase() : "";
+      if (msg.includes("not_found") || msg.includes("404") || msg.includes("not found")) return null;
       throw e;
     }
   }
@@ -177,7 +178,8 @@ export class FirestoreClient {
       const res: any = await this.fetchApi(`/${collectionPath}`);
       return (res.documents || []).map((doc: any) => parseFirestoreDocument(doc));
     } catch (e: any) {
-      if (e.message.includes("NOT_FOUND") || e.message.includes("404")) return [];
+      const msg = e.message ? e.message.toLowerCase() : "";
+      if (msg.includes("not_found") || msg.includes("404") || msg.includes("not found")) return [];
       throw e;
     }
   }

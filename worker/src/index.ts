@@ -1324,6 +1324,10 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/community/tags/trending") return json([]);
         if (url.pathname === "/api/friends/list") return json({ success: true, friends: [] });
         if (url.pathname === "/api/users/leaderboard") return json({ success: true, leaderboard: [] });
+        if (url.pathname === "/api/ads/admin/stats") return json({ success: true, stats: {} });
+        if (url.pathname === "/api/ads/admin/sponsors") return json({ success: true, sponsors: [] });
+        if (url.pathname === "/api/support/admin/tickets") return json({ success: true, tickets: [] });
+        if (url.pathname === "/api/admin/backups") return json({ success: true, backups: [] });
 
         // Admin and System Stubs / Simple Implementation
         if (url.pathname === "/api/admin/stats" && request.method === "GET") {
