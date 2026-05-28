@@ -1324,10 +1324,15 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/community/tags/trending") return json([]);
         if (url.pathname === "/api/friends/list") return json({ success: true, friends: [] });
         if (url.pathname === "/api/users/leaderboard") return json({ success: true, leaderboard: [] });
-        if (url.pathname === "/api/ads/admin/stats") return json({ success: true, stats: {} });
-        if (url.pathname === "/api/ads/admin/sponsors") return json({ success: true, sponsors: [] });
-        if (url.pathname === "/api/support/admin/tickets") return json({ success: true, tickets: [] });
-        if (url.pathname === "/api/admin/backups") return json({ success: true, backups: [] });
+        if (url.pathname === "/api/ads/admin/stats") return json({ totalRevenue: 0, activeSponsors: 0, totalViews: 0, revenueTrend: [] });
+        if (url.pathname === "/api/ads/admin/sponsors") return json([]);
+        if (url.pathname === "/api/ads/admin/pending") return json([]);
+        if (url.pathname === "/api/ads/admin/config") return json({ communityViewCost: 0.1, communityClickCost: 5.0, newsViewCost: 0.15, newsClickCost: 6.0, resultViewCost: 0.2, resultClickCost: 8.0, inFeedFrequency: 10, adSenseBackupId: '', examResultSlotId: '', homeSlotId: '' });
+        if (url.pathname === "/api/support/admin/tickets") return json([]);
+        if (url.pathname === "/api/admin/backups") return json([]);
+        if (url.pathname === "/api/admin/backups/logs") return json([]);
+        if (url.pathname === "/api/admin/messages") return json([]);
+        if (url.pathname === "/api/admin/reports") return json([]);
 
         // Admin and System Stubs / Simple Implementation
         if (url.pathname === "/api/admin/stats" && request.method === "GET") {
