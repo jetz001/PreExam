@@ -1707,6 +1707,7 @@ if (url.pathname === "/api/public/settings") return json({ success: true, settin
   async scheduled(event: any, env: Env, ctx: ExecutionContext) {
     console.log("Running scheduled job cleanup at", new Date().toISOString());
     await cleanupExpiredJobs(env);
+    await cleanupExpiredRooms(env);
   }
 };
 
@@ -1749,6 +1750,33 @@ async function cleanupExpiredJobs(env: Env) {
         return expiredCount;
     } catch (e) {
         console.error("Scheduled job cleanup failed", e);
+        return 0;
+    }
+}
+
+async function cleanupExpiredRooms(env: Env) {
+    const firestore = new FirestoreClient(env);
+    try {
+        const rooms = await firestore.runQuery({ from: [{ collectionId: "exam_rooms" }], limit: 1000 });
+        const now = new Date().getTime();
+        let deletedCount = 0;
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        
+        for (const room of rooms) {
+            const createdAt = new Date(String(room.created_at || room.updated_at || Date.now())).getTime();
+            if (now - createdAt > oneDayMs) {
+                const participants = await firestore.listDocuments(`exam_rooms/${room.id}/participants`);
+                for (const p of participants) {
+                    await firestore.deleteDocument(`exam_rooms/${room.id}/participants`, p.id);
+                }
+                await firestore.deleteDocument("exam_rooms", room.id);
+                deletedCount++;
+            }
+        }
+        console.log(`Room cleanup completed. Deleted ${deletedCount} expired rooms.`);
+        return deletedCount;
+    } catch (e) {
+        console.error("Scheduled room cleanup failed", e);
         return 0;
     }
 }
