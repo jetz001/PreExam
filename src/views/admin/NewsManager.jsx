@@ -121,9 +121,9 @@ const NewsManager = () => {
                 agency: data.agency || prev.agency,
                 metadata: data.metadata ? { ...prev.metadata, ...data.metadata } : prev.metadata
             }));
-            if (data.metadata) {
-                setActiveTab('gov');
-            }
+            // if (data.metadata) {
+            //     setActiveTab('gov');
+            // }
             toast.success('Content & Details auto-filled!');
         },
         onError: () => toast.error('Failed to scrape content')
