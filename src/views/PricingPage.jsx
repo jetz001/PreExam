@@ -134,7 +134,7 @@ const PricingPage = () => {
                                 }}
                                 className="bg-[#46178f] text-white w-full py-4 rounded-xl font-black text-xl btn-kahoot border-b-4 border-[#331166] hover:bg-[#5c1ecc] transition-colors"
                             >
-                                PAY WITH CREDIT CARD / AUTO
+                                PAY WITH CARD / PROMPTPAY QR
                             </button>
                             
                             <div className="pt-6">
