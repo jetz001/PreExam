@@ -2,6 +2,7 @@ import React from 'react';
 import useUserRole from '../../hooks/useUserRole';
 import { Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * Wrapper to hide or lock content based on user rights.
@@ -10,6 +11,7 @@ import { Link } from 'react-router-dom';
  */
 const PermissionGate = ({ children, type = 'hide', requiredTier = 'premium', fallback = null }) => {
     const { isMember, isPremium, isGuest } = useUserRole();
+    const { user } = useAuth();
 
     let hasAccess = false;
     if (requiredTier === 'member') {
@@ -40,7 +42,7 @@ const PermissionGate = ({ children, type = 'hide', requiredTier = 'premium', fal
                         </span>
                     </div>
                     {/* Optional: Add Upgrade Link if locking premium features */}
-                    {requiredTier === 'premium' && !isGuest && (
+                    {requiredTier === 'premium' && !isGuest && user?.role === 'admin' && (
                         <Link to="/pricing" className="mt-2 text-xs text-primary font-bold hover:underline bg-white/90 px-2 py-1 rounded shadow-sm">
                             Upgrade Now
                         </Link>

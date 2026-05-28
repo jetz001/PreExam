@@ -3,7 +3,8 @@ import { Check, Star, Shield, Zap, X } from 'lucide-react';
 import api from '../services/api';
 import paymentService from '../services/paymentService'; // Import payment service
 import SlipUploadModal from '../components/payment/SlipUploadModal';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import '../assets/css/pricing.css'; // Import the new CSS
 
 const PricingPage = () => {
@@ -12,7 +13,13 @@ const PricingPage = () => {
     const [selectedPlan, setSelectedPlan] = useState(null); // Plan object
     const [transaction, setTransaction] = useState(null); // Created transaction
     const [showUploadModal, setShowUploadModal] = useState(false);
+    const { user } = useAuth();
     const navigate = useNavigate();
+
+    // Prevent non-admins from viewing the pricing page for now
+    if (!user || user.role !== 'admin') {
+        return <Navigate to="/" replace />;
+    }
 
     useEffect(() => {
         fetchPlans();

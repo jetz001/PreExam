@@ -203,11 +203,13 @@ export default function HomeNavbar() {
                   {link.label}
                 </Link>
               ))}
-              <Link to="/pricing" className="hn-drop-link" onClick={() => setMenuOpen(false)}>
-                <span style={{ width:7, height:7, borderRadius:'50%', background:'#fbbf24',
-                  flexShrink:0, boxShadow:'0 0 8px #fbbf24' }}/>
-                ⭐ พรีเมียม
-              </Link>
+              {user?.role === 'admin' && (
+                  <Link to="/pricing" className="hn-drop-link" onClick={() => setMenuOpen(false)}>
+                    <span style={{ width:7, height:7, borderRadius:'50%', background:'#fbbf24',
+                      flexShrink:0, boxShadow:'0 0 8px #fbbf24' }}/>
+                    ⭐ พรีเมียม
+                  </Link>
+              )}
 
               {/* ── ช่วยเหลือ ── */}
               <div style={{ margin:'8px 0 0', borderTop:'1px solid rgba(255,255,255,0.08)' }}/>
