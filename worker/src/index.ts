@@ -1296,20 +1296,28 @@ if (url.pathname === "/api/public/settings") return json({ success: true, settin
 
 if (url.pathname === "/api/legal/policy") {
   if (request.method === "GET") {
-    const policy = await firestore.getDocument("system_config", "privacy_policy");
-    return json({ success: true, content: policy?.content || "" });
+    try {
+      const policy = await firestore.getDocument("system_config", "privacy_policy");
+      return json({ success: true, content: policy?.content || "" });
+    } catch (e: any) {
+      return json({ success: false, error: e.message || String(e) }, { status: 500 });
+    }
   }
   if (request.method === "PUT" || request.method === "POST") {
-    const auth = await requireAuthUserId(request, env);
-    if ("error" in auth) return auth.error;
-    const body: any = await request.json();
-    const existing = await firestore.getDocument("system_config", "privacy_policy");
-    if (existing) {
-      await firestore.updateDocument("system_config", "privacy_policy", { content: body.content });
-    } else {
-      await firestore.createDocument("system_config", { content: body.content }, "privacy_policy");
+    try {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+      const body: any = await request.json();
+      const existing = await firestore.getDocument("system_config", "privacy_policy");
+      if (existing) {
+        await firestore.updateDocument("system_config", "privacy_policy", { content: body.content });
+      } else {
+        await firestore.createDocument("system_config", { content: body.content }, "privacy_policy");
+      }
+      return json({ success: true, message: "Policy updated" });
+    } catch (e: any) {
+      return json({ success: false, error: e.message || String(e) }, { status: 500 });
     }
-    return json({ success: true, message: "Policy updated" });
   }
 }
         if (url.pathname === "/api/groups") return json({ success: true, groups: [] });
