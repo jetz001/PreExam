@@ -1158,17 +1158,40 @@ export default {
             const auth = await requireAuthUserId(request, env);
             if ("error" in auth) return auth.error;
             const body = await readJson(request) as any;
-            return json({ 
-                success: true, 
-                data: {
-                    title: "ข้อมูลดึงอัตโนมัติ",
-                    summary: "ดึงเนื้อหาจาก " + (body?.url || ""),
-                    agency: "อ้างอิงจาก URL",
-                    metadata: {
-                        announcement_url: body?.url || ""
+            const targetUrl = body?.url || "";
+            
+            let scrapeData: any = {
+                title: "ข้อมูลดึงอัตโนมัติ",
+                summary: "ดึงเนื้อหาจาก " + targetUrl,
+                agency: "อ้างอิงจาก URL",
+                metadata: {
+                    announcement_url: targetUrl
+                }
+            };
+            
+            const ocscNewsMatch = targetUrl.match(/job\.ocsc\.go\.th\/portal\/news\/(\d+)/);
+            if (ocscNewsMatch) {
+                try {
+                    const id = ocscNewsMatch[1];
+                    const response = await fetch(`https://jobapp.ocsc.go.th/jobapi/portal/pressreleases/${id}`);
+                    if (response.ok) {
+                        const data = await response.json() as any;
+                        if (data.headline) scrapeData.title = data.headline;
+                        if (data.text1 || data.text2) scrapeData.summary = (data.text1 || "") + "\n" + (data.text2 || "");
+                        scrapeData.agency = "สำนักงาน ก.พ.";
+                        
+                        if (data.image1) {
+                             scrapeData.image_url = `https://job.ocsc.go.th/upload2/${data.image1}`;
+                        } else if (data.banner) {
+                             scrapeData.image_url = data.banner.startsWith("http") ? data.banner : `https://job.ocsc.go.th/upload2/${data.banner}`;
+                        }
                     }
-                } 
-            });
+                } catch (e) {
+                    // Ignore errors, return default
+                }
+            }
+
+            return json({ success: true, data: scrapeData });
         }
 
 
