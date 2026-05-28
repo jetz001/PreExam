@@ -202,7 +202,7 @@ const ContactPage = () => {
                             <div className="c-stat-card">
                                 <div>
                                     <p className="c-stat-label">Ticket ทั้งหมด</p>
-                                    <p className="c-stat-value">{tickets.length}</p>
+                                    <p className="c-stat-value">{(tickets || []).length}</p>
                                 </div>
                                 <div className="c-contact-icon c-icon-blue">
                                     <FileText size={24} />
