@@ -1333,6 +1333,7 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/admin/backups/logs") return json([]);
         if (url.pathname === "/api/admin/messages") return json([]);
         if (url.pathname === "/api/admin/reports") return json([]);
+        if (url.pathname === "/api/support/tickets/my") return json([]);
 
         // Admin and System Stubs / Simple Implementation
         if (url.pathname === "/api/admin/stats" && request.method === "GET") {
