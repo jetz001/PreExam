@@ -811,7 +811,7 @@ const UserManager = () => {
                                                     ? new Date(user.last_active_at).toLocaleString() 
                                                     : (user.updated_at 
                                                         ? new Date(user.updated_at).toLocaleString() 
-                                                        : (user.created_at ? `Created: ${new Date(user.created_at).toLocaleString()}` : '-')
+                                                        : (user.created_at ? new Date(user.created_at).toLocaleString() : '-')
                                                     )
                                                 }
                                             </button>
