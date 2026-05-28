@@ -1083,6 +1083,7 @@ export default {
                 
                 const formattedStats = Object.values(statsMap).map((m: any) => ({
                     ministry: m.ministry,
+                    logo: Object.values(m.departments).find((d: any) => d.logo)?.logo || null,
                     totalCount: Object.values(m.departments).reduce((sum: any, d: any) => sum + d.count, 0),
                     departments: Object.values(m.departments).sort((a: any, b: any) => b.count - a.count)
                 })).sort((a: any, b: any) => b.totalCount - a.totalCount);

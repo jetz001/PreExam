@@ -43,9 +43,15 @@ const AgencyGrid = ({ agencies }) => {
                             onClick={() => setExpandedMinistry(isExpanded ? null : ministryGroup.ministry)}
                         >
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-300">
-                                    <Building2 size={20} />
-                                </div>
+                                {ministryGroup.logo ? (
+                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1 shadow-sm">
+                                        <img src={ministryGroup.logo} alt={ministryGroup.ministry} className="w-full h-full object-contain" />
+                                    </div>
+                                ) : (
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getAgencyIcon(ministryGroup.ministry).color.replace('text-', 'bg-').replace('100', '500/20')} ${getAgencyIcon(ministryGroup.ministry).color.replace('bg-', 'text-').replace('100', '400')}`}>
+                                        {React.createElement(getAgencyIcon(ministryGroup.ministry).icon, { size: 20 })}
+                                    </div>
+                                )}
                                 <div>
                                     <h3 className="font-bold text-white text-base">{ministryGroup.ministry}</h3>
                                     <p className="text-sm text-white/50">{ministryGroup.departments.length} กรม/หน่วยงาน • รวม {totalCount} อัตรา</p>
