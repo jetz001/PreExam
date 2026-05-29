@@ -809,7 +809,23 @@ export default {
         if (url.pathname === "/api/users/stats/heatmap") return json({ success: true, data: [] });
         if (url.pathname === "/api/bookmarks") return json({ success: true, data: [] });
         const userThreadsMatch = url.pathname.match(/^\/api\/community\/threads\/user\/([a-zA-Z0-9_-]+)$/);
-        if (userThreadsMatch && request.method === "GET") return json({ success: true, threads: [] });
+        if (userThreadsMatch && request.method === "GET") {
+          try {
+            const userId = userThreadsMatch[1];
+            const results = await firestore.runQuery({
+              from: [{ collectionId: "threads" }],
+              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: userId } } }
+            });
+            results.sort((a: any, b: any) => {
+              const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+              const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+              return tB - tA;
+            });
+            return json({ success: true, threads: results });
+          } catch (e) {
+            return json({ success: false, threads: [] });
+          }
+        }
         if (url.pathname === "/api/chat/inbox/conversations") return json({ success: true, data: [] });
 
         // /api/community/threads (GET)
