@@ -1314,9 +1314,91 @@ export default {
         // Stub missing routes to prevent 404 crashes
         if (url.pathname === "/api/users/stats") return json({ success: true, stats: { total_tests: 0, avg_score: 0 }});
         
-if (url.pathname === "/api/payments/plans" && request.method === "GET") {
-  return json({ success: true, plans: [{ id: "pro_monthly", name: "Pro Pass", price: 99, duration_days: 30 }, { id: "premium_yearly", name: "Premium Pass", price: 890, duration_days: 365 }, { id: "lifetime", name: "Lifetime VIP", price: 2990, duration_days: 9999 }] });
-}
+        if (url.pathname === "/api/payments/plans" && request.method === "GET") {
+          try {
+            const results = await firestore.runQuery({
+              from: [{ collectionId: "payment_plans" }]
+            });
+            results.sort((a: any, b: any) => (a.price || 0) - (b.price || 0));
+            return json({ success: true, plans: results });
+          } catch (e) {
+            return json({ success: false, plans: [] });
+          }
+        }
+
+        if (url.pathname === "/api/payments/checkout" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          
+          try {
+            const body = await request.json();
+            const { plan_id, payment_method } = body as any;
+            
+            const planDoc = await firestore.getDocument(`payment_plans/${plan_id}`);
+            if (!planDoc) {
+              return json({ success: false, message: "Plan not found" }, { status: 404 });
+            }
+
+            const transactionData = {
+              id: crypto.randomUUID(),
+              user_id: auth.userId,
+              plan_id,
+              amount: planDoc.price,
+              payment_method: payment_method || 'transfer_slip',
+              status: 'pending',
+              type: 'subscription',
+              created_at: new Date().toISOString()
+            };
+
+            await firestore.createDocument("transactions", transactionData.id, transactionData);
+
+            return json({ success: true, transaction: transactionData });
+          } catch (e: any) {
+            return json({ success: false, message: e.message }, { status: 500 });
+          }
+        }
+
+        const adminPlanMatch = url.pathname.match(/^\/api\/admin\/payments\/plans\/([a-zA-Z0-9_-]+)$/);
+        if (adminPlanMatch) {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          
+          const userDoc = await firestore.getDocument(`users/${auth.userId}`);
+          if (userDoc?.role !== "admin") return json({ error: "Unauthorized" }, { status: 403 });
+
+          const id = adminPlanMatch[1];
+          if (request.method === "PUT") {
+            const body = await request.json();
+            await firestore.updateDocument(`payment_plans/${id}`, { ...body, updated_at: new Date().toISOString() });
+            return json({ success: true });
+          }
+          if (request.method === "DELETE") {
+            await firestore.deleteDocument(`payment_plans/${id}`);
+            return json({ success: true });
+          }
+        } else if (url.pathname === "/api/admin/payments/plans") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          
+          const userDoc = await firestore.getDocument(`users/${auth.userId}`);
+          if (userDoc?.role !== "admin") return json({ error: "Unauthorized" }, { status: 403 });
+
+          if (request.method === "GET") {
+            try {
+              const results = await firestore.runQuery({ from: [{ collectionId: "payment_plans" }] });
+              return json({ success: true, plans: results });
+            } catch(e) {
+              return json({ success: true, plans: [] });
+            }
+          }
+          if (request.method === "POST") {
+            const body = await request.json() as any;
+            const id = crypto.randomUUID();
+            const planData = { ...body, id, created_at: new Date().toISOString() };
+            await firestore.createDocument("payment_plans", id, planData);
+            return json({ success: true, plan: planData });
+          }
+        }
 
 if (url.pathname === "/api/assets" && request.method === "GET") {
   return json({ success: true, data: [
