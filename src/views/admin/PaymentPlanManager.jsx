@@ -44,6 +44,13 @@ const PaymentPlanManager = () => {
         onError: () => toast.error('Failed to delete plan')
     });
 
+const PREDEFINED_FEATURES = {
+    no_ads: "ปลอดโฆษณา (No Ads)",
+    custom_lobby_bg: "เปลี่ยนพื้นหลังล๊อบบี้ (Custom Lobby Background)",
+    custom_card_bg: "เปลี่ยนพื้นหลังการ์ดห้อง (Custom Room Card Background)",
+    create_rooms: "สร้างห้องได้ (Create Rooms)"
+};
+
     const openModal = (plan = null) => {
         if (plan) {
             setEditingPlan(plan);
@@ -51,11 +58,11 @@ const PaymentPlanManager = () => {
                 name: plan.name || '',
                 price: plan.price || 0,
                 duration_days: plan.duration_days || 30,
-                features: Array.isArray(plan.features) ? plan.features.join('\n') : (plan.features || '')
+                features: Array.isArray(plan.features) ? plan.features : []
             });
         } else {
             setEditingPlan(null);
-            setFormData({ name: '', price: 0, duration_days: 30, features: '' });
+            setFormData({ name: '', price: 0, duration_days: 30, features: [] });
         }
         setIsModalOpen(true);
     };
@@ -67,12 +74,10 @@ const PaymentPlanManager = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const featuresArray = formData.features.split('\n').filter(f => f.trim() !== '');
         const payload = {
             ...formData,
             price: Number(formData.price),
-            duration_days: Number(formData.duration_days),
-            features: featuresArray
+            duration_days: Number(formData.duration_days)
         };
 
         if (editingPlan) {
@@ -128,7 +133,7 @@ const PaymentPlanManager = () => {
                                     <td className="px-6 py-4 text-xs">
                                         <ul className="list-disc pl-4 space-y-1">
                                             {(plan.features || []).map((f, i) => (
-                                                <li key={i}>{f}</li>
+                                                <li key={i}>{PREDEFINED_FEATURES[f] || f}</li>
                                             ))}
                                         </ul>
                                     </td>
@@ -170,8 +175,28 @@ const PaymentPlanManager = () => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">ฟีเจอร์ (Features) - แยกบรรทัดละ 1 ข้อ</label>
-                                <textarea rows="4" value={formData.features} onChange={e => setFormData({...formData, features: e.target.value})} className="w-full border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500" placeholder="- ปลอดโฆษณา\n- บัตรสร้างห้อง 5 ใบ"></textarea>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">ฟีเจอร์ (Features)</label>
+                                <div className="space-y-2 border border-slate-200 rounded-lg p-4 bg-slate-50">
+                                    {Object.entries(PREDEFINED_FEATURES).map(([key, label]) => (
+                                        <label key={key} className="flex items-center gap-3 cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                                                checked={(formData.features || []).includes(key)}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        features: checked 
+                                                            ? [...(prev.features || []), key] 
+                                                            : (prev.features || []).filter(f => f !== key)
+                                                    }));
+                                                }}
+                                            />
+                                            <span className="text-sm text-slate-700">{label}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
                             <div className="pt-4 flex justify-end gap-2 border-t border-slate-100">
                                 <button type="button" onClick={closeModal} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">ยกเลิก</button>

@@ -8,10 +8,10 @@ import { versionHistory, getCurrentVersion } from '../../config/versionHistory';
 const SettingsManager = () => {
     const queryClient = useQueryClient();
     const [isUploading, setIsUploading] = useState(false);
-    const [newAsset, setNewAsset] = useState({
+    const [uploadForm, setUploadForm] = useState({
         name: '',
         type: 'background', // background, frame
-        file: null,
+        url: '',
         is_premium: true
     });
 
@@ -74,19 +74,26 @@ const SettingsManager = () => {
 
     const handleUpload = (e) => {
         e.preventDefault();
-        if (!uploadForm.file || !uploadForm.name) {
+        if (!uploadForm.url || !uploadForm.name) {
             toast.error('Please fill in all fields');
             return;
         }
 
-        const formData = new FormData();
-        formData.append('name', uploadForm.name);
-        formData.append('type', uploadForm.type);
-        formData.append('image', uploadForm.file); // 'image' matches the multer field in assetRoutes
-        formData.append('image', uploadForm.file); // 'image' matches the multer field in assetRoutes
-        formData.append('is_premium', uploadForm.is_premium);
+        let finalUrl = uploadForm.url;
+        // Auto-convert Google Drive share links to direct image links
+        const driveMatch = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (driveMatch) {
+            finalUrl = `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+        }
 
-        uploadMutation.mutate(formData);
+        const payload = {
+            name: uploadForm.name,
+            type: uploadForm.type,
+            url: finalUrl,
+            is_premium: uploadForm.is_premium
+        };
+
+        uploadMutation.mutate(payload);
     };
 
     // Tab State
@@ -309,13 +316,14 @@ const SettingsManager = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">File</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
                                     <input
-                                        type="file"
+                                        type="url"
                                         required
-                                        accept="image/*"
-                                        className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                        onChange={e => setUploadForm({ ...uploadForm, file: e.target.files[0] })}
+                                        placeholder="https://example.com/image.jpg"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                                        value={uploadForm.url}
+                                        onChange={e => setUploadForm({ ...uploadForm, url: e.target.value })}
                                     />
                                 </div>
                             </div>

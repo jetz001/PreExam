@@ -162,10 +162,8 @@ const adminApi = {
         const response = await api.get('/assets');
         return response.data.data;
     },
-    uploadAsset: async (formData) => {
-        const response = await api.post('/assets', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
+    uploadAsset: async (data) => {
+        const response = await api.post('/assets', data);
         return response.data;
     },
     deleteAsset: async (id) => {
