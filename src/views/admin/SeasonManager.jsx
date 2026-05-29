@@ -7,6 +7,8 @@ import adminApi from '../../services/adminApi';
 const SeasonManager = () => {
     const queryClient = useQueryClient();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingSeason, setEditingSeason] = useState(null);
     const [newSeasonId, setNewSeasonId] = useState('');
     const [newSeasonName, setNewSeasonName] = useState('');
 
@@ -44,6 +46,19 @@ const SeasonManager = () => {
             id: newSeasonId || String(new Date().getFullYear()),
             name: newSeasonName || `Season ${newSeasonId || new Date().getFullYear()}`
         });
+    };
+
+    const handleEditSubmit = (e) => {
+        e.preventDefault();
+        updateMutation.mutate({
+            id: editingSeason.id,
+            data: {
+                name: editingSeason.name,
+                status: editingSeason.status,
+                responsible_admin_id: editingSeason.responsible_admin_id
+            }
+        });
+        setIsEditModalOpen(false);
     };
 
     if (isLoading) return <div className="flex justify-center p-8 text-royal-blue-600">Loading Seasons...</div>;
@@ -98,7 +113,16 @@ const SeasonManager = () => {
                                 <td className="px-6 py-4 text-sm text-gray-500">
                                     {new Date(season.start_date).toLocaleDateString()}
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 flex items-center space-x-3">
+                                    <button
+                                        onClick={() => {
+                                            setEditingSeason(season);
+                                            setIsEditModalOpen(true);
+                                        }}
+                                        className="text-indigo-500 hover:text-indigo-700 text-sm font-medium flex items-center"
+                                    >
+                                        <Edit2 className="w-4 h-4 mr-1" /> Edit
+                                    </button>
                                     {season.status === 'active' && (
                                         <button
                                             onClick={() => {
@@ -181,6 +205,68 @@ const SeasonManager = () => {
                                     className="flex-1 py-3 px-4 bg-royal-blue-600 text-white font-medium rounded-xl hover:bg-royal-blue-700 transition-colors disabled:opacity-50"
                                 >
                                     {createMutation.isLoading ? 'Starting...' : 'Start Season'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {isEditModalOpen && editingSeason && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+                            <h3 className="font-bold text-xl text-gray-800 flex items-center">
+                                <Edit2 className="w-6 h-6 mr-2 text-indigo-600" />
+                                Edit Season ({editingSeason.id})
+                            </h3>
+                        </div>
+                        <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Season Name</label>
+                                <input
+                                    type="text"
+                                    value={editingSeason.name}
+                                    onChange={(e) => setEditingSeason({...editingSeason, name: e.target.value})}
+                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select
+                                    value={editingSeason.status}
+                                    onChange={(e) => setEditingSeason({...editingSeason, status: e.target.value})}
+                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                >
+                                    <option value="active">ACTIVE</option>
+                                    <option value="completed">COMPLETED</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Responsible Admin ID</label>
+                                <input
+                                    type="text"
+                                    value={editingSeason.responsible_admin_id}
+                                    onChange={(e) => setEditingSeason({...editingSeason, responsible_admin_id: e.target.value})}
+                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                    required
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-4 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={updateMutation.isLoading}
+                                    className="flex-1 py-3 px-4 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                >
+                                    {updateMutation.isLoading ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
                         </form>

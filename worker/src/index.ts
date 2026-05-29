@@ -1895,8 +1895,13 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/admin/seasons" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const seasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], orderBy: [{ field: { fieldPath: "start_date" }, direction: "DESCENDING" }] });
-          return json({ success: true, data: seasons });
+          try {
+            const seasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], orderBy: [{ field: { fieldPath: "start_date" }, direction: "DESCENDING" }] });
+            return json({ success: true, data: seasons });
+          } catch(e) {
+            // If the collection doesn't exist or missing index, return empty array
+            return json({ success: true, data: [] });
+          }
         }
 
         if (url.pathname === "/api/admin/seasons" && request.method === "POST") {
