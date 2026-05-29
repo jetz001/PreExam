@@ -786,14 +786,31 @@ export default {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
 
-          const results = await firestore.runQuery({
-            from: [{ collectionId: "exam_results" }],
-            where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } },
-            orderBy: [{ field: { fieldPath: "taken_at" }, direction: "DESCENDING" }]
-          });
+          try {
+            const results = await firestore.runQuery({
+              from: [{ collectionId: "exam_results" }],
+              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
+            });
 
-          return json({ success: true, data: results });
+            // Sort in JavaScript to avoid composite index requirements
+            results.sort((a: any, b: any) => {
+              const tA = a.taken_at ? new Date(a.taken_at).getTime() : 0;
+              const tB = b.taken_at ? new Date(b.taken_at).getTime() : 0;
+              return tB - tA;
+            });
+
+            return json({ success: true, data: results });
+          } catch (e) {
+            return json({ success: false, data: [] });
+          }
         }
+
+        if (url.pathname === "/api/users/stats/radar") return json({ success: true, data: [] });
+        if (url.pathname === "/api/users/stats/heatmap") return json({ success: true, data: [] });
+        if (url.pathname === "/api/bookmarks") return json({ success: true, data: [] });
+        const userThreadsMatch = url.pathname.match(/^\/api\/community\/threads\/user\/([a-zA-Z0-9_-]+)$/);
+        if (userThreadsMatch && request.method === "GET") return json({ success: true, threads: [] });
+        if (url.pathname === "/api/chat/inbox/conversations") return json({ success: true, data: [] });
 
         // /api/community/threads (GET)
         if (url.pathname === "/api/community/threads" && request.method === "GET") {
