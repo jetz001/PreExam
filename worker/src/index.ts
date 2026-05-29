@@ -1366,11 +1366,11 @@ export default {
           const id = adminPlanMatch[1];
           if (request.method === "PUT") {
             const body = await request.json();
-            await firestore.updateDocument(`payment_plans/${id}`, { ...body, updated_at: new Date().toISOString() });
+            await firestore.updateDocument("payment_plans", id, { ...body, updated_at: new Date().toISOString() });
             return json({ success: true });
           }
           if (request.method === "DELETE") {
-            await firestore.deleteDocument(`payment_plans/${id}`);
+            await firestore.deleteDocument("payment_plans", id);
             return json({ success: true });
           }
         } else if (url.pathname === "/api/admin/payments/plans") {
@@ -1389,7 +1389,7 @@ export default {
             const body = await request.json() as any;
             const id = crypto.randomUUID();
             const planData = { ...body, id, created_at: new Date().toISOString() };
-            await firestore.createDocument("payment_plans", id, planData);
+            await firestore.createDocument("payment_plans", planData, id);
             return json({ success: true, plan: planData });
           }
         }
