@@ -10,7 +10,8 @@ import adminApi from '../../services/adminApi';
 const DashboardOverview = () => {
     const { data: stats, isLoading, error } = useQuery({
         queryKey: ['adminStats'],
-        queryFn: adminApi.getDashboardStats
+        queryFn: adminApi.getDashboardStats,
+        refetchOnWindowFocus: false
     });
 
     if (isLoading) return <div className="flex items-center justify-center h-64 text-royal-blue-600">Loading Dashboard...</div>;
