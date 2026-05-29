@@ -1358,12 +1358,12 @@ export default {
           }
         }
 
-        const adminPlanMatch = url.pathname.match(/^\/api\/admin\/payments\/plans\/([a-zA-Z0-9_-]+)$/);
+        const adminPlanMatch = url.pathname.match(/^\/api\/admin\/payments\/plans\/([^\/]+)$/);
         if (adminPlanMatch) {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           
-          const id = adminPlanMatch[1];
+          const id = decodeURIComponent(adminPlanMatch[1]);
           if (request.method === "PUT") {
             const body = await request.json();
             await firestore.updateDocument("payment_plans", id, { ...body, updated_at: new Date().toISOString() });
