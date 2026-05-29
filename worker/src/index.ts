@@ -1322,7 +1322,16 @@ if (url.pathname === "/api/legal/policy") {
 }
         if (url.pathname === "/api/groups") return json({ success: true, groups: [] });
         if (url.pathname === "/api/community/tags/trending") return json([]);
-        if (url.pathname === "/api/friends/list") return json({ success: true, friends: [] });
+        const friendsCheckMatch = url.pathname.match(/^\/api\/friends\/check\/([a-zA-Z0-9_-]+)$/);
+        if (friendsCheckMatch && request.method === "GET") {
+            return json({ status: 'none' });
+        }
+        if (url.pathname === "/api/friends/request" && request.method === "POST") return json({ success: true });
+        if (url.pathname === "/api/friends/accept" && request.method === "POST") return json({ success: true });
+        const friendsRemoveMatch = url.pathname.match(/^\/api\/friends\/remove\/([a-zA-Z0-9_-]+)$/);
+        if (friendsRemoveMatch && request.method === "DELETE") return json({ success: true });
+        if (url.pathname === "/api/friends/list" && request.method === "GET") return json({ success: true, friends: [] });
+        if (url.pathname === "/api/friends/pending" && request.method === "GET") return json({ success: true, data: [] });
         const cleanPathname = url.pathname.replace(/\/$/, "");
         if (cleanPathname === "/api/business" && request.method === "GET") {
             try {
