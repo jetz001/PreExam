@@ -48,7 +48,8 @@ const PREDEFINED_FEATURES = {
     no_ads: "ปลอดโฆษณา (No Ads)",
     custom_lobby_bg: "เปลี่ยนพื้นหลังล๊อบบี้ (Custom Lobby Background)",
     custom_card_bg: "เปลี่ยนพื้นหลังการ์ดห้อง (Custom Room Card Background)",
-    create_rooms: "สร้างห้องได้ (Create Rooms)"
+    create_rooms: "สร้างห้องได้ (Create Rooms)",
+    unlock_exam_filters: "ปลดล๊อคฟิลเตอร์ปีและชุดข้อสอบ (Unlock Exam Filters)"
 };
 
     const openModal = (plan = null) => {
