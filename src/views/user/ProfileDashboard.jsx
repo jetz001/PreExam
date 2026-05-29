@@ -47,6 +47,10 @@ const ProfileDashboard = () => {
             <div className="stat-lbl">XP Total</div>
           </div>
           <div className="stat-box">
+            <span className="stat-num" style={{ color: '#8b5cf6' }}>{stats?.ranking?.total_score?.toLocaleString() || 0}</span>
+            <div className="stat-lbl">Season Score</div>
+          </div>
+          <div className="stat-box">
             <span className="stat-num t">{totalGames}</span>
             <div className="stat-lbl">Games Played</div>
           </div>

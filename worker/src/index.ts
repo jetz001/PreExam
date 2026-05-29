@@ -853,7 +853,79 @@ export default {
             taken_at: new Date().toISOString()
           });
 
+          // Update ranking
+          try {
+            const activeSeasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "active" } } }, limit: 1 });
+            if (activeSeasons.length > 0) {
+              const seasonId = activeSeasons[0].id;
+              const rankingId = `${seasonId}_${auth.userId}`;
+              const existingRanking = await firestore.getDocument("rankings", rankingId);
+              
+              if (existingRanking) {
+                const newTotalScore = (Number(existingRanking.total_score) || 0) + score;
+                const newExamsTaken = (Number(existingRanking.exams_taken) || 0) + 1;
+                await firestore.updateDocument("rankings", rankingId, {
+                  total_score: newTotalScore,
+                  exams_taken: newExamsTaken,
+                  updated_at: new Date().toISOString()
+                });
+              } else {
+                await firestore.createDocument("rankings", {
+                  season_id: seasonId,
+                  user_id: auth.userId,
+                  total_score: score,
+                  exams_taken: 1,
+                  updated_at: new Date().toISOString()
+                }, rankingId);
+              }
+            }
+          } catch(e) {
+            console.error("Failed to update ranking:", e);
+          }
+
           return json({ success: true, data: examResult }, { status: 201 });
+        }
+
+        // /api/rankings/me
+        if (url.pathname === "/api/rankings/me" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+
+          const seasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "active" } } }, limit: 1 });
+          if (seasons.length === 0) return json({ success: true, data: { total_score: 0, exams_taken: 0 } });
+          const activeSeasonId = seasons[0].id;
+          
+          const rankingId = `${activeSeasonId}_${auth.userId}`;
+          const ranking = await firestore.getDocument("rankings", rankingId);
+          return json({ success: true, data: ranking || { total_score: 0, exams_taken: 0 } });
+        }
+
+        // /api/rankings
+        if (url.pathname === "/api/rankings" && request.method === "GET") {
+          const seasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "active" } } }, limit: 1 });
+          if (seasons.length === 0) return json({ success: true, data: [] });
+          const activeSeasonId = seasons[0].id;
+          
+          const cacheKey = `rankings_${activeSeasonId}`;
+          let rankings = getCache(cacheKey);
+          if (!rankings) {
+            rankings = await firestore.runQuery({ 
+              from: [{ collectionId: "rankings" }], 
+              where: { fieldFilter: { field: { fieldPath: "season_id" }, op: "EQUAL", value: { stringValue: activeSeasonId } } },
+              orderBy: [{ field: { fieldPath: "total_score" }, direction: "DESCENDING" }], 
+              limit: 50 
+            });
+            // Fetch users for rankings
+            for (const r of rankings) {
+              const u = await firestore.getDocument("users", String(r.user_id));
+              if (u) {
+                r.user_name = u.display_name;
+                r.user_avatar = u.avatar;
+              }
+            }
+            setCache(cacheKey, rankings, 5 * 60 * 1000); // cache 5 min
+          }
+          return json({ success: true, data: rankings });
         }
 
         // /api/exams/history
@@ -1818,6 +1890,47 @@ if (url.pathname === "/api/legal/policy") {
 
           const users = await firestore.runQuery({ from: [{ collectionId: "users" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
           return json(users);
+        }
+
+        if (url.pathname === "/api/admin/seasons" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const seasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], orderBy: [{ field: { fieldPath: "start_date" }, direction: "DESCENDING" }] });
+          return json({ success: true, data: seasons });
+        }
+
+        if (url.pathname === "/api/admin/seasons" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const body = (await readJson(request)) as any;
+          
+          // Deactivate all old seasons
+          const oldSeasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "active" } } } });
+          for (const s of oldSeasons) {
+            await firestore.updateDocument("seasons", s.id, { status: "completed", end_date: new Date().toISOString() });
+          }
+
+          const id = body.id || String(new Date().getFullYear());
+          const newSeason = await firestore.createDocument("seasons", {
+            name: body.name || `Season ${id}`,
+            start_date: new Date().toISOString(),
+            status: "active",
+            responsible_admin_id: body.responsible_admin_id || auth.userId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, id);
+          
+          return json({ success: true, data: newSeason });
+        }
+
+        const seasonMatch = url.pathname.match(/^\/api\/admin\/seasons\/([a-zA-Z0-9_-]+)$/);
+        if (seasonMatch && request.method === "PUT") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const id = seasonMatch[1];
+          const body = (await readJson(request)) as any;
+          await firestore.updateDocument("seasons", id, { ...body, updated_at: new Date().toISOString() });
+          return json({ success: true });
         }
         if (url.pathname === "/api/admin/businesses" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);

@@ -26,9 +26,13 @@ const ProfileLayout = () => {
         const currentUser = authService.getCurrentUser();
         if (currentUser) setUser(currentUser);
 
-        const resStats = await userService.getStats();
+        const [resStats, resRanking] = await Promise.all([
+          userService.getStats(),
+          userService.getMyRanking().catch(() => ({ success: true, data: { total_score: 0 } }))
+        ]);
+
         if (resStats.success && resStats.data) {
-          setStats(resStats.data);
+          setStats({ ...resStats.data, ranking: resRanking?.data || { total_score: 0 } });
           // Calculate XP (1 question = 10 XP roughly, or totalScore * 10)
           // Since getStats returns totalQuestions, timeTaken, totalExams. Let's say 1 Exam = 100 XP, 1 Question = 10 XP
           const calculatedXP = (resStats.data.totalExams * 50) + (resStats.data.totalQuestions * 10);

@@ -224,6 +224,19 @@ const adminApi = {
     startGenerator: async () => {
         const response = await api.post('/admin/generator/start');
         return response.data;
+    },
+    // Season Management
+    getSeasons: async () => {
+        const response = await api.get('/admin/seasons');
+        return response.data;
+    },
+    createSeason: async (data) => {
+        const response = await api.post('/admin/seasons', data);
+        return response.data;
+    },
+    updateSeason: async (id, data) => {
+        const response = await api.put(`/admin/seasons/${id}`, data);
+        return response.data;
     }
 };
 

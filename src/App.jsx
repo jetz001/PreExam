@@ -26,6 +26,7 @@ import SupportTicketManager from './views/admin/SupportTicketManager';
 import BackupManager from './views/admin/BackupManager'; // New Import
 import ScraperManager from './views/admin/ScraperManager';
 import GeneratorManager from './views/admin/GeneratorManager';
+import SeasonManager from './views/admin/SeasonManager';
 import PolicyPage from './views/PolicyPage';
 import FAQPage from './views/support/FAQPage';
 
@@ -164,6 +165,8 @@ function App() {
             <Route path="verify-payments" element={<PaymentVerifier />} />
             <Route path="ads" element={<AdsManager />} />
             <Route path="scraper" element={<ScraperManager />} />
+            <Route path="generator" element={<GeneratorManager />} />
+            <Route path="seasons" element={<SeasonManager />} />
             <Route path="support" element={<SupportTicketManager />} />
             <Route path="backups" element={<BackupManager />} />
           </Route>

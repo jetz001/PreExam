@@ -18,7 +18,8 @@ import {
     Shield,
     Database,
     Activity,
-    Bot
+    Bot,
+    Trophy
 } from 'lucide-react';
 
 import { Toaster } from 'react-hot-toast';
@@ -49,6 +50,7 @@ const AdminLayout = () => {
         { path: '/admin/users', label: 'จัดการสมาชิก', icon: Users },
         { path: '/admin/community', label: 'จัดการชุมชน', icon: MonitorPlay },
         { path: '/admin/scraper', label: 'ระบบดึงข้อมูล (Scraper)', icon: Activity },
+        { path: '/admin/seasons', label: 'ฤดูกาล & แร้งกิ้ง', icon: Trophy },
         { path: '/admin/news', label: 'ข่าวสาร & Affiliate', icon: Newspaper },
         { path: '/admin/inbox', label: 'กล่องข้อความ & รายงาน', icon: Inbox },
         { path: '/admin/rooms', label: 'จัดการห้องสอบ', icon: MonitorPlay },

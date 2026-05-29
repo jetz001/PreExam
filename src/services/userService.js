@@ -26,6 +26,11 @@ const userService = {
         return response.data;
     },
 
+    getMyRanking: async () => {
+        const response = await api.get('/rankings/me');
+        return response.data;
+    },
+
     updateProfile: async (data) => {
         // If data contains file (avatar), we might need to send FormData or let the component handle it?
         // Usually api.js handles JSON. If FormData, Axios auto-detects.
