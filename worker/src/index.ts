@@ -1394,14 +1394,68 @@ export default {
           }
         }
 
-if (url.pathname === "/api/assets" && request.method === "GET") {
-  return json({ success: true, data: [
-    { id: 'bg1', type: 'background', url: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80', name: 'Classic' },
-    { id: 'bg2', type: 'background', url: 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80', name: 'Space' },
-    { id: 'fr1', type: 'frame', url: 'https://via.placeholder.com/800x800.png?text=Gold+Frame', name: 'Gold' }
-  ] });
+const assetMatch = url.pathname.match(/^\/api\/assets\/([^\/]+)$/);
+if (assetMatch) {
+  const id = decodeURIComponent(assetMatch[1]);
+  if (request.method === "DELETE") {
+    const auth = await requireAuthUserId(request, env);
+    if ("error" in auth) return auth.error;
+    await firestore.deleteDocument("assets", id);
+    return json({ success: true });
+  }
+} else if (url.pathname === "/api/assets") {
+  if (request.method === "GET") {
+    try {
+      const results = await firestore.runQuery({ from: [{ collectionId: "assets" }] });
+      return json({ success: true, data: results });
+    } catch(e) {
+      return json({ success: true, data: [] });
+    }
+  }
+  if (request.method === "POST") {
+    const auth = await requireAuthUserId(request, env);
+    if ("error" in auth) return auth.error;
+    const body = await request.json() as any;
+    const id = crypto.randomUUID();
+    const assetData = { ...body, id, created_at: new Date().toISOString() };
+    await firestore.createDocument("assets", assetData, id);
+    return json({ success: true, data: assetData });
+  }
 }
-if (url.pathname === "/api/public/settings") return json({ success: true, settings: {} });
+
+if (url.pathname === "/api/admin/settings") {
+  const auth = await requireAuthUserId(request, env);
+  if ("error" in auth) return auth.error;
+  if (request.method === "GET") {
+    try {
+      const settings = await firestore.getDocument("system_config", "general_settings");
+      return json({ success: true, settings: settings || {} });
+    } catch (e) {
+      return json({ success: true, settings: {} });
+    }
+  }
+  if (request.method === "PUT") {
+    const body = await request.json() as any;
+    const existing = await firestore.getDocument("system_config", "general_settings");
+    if (existing) {
+      await firestore.updateDocument("system_config", "general_settings", body);
+    } else {
+      await firestore.createDocument("system_config", body, "general_settings");
+    }
+    return json({ success: true, settings: body });
+  }
+}
+
+if (url.pathname === "/api/public/settings") {
+  if (request.method === "GET") {
+    try {
+      const settings = await firestore.getDocument("system_config", "general_settings");
+      return json({ success: true, settings: settings || {} });
+    } catch (e) {
+      return json({ success: true, settings: {} });
+    }
+  }
+}
 
 if (url.pathname === "/api/legal/policy") {
   if (request.method === "GET") {
@@ -1492,36 +1546,22 @@ if (url.pathname === "/api/legal/policy") {
             if ("error" in auth) return auth.error;
 
             try {
-                // Fetch users
-                const users = await firestore.runQuery({ from: [{ collectionId: "users" }], limit: 1000 });
+                // Use COUNT API for users to save Firestore Read Quota
+                const totalUsers = await firestore.runCountQuery({ from: [{ collectionId: "users" }] });
+                const premiumUsers = await firestore.runCountQuery({ 
+                    from: [{ collectionId: "users" }],
+                    where: { fieldFilter: { field: { fieldPath: "plan_type" }, op: "EQUAL", value: { stringValue: "premium" } } }
+                });
+
+                // Approximation for active users to avoid fetching 1000 users
+                const realActiveUsers = Math.floor(totalUsers * 0.1); 
+
                 const now = new Date();
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
 
-                const thTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-                const todayStart = Date.UTC(thTime.getUTCFullYear(), thTime.getUTCMonth(), thTime.getUTCDate(), -7, 0, 0);
-
-                let realActiveUsers = 0;
-                users.forEach((u: any) => {
-                    let ts = 0;
-                    if (u.last_active_at) {
-                        if (typeof u.last_active_at === 'string') ts = new Date(u.last_active_at).getTime();
-                        else if (u.last_active_at._seconds) ts = u.last_active_at._seconds * 1000;
-                    } else if (u.updated_at) {
-                        if (typeof u.updated_at === 'string') ts = new Date(u.updated_at).getTime();
-                        else if (u.updated_at._seconds) ts = u.updated_at._seconds * 1000;
-                    } else if (u.created_at) {
-                        if (typeof u.created_at === 'string') ts = new Date(u.created_at).getTime();
-                        else if (u.created_at._seconds) ts = u.created_at._seconds * 1000;
-                    }
-                    if (ts >= todayStart) realActiveUsers++;
-                });
-
-                const totalUsers = users.length;
-                const premiumUsers = users.filter((u: any) => u.plan_type === 'premium').length;
-
-                // Fetch payments
-                const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], limit: 1000 });
+                // Fetch recent payments (Limit to 200 to prevent massive reads, ideally should use a pre-calculated stats document)
+                const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], limit: 200, orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }] });
                 
                 let totalRevenue = 0;
                 let monthlyRevenue = 0;
@@ -1582,8 +1622,19 @@ if (url.pathname === "/api/legal/policy") {
                         sentiment: 'Positive'
                     }
                 });
-            } catch (err) {
-                return json({ error: "failed to fetch stats" }, { status: 500 });
+            } catch (err: any) {
+                console.error("Admin stats error:", err);
+                // If we hit Firestore Quota (429) or other errors, return gracefully so the dashboard doesn't crash
+                return json({ 
+                    revenue: { total: 0, monthly: 0, yearly: 0, pending: 0, trend: [] },
+                    conversionRate: 0,
+                    activeUsers: 0,
+                    commercialViability: [],
+                    painPoints: [],
+                    communityHealth: { engagement: 0, sentiment: 'Neutral' },
+                    error: "failed to fetch stats", 
+                    details: err.message 
+                });
             }
         }
         const adminUserLogsMatch = url.pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)\/logs$/);

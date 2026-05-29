@@ -193,6 +193,28 @@ export class FirestoreClient {
       .filter((r) => r.document)
       .map((r) => parseFirestoreDocument(r.document));
   }
+
+  async runCountQuery(query: any): Promise<number> {
+    const res = await this.fetchApi(`:runAggregationQuery`, {
+      method: "POST",
+      body: JSON.stringify({
+        structuredAggregationQuery: {
+          structuredQuery: query,
+          aggregations: [{ count: {} }]
+        }
+      }),
+    });
+    // Response format: [{ result: { aggregateFields: { count_1: { integerValue: "5" } } } }] or similar
+    // We can extract the first key in aggregateFields
+    try {
+      const resultObj = (res as any[])[0]?.result?.aggregateFields;
+      if (!resultObj) return 0;
+      const firstKey = Object.keys(resultObj)[0];
+      return parseInt(resultObj[firstKey]?.integerValue || "0", 10);
+    } catch {
+      return 0;
+    }
+  }
 }
 
 export function parseServiceAccount(env: any): FirestoreConfig | null {
