@@ -223,10 +223,14 @@ const PricingPage = () => {
                                 <p className="text-gray-400 text-md font-black mb-8 uppercase tracking-widest">One-time payment</p>
 
                                 <ul className="space-y-4 mb-8 flex-1 font-bold text-gray-700 text-lg">
-                                    <li className="flex items-center"><Check size={28} strokeWidth={3} className={`${theme.text} mr-3`} /> All Free Features</li>
-                                    <li className="flex items-center"><Zap size={28} strokeWidth={3} className={`${theme.text} mr-3`} /> Unlimited Custom Themes</li>
-                                    <li className="flex items-center"><Shield size={28} strokeWidth={3} className={`${theme.text} mr-3`} /> Ad-Free Experience</li>
-                                    <li className="flex items-center"><Star size={28} strokeWidth={3} className={`${theme.text} mr-3`} /> Mistake Review Notebook</li>
+                                    {(plan.features || []).map((feature, i) => (
+                                        <li key={i} className="flex items-center">
+                                            <Check size={28} strokeWidth={3} className={`${theme.text} mr-3`} /> {feature}
+                                        </li>
+                                    ))}
+                                    {(!plan.features || plan.features.length === 0) && (
+                                        <li className="flex items-center text-gray-500 italic">No features listed</li>
+                                    )}
                                 </ul>
 
                                 <button

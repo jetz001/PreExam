@@ -4,6 +4,7 @@ import { Check, X, Eye, ZoomIn, Search, Crown, Megaphone, Clock } from 'lucide-r
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import adminApi from '../../services/adminApi';
+import PaymentPlanManager from './PaymentPlanManager';
 
 const PaymentManager = () => {
     const queryClient = useQueryClient();
@@ -109,8 +110,18 @@ const PaymentManager = () => {
                     <Clock size={18} />
                     รอตรวจสอบ Slip ({pendingPayments.length})
                 </button>
+                <button
+                    onClick={() => setActiveTab('plans')}
+                    className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${activeTab === 'plans' ? 'bg-purple-100 text-purple-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50'
+                        }`}
+                >
+                    จัดการแพ็กเกจ (Plans)
+                </button>
             </div>
 
+            {activeTab === 'plans' && <PaymentPlanManager />}
+            {activeTab !== 'plans' && (
+            <div className="space-y-6">
             {/* Search */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                 <div className="relative max-w-md">
@@ -236,6 +247,8 @@ const PaymentManager = () => {
                         </button>
                     </div>
                 </div>
+            )}
+            </div>
             )}
         </div>
     );

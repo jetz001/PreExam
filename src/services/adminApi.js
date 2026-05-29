@@ -57,6 +57,24 @@ const adminApi = {
         return response.data;
     },
 
+    // Payment Plans
+    getPaymentPlans: async () => {
+        const response = await api.get('/admin/payments/plans');
+        return response.data.plans;
+    },
+    createPaymentPlan: async (data) => {
+        const response = await api.post('/admin/payments/plans', data);
+        return response.data;
+    },
+    updatePaymentPlan: async (id, data) => {
+        const response = await api.put(`/admin/payments/plans/${id}`, data);
+        return response.data;
+    },
+    deletePaymentPlan: async (id) => {
+        const response = await api.delete(`/admin/payments/plans/${id}`);
+        return response.data;
+    },
+
     // User Manager
     getUsers: async () => {
         const response = await api.get('/admin/users');
