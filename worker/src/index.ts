@@ -1323,6 +1323,35 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/groups") return json({ success: true, groups: [] });
         if (url.pathname === "/api/community/tags/trending") return json([]);
         if (url.pathname === "/api/friends/list") return json({ success: true, friends: [] });
+        const cleanPathname = url.pathname.replace(/\/$/, "");
+        if (cleanPathname === "/api/business" && request.method === "GET") {
+            try {
+                const search = url.searchParams.get("search");
+                const category = url.searchParams.get("category");
+
+                let businesses = await firestore.runQuery({
+                    from: [{ collectionId: "businesses" }],
+                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
+                    limit: 50
+                });
+
+                if (category) {
+                    businesses = businesses.filter((b: any) => b.category === category);
+                }
+                if (search) {
+                    const searchLower = search.toLowerCase();
+                    businesses = businesses.filter((b: any) => 
+                        (b.name && b.name.toLowerCase().includes(searchLower)) || 
+                        (b.tagline && b.tagline.toLowerCase().includes(searchLower))
+                    );
+                }
+
+                return json({ success: true, businesses });
+            } catch (err) {
+                return json({ success: false, message: 'Error fetching businesses.', error: String(err) }, { status: 500 });
+            }
+        }
+
         if (url.pathname === "/api/users/leaderboard") return json({ success: true, leaderboard: [] });
         if (url.pathname === "/api/ads/admin/stats") return json({ totalRevenue: 0, activeSponsors: 0, totalViews: 0, revenueTrend: [] });
         if (url.pathname === "/api/ads/admin/sponsors") return json([]);
