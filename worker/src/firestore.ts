@@ -184,8 +184,9 @@ export class FirestoreClient {
     }
   }
 
-  async runQuery(query: any): Promise<any[]> {
-    const res = await this.fetchApi(`:runQuery`, {
+  async runQuery(query: any, parent: string = ""): Promise<any[]> {
+    const url = parent ? `/${parent}:runQuery` : `:runQuery`;
+    const res = await this.fetchApi(url, {
       method: "POST",
       body: JSON.stringify({ structuredQuery: query }),
     });
@@ -194,8 +195,9 @@ export class FirestoreClient {
       .map((r) => parseFirestoreDocument(r.document));
   }
 
-  async runCountQuery(query: any): Promise<number> {
-    const res = await this.fetchApi(`:runAggregationQuery`, {
+  async runCountQuery(query: any, parent: string = ""): Promise<number> {
+    const url = parent ? `/${parent}:runAggregationQuery` : `:runAggregationQuery`;
+    const res = await this.fetchApi(url, {
       method: "POST",
       body: JSON.stringify({
         structuredAggregationQuery: {

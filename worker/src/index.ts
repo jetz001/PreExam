@@ -19,6 +19,17 @@ let mockScraperLogs: string[] = [];
 let mockGeneratorRunning = false;
 let mockGeneratorLogs: string[] = [];
 
+const globalCache: Record<string, { data: any, exp: number }> = {};
+const CACHE_TTL = 5 * 60 * 1000; // 5 mins
+function getCache(key: string) {
+  const item = globalCache[key];
+  if (item && item.exp > Date.now()) return item.data;
+  return null;
+}
+function setCache(key: string, data: any, ttl = CACHE_TTL) {
+  globalCache[key] = { data, exp: Date.now() + ttl };
+}
+
 const json = (body: unknown, init?: ResponseInit) => withCors(Response.json(body, init));
 
 const readJson = async (req: Request) => {
@@ -348,8 +359,12 @@ export default {
       const participantCounts = new Map<string, number>();
 
       for (const rId of roomIds) {
-        const parts = await firestore.listDocuments(`exam_rooms/${rId}/participants`);
-        participantCounts.set(rId, parts.length);
+        // Use runCountQuery instead of fetching all documents
+        const count = await firestore.runCountQuery(
+          { from: [{ collectionId: "participants" }] },
+          `exam_rooms/${rId}`
+        );
+        participantCounts.set(rId, count);
       }
 
       const data = rooms.map((r) => ({
@@ -493,17 +508,27 @@ export default {
 
       const participants = await firestore.listDocuments(`exam_rooms/${roomId}/participants`);
 
-      // Fetch users for participants
+      // Fetch users for participants using cache
       const userIds = participants.map((p: any) => p.user_id);
       const uniqueUserIds = Array.from(new Set(userIds));
       const usersMap = new Map();
+      const missingUserIds: string[] = [];
+
+      for (const uid of uniqueUserIds) {
+        const cachedU = getCache(`u_${uid}`);
+        if (cachedU) usersMap.set(String(uid), cachedU);
+        else missingUserIds.push(String(uid));
+      }
       
-      for (let i = 0; i < uniqueUserIds.length; i += 30) {
-        const chunk = uniqueUserIds.slice(i, i + 30);
+      for (let i = 0; i < missingUserIds.length; i += 30) {
+        const chunk = missingUserIds.slice(i, i + 30);
         const userPromises = chunk.map((id: any) => firestore.getDocument("users", String(id)));
         const users = await Promise.all(userPromises);
         for (const u of users) {
-          if (u && u.id) usersMap.set(String(u.id), u);
+          if (u && u.id) {
+            usersMap.set(String(u.id), u);
+            setCache(`u_${u.id}`, u, 5 * 60 * 1000); // 5 mins cache
+          }
         }
       }
 
@@ -514,12 +539,23 @@ export default {
 
       const questionIds = room.question_ids ? JSON.parse(String(room.question_ids)) : [];
       const questionsMap = new Map();
-      for (let i = 0; i < questionIds.length; i += 30) {
-        const chunk = questionIds.slice(i, i + 30);
+      const missingQIds: string[] = [];
+
+      for (const qid of questionIds) {
+        const cachedQ = getCache(`q_${qid}`);
+        if (cachedQ) questionsMap.set(qid, normalizeQuestion(cachedQ));
+        else missingQIds.push(qid);
+      }
+
+      for (let i = 0; i < missingQIds.length; i += 30) {
+        const chunk = missingQIds.slice(i, i + 30);
         const qPromises = chunk.map((id: string) => firestore.getDocument("questions", id));
         const qs = await Promise.all(qPromises);
         for (const q of qs) {
-          if (q && q.id) questionsMap.set(q.id, normalizeQuestion(q));
+          if (q && q.id) {
+            questionsMap.set(q.id, normalizeQuestion(q));
+            setCache(`q_${q.id}`, q, 24 * 60 * 60 * 1000); // 24 hours cache
+          }
         }
       }
       const questions = questionIds.map((id: string) => questionsMap.get(id)).filter(Boolean);
@@ -565,51 +601,75 @@ export default {
 
         // /api/questions/subjects
         if (url.pathname === "/api/questions/subjects" && request.method === "GET") {
-          const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
-          const subjects = new Set<string>();
-          for (const q of qs) if (q.subject) subjects.add(q.subject);
-          return json({ success: true, data: Array.from(subjects).sort() });
+          const cacheKey = "qs_subjects";
+          let cached = getCache(cacheKey);
+          if (!cached) {
+            const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+            const subjects = new Set<string>();
+            for (const q of qs) if (q.subject) subjects.add(q.subject);
+            cached = Array.from(subjects).sort();
+            setCache(cacheKey, cached);
+          }
+          return json({ success: true, data: cached });
         }
 
         // /api/questions/years
         if (url.pathname === "/api/questions/years" && request.method === "GET") {
-          const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
-          const years = new Set<string>();
-          for (const q of qs) if (q.exam_year) years.add(String(q.exam_year));
-          return json({ success: true, data: Array.from(years).sort((a, b) => b.localeCompare(a)) });
+          const cacheKey = "qs_years";
+          let cached = getCache(cacheKey);
+          if (!cached) {
+            const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+            const years = new Set<string>();
+            for (const q of qs) if (q.exam_year) years.add(String(q.exam_year));
+            cached = Array.from(years).sort((a: any, b: any) => b.localeCompare(a));
+            setCache(cacheKey, cached);
+          }
+          return json({ success: true, data: cached });
         }
 
         // /api/questions/sets
         if (url.pathname === "/api/questions/sets" && request.method === "GET") {
-          const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
-          const sets = new Set<string>();
-          for (const q of qs) if (q.exam_set) sets.add(q.exam_set);
-          return json({ success: true, data: Array.from(sets).sort() });
+          const cacheKey = "qs_sets";
+          let cached = getCache(cacheKey);
+          if (!cached) {
+            const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+            const sets = new Set<string>();
+            for (const q of qs) if (q.exam_set) sets.add(q.exam_set);
+            cached = Array.from(sets).sort();
+            setCache(cacheKey, cached);
+          }
+          return json({ success: true, data: cached });
         }
 
         // /api/questions/categories
         if (url.pathname === "/api/questions/categories" && request.method === "GET") {
           const subject = url.searchParams.get("subject");
-          const query: any = { from: [{ collectionId: "questions" }] };
-          if (subject && subject !== "undefined" && subject !== "null") {
-            query.where = { fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } };
-          }
-          const qs = await firestore.runQuery(query);
-          const allTags = new Set<string>();
-          for (const q of qs) {
-            if (q.category) {
-              q.category.split(",").forEach((tag: string) => {
-                const t = tag.trim();
-                if (t) allTags.add(t);
-              });
+          const cacheKey = `qs_cats_${subject || 'all'}`;
+          let cached = getCache(cacheKey);
+          if (!cached) {
+            const query: any = { from: [{ collectionId: "questions" }] };
+            if (subject && subject !== "undefined" && subject !== "null") {
+              query.where = { fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } };
             }
-            if (q.catalogs && Array.isArray(q.catalogs)) {
-              q.catalogs.forEach((tag: string) => {
-                if (tag) allTags.add(tag.trim());
-              });
+            const qs = await firestore.runQuery(query);
+            const allTags = new Set<string>();
+            for (const q of qs) {
+              if (q.category) {
+                q.category.split(",").forEach((tag: string) => {
+                  const t = tag.trim();
+                  if (t) allTags.add(t);
+                });
+              }
+              if (q.catalogs && Array.isArray(q.catalogs)) {
+                q.catalogs.forEach((tag: string) => {
+                  if (tag) allTags.add(tag.trim());
+                });
+              }
             }
+            cached = Array.from(allTags).sort();
+            setCache(cacheKey, cached);
           }
-          return json({ success: true, data: Array.from(allTags).sort() });
+          return json({ success: true, data: cached });
         }
 
         // /api/questions/:id
@@ -653,7 +713,13 @@ export default {
             query.where = { compositeFilter: { op: "AND", filters } };
           }
 
-          const allQs = await firestore.runQuery(query);
+          const cacheKey = `qs_list_${JSON.stringify(query)}`;
+          let allQs = getCache(cacheKey);
+          if (!allQs) {
+            allQs = await firestore.runQuery(query);
+            setCache(cacheKey, allQs, 60 * 1000); // 1 minute cache
+          }
+
           let rows: any[] = [];
 
           for (const data of allQs) {
@@ -705,15 +771,24 @@ export default {
           const questionIds = Object.keys(answers);
           if (questionIds.length === 0) return json({ success: false, message: "No answers provided" }, { status: 400 });
 
-          // Fetch questions. Firestore REST API IN operator supports max 30 elements.
-          // Since exams might have up to 50 or 100 questions, we fetch them individually or use multiple queries.
+          // Fetch questions. Check cache first.
           const questionsMap = new Map();
-          for (let i = 0; i < questionIds.length; i += 30) {
-            const chunk = questionIds.slice(i, i + 30);
+          const missingIds: string[] = [];
+          for (const id of questionIds) {
+            const cachedQ = getCache(`q_${id}`);
+            if (cachedQ) questionsMap.set(id, cachedQ);
+            else missingIds.push(id);
+          }
+
+          for (let i = 0; i < missingIds.length; i += 30) {
+            const chunk = missingIds.slice(i, i + 30);
             const qPromises = chunk.map(id => firestore.getDocument("questions", String(id)));
             const qs = await Promise.all(qPromises);
             for (const q of qs) {
-              if (q && q.id) questionsMap.set(q.id, q);
+              if (q && q.id) {
+                questionsMap.set(q.id, q);
+                setCache(`q_${q.id}`, q, 24 * 60 * 60 * 1000); // cache for 24h
+              }
             }
           }
 
