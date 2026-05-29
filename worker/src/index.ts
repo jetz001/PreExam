@@ -1363,9 +1363,6 @@ export default {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           
-          const userDoc = await firestore.getDocument(`users/${auth.userId}`);
-          if (userDoc?.role !== "admin") return json({ error: "Unauthorized" }, { status: 403 });
-
           const id = adminPlanMatch[1];
           if (request.method === "PUT") {
             const body = await request.json();
@@ -1379,9 +1376,6 @@ export default {
         } else if (url.pathname === "/api/admin/payments/plans") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          
-          const userDoc = await firestore.getDocument(`users/${auth.userId}`);
-          if (userDoc?.role !== "admin") return json({ error: "Unauthorized" }, { status: 403 });
 
           if (request.method === "GET") {
             try {
