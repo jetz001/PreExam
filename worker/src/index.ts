@@ -2011,7 +2011,6 @@ if (url.pathname === "/api/legal/policy") {
                     
                     let addedCount = 0;
                     let skipCount = 0;
-                    const maxInsertsPerRun = 20;
 
                     // Fetch all existing OCSC links to avoid N+1 queries
                     const existingOCSCJobs = await firestore.runQuery({
@@ -2026,6 +2025,8 @@ if (url.pathname === "/api/legal/policy") {
                     });
                     const existingLinks = new Set(existingOCSCJobs.map((j: any) => j.external_link).filter(Boolean));
 
+                    const newDocs = [];
+
                     for (const job of parsedJobs) {
                         const externalLink = "https://job.ocsc.go.th/portal/jobs/" + job.id;
                         
@@ -2034,12 +2035,7 @@ if (url.pathname === "/api/legal/policy") {
                             continue;
                         }
 
-                        if (addedCount >= maxInsertsPerRun) {
-                            mockScraperLogs.push(`[System] Reached max inserts per run (${maxInsertsPerRun}) to prevent rate limits. Will continue next run.`);
-                            break;
-                        }
-
-                        // Insert new
+                        // Prepare new
                         const newDoc = {
                             title: job.position,
                             content: `รับสมัคร ${job.vacancy}`,
@@ -2067,8 +2063,14 @@ if (url.pathname === "/api/legal/policy") {
                             updated_at: new Date().toISOString()
                         };
 
-                        await firestore.createDocument("news", newDoc);
-                        addedCount++;
+                        newDocs.push(newDoc);
+                        existingLinks.add(externalLink); // Prevent dupes within the same run
+                    }
+                    
+                    if (newDocs.length > 0) {
+                        mockScraperLogs.push(`[System] Batch inserting ${newDocs.length} new jobs...`);
+                        await firestore.batchCreateDocuments("news", newDocs);
+                        addedCount = newDocs.length;
                     }
                     
                     console.log(`Saved ${addedCount} new announcements. Skipped ${skipCount} duplicates.`);

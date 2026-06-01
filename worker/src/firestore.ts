@@ -173,6 +173,29 @@ export class FirestoreClient {
     await this.fetchApi(`/${collectionPath}/${docId}`, { method: "DELETE" });
   }
 
+  async batchCreateDocuments(collectionPath: string, dataArray: any[]): Promise<any> {
+    if (!dataArray || dataArray.length === 0) return { success: true };
+    const writes = dataArray.map(data => {
+      const doc = toFirestoreDocument(data);
+      const docId = data.id || crypto.randomUUID().replace(/-/g, '');
+      doc.name = `projects/${this.config.projectId}/databases/(default)/documents/${collectionPath}/${docId}`;
+      return { update: doc };
+    });
+    
+    // Chunk up into 500 writes max per commit (Firestore limit)
+    const chunkSize = 500;
+    const results = [];
+    for (let i = 0; i < writes.length; i += chunkSize) {
+      const chunk = writes.slice(i, i + chunkSize);
+      const res = await this.fetchApi(`:commit`, {
+        method: "POST",
+        body: JSON.stringify({ writes: chunk }),
+      });
+      results.push(res);
+    }
+    return results;
+  }
+
   async listDocuments(collectionPath: string): Promise<any[]> {
     try {
       const res: any = await this.fetchApi(`/${collectionPath}`);
