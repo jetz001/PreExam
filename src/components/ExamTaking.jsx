@@ -62,9 +62,13 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
         setTimeout(() => {
             if (mode !== 'practice') {
                 const unanswered = questions.map((_, i) => i).filter(i => i !== currentIndex && !answers[questions[i].id]);
-                if (unanswered.length > 0) {
-                    const randomIndex = unanswered[Math.floor(Math.random() * unanswered.length)];
-                    setCurrentIndex(randomIndex);
+                if (currentIndex < questions.length - 1 && !answers[questions[currentIndex + 1].id]) {
+                    // Normal flow: just go to next question
+                    setCurrentIndex(currentIndex + 1);
+                } else if (unanswered.length > 0) {
+                    // Go to the first unanswered question (could be before or after)
+                    const nextUnanswered = unanswered.find(i => i > currentIndex) ?? unanswered[0];
+                    setCurrentIndex(nextUnanswered);
                 } else if (currentIndex < questions.length - 1) {
                     setCurrentIndex(currentIndex + 1);
                 }
