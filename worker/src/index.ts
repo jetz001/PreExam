@@ -2011,35 +2011,32 @@ if (url.pathname === "/api/legal/policy") {
                     
                     let addedCount = 0;
                     let skipCount = 0;
+                    const maxInsertsPerRun = 20;
+
+                    // Fetch all existing OCSC links to avoid N+1 queries
+                    const existingOCSCJobs = await firestore.runQuery({
+                        from: [{ collectionId: "news" }],
+                        where: {
+                            fieldFilter: {
+                                field: { fieldPath: "author" },
+                                op: "EQUAL",
+                                value: { stringValue: "ระบบอัตโนมัติ (OCSC)" }
+                            }
+                        }
+                    });
+                    const existingLinks = new Set(existingOCSCJobs.map((j: any) => j.external_link).filter(Boolean));
 
                     for (const job of parsedJobs) {
                         const externalLink = "https://job.ocsc.go.th/portal/jobs/" + job.id;
                         
-                        console.log("Checking duplicates for:", externalLink);
-                        
-                        // Duplicate Check by external_link
-                        const existing = await firestore.runQuery({
-                            from: [{ collectionId: "news" }],
-                            where: {
-                                compositeFilter: {
-                                    op: "AND",
-                                    filters: [
-                                        {
-                                            fieldFilter: {
-                                                field: { fieldPath: "external_link" },
-                                                op: "EQUAL",
-                                                value: { stringValue: externalLink }
-                                            }
-                                        }
-                                    ]
-                                }
-                            },
-                            limit: 1
-                        });
-
-                        if (existing && existing.length > 0) {
+                        if (existingLinks.has(externalLink)) {
                             skipCount++;
                             continue;
+                        }
+
+                        if (addedCount >= maxInsertsPerRun) {
+                            mockScraperLogs.push(`[System] Reached max inserts per run (${maxInsertsPerRun}) to prevent rate limits. Will continue next run.`);
+                            break;
                         }
 
                         // Insert new
