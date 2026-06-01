@@ -24,12 +24,13 @@ const ScraperManager = () => {
             });
             if (res.data.success) {
                 setStatus(prev => {
-                    // Prevent server 'idle' status from wiping out frontend simulated logs mid-run
-                    if (prev.isRunning && !res.data.data.isRunning) return prev;
+                    const newIsRunning = res.data.data.isRunning;
+                    const newLogs = res.data.data.logs || [];
+
                     return {
                         ...prev,
-                        isRunning: res.data.data.isRunning,
-                        logs: res.data.data.logs || []
+                        isRunning: newIsRunning,
+                        logs: newLogs.length > 0 ? newLogs : prev.logs
                     };
                 });
             }
