@@ -1738,14 +1738,9 @@ if (url.pathname === "/api/legal/policy") {
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
 
-                // Fetch recent payments (Limit to 200 to prevent massive reads, ideally should use a pre-calculated stats document)
+                // Fetch recent payments for trend map only (Limit to 200 to prevent massive reads)
                 const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], limit: 200, orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }] });
                 
-                let totalRevenue = 0;
-                let monthlyRevenue = 0;
-                let yearlyRevenue = 0;
-                let pendingRevenue = 0;
-
                 const trendMap: any = {};
                 for (let i = 5; i >= 0; i--) {
                     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -1762,22 +1757,47 @@ if (url.pathname === "/api/legal/policy") {
                         else if (doc.created_at._seconds) created_at = new Date(doc.created_at._seconds * 1000);
                     }
 
-                    if (status === 'pending') {
-                        pendingRevenue += amount;
-                    } else if (status === 'approved' || status === 'completed' || status === 'success') {
-                        totalRevenue += amount;
-                        if (created_at.getFullYear() === currentYear) {
-                            yearlyRevenue += amount;
-                            if (created_at.getMonth() === currentMonth) {
-                                monthlyRevenue += amount;
-                            }
-                        }
+                    if (status === 'approved' || status === 'completed' || status === 'success') {
                         const key = `${created_at.getFullYear()}-${created_at.getMonth()}`;
                         if (trendMap[key]) {
                             trendMap[key].value += amount;
                         }
                     }
                 });
+
+                const startOfYear = new Date(currentYear, 0, 1).toISOString();
+                const startOfMonth = new Date(currentYear, currentMonth, 1).toISOString();
+                const successStatuses = ["approved", "completed", "success"];
+
+                const revenueQuery = async (statusOp: string, statusValue: any, dateStart?: string) => {
+                    const filters: any[] = [];
+                    if (Array.isArray(statusValue)) {
+                        filters.push({ fieldFilter: { field: { fieldPath: "status" }, op: "IN", value: { arrayValue: { values: statusValue.map(v => ({ stringValue: v })) } } } });
+                    } else {
+                        filters.push({ fieldFilter: { field: { fieldPath: "status" }, op: statusOp, value: { stringValue: statusValue } } });
+                    }
+                    if (dateStart) {
+                        filters.push({ fieldFilter: { field: { fieldPath: "created_at" }, op: "GREATER_THAN_OR_EQUAL", value: { stringValue: dateStart } } });
+                    }
+                    
+                    const query = filters.length > 1 ? { compositeFilter: { op: "AND", filters } } : filters[0];
+                    const aggregations = [{ alias: "total", sum: { field: { fieldPath: "amount" } } }];
+                    
+                    try {
+                        const res = await firestore.runAggregationQuery({ from: [{ collectionId: "payments" }], where: query }, aggregations);
+                        const val = res?.total?.integerValue || res?.total?.doubleValue || 0;
+                        return Number(val);
+                    } catch (e) {
+                        return 0; // Fallback or missing index
+                    }
+                };
+
+                const [pendingRevenue, totalRevenue, yearlyRevenue, monthlyRevenue] = await Promise.all([
+                    revenueQuery("EQUAL", "pending"),
+                    revenueQuery("IN", successStatuses),
+                    revenueQuery("IN", successStatuses, startOfYear),
+                    revenueQuery("IN", successStatuses, startOfMonth)
+                ]);
 
                 return json({
                     revenue: { 

@@ -240,6 +240,24 @@ export class FirestoreClient {
       return 0;
     }
   }
+
+  async runAggregationQuery(query: any, aggregations: any[], parent: string = ""): Promise<any> {
+    const url = parent ? `/${parent}:runAggregationQuery` : `:runAggregationQuery`;
+    const res = await this.fetchApi(url, {
+      method: "POST",
+      body: JSON.stringify({
+        structuredAggregationQuery: {
+          structuredQuery: query,
+          aggregations: aggregations
+        }
+      }),
+    });
+    try {
+      return (res as any[])[0]?.result?.aggregateFields || {};
+    } catch {
+      return {};
+    }
+  }
 }
 
 export function parseServiceAccount(env: any): FirestoreConfig | null {
