@@ -63,8 +63,11 @@ const requireAuthUserId = async (req: Request, env: Env) => {
   if (now - lastUpdated > 5 * 60 * 1000) {
       lastActiveUpdateCache.set(userId, now);
       try {
-          const firestore = new FirestoreClient(env);
-          await firestore.updateDocument("users", userId, { last_active_at: new Date(now).toISOString() });
+          const config = parseServiceAccount(env);
+          if (config) {
+              const firestore = new FirestoreClient(config);
+              await firestore.updateDocument("users", userId, { last_active_at: new Date(now).toISOString() });
+          }
       } catch (e) {
           console.error("Failed to update last active:", e);
       }
