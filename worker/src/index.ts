@@ -50,11 +50,26 @@ const requireJwtSecret = (env: Env) => {
   return secret;
 };
 
+const lastActiveUpdateCache = new Map<string, number>();
+
 const requireAuthUserId = async (req: Request, env: Env) => {
   const secret = requireJwtSecret(env);
   if (!secret) return { error: json({ error: "missing_jwt_secret" }, { status: 500 }) };
   const userId = await requireUserId(req, secret);
   if (!userId) return { error: json({ error: "unauthorized" }, { status: 401 }) };
+
+  const now = Date.now();
+  const lastUpdated = lastActiveUpdateCache.get(userId) || 0;
+  if (now - lastUpdated > 5 * 60 * 1000) {
+      lastActiveUpdateCache.set(userId, now);
+      try {
+          const firestore = new FirestoreClient(env);
+          await firestore.updateDocument("users", userId, { last_active_at: new Date(now).toISOString() });
+      } catch (e) {
+          console.error("Failed to update last active:", e);
+      }
+  }
+
   return { userId };
 };
 
