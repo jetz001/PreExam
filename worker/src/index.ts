@@ -1700,10 +1700,26 @@ if (url.pathname === "/api/legal/policy") {
                     where: { fieldFilter: { field: { fieldPath: "plan_type" }, op: "EQUAL", value: { stringValue: "premium" } } }
                 });
 
-                // Approximation for active users to avoid fetching 1000 users
-                const realActiveUsers = Math.floor(totalUsers * 0.1); 
-
                 const now = new Date();
+                const startOfDay = new Date(now);
+                startOfDay.setHours(0, 0, 0, 0);
+
+                let realActiveUsers = Math.floor(totalUsers * 0.1); // Fallback
+                try {
+                    realActiveUsers = await firestore.runCountQuery({
+                        from: [{ collectionId: "users" }],
+                        where: {
+                            fieldFilter: {
+                                field: { fieldPath: "last_active_at" },
+                                op: "GREATER_THAN_OR_EQUAL",
+                                value: { stringValue: startOfDay.toISOString() }
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.error("Error querying active users:", e);
+                }
+
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
 
