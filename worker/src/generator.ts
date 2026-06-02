@@ -9,6 +9,7 @@ export let aiGeneratorState = {
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+export async function runAIGenerator(prompt: string, env: Env) {
     const providers = [
         { name: "Ollama (Primary)", url: env.OLLAMA_URL, model: env.OLLAMA_MODEL || "gpt-oss:120b", key: env.OLLAMA_API_KEY },
         { name: "Writer (Fallback 1)", url: env.WRITER_BASE_URL, model: env.WRITER_MODEL || "mistral-small-latest", key: env.WRITER_API_KEY },
