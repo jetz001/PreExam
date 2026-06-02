@@ -12,8 +12,10 @@ const newsService = {
         return response.data;
     },
 
-    getAgencyStats: async () => {
-        const response = await api.get('/news/agency-stats');
+    getAgencyStats: async (type) => {
+        const params = {};
+        if (type) params.type = type;
+        const response = await api.get('/news/agency-stats', { params });
         return response.data;
     },
 

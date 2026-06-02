@@ -19,6 +19,7 @@ const News = () => {
     // Jobs State
     const [agencyStats, setAgencyStats] = useState([]);
     const [jobTypesCount, setJobTypesCount] = useState({ civil: 0, employee: 0, other: 0 });
+    const [activeJobType, setActiveJobType] = useState(null);
 
     // Kahoot-style Background Shapes
     const [shapes, setShapes] = useState([]);
@@ -41,12 +42,12 @@ const News = () => {
             try {
                 const [newsRes, statsRes] = await Promise.all([
                     newsService.getNews('!งานราชการ', searchQuery),
-                    newsService.getAgencyStats()
+                    newsService.getAgencyStats(activeJobType)
                 ]);
                 if (newsRes.success) setNewsList(newsRes.data);
                 if (statsRes.success) {
                     setAgencyStats(statsRes.data);
-                    if (statsRes.jobTypes) {
+                    if (statsRes.jobTypes && !activeJobType) {
                         setJobTypesCount(statsRes.jobTypes);
                     }
                 }
@@ -57,7 +58,7 @@ const News = () => {
             }
         };
         fetchInitialData();
-    }, [searchQuery]);
+    }, [searchQuery, activeJobType]);
 
 
 
@@ -112,14 +113,23 @@ const News = () => {
                     
                     {/* Filters */}
                     <div className="flex flex-wrap gap-3 mb-6">
-                        <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
-                            <span className="bg-[#ffcc00] text-[#1a0533] px-1.5 rounded text-[10px]">{jobTypesCount.civil || 0}</span> ข้าราชการพลเรือน
+                        <div 
+                            onClick={() => setActiveJobType(activeJobType === 'civil' ? null : 'civil')}
+                            className={`px-4 py-1.5 rounded-full border text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors ${activeJobType === 'civil' ? 'bg-[#ffcc00] border-[#ffcc00] text-[#1a0533]' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
+                        >
+                            <span className={`${activeJobType === 'civil' ? 'bg-[#1a0533] text-[#ffcc00]' : 'bg-[#ffcc00] text-[#1a0533]'} px-1.5 rounded text-[10px]`}>{jobTypesCount.civil || 0}</span> ข้าราชการพลเรือน
                         </div>
-                        <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
-                            <span className="bg-[#00b4d8] text-white px-1.5 rounded text-[10px]">{jobTypesCount.employee || 0}</span> พนักงานราชการ
+                        <div 
+                            onClick={() => setActiveJobType(activeJobType === 'employee' ? null : 'employee')}
+                            className={`px-4 py-1.5 rounded-full border text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors ${activeJobType === 'employee' ? 'bg-[#00b4d8] border-[#00b4d8] text-white' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
+                        >
+                            <span className={`${activeJobType === 'employee' ? 'bg-white text-[#00b4d8]' : 'bg-[#00b4d8] text-white'} px-1.5 rounded text-[10px]`}>{jobTypesCount.employee || 0}</span> พนักงานราชการ
                         </div>
-                        <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white flex items-center gap-2">
-                            <span className="bg-[#f72585] text-white px-1.5 rounded text-[10px]">{jobTypesCount.other || 0}</span> บุคลากรอื่น
+                        <div 
+                            onClick={() => setActiveJobType(activeJobType === 'other' ? null : 'other')}
+                            className={`px-4 py-1.5 rounded-full border text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors ${activeJobType === 'other' ? 'bg-[#f72585] border-[#f72585] text-white' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
+                        >
+                            <span className={`${activeJobType === 'other' ? 'bg-white text-[#f72585]' : 'bg-[#f72585] text-white'} px-1.5 rounded text-[10px]`}>{jobTypesCount.other || 0}</span> บุคลากรอื่น
                         </div>
                     </div>
 

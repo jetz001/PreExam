@@ -1249,6 +1249,7 @@ export default {
         // /api/news/agency-stats
         if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
             try {
+                const typeFilter = url.searchParams.get("type");
                 const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 1000 });
                 const govNews = news.filter((n: any) => n.category === "งานราชการ" && n.status !== "expired");
                 const statsMap: any = {};
@@ -1264,9 +1265,17 @@ export default {
                     let jobCount = (job.metadata && job.metadata.vacancy_count) ? parseInt(job.metadata.vacancy_count) : 1;
                     if (isNaN(jobCount)) jobCount = 1;
                     const pType = (job.metadata && job.metadata.position_type) || job.recruitment_type || "";
-                    if (pType.includes("ข้าราชการ")) countCivil += jobCount;
-                    else if (pType.includes("พนักงานราชการ")) countEmployee += jobCount;
+                    const isCivil = pType.includes("ข้าราชการ");
+                    const isEmployee = pType.includes("พนักงานราชการ");
+                    const isOther = !isCivil && !isEmployee;
+
+                    if (isCivil) countCivil += jobCount;
+                    else if (isEmployee) countEmployee += jobCount;
                     else countOther += jobCount;
+
+                    if (typeFilter === 'civil' && !isCivil) return;
+                    if (typeFilter === 'employee' && !isEmployee) return;
+                    if (typeFilter === 'other' && !isOther) return;
                     
                     if (!statsMap[ministry]) {
                         statsMap[ministry] = { ministry, departments: {} };
