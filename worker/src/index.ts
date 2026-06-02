@@ -757,7 +757,14 @@ export default {
           if (orderBy === "random") {
             rows.sort(() => Math.random() - 0.5);
           } else {
-            rows.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+            rows.sort((a, b) => {
+              const numA = Number(a.id);
+              const numB = Number(b.id);
+              if (!isNaN(numA) && !isNaN(numB)) {
+                return numA - numB;
+              }
+              return String(a.id).localeCompare(String(b.id));
+            });
           }
 
           const count = rows.length;
@@ -2224,7 +2231,18 @@ if (url.pathname === "/api/legal/policy") {
             return json({ success: true, message: "Generator started" });
         }
         if (url.pathname === "/api/admin/generator/status") {
-            return json({ success: true, data: { isRunning: aiGeneratorState.isRunning, logs: aiGeneratorState.logs } });
+            let statusDoc = { isRunning: aiGeneratorState.isRunning, logs: aiGeneratorState.logs };
+            try {
+                const config = parseServiceAccount(env);
+                if (config) {
+                    const firestore = new FirestoreClient(config);
+                    const doc = await firestore.getDocument("system", "generator_status");
+                    if (doc) {
+                        statusDoc = doc;
+                    }
+                }
+            } catch (e) {}
+            return json({ success: true, data: statusDoc });
         }
         if (url.pathname === "/api/terminal/status") return json({ status: 'online' });
         if (url.pathname === "/api/terminal/command" && request.method === "POST") {

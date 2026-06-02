@@ -10,6 +10,33 @@ export let aiGeneratorState = {
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 export async function runAIGenerator(prompt: string, env: Env) {
+    const config = parseServiceAccount(env);
+    const firestore = config ? new FirestoreClient(config) : null;
+
+    async function updateStatus(isRunning: boolean, logMessage?: string) {
+        aiGeneratorState.isRunning = isRunning;
+        if (logMessage) {
+            aiGeneratorState.logs.push(logMessage);
+            console.log(logMessage);
+        }
+        if (firestore) {
+            try {
+                const data = {
+                    isRunning: aiGeneratorState.isRunning,
+                    logs: aiGeneratorState.logs,
+                    updatedAt: new Date().toISOString()
+                };
+                // Try update first
+                await firestore.updateDocument("system", "generator_status", data).catch(async () => {
+                    // If update fails (e.g. document doesn't exist), try create
+                    await firestore.createDocument("system", data, "generator_status");
+                });
+            } catch (e) {
+                // Ignore Firestore errors for status update
+            }
+        }
+    }
+
     const providers = [
         { name: "Ollama (Primary)", url: env.OLLAMA_URL, model: env.OLLAMA_MODEL || "gpt-oss:120b", key: env.OLLAMA_API_KEY },
         { name: "Writer (Fallback 1)", url: env.WRITER_BASE_URL, model: env.WRITER_MODEL || "mistral-small-latest", key: env.WRITER_API_KEY },
@@ -18,14 +45,12 @@ export async function runAIGenerator(prompt: string, env: Env) {
     ].filter(p => p.url && p.key);
 
     if (providers.length === 0) {
-        aiGeneratorState.logs.push('[Error] No LLM providers are configured in the environment variables.');
-        aiGeneratorState.isRunning = false;
+        await updateStatus(false, '[Error] No LLM providers are configured in the environment variables.');
         return;
     }
 
-    aiGeneratorState.isRunning = true;
-    aiGeneratorState.logs = ['[System] Initiating AI Generator job...'];
-    console.log('[System] Initiating AI Generator job...');
+    aiGeneratorState.logs = []; // clear old logs
+    await updateStatus(true, '[System] Initiating AI Generator job...');
     
     try {
         const systemInstruction = `You are an expert exam question generator for a Thai examination platform. 
@@ -58,8 +83,7 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
 
         for (const provider of providers) {
             try {
-                aiGeneratorState.logs.push(`[AI] Connecting to LLM API via ${provider.name} (${provider.model})...`);
-                console.log(`[AI] Connecting to LLM API via ${provider.name} (${provider.model})...`);
+                await updateStatus(true, `[AI] Connecting to LLM API via ${provider.name} (${provider.model})...`);
                 
                 let baseUrl = provider.url!.replace(/\/$/, '');
                 if (!baseUrl.endsWith('/v1') && !baseUrl.endsWith('/v1/chat/completions')) {
@@ -101,8 +125,7 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
                 textResponse = content;
                 break; // Success, break the fallback loop
             } catch (err: any) {
-                aiGeneratorState.logs.push(`[Warning] Failed with ${provider.name}: ${err.message}. Trying next...`);
-                console.warn(`[Warning] Failed with ${provider.name}: ${err.message}. Trying next...`);
+                await updateStatus(true, `[Warning] Failed with ${provider.name}: ${err.message}. Trying next...`);
                 lastError = err;
             }
         }
@@ -111,8 +134,7 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
             throw new Error(`All LLM providers failed. Last error: ${lastError?.message}`);
         }
 
-        aiGeneratorState.logs.push('[System] Received response from LLM. Parsing JSON...');
-        console.log('[System] Received response from LLM. Parsing JSON...');
+        await updateStatus(true, '[System] Received response from LLM. Parsing JSON...');
         
         // Clean up markdown just in case the LLM ignored the instruction
         let cleanedText = textResponse.trim();
@@ -127,11 +149,9 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
             throw new Error("LLM did not return a JSON array.");
         }
 
-        aiGeneratorState.logs.push(`[System] Parsed ${questions.length} questions. Saving to Firestore...`);
+        await updateStatus(true, `[System] Parsed ${questions.length} questions. Saving to Firestore...`);
 
-        const config = parseServiceAccount(env);
-        if (!config) throw new Error("Firebase Service Account is not configured in environment.");
-        const firestore = new FirestoreClient(config);
+        if (!firestore) throw new Error("Firebase Service Account is not configured in environment.");
 
         let successCount = 0;
         for (const q of questions) {
@@ -141,15 +161,12 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
             
             await firestore.createDocument("questions", q);
             successCount++;
-            aiGeneratorState.logs.push(`[Database] Inserted question ${successCount}/${questions.length}: "${q.question_text.substring(0, 30)}..."`);
+            await updateStatus(true, `[Database] Inserted question ${successCount}/${questions.length}: "${q.question_text.substring(0, 30)}..."`);
             await delay(100); 
         }
 
-        aiGeneratorState.logs.push(`[System] Generator job completed successfully. Added ${successCount} questions.`);
+        await updateStatus(false, `[System] Generator job completed successfully. Added ${successCount} questions.`);
     } catch (err: any) {
-        aiGeneratorState.logs.push(`[Error] ${err.message}`);
-        console.error(`[Error] ${err.message}`);
-    } finally {
-        aiGeneratorState.isRunning = false;
+        await updateStatus(false, `[Error] ${err.message}`);
     }
 }
