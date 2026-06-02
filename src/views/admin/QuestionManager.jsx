@@ -15,6 +15,15 @@ const QuestionManager = () => {
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState(null);
     const [activeTab, setActiveTab] = useState('questions');
+    const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' });
+
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
 
     const handleSearchCheck = () => {
         setFilters(prev => ({ ...prev, search: localSearch }));
@@ -53,6 +62,25 @@ const QuestionManager = () => {
     const questions = queryData?.rows || [];
     const totalPages = queryData?.totalPages || 1;
     const totalQuestions = queryData?.total || 0;
+
+    const sortedQuestions = React.useMemo(() => {
+        if (!questions) return [];
+        let sortableItems = [...questions];
+        sortableItems.sort((a, b) => {
+            let valA = a[sortConfig.key];
+            let valB = b[sortConfig.key];
+            
+            if (sortConfig.key === 'id') {
+                valA = Number(valA);
+                valB = Number(valB);
+            }
+            
+            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return sortableItems;
+    }, [questions, sortConfig]);
 
     // Reset page when filters change
     React.useEffect(() => {
@@ -301,12 +329,12 @@ const QuestionManager = () => {
                     <table className="w-full text-left text-sm text-slate-600">
                         <thead className="bg-slate-50 text-slate-700 border-b border-slate-200">
                             <tr>
-                                <th className="px-6 py-4 font-semibold">No.</th>
-                                <th className="px-6 py-4 font-semibold">Question</th>
-                                <th className="px-6 py-4 font-semibold">Skill (Radar)</th>
-                                <th className="px-6 py-4 font-semibold">Subject</th>
-                                <th className="px-6 py-4 font-semibold">Category</th>
-                                <th className="px-6 py-4 font-semibold">Difficulty</th>
+                                <th className="px-6 py-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('id')}>No. {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                                <th className="px-6 py-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('question_text')}>Question {sortConfig.key === 'question_text' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                                <th className="px-6 py-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('skill')}>Skill (Radar) {sortConfig.key === 'skill' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                                <th className="px-6 py-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('subject')}>Subject {sortConfig.key === 'subject' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                                <th className="px-6 py-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('category')}>Category {sortConfig.key === 'category' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                                <th className="px-6 py-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('difficulty')}>Difficulty {sortConfig.key === 'difficulty' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
                                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
                             </tr>
                         </thead>
@@ -320,7 +348,7 @@ const QuestionManager = () => {
                                     <td colSpan="7" className="px-6 py-8 text-center text-slate-500">No questions found.</td>
                                 </tr>
                             ) : (
-                                questions.map((q, index) => (
+                                sortedQuestions.map((q, index) => (
                                     <tr key={q.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-500">#{q.id}</td>
                                         <td className="px-6 py-4 max-w-md truncate font-medium text-slate-800" dangerouslySetInnerHTML={{ __html: q.question_text ? q.question_text.replace(/<[^>]+>/g, '') : '' }}></td>
@@ -477,7 +505,8 @@ const QuestionManager = () => {
                                                 ['clean']
                                             ],
                                         }}
-                                        className="h-64 mb-12"
+                                        className="mb-12"
+                                        style={{ height: '250px', marginBottom: '60px' }}
                                     />
                                 </div>
                             </div>
@@ -575,12 +604,13 @@ const QuestionManager = () => {
                                         theme="snow"
                                         value={formData.explanation}
                                         onChange={(content) => setFormData({ ...formData, explanation: content })}
-                                        className="h-32 mb-12"
+                                        className="mb-12"
+                                        style={{ height: '150px', marginBottom: '50px' }}
                                     />
                                 </div>
                             </div>
 
-                            <div className="pt-4 flex justify-end space-x-3">
+                            <div className="pt-4 flex justify-end space-x-3 relative z-10 bg-white">
                                 <button
                                     type="button"
                                     onClick={handleCloseModal}
