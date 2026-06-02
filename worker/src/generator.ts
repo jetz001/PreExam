@@ -25,6 +25,7 @@ export async function runAIGenerator(prompt: string, env: Env) {
 
     aiGeneratorState.isRunning = true;
     aiGeneratorState.logs = ['[System] Initiating AI Generator job...'];
+    console.log('[System] Initiating AI Generator job...');
     
     try {
         const systemInstruction = `You are an expert exam question generator for a Thai examination platform. 
@@ -58,6 +59,7 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
         for (const provider of providers) {
             try {
                 aiGeneratorState.logs.push(`[AI] Connecting to LLM API via ${provider.name} (${provider.model})...`);
+                console.log(`[AI] Connecting to LLM API via ${provider.name} (${provider.model})...`);
                 
                 let baseUrl = provider.url!.replace(/\/$/, '');
                 if (!baseUrl.endsWith('/v1') && !baseUrl.endsWith('/v1/chat/completions')) {
@@ -80,7 +82,8 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${provider.key}`
                     },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify(requestBody),
+                    signal: AbortSignal.timeout(30000) // 30 second timeout
                 });
 
                 if (!res.ok) {
@@ -99,6 +102,7 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
                 break; // Success, break the fallback loop
             } catch (err: any) {
                 aiGeneratorState.logs.push(`[Warning] Failed with ${provider.name}: ${err.message}. Trying next...`);
+                console.warn(`[Warning] Failed with ${provider.name}: ${err.message}. Trying next...`);
                 lastError = err;
             }
         }
@@ -108,6 +112,7 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
         }
 
         aiGeneratorState.logs.push('[System] Received response from LLM. Parsing JSON...');
+        console.log('[System] Received response from LLM. Parsing JSON...');
         
         // Clean up markdown just in case the LLM ignored the instruction
         let cleanedText = textResponse.trim();
@@ -143,6 +148,7 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
         aiGeneratorState.logs.push(`[System] Generator job completed successfully. Added ${successCount} questions.`);
     } catch (err: any) {
         aiGeneratorState.logs.push(`[Error] ${err.message}`);
+        console.error(`[Error] ${err.message}`);
     } finally {
         aiGeneratorState.isRunning = false;
     }
