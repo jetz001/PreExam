@@ -9,9 +9,15 @@ export let aiGeneratorState = {
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-export async function runAIGenerator(prompt: string, env: Env) {
-    if (!env.OLLAMA_URL || !env.OLLAMA_API_KEY) {
-        aiGeneratorState.logs.push('[Error] OLLAMA_URL or OLLAMA_API_KEY is not configured in the environment variables.');
+    const providers = [
+        { name: "Ollama (Primary)", url: env.OLLAMA_URL, model: env.OLLAMA_MODEL || "gpt-oss:120b", key: env.OLLAMA_API_KEY },
+        { name: "Writer (Fallback 1)", url: env.WRITER_BASE_URL, model: env.WRITER_MODEL || "mistral-small-latest", key: env.WRITER_API_KEY },
+        { name: "Advisor (Fallback 2)", url: env.ADVISOR_BASE_URL, model: env.ADVISOR_MODEL || "mistral-small-latest", key: env.ADVISOR_API_KEY },
+        { name: "QA (Fallback 3)", url: env.QA_BASE_URL, model: env.QA_MODEL || "mistral-small-latest", key: env.QA_API_KEY }
+    ].filter(p => p.url && p.key);
+
+    if (providers.length === 0) {
+        aiGeneratorState.logs.push('[Error] No LLM providers are configured in the environment variables.');
         aiGeneratorState.isRunning = false;
         return;
     }
@@ -20,9 +26,6 @@ export async function runAIGenerator(prompt: string, env: Env) {
     aiGeneratorState.logs = ['[System] Initiating AI Generator job...'];
     
     try {
-        const modelName = env.OLLAMA_MODEL || "gpt-oss:120b";
-        aiGeneratorState.logs.push(`[AI] Connecting to LLM API (${modelName})...`);
-        
         const systemInstruction = `You are an expert exam question generator for a Thai examination platform. 
 The user will provide a topic or prompt. Generate a JSON array of objects representing exam questions.
 Each object MUST exactly match this JSON schema and contain no other fields:
@@ -48,40 +51,59 @@ Each object MUST exactly match this JSON schema and contain no other fields:
 
 Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code blocks like \`\`\`json. Return pure JSON.`;
 
-        let baseUrl = env.OLLAMA_URL.replace(/\/$/, '');
-        if (!baseUrl.endsWith('/v1') && !baseUrl.endsWith('/v1/chat/completions')) {
-            baseUrl += '/v1';
+        let textResponse: string | null = null;
+        let lastError: any = null;
+
+        for (const provider of providers) {
+            try {
+                aiGeneratorState.logs.push(`[AI] Connecting to LLM API via ${provider.name} (${provider.model})...`);
+                
+                let baseUrl = provider.url!.replace(/\/$/, '');
+                if (!baseUrl.endsWith('/v1') && !baseUrl.endsWith('/v1/chat/completions')) {
+                    baseUrl += '/v1';
+                }
+                const endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
+
+                const requestBody = {
+                    model: provider.model,
+                    messages: [
+                        { role: "system", content: systemInstruction },
+                        { role: "user", content: prompt }
+                    ],
+                    response_format: { type: "json_object" }
+                };
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${provider.key}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`HTTP ${res.status} ${errorText}`);
+                }
+
+                const data: any = await res.json();
+                const content = data.choices?.[0]?.message?.content;
+                
+                if (!content) {
+                    throw new Error("No text response received from LLM.");
+                }
+
+                textResponse = content;
+                break; // Success, break the fallback loop
+            } catch (err: any) {
+                aiGeneratorState.logs.push(`[Warning] Failed with ${provider.name}: ${err.message}. Trying next...`);
+                lastError = err;
+            }
         }
-        const endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
 
-        const requestBody = {
-            model: modelName,
-            messages: [
-                { role: "system", content: systemInstruction },
-                { role: "user", content: prompt }
-            ],
-            response_format: { type: "json_object" }
-        };
-
-        const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${env.OLLAMA_API_KEY}`
-            },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(`LLM API Error: ${res.status} ${errorText}`);
-        }
-
-        const data: any = await res.json();
-        const textResponse = data.choices?.[0]?.message?.content;
-        
         if (!textResponse) {
-            throw new Error("No text response received from LLM.");
+            throw new Error(`All LLM providers failed. Last error: ${lastError?.message}`);
         }
 
         aiGeneratorState.logs.push('[System] Received response from LLM. Parsing JSON...');

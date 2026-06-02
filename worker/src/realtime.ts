@@ -34,6 +34,18 @@ export type Env = {
   OLLAMA_URL?: string;
   OLLAMA_MODEL?: string;
   OLLAMA_API_KEY?: string;
+
+  WRITER_API_KEY?: string;
+  WRITER_BASE_URL?: string;
+  WRITER_MODEL?: string;
+
+  ADVISOR_API_KEY?: string;
+  ADVISOR_BASE_URL?: string;
+  ADVISOR_MODEL?: string;
+
+  QA_API_KEY?: string;
+  QA_BASE_URL?: string;
+  QA_MODEL?: string;
 };
 
 export class RealtimeDO {
