@@ -1271,18 +1271,33 @@ export default {
                     if (!statsMap[ministry]) {
                         statsMap[ministry] = { ministry, departments: {} };
                     }
+                    
+                    const jobDate = job.published_date || job.created_at || new Date().toISOString();
+                    
                     if (!statsMap[ministry].departments[department]) {
-                        statsMap[ministry].departments[department] = { department, count: 0, logo: (job.metadata && job.metadata.agency_logo) || null };
+                        statsMap[ministry].departments[department] = { department, count: 0, logo: (job.metadata && job.metadata.agency_logo) || null, lastUpdated: jobDate };
+                    } else {
+                        const currDate = statsMap[ministry].departments[department].lastUpdated;
+                        if (new Date(jobDate) > new Date(currDate)) {
+                            statsMap[ministry].departments[department].lastUpdated = jobDate;
+                        }
                     }
                     statsMap[ministry].departments[department].count += jobCount;
                 });
                 
-                const formattedStats = Object.values(statsMap).map((m: any) => ({
-                    ministry: m.ministry,
-                    logo: Object.values(m.departments).find((d: any) => d.logo)?.logo || null,
-                    totalCount: Object.values(m.departments).reduce((sum: any, d: any) => sum + d.count, 0),
-                    departments: Object.values(m.departments).sort((a: any, b: any) => b.count - a.count)
-                })).sort((a: any, b: any) => b.totalCount - a.totalCount);
+                const formattedStats = Object.values(statsMap).map((m: any) => {
+                    const depts = Object.values(m.departments) as any[];
+                    const latestDate = depts.reduce((latest, d) => {
+                        return (!latest || new Date(d.lastUpdated) > new Date(latest)) ? d.lastUpdated : latest;
+                    }, null);
+                    return {
+                        ministry: m.ministry,
+                        logo: depts.find((d: any) => d.logo)?.logo || null,
+                        totalCount: depts.reduce((sum: any, d: any) => sum + d.count, 0),
+                        lastUpdated: latestDate,
+                        departments: depts.sort((a: any, b: any) => b.count - a.count)
+                    };
+                }).sort((a: any, b: any) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
                 
                 return json({ 
                     success: true, 
