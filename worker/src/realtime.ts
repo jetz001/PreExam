@@ -30,6 +30,7 @@ export type Env = {
   INTERNAL_API_KEY: string;
   JWT_SECRET?: string;
   FIREBASE_SERVICE_ACCOUNT?: string;
+  GEMINI_API_KEY?: string;
 };
 
 export class RealtimeDO {

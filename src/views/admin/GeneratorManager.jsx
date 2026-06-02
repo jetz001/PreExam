@@ -22,15 +22,11 @@ const GeneratorManager = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) {
-                setStatus(prev => {
-                    // Prevent server 'idle' status from wiping out frontend simulated logs mid-run
-                    if (prev.isRunning && !res.data.data.isRunning) return prev;
-                    return {
-                        ...prev,
-                        isRunning: res.data.data.isRunning,
-                        logs: res.data.data.logs || []
-                    };
-                });
+                setStatus(prev => ({
+                    ...prev,
+                    isRunning: res.data.data.isRunning,
+                    logs: res.data.data.logs || []
+                }));
             }
         } catch (error) {
             console.error('Error fetching generator status:', error);
@@ -41,11 +37,14 @@ const GeneratorManager = () => {
 
     useEffect(() => {
         fetchStatus();
+        // Poll status every 2 seconds if running
         const interval = setInterval(() => {
-            fetchStatus();
-        }, 5000);
+            if (status.isRunning) {
+                fetchStatus();
+            }
+        }, 2000);
         return () => clearInterval(interval);
-    }, []);
+    }, [status.isRunning]);
 
     const handleRunNow = async () => {
         const confirmRun = window.confirm('คุณต้องการสั่งสร้างข้อสอบใหม่เดี๋ยวนี้เลยหรือไม่? (กินโควต้า Gemini API)');
@@ -59,33 +58,7 @@ const GeneratorManager = () => {
             });
             if (res.data.success) {
                 toast.success('เริ่มต้นกระบวนการสร้างข้อสอบแล้ว กรุณารอสักครู่ (ใช้เวลาสูงสุด 2 นาที)');
-                
-                // Simulate frontend logs for better UX
-                setStatus(prev => ({
-                    ...prev,
-                    isRunning: true,
-                    logs: ['[System] Initiating Generator job...', '[AI] Connecting to Gemini API...']
-                }));
-                
-                setTimeout(() => {
-                    setStatus(prev => ({ ...prev, logs: [...prev.logs, '[AI] Generating 50 new Math questions...'] }));
-                }, 2000);
-                
-                setTimeout(() => {
-                    setStatus(prev => ({ ...prev, logs: [...prev.logs, '[AI] Validating questions and choices...'] }));
-                }, 5000);
-                
-                setTimeout(() => {
-                    setStatus(prev => ({ 
-                        ...prev, 
-                        isRunning: false, 
-                        logs: [...prev.logs, '[System] Generator job completed. 50 questions added.'],
-                        lastRun: new Date().toISOString()
-                    }));
-                }, 7000);
-                
-                // Comment out immediate fetchStatus to prevent overwrite
-                // fetchStatus();
+                fetchStatus();
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการสั่งรัน');

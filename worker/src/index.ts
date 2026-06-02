@@ -2,6 +2,7 @@ import { RealtimeDO, type Env } from "./realtime";
 import { requireUserId, signJwtHs256 } from "./auth";
 import { hashPassword, verifyPassword } from "./password";
 import { FirestoreClient, parseServiceAccount } from "./firestore";
+import { aiGeneratorState, runAIGenerator } from "./generator";
 
 export { RealtimeDO };
 
@@ -15,9 +16,6 @@ const withCors = (res: Response) => {
 
 let mockScraperRunning = false;
 let mockScraperLogs: string[] = [];
-
-let mockGeneratorRunning = false;
-let mockGeneratorLogs: string[] = [];
 
 const globalCache: Record<string, { data: any, exp: number }> = {};
 const CACHE_TTL = 5 * 60 * 1000; // 5 mins
@@ -2152,28 +2150,37 @@ if (url.pathname === "/api/legal/policy") {
         }
         
         if (url.pathname === "/api/admin/generator/start" && request.method === "POST") {
-            mockGeneratorRunning = true;
-            mockGeneratorLogs = ['[System] Initiating Generator job...', '[AI] Connecting to Gemini API...'];
+            if (aiGeneratorState.isRunning) {
+                return json({ success: false, message: "Generator is already running" }, { status: 400 });
+            }
             
-            const runMock = async () => {
-                await new Promise(r => setTimeout(r, 2000));
-                mockGeneratorLogs.push('[AI] Generating 50 new Math questions...');
-                await new Promise(r => setTimeout(r, 3000));
-                mockGeneratorLogs.push('[AI] Validating questions and choices...');
-                await new Promise(r => setTimeout(r, 2000));
-                mockGeneratorRunning = false;
-                mockGeneratorLogs.push('[System] Generator job completed. 50 questions added.');
-            };
-            
-            ctx.waitUntil(runMock());
-
+            const prompt = "สร้างข้อสอบแบบสุ่ม 10 ข้อ"; // Default prompt for the generic start button
+            ctx.waitUntil(runAIGenerator(prompt, env));
             return json({ success: true, message: "Generator started" });
         }
         if (url.pathname === "/api/admin/generator/status") {
-            return json({ success: true, data: { isRunning: mockGeneratorRunning, logs: mockGeneratorLogs } });
+            return json({ success: true, data: { isRunning: aiGeneratorState.isRunning, logs: aiGeneratorState.logs } });
         }
         if (url.pathname === "/api/terminal/status") return json({ status: 'online' });
-        if (url.pathname === "/api/terminal/command") return json({ message: ">>> Status: Idle (Active Provider: Google Gemini)" });
+        if (url.pathname === "/api/terminal/command" && request.method === "POST") {
+            const body = await request.json() as any;
+            const cmd = body.command?.trim() || "";
+            
+            if (cmd === "status") {
+                return json({ message: ">>> Status: Ready (Active Provider: Google Gemini)" });
+            }
+            
+            if (cmd.startsWith("gen ")) {
+                if (aiGeneratorState.isRunning) {
+                    return json({ message: ">>> Error: Generator is already running. Please wait." });
+                }
+                const prompt = cmd.substring(4).trim();
+                ctx.waitUntil(runAIGenerator(prompt, env));
+                return json({ message: `>>> Initiating AI generation for prompt: "${prompt}"... Check the status panel for progress.` });
+            }
+            
+            return json({ message: `>>> Unknown command: ${cmd}` });
+        }
 
         if (url.pathname === "/api/admin/jobs/cleanup" && request.method === "POST") {
             const result = await cleanupExpiredJobs(env);
