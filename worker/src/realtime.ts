@@ -31,6 +31,9 @@ export type Env = {
   JWT_SECRET?: string;
   FIREBASE_SERVICE_ACCOUNT?: string;
   GEMINI_API_KEY?: string;
+  OLLAMA_URL?: string;
+  OLLAMA_MODEL?: string;
+  OLLAMA_API_KEY?: string;
 };
 
 export class RealtimeDO {
