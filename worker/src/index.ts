@@ -1711,6 +1711,47 @@ if (url.pathname === "/api/legal/policy") {
             }
         }
 
+        if (url.pathname === "/api/business/posts" && request.method === "GET") {
+            try {
+                const businessId = url.searchParams.get("business_id");
+                if (!businessId) return json({ success: false, message: 'business_id is required' }, { status: 400 });
+
+                // Try fetching from business_posts collection, fallback to empty
+                const posts = await firestore.runQuery({
+                    from: [{ collectionId: "business_posts" }],
+                    where: {
+                        compositeFilter: {
+                            op: "AND",
+                            filters: [
+                                { fieldFilter: { field: { fieldPath: "business_id" }, op: "EQUAL", value: { stringValue: businessId } } }
+                            ]
+                        }
+                    },
+                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
+                    limit: 50
+                });
+
+                return json({ success: true, posts });
+            } catch (err) {
+                // If collection doesn't exist or fails, return empty array
+                return json({ success: true, posts: [] });
+            }
+        }
+
+        const businessMatch = url.pathname.match(/^\/api\/business\/([a-zA-Z0-9_:-]+)$/);
+        if (businessMatch && request.method === "GET") {
+            try {
+                const id = businessMatch[1];
+                const business = await firestore.getDocument("businesses", id);
+                if (!business) {
+                    return json({ success: false, message: 'Business not found.' }, { status: 404 });
+                }
+                return json({ success: true, business });
+            } catch (err) {
+                return json({ success: false, message: 'Error fetching business.', error: String(err) }, { status: 500 });
+            }
+        }
+
         if (url.pathname === "/api/users/leaderboard") return json({ success: true, leaderboard: [] });
         if (url.pathname === "/api/ads/admin/stats") return json({ totalRevenue: 0, activeSponsors: 0, totalViews: 0, revenueTrend: [] });
         if (url.pathname === "/api/ads/admin/sponsors") return json([]);
