@@ -1,5 +1,14 @@
 export const versionHistory = [
     {
+        version: 'v0.2.30',
+        date: '2026-06-08',
+        changes: [
+            { type: 'feature', description: 'Admin: Added Profile Modal in User Manager for quick profile viewing' },
+            { type: 'fix', description: 'Admin: Corrected Last Active timestamp handling and User Logs ordering' },
+            { type: 'fix', description: 'Scraper: Fixed Cloudflare Worker using wrong collection and added timestamps to scraper logs' }
+        ]
+    },
+    {
         version: 'v0.2.29',
         date: '2026-03-23',
         changes: [
