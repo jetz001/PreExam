@@ -307,6 +307,63 @@ const LogModal = ({ user, logs, onClose }) => {
     );
 };
 
+const ProfileModal = ({ user, onClose }) => {
+    if (!user) return null;
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 className="font-bold text-lg text-gray-800 flex items-center">
+                        <User className="w-5 h-5 mr-2 text-indigo-600" />
+                        User Profile
+                    </h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <X size={20} />
+                    </button>
+                </div>
+                <div className="p-4 space-y-4">
+                    <div className="flex flex-col items-center justify-center">
+                        <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-2xl font-bold mb-2">
+                            {user.display_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                        <h4 className="font-bold text-xl text-gray-800">{user.display_name || user.name || 'Unknown User'}</h4>
+                        <p className="text-sm text-gray-500">{user.email || 'No email'}</p>
+                        <span className={`mt-2 px-3 py-1 rounded-full text-xs font-medium ${user.status === 'banned' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                            {user.status || 'Active'}
+                        </span>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 text-sm">
+                        <div className="grid grid-cols-3 gap-2 py-2 border-b border-gray-200">
+                            <span className="text-gray-500 col-span-1">Public ID</span>
+                            <span className="text-gray-800 font-mono col-span-2 text-right break-all">{user.public_id || '-'}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 py-2 border-b border-gray-200">
+                            <span className="text-gray-500 col-span-1">Role</span>
+                            <span className="text-gray-800 col-span-2 text-right capitalize">{user.role || 'user'}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 py-2 border-b border-gray-200">
+                            <span className="text-gray-500 col-span-1">Location</span>
+                            <span className="text-gray-800 col-span-2 text-right">{user.city ? `${user.city}, ${user.country}` : (user.country || '-')}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 py-2">
+                            <span className="text-gray-500 col-span-1">Joined</span>
+                            <span className="text-gray-800 col-span-2 text-right">
+                                {user.created_at ? new Date(user.created_at).toLocaleDateString('en-GB') : '-'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4 border-t border-gray-100 flex justify-end">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const BroadcastModal = ({ isOpen, onClose, targetUser, onSend }) => {
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
@@ -377,6 +434,7 @@ const UserManager = () => {
     const [historyData, setHistoryData] = useState(null);
     const [viewingLogsUser, setViewingLogsUser] = useState(null);
     const [logsData, setLogsData] = useState(null);
+    const [viewingProfileUser, setViewingProfileUser] = useState(null);
     const [isAddAdminModalOpen, setIsAddAdminModalOpen] = useState(false);
 
     // Broadcast Modal States
@@ -519,12 +577,8 @@ const UserManager = () => {
         }
     };
 
-    const handleViewProfile = (publicId) => {
-        if (publicId) {
-            window.open(`/profile/${publicId}`, '_blank');
-        } else {
-            toast.error('User does not have a public profile');
-        }
+    const handleViewProfile = (user) => {
+        setViewingProfileUser(user);
     };
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -843,7 +897,7 @@ const UserManager = () => {
                                                 <GraduationCap size={14} />
                                             </button>
                                             <button
-                                                onClick={() => handleViewProfile(user.public_id)}
+                                                onClick={() => handleViewProfile(user)}
                                                 className="text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors text-xs font-medium border border-blue-200 inline-flex items-center"
                                                 title="View Profile"
                                             >
@@ -965,6 +1019,13 @@ const UserManager = () => {
                         setViewingLogsUser(null);
                         setLogsData(null);
                     }}
+                />
+            )}
+
+            {viewingProfileUser && (
+                <ProfileModal
+                    user={viewingProfileUser}
+                    onClose={() => setViewingProfileUser(null)}
                 />
             )}
 
