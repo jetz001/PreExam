@@ -1912,7 +1912,7 @@ if (url.pathname === "/api/legal/policy") {
         if (adminUserLogsMatch && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const logs = await firestore.runQuery({ from: [{ collectionId: "logs" }], where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: adminUserLogsMatch[1] } } }, limit: 50 });
+          const logs = await firestore.runQuery({ from: [{ collectionId: "logs" }], where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: adminUserLogsMatch[1] } } }, orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 10 });
           return json({ success: true, logs });
         }
 

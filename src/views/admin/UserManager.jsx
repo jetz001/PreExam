@@ -277,7 +277,13 @@ const LogModal = ({ user, logs, onClose }) => {
                                 <div key={log.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                                     <div className="flex justify-between items-start mb-1">
                                         <span className="font-semibold text-gray-700 text-sm opacity-90">{log.action}</span>
-                                        <span className="text-xs text-gray-400">{new Date(log.created_at).toLocaleString()}</span>
+                                        <span className="text-xs text-gray-400">
+                                            {new Date(
+                                                typeof log.created_at === 'object' && log.created_at !== null && log.created_at._seconds 
+                                                    ? log.created_at._seconds * 1000 
+                                                    : log.created_at
+                                            ).toLocaleString('en-GB')}
+                                        </span>
                                     </div>
                                     <pre className="text-xs text-slate-500 overflow-x-auto whitespace-pre-wrap font-mono bg-white p-2 rounded border border-gray-100">
                                         {typeof log.details === 'string'
