@@ -1912,7 +1912,14 @@ if (url.pathname === "/api/legal/policy") {
         if (adminUserLogsMatch && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const logs = await firestore.runQuery({ from: [{ collectionId: "logs" }], where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: adminUserLogsMatch[1] } } }, orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 10 });
+          let logs = await firestore.runQuery({ from: [{ collectionId: "system_logs" }], where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: adminUserLogsMatch[1] } } }, limit: 100 });
+          // Sort in memory to avoid missing composite index error
+          logs.sort((a: any, b: any) => {
+              const dateA = new Date(typeof a.created_at === 'object' && a.created_at._seconds ? a.created_at._seconds * 1000 : (a.created_at || 0)).getTime();
+              const dateB = new Date(typeof b.created_at === 'object' && b.created_at._seconds ? b.created_at._seconds * 1000 : (b.created_at || 0)).getTime();
+              return dateB - dateA;
+          });
+          logs = logs.slice(0, 10);
           return json({ success: true, logs });
         }
 
