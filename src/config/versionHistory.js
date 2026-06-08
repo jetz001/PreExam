@@ -1,6 +1,6 @@
 export const versionHistory = [
     {
-        version: 'v0.2.30',
+        version: 'v1.1.1',
         date: '2026-06-08',
         changes: [
             { type: 'feature', description: 'Admin: Added Profile Modal in User Manager for quick profile viewing' },
