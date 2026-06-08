@@ -559,22 +559,22 @@ export default {
 
       for (const qid of questionIds) {
         const cachedQ = getCache(`q_${qid}`);
-        if (cachedQ) questionsMap.set(qid, normalizeQuestion(cachedQ));
+        if (cachedQ) questionsMap.set(String(qid), normalizeQuestion(cachedQ));
         else missingQIds.push(qid);
       }
 
       for (let i = 0; i < missingQIds.length; i += 30) {
         const chunk = missingQIds.slice(i, i + 30);
-        const qPromises = chunk.map((id: string) => firestore.getDocument("questions", id));
+        const qPromises = chunk.map((id: string) => firestore.getDocument("questions", String(id)));
         const qs = await Promise.all(qPromises);
         for (const q of qs) {
           if (q && q.id) {
-            questionsMap.set(q.id, normalizeQuestion(q));
+            questionsMap.set(String(q.id), normalizeQuestion(q));
             setCache(`q_${q.id}`, q, 24 * 60 * 60 * 1000); // 24 hours cache
           }
         }
       }
-      const questions = questionIds.map((id: string) => questionsMap.get(id)).filter(Boolean);
+      const questions = questionIds.map((id: string) => questionsMap.get(String(id))).filter(Boolean);
 
       return json({
         success: true,
@@ -799,8 +799,8 @@ export default {
           const missingIds: string[] = [];
           for (const id of questionIds) {
             const cachedQ = getCache(`q_${id}`);
-            if (cachedQ) questionsMap.set(id, cachedQ);
-            else missingIds.push(id);
+            if (cachedQ) questionsMap.set(String(id), cachedQ);
+            else missingIds.push(String(id));
           }
 
           for (let i = 0; i < missingIds.length; i += 30) {
@@ -809,7 +809,7 @@ export default {
             const qs = await Promise.all(qPromises);
             for (const q of qs) {
               if (q && q.id) {
-                questionsMap.set(q.id, q);
+                questionsMap.set(String(q.id), q);
                 setCache(`q_${q.id}`, q, 24 * 60 * 60 * 1000); // cache for 24h
               }
             }
@@ -822,7 +822,7 @@ export default {
           const questionsDetail: any[] = [];
 
           for (const qId of questionIds) {
-            const rawQ = questionsMap.get(qId);
+            const rawQ = questionsMap.get(String(qId));
             if (!rawQ) continue;
             const q = normalizeQuestion(rawQ);
 
