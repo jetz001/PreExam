@@ -2089,11 +2089,17 @@ if (url.pathname === "/api/legal/policy") {
         }
         if (url.pathname === "/api/admin/scraper/start" && request.method === "POST") {
             mockScraperRunning = true;
-            mockScraperLogs = ['[System] Initiating Real OCSC Scraper job...', '[System] Connecting to data source (job.ocsc.go.th)...'];
+            const addLog = (msg: string) => {
+                const now = new Date().toLocaleString("en-GB", { timeZone: "Asia/Bangkok" });
+                mockScraperLogs.push(`[${now}] ${msg}`);
+            };
+            mockScraperLogs = [];
+            addLog('[System] Initiating Real OCSC Scraper job...');
+            addLog('[System] Connecting to data source (job.ocsc.go.th)...');
             
             const runScraper = async () => {
                 try {
-                    mockScraperLogs.push('[Network] Fetching latest announcements from OCSC...');
+                    addLog('[Network] Fetching latest announcements from OCSC...');
                     
                     // target the real JSON API from OCSC instead of the HTML page
                     const targetUrl = "https://jobapp.ocsc.go.th/jobapi/portal/jobs";
@@ -2105,17 +2111,17 @@ if (url.pathname === "/api/legal/policy") {
                     });
                     
                     if (!res.ok) {
-                        mockScraperLogs.push(`[Error] OCSC API returned status ${res.status}.`);
+                        addLog(`[Error] OCSC API returned status ${res.status}.`);
                         mockScraperRunning = false;
                         return;
                     }
 
                     const jsonResponse = await res.json();
-                    mockScraperLogs.push('[Data] Parsing JSON elements...');
+                    addLog('[Data] Parsing JSON elements...');
                     
                     if (!Array.isArray(jsonResponse) || jsonResponse.length === 0) {
                         console.log("Warning: No jobs found or API structure changed.");
-                        mockScraperLogs.push('[Warning] No jobs found or API structure changed.');
+                        addLog('[Warning] No jobs found or API structure changed.');
                         mockScraperRunning = false;
                         return;
                     }
@@ -2138,7 +2144,7 @@ if (url.pathname === "/api/legal/policy") {
                         });
                     }
 
-                    mockScraperLogs.push(`[Data] Extracted ${parsedJobs.length} jobs. Checking for duplicates in Database...`);
+                    addLog(`[Data] Extracted ${parsedJobs.length} jobs. Checking for duplicates in Database...`);
                     
                     let addedCount = 0;
                     let skipCount = 0;
@@ -2199,18 +2205,18 @@ if (url.pathname === "/api/legal/policy") {
                     }
                     
                     if (newDocs.length > 0) {
-                        mockScraperLogs.push(`[System] Batch inserting ${newDocs.length} new jobs...`);
+                        addLog(`[System] Batch inserting ${newDocs.length} new jobs...`);
                         await firestore.batchCreateDocuments("news", newDocs);
                         addedCount = newDocs.length;
                     }
                     
                     console.log(`Saved ${addedCount} new announcements. Skipped ${skipCount} duplicates.`);
-                    mockScraperLogs.push(`[Data] Saved ${addedCount} new announcements. Skipped ${skipCount} duplicates.`);
+                    addLog(`[Data] Saved ${addedCount} new announcements. Skipped ${skipCount} duplicates.`);
                     mockScraperRunning = false;
-                    mockScraperLogs.push('[System] Scraper job completed successfully.');
+                    addLog('[System] Scraper job completed successfully.');
                 } catch (e) {
                     console.error("Scraper Error Caught:", e);
-                    mockScraperLogs.push('[Error] Failed to process scraper job: ' + String(e));
+                    addLog('[Error] Failed to process scraper job: ' + String(e));
                     mockScraperRunning = false;
                 }
             };
