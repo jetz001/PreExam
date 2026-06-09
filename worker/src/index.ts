@@ -1956,13 +1956,14 @@ if (url.pathname === "/api/legal/policy") {
             limit: 20 
           }).catch(async (e: any) => {
             console.error("Firestore composite index missing, falling back to memory sort for logs", e);
-            // Fallback: fetch without where, filter in memory
+            // Fallback: fetch by user_id only (no orderby), then sort in memory
             const allLogs = await firestore.runQuery({
               from: [{ collectionId: "system_logs" }],
-              orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
-              limit: 50
+              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: adminUserLogsMatch[1] } } },
+              limit: 200
             });
-            return allLogs.filter((l: any) => String(l.user_id) === String(adminUserLogsMatch[1])).slice(0, 20);
+            allLogs.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+            return allLogs.slice(0, 20);
           });
           
           return json({ success: true, logs });
