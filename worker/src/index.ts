@@ -615,6 +615,43 @@ export default {
         if (!saConfig) return json({ error: "missing_firebase_config" }, { status: 500 });
         const firestore = new FirestoreClient(saConfig);
 
+        // /api/public/log
+        if (url.pathname === "/api/public/log" && request.method === "POST") {
+          const body = await readJson(request);
+          if (!body || !(body as any).action) return json({ success: false, message: "Action required" }, { status: 400 });
+
+          const action = String((body as any).action);
+          const details = (body as any).details || {};
+          
+          let userId = null;
+          const authHeader = request.headers.get("Authorization");
+          if (authHeader && authHeader.startsWith("Bearer ")) {
+            try {
+              const token = authHeader.split(" ")[1];
+              const parts = token.split(".");
+              if (parts.length === 3) {
+                 const payload = JSON.parse(atob(parts[1]));
+                 if (payload.id) userId = payload.id;
+              }
+            } catch(e) {}
+          }
+
+          try {
+            await firestore.createDocument("system_logs", {
+              action,
+              details: JSON.stringify(details),
+              user_id: userId,
+              ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
+              user_agent: request.headers.get("user-agent") || "unknown",
+              created_at: new Date().toISOString()
+            });
+          } catch(e) {
+            console.error("Log error", e);
+          }
+
+          return json({ success: true });
+        }
+
         // /api/questions/subjects
         if (url.pathname === "/api/questions/subjects" && request.method === "GET") {
           const cacheKey = "qs_subjects";
