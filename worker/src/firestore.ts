@@ -104,6 +104,8 @@ export function toFirestoreDocument(data: any): any {
   return { fields };
 }
 
+const queryCache = new Map<string, { data: any, exp: number }>();
+
 export class FirestoreClient {
   private baseUrl: string;
 
@@ -130,9 +132,15 @@ export class FirestoreClient {
   }
 
   async getDocument(collectionPath: string, docId: string): Promise<any | null> {
+    const cacheKey = `get_${collectionPath}_${docId}`;
+    const cached = queryCache.get(cacheKey);
+    if (cached && cached.exp > Date.now()) return cached.data;
+
     try {
       const doc = await this.fetchApi(`/${collectionPath}/${docId}`);
-      return parseFirestoreDocument(doc);
+      const parsed = parseFirestoreDocument(doc);
+      queryCache.set(cacheKey, { data: parsed, exp: Date.now() + 15000 });
+      return parsed;
     } catch (e: any) {
       const msg = e.message ? e.message.toLowerCase() : "";
       if (msg.includes("not_found") || msg.includes("404") || msg.includes("not found")) return null;
@@ -141,6 +149,7 @@ export class FirestoreClient {
   }
 
   async createDocument(collectionPath: string, data: any, docId?: string): Promise<any> {
+    queryCache.clear();
     const doc = toFirestoreDocument(data);
     let path = `/${collectionPath}`;
     let method = "POST";
@@ -157,6 +166,7 @@ export class FirestoreClient {
   }
 
   async updateDocument(collectionPath: string, docId: string, data: any): Promise<any> {
+    queryCache.clear();
     const doc = toFirestoreDocument(data);
     const updateMask = Object.keys(data)
       .map((k) => `updateMask.fieldPaths=${encodeURIComponent(k)}`)
@@ -170,11 +180,13 @@ export class FirestoreClient {
   }
 
   async deleteDocument(collectionPath: string, docId: string): Promise<void> {
+    queryCache.clear();
     await this.fetchApi(`/${collectionPath}/${docId}`, { method: "DELETE" });
   }
 
   async batchCreateDocuments(collectionPath: string, dataArray: any[]): Promise<any> {
     if (!dataArray || dataArray.length === 0) return { success: true };
+    queryCache.clear();
     const writes = dataArray.map(data => {
       const doc = toFirestoreDocument(data);
       const docId = data.id || crypto.randomUUID().replace(/-/g, '');
@@ -197,9 +209,15 @@ export class FirestoreClient {
   }
 
   async listDocuments(collectionPath: string): Promise<any[]> {
+    const cacheKey = "list_" + collectionPath;
+    const cached = queryCache.get(cacheKey);
+    if (cached && cached.exp > Date.now()) return cached.data;
+
     try {
       const res: any = await this.fetchApi(`/${collectionPath}`);
-      return (res.documents || []).map((doc: any) => parseFirestoreDocument(doc));
+      const parsed = (res.documents || []).map((doc: any) => parseFirestoreDocument(doc));
+      queryCache.set(cacheKey, { data: parsed, exp: Date.now() + 15000 });
+      return parsed;
     } catch (e: any) {
       const msg = e.message ? e.message.toLowerCase() : "";
       if (msg.includes("not_found") || msg.includes("404") || msg.includes("not found")) return [];
@@ -209,13 +227,20 @@ export class FirestoreClient {
 
   async runQuery(query: any, parent: string = ""): Promise<any[]> {
     const url = parent ? `/${parent}:runQuery` : `:runQuery`;
+    const cacheKey = url + JSON.stringify(query);
+    const cached = queryCache.get(cacheKey);
+    if (cached && cached.exp > Date.now()) return cached.data;
+
     const res = await this.fetchApi(url, {
       method: "POST",
       body: JSON.stringify({ structuredQuery: query }),
     });
-    return (res as any[])
+    const parsed = (res as any[])
       .filter((r) => r.document)
       .map((r) => parseFirestoreDocument(r.document));
+      
+    queryCache.set(cacheKey, { data: parsed, exp: Date.now() + 15000 });
+    return parsed;
   }
 
   async runCountQuery(query: any, parent: string = ""): Promise<number> {
