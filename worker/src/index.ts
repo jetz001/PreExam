@@ -1294,7 +1294,7 @@ export default {
         if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
             try {
                 const typeFilter = url.searchParams.get("type");
-                const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 50 });
+                const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 1000 });
                 const govNews = news.filter((n: any) => n.category === "งานราชการ" && n.status !== "expired");
                 const statsMap: any = {};
                 
@@ -1474,7 +1474,7 @@ export default {
         // /api/news/agency-stats
         if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
           try {
-            const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 50 });
+            const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 1000 });
             const agencies = new Map();
             news.forEach((item: any) => {
               const agency = item.agency || (item.metadata && item.metadata.organization);
@@ -1849,7 +1849,7 @@ if (url.pathname === "/api/legal/policy") {
                 const currentYear = now.getFullYear();
 
                 // Fetch recent payments for trend map only (Limit to 200 to prevent massive reads)
-                const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], limit: 50, orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }] });
+                const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], limit: 200, orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }] });
                 
                 const trendMap: any = {};
                 for (let i = 5; i >= 0; i--) {
@@ -2064,7 +2064,7 @@ if (url.pathname === "/api/legal/policy") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
 
-          const users = await firestore.runQuery({ from: [{ collectionId: "users" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 50 });
+          const users = await firestore.runQuery({ from: [{ collectionId: "users" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
           return json(users);
         }
 
@@ -2116,20 +2116,20 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/admin/businesses" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const businesses = await firestore.runQuery({ from: [{ collectionId: "businesses" }], limit: 50 });
+          const businesses = await firestore.runQuery({ from: [{ collectionId: "businesses" }], limit: 1000 });
           businesses.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
           return json(businesses);
         }
         if (url.pathname === "/api/admin/payments" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 50 });
+          const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
           return json(payments);
         }
         if (url.pathname === "/api/admin/threads" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const threads = await firestore.runQuery({ from: [{ collectionId: "threads" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 50 });
+          const threads = await firestore.runQuery({ from: [{ collectionId: "threads" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
           return json({ threads, pagination: { page: 1, totalPages: 1, total: threads.length } });
         }
         if (url.pathname === "/api/admin/scraper/start" && request.method === "POST") {

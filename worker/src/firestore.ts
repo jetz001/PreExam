@@ -139,7 +139,7 @@ export class FirestoreClient {
     try {
       const doc = await this.fetchApi(`/${collectionPath}/${docId}`);
       const parsed = parseFirestoreDocument(doc);
-      queryCache.set(cacheKey, { data: parsed, exp: Date.now() + 15000 });
+      queryCache.set(cacheKey, { data: parsed, exp: Date.now() + 60000 });
       return parsed;
     } catch (e: any) {
       const msg = e.message ? e.message.toLowerCase() : "";
@@ -216,7 +216,7 @@ export class FirestoreClient {
     try {
       const res: any = await this.fetchApi(`/${collectionPath}`);
       const parsed = (res.documents || []).map((doc: any) => parseFirestoreDocument(doc));
-      queryCache.set(cacheKey, { data: parsed, exp: Date.now() + 15000 });
+      queryCache.set(cacheKey, { data: parsed, exp: Date.now() + 60000 });
       return parsed;
     } catch (e: any) {
       const msg = e.message ? e.message.toLowerCase() : "";
@@ -239,7 +239,7 @@ export class FirestoreClient {
       .filter((r) => r.document)
       .map((r) => parseFirestoreDocument(r.document));
       
-    queryCache.set(cacheKey, { data: parsed, exp: Date.now() + 15000 });
+    queryCache.set(cacheKey, { data: parsed, exp: Date.now() + 60000 });
     return parsed;
   }
 
