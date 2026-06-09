@@ -766,6 +766,7 @@ const UserManager = () => {
                     <table className="w-full text-left text-sm text-slate-600">
                         <thead className="bg-slate-50 text-slate-700 border-b border-slate-200">
                             <tr>
+                                <th className="px-6 py-4 font-semibold w-16">ID</th>
                                 <th className="px-6 py-4 font-semibold">
                                     {activeTab === 'sponsors' ? 'ข้อมูลธุรกิจ' : 'ข้อมูลผู้ใช้'}
                                 </th>
@@ -793,15 +794,18 @@ const UserManager = () => {
                         <tbody className="divide-y divide-slate-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">Loading users...</td>
+                                    <td colSpan="7" className="px-6 py-8 text-center text-slate-500">Loading users...</td>
                                 </tr>
                             ) : filteredUsers.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">No {activeTab.replace('_', ' ')} found.</td>
+                                    <td colSpan="7" className="px-6 py-8 text-center text-slate-500">No {activeTab.replace('_', ' ')} found.</td>
                                 </tr>
                             ) : (
                                 paginatedUsers.map((user) => (
                                     <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 text-sm font-mono text-slate-500">
+                                            {user.id}
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
                                                 {user.avatar ? (
