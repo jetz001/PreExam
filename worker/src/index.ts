@@ -624,13 +624,11 @@ export default {
           const details = (body as any).details || {};
           
           let userId = null;
-          const secret = requireJwtSecret(env);
-          if (secret) {
-            try {
-              const id = await requireUserId(request, secret);
-              if (id) userId = id;
-            } catch (e) {}
-          }
+          const secret = requireJwtSecret(env) || "default_secret";
+          try {
+            const id = await requireUserId(request, secret);
+            if (id) userId = id;
+          } catch (e) {}
 
           try {
             await firestore.createDocument("system_logs", {
