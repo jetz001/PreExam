@@ -264,7 +264,7 @@ const LogModal = ({ user, logs, onClose }) => {
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h3 className="font-bold text-lg text-gray-800 flex items-center">
                         <Activity className="w-5 h-5 mr-2 text-indigo-600" />
-                        Activity Logs: {user.display_name}
+                        System Log: {user.display_name}
                     </h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                         <X size={20} />
@@ -294,7 +294,7 @@ const LogModal = ({ user, logs, onClose }) => {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-center text-gray-500 py-8">No activity logs found.</p>
+                        <p className="text-center text-gray-500 py-8">No system log found.</p>
                     )}
                 </div>
                 <div className="p-4 bg-gray-50 flex justify-end">
@@ -869,7 +869,7 @@ const UserManager = () => {
                                             <button
                                                 onClick={() => handleViewLogs(user)}
                                                 className="hover:text-indigo-600 hover:underline focus:outline-none transition-colors text-left"
-                                                title="View Activity Logs"
+                                                title="View System Log"
                                             >
                                                 {user.last_active_at 
                                                     ? new Date(user.last_active_at).toLocaleString('en-GB') 

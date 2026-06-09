@@ -422,9 +422,10 @@ exports.getUserHistory = async (req, res) => {
 
 exports.getUserLogs = async (req, res) => {
     try {
-        const snapshot = await logsRef.where('user_id', '==', req.params.id).limit(10).get();
-        res.json({ success: true, logs: snapshot.docs.map(d => d.data()) });
+        const snapshot = await logsRef.where('user_id', '==', req.params.id).orderBy('created_at', 'desc').limit(20).get();
+        res.json({ success: true, logs: snapshot.docs.map(d => Object.assign({ id: d.id }, d.data())) });
     } catch (error) {
+        console.error("Error fetching user logs:", error);
         res.status(500).json({ message: 'Error fetching user logs' });
     }
 };
