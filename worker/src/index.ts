@@ -204,6 +204,18 @@ export default {
       }
 
       const token = await signJwtHs256({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET || "default_secret");
+      
+      try {
+        await firestore.createDocument("system_logs", {
+          action: existing.length > 0 ? "SYS_GUEST_LOGIN" : "SYS_GUEST_CREATE",
+          details: JSON.stringify({ type: "auto" }),
+          user_id: user.id,
+          ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
+          user_agent: request.headers.get("user-agent") || "unknown",
+          created_at: new Date().toISOString()
+        });
+      } catch (e) {}
+
       return json({ success: true, token, user: sanitizeUser(user) });
     }
 
@@ -265,6 +277,18 @@ export default {
       }
 
       const token = await signJwtHs256({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET || "default_secret");
+      
+      try {
+        await firestore.createDocument("system_logs", {
+          action: "SYS_GOOGLE_LOGIN",
+          details: JSON.stringify({ type: "auto" }),
+          user_id: user.id,
+          ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
+          user_agent: request.headers.get("user-agent") || "unknown",
+          created_at: new Date().toISOString()
+        });
+      } catch (e) {}
+
       return json({ success: true, token, user: sanitizeUser(user) });
     }
 
@@ -293,6 +317,18 @@ export default {
 
       const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
       const token = await signJwtHs256({ id: user.id, exp }, secret);
+
+      try {
+        await firestore.createDocument("system_logs", {
+          action: "SYS_EMAIL_LOGIN",
+          details: JSON.stringify({ type: "auto" }),
+          user_id: user.id,
+          ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
+          user_agent: request.headers.get("user-agent") || "unknown",
+          created_at: new Date().toISOString()
+        });
+      } catch (e) {}
+
       return json({ success: true, token, user: sanitizeUser(user) });
     }
 
