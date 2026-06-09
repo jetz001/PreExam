@@ -1960,7 +1960,7 @@ if (url.pathname === "/api/legal/policy") {
             const allLogs = await firestore.runQuery({
               from: [{ collectionId: "system_logs" }],
               where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: adminUserLogsMatch[1] } } },
-              limit: 200
+              limit: 50
             });
             allLogs.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
             return allLogs.slice(0, 20);

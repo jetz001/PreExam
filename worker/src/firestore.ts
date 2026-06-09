@@ -149,7 +149,9 @@ export class FirestoreClient {
   }
 
   async createDocument(collectionPath: string, data: any, docId?: string): Promise<any> {
-    queryCache.clear();
+    if (collectionPath !== "system_logs") {
+      queryCache.clear();
+    }
     const doc = toFirestoreDocument(data);
     let path = `/${collectionPath}`;
     let method = "POST";
@@ -166,7 +168,9 @@ export class FirestoreClient {
   }
 
   async updateDocument(collectionPath: string, docId: string, data: any): Promise<any> {
-    queryCache.clear();
+    if (collectionPath !== "system_logs") {
+      queryCache.clear();
+    }
     const doc = toFirestoreDocument(data);
     const updateMask = Object.keys(data)
       .map((k) => `updateMask.fieldPaths=${encodeURIComponent(k)}`)
@@ -180,13 +184,17 @@ export class FirestoreClient {
   }
 
   async deleteDocument(collectionPath: string, docId: string): Promise<void> {
-    queryCache.clear();
+    if (collectionPath !== "system_logs") {
+      queryCache.clear();
+    }
     await this.fetchApi(`/${collectionPath}/${docId}`, { method: "DELETE" });
   }
 
   async batchCreateDocuments(collectionPath: string, dataArray: any[]): Promise<any> {
     if (!dataArray || dataArray.length === 0) return { success: true };
-    queryCache.clear();
+    if (collectionPath !== "system_logs") {
+      queryCache.clear();
+    }
     const writes = dataArray.map(data => {
       const doc = toFirestoreDocument(data);
       const docId = data.id || crypto.randomUUID().replace(/-/g, '');
