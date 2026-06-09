@@ -624,16 +624,12 @@ export default {
           const details = (body as any).details || {};
           
           let userId = null;
-          const authHeader = request.headers.get("Authorization");
-          if (authHeader && authHeader.startsWith("Bearer ")) {
+          const secret = requireJwtSecret(env);
+          if (secret) {
             try {
-              const token = authHeader.split(" ")[1];
-              const parts = token.split(".");
-              if (parts.length === 3) {
-                 const payload = JSON.parse(atob(parts[1]));
-                 if (payload.id) userId = payload.id;
-              }
-            } catch(e) {}
+              const id = await requireUserId(request, secret);
+              if (id) userId = id;
+            } catch (e) {}
           }
 
           try {
