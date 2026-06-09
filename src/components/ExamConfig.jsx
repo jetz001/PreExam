@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import HomeNavbar from './HomeNavbar';
+import publicService from '../services/publicService';
 
 /* ─────────────────────────────────────────────
    ExamConfig  — Kahoot-style redesign
@@ -88,12 +89,14 @@ export default function ExamConfig({ onStart }) {
 
     const handleQuickStart = async () => {
         setLoading(true);
+        publicService.logActivity('BTN_START_EXAM', { mode, limit: quickAmount, type: 'quick' });
         await onStart({ category: '', subject: '', exam_year: '', exam_set: '', limit: quickAmount, mode });
         setLoading(false);
     };
 
     const handleAdvancedSubmit = (e) => {
         e.preventDefault();
+        publicService.logActivity('BTN_START_EXAM_ADVANCED', { ...config, mode });
         onStart({ ...config, mode });
     };
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import HomeNavbar from '../components/HomeNavbar';
+import publicService from '../services/publicService';
 
 /* ── Confetti particle ── */
 function useConfetti() {
@@ -222,6 +223,7 @@ const Home = () => {
               to="/exam"
               id="btn-solo-exam"
               className="btn-solo"
+              onClick={() => publicService.logActivity('BTN_HOME_SOLO', { label: 'สอบเดี่ยว' })}
               onMouseEnter={() => setSoloHover(true)}
               onMouseLeave={() => setSoloHover(false)}
               style={{
@@ -286,6 +288,7 @@ const Home = () => {
               to="/lobby"
               id="btn-group-exam"
               className="btn-group"
+              onClick={() => publicService.logActivity('BTN_HOME_LOBBY', { label: 'สอบกลุ่ม' })}
               onMouseEnter={() => setGroupHover(true)}
               onMouseLeave={() => setGroupHover(false)}
               style={{

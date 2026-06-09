@@ -197,13 +197,13 @@ export default function HomeNavbar() {
                 เมนูหลัก
               </div>
               {NAV_LINKS.map(link => (
-                <Link key={link.path} to={link.path} className="hn-drop-link" onClick={() => setMenuOpen(false)}>
+                <Link key={link.path} to={link.path} className="hn-drop-link" onClick={() => { setMenuOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: link.label, path: link.path }); }}>
                   <span style={{ width:7, height:7, borderRadius:'50%', background:link.color,
                     flexShrink:0, boxShadow:`0 0 8px ${link.color}` }}/>
                   {link.label}
                 </Link>
               ))}
-                  <Link to="/pricing" className="hn-drop-link" onClick={() => setMenuOpen(false)}>
+                  <Link to="/pricing" className="hn-drop-link" onClick={() => { setMenuOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: '⭐ พรีเมียม', path: '/pricing' }); }}>
                     <span style={{ width:7, height:7, borderRadius:'50%', background:'#fbbf24',
                       flexShrink:0, boxShadow:'0 0 8px #fbbf24' }}/>
                     ⭐ พรีเมียม
@@ -216,7 +216,7 @@ export default function HomeNavbar() {
                 ช่วยเหลือ
               </div>
               {HELP_LINKS.map(link => (
-                <Link key={link.path} to={link.path} className="hn-drop-link" onClick={() => setMenuOpen(false)}>
+                <Link key={link.path} to={link.path} className="hn-drop-link" onClick={() => { setMenuOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: link.label, path: link.path }); }}>
                   {link.label}
                 </Link>
               ))}
@@ -229,7 +229,7 @@ export default function HomeNavbar() {
               </div>
               {SOCIAL_LINKS.map(link => (
                 <a key={link.href} href={link.href} target="_blank" rel="noreferrer"
-                  className="hn-drop-link" onClick={() => setMenuOpen(false)}>
+                  className="hn-drop-link" onClick={() => { setMenuOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: link.label, path: link.href }); }}>
                   {link.label}
                 </a>
               ))}
@@ -263,12 +263,12 @@ export default function HomeNavbar() {
                     <div style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.76rem', marginTop:2 }}>{user.email}</div>
                   </div>
 
-                  <Link to="/profile" className="hn-drop-link" onClick={() => setProfileOpen(false)}>👤 โปรไฟล์ของฉัน</Link>
-                  <Link to="/profile/dashboard" className="hn-drop-link" onClick={() => setProfileOpen(false)}>📊 แดชบอร์ด</Link>
-                  <Link to="/profile/settings" className="hn-drop-link" onClick={() => setProfileOpen(false)}>⚙️ ตั้งค่า</Link>
+                  <Link to="/profile" className="hn-drop-link" onClick={() => { setProfileOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: 'โปรไฟล์ของฉัน', path: '/profile' }); }}>👤 โปรไฟล์ของฉัน</Link>
+                  <Link to="/profile/dashboard" className="hn-drop-link" onClick={() => { setProfileOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: 'แดชบอร์ด', path: '/profile/dashboard' }); }}>📊 แดชบอร์ด</Link>
+                  <Link to="/profile/settings" className="hn-drop-link" onClick={() => { setProfileOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: 'ตั้งค่า', path: '/profile/settings' }); }}>⚙️ ตั้งค่า</Link>
 
                   {!user.email?.startsWith('guest_') && (
-                    <Link to="/business/dashboard" className="hn-drop-link" onClick={() => setProfileOpen(false)}>
+                    <Link to="/business/dashboard" className="hn-drop-link" onClick={() => { setProfileOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: 'จัดการเพจ', path: '/business/dashboard' }); }}>
                       🏢 จัดการเพจ
                     </Link>
                   )}
