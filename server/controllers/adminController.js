@@ -92,7 +92,7 @@ exports.getDashboardStats = async (req, res) => {
 exports.getUsers = async (req, res) => {
     try {
         const snapshot = await usersRef.orderBy('created_at', 'desc').limit(1000).get();
-        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const users = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, doc_id: doc.id }));
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching users', error });
@@ -411,7 +411,7 @@ exports.getUserHistory = async (req, res) => {
         
         res.json({
             success: true,
-            user: { id: userDoc.id, ...userDoc.data() },
+            user: { ...userDoc.data(), id: userDoc.id, doc_id: userDoc.id },
             examHistory: examSnap.docs.map(d => d.data()),
             paymentHistory: pSnap.docs.map(d => d.data())
         });
@@ -422,8 +422,28 @@ exports.getUserHistory = async (req, res) => {
 
 exports.getUserLogs = async (req, res) => {
     try {
-        const snapshot = await logsRef.where('user_id', '==', req.params.id).orderBy('created_at', 'desc').limit(20).get();
-        res.json({ success: true, logs: snapshot.docs.map(d => Object.assign({ id: d.id }, d.data())) });
+        const id = req.params.id;
+        const isNumeric = /^[0-9]+$/.test(String(id));
+
+        const fetchLogs = async (value, limit = 10) => {
+            try {
+                const snapshot = await logsRef.where('user_id', '==', value).orderBy('created_at', 'desc').limit(limit).get();
+                return snapshot.docs.map(d => ({ ...d.data(), id: d.id, doc_id: d.id }));
+            } catch {
+                const snapshot = await logsRef.where('user_id', '==', value).limit(50).get();
+                const logs = snapshot.docs.map(d => ({ ...d.data(), id: d.id, doc_id: d.id }));
+                logs.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+                return logs.slice(0, limit);
+            }
+        };
+
+        const logsA = await fetchLogs(String(id), 10);
+        const logsB = isNumeric ? await fetchLogs(Number(id), 10) : [];
+        const merged = new Map();
+        for (const l of [...logsA, ...logsB]) merged.set(String(l.doc_id || l.id), l);
+        const logs = Array.from(merged.values()).sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 10);
+
+        res.json({ success: true, logs });
     } catch (error) {
         console.error("Error fetching user logs:", error);
         res.status(500).json({ message: 'Error fetching user logs' });

@@ -116,10 +116,25 @@ export default {
 
     if (url.pathname === "/api/health") {
       const saConfig = parseServiceAccount(env);
-      if (!saConfig) return json({ error: "missing_firebase_config" }, { status: 500 });
-      const firestore = new FirestoreClient(saConfig);
-      const user6 = await firestore.getDocument("users", "6");
-      return json({ ok: true, user6 });
+      if (!saConfig) {
+        return json({
+          ok: false,
+          status: "error",
+          services: {
+            firebase: "missing_config",
+            jwt: env.JWT_SECRET ? "configured" : "missing_config",
+          },
+        }, { status: 500 });
+      }
+
+      return json({
+        ok: true,
+        status: "healthy",
+        services: {
+          firebase: "configured",
+          jwt: env.JWT_SECRET ? "configured" : "missing_config",
+        },
+      });
     }
 
     if (url.pathname.startsWith("/api/ws") || url.pathname.startsWith("/api/realtime")) {
@@ -660,26 +675,44 @@ export default {
           const details = (body as any).details || {};
           
           let userId = null;
+          const authHeader = request.headers.get("authorization") || "";
           const secret = requireJwtSecret(env) || "default_secret";
           try {
             const id = await requireUserId(request, secret);
             if (id) userId = id;
           } catch (e) {}
 
+          let created: any = null;
           try {
-            await firestore.createDocument("system_logs", {
+            created = await firestore.createDocument("system_logs", {
               action,
-              details: JSON.stringify(details),
+              details,
               user_id: userId,
               ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
               user_agent: request.headers.get("user-agent") || "unknown",
               created_at: new Date().toISOString()
             });
-          } catch(e) {
-            console.error("Log error", e);
+          } catch (e: any) {
+            const msg = e?.message ? String(e.message) : "firestore_write_failed";
+            return json(
+              {
+                success: false,
+                stored: false,
+                error: msg.slice(0, 200),
+                auth_present: Boolean(authHeader),
+                user_id: userId
+              },
+              { status: 500 }
+            );
           }
 
-          return json({ success: true });
+          return json({
+            success: true,
+            stored: true,
+            doc_id: created?.id || null,
+            auth_present: Boolean(authHeader),
+            user_id: userId
+          });
         }
 
         // /api/questions/subjects
@@ -1979,22 +2012,36 @@ if (url.pathname === "/api/legal/policy") {
         if (adminUserLogsMatch && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          let logs = await firestore.runQuery({ 
-            from: [{ collectionId: "system_logs" }], 
-            where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: adminUserLogsMatch[1] } } },
-            orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
-            limit: 20 
-          }).catch(async (e: any) => {
-            console.error("Firestore composite index missing, falling back to memory sort for logs", e);
-            // Fallback: fetch by user_id only (no orderby), then sort in memory
-            const allLogs = await firestore.runQuery({
+          const userId = adminUserLogsMatch[1];
+
+          const fetchLogs = async (value: any) => {
+            return firestore.runQuery({
               from: [{ collectionId: "system_logs" }],
-              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: adminUserLogsMatch[1] } } },
-              limit: 50
+              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value } },
+              orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
+              limit: 10
+            }).catch(async () => {
+              const allLogs = await firestore.runQuery({
+                from: [{ collectionId: "system_logs" }],
+                where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value } },
+                limit: 50
+              });
+              allLogs.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+              return allLogs.slice(0, 10);
             });
-            allLogs.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-            return allLogs.slice(0, 20);
-          });
+          };
+
+          const logsA = await fetchLogs({ stringValue: userId });
+          const numericId = /^[0-9]+$/.test(userId) ? userId : null;
+          const logsB = numericId ? await fetchLogs({ integerValue: numericId }) : [];
+
+          const merged = new Map<string, any>();
+          for (const l of [...logsA, ...logsB]) {
+            const key = String((l as any).doc_id || (l as any).id || "");
+            if (!key) continue;
+            merged.set(key, l);
+          }
+          const logs = Array.from(merged.values()).sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 10);
           
           return json({ success: true, logs });
         }

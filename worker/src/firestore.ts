@@ -58,21 +58,31 @@ export async function getFirestoreToken(config: FirestoreConfig): Promise<string
 export function parseFirestoreDocument(doc: any): any {
   if (!doc || !doc.name) return null;
   const fields = doc.fields || {};
-  const res: any = { id: doc.name.split("/").pop() };
+  const docId = doc.name.split("/").pop();
+  const res: any = { id: docId, doc_id: docId };
   for (const [k, v] of Object.entries(fields)) {
     const val: any = v;
-    if (val.stringValue !== undefined) res[k] = val.stringValue;
-    else if (val.integerValue !== undefined) res[k] = parseInt(val.integerValue, 10);
-    else if (val.doubleValue !== undefined) res[k] = parseFloat(val.doubleValue);
-    else if (val.booleanValue !== undefined) res[k] = val.booleanValue;
-    else if (val.timestampValue !== undefined) res[k] = val.timestampValue;
-    else if (val.nullValue !== undefined) res[k] = null;
+    let parsedValue: any;
+    if (val.stringValue !== undefined) parsedValue = val.stringValue;
+    else if (val.integerValue !== undefined) parsedValue = parseInt(val.integerValue, 10);
+    else if (val.doubleValue !== undefined) parsedValue = parseFloat(val.doubleValue);
+    else if (val.booleanValue !== undefined) parsedValue = val.booleanValue;
+    else if (val.timestampValue !== undefined) parsedValue = val.timestampValue;
+    else if (val.nullValue !== undefined) parsedValue = null;
     else if (val.arrayValue !== undefined) {
-      res[k] = (val.arrayValue.values || []).map((arrVal: any) => arrVal.stringValue ?? arrVal.integerValue ?? arrVal.booleanValue);
+      parsedValue = (val.arrayValue.values || []).map((arrVal: any) => arrVal.stringValue ?? arrVal.integerValue ?? arrVal.booleanValue);
     } else if (val.mapValue !== undefined) {
-      res[k] = parseFirestoreDocument({ name: "dummy", fields: val.mapValue.fields });
-      delete res[k].id;
+      parsedValue = parseFirestoreDocument({ name: "dummy", fields: val.mapValue.fields });
+      delete parsedValue.id;
+      delete parsedValue.doc_id;
     }
+
+    if (k === "id") {
+      res.field_id = parsedValue;
+      continue;
+    }
+
+    res[k] = parsedValue;
   }
   return res;
 }

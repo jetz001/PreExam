@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone, Globe, FileText, Activity, Mail, ArrowUp, ArrowDown } from 'lucide-react';
+import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone, Globe, FileText, Activity, Mail, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
 
@@ -257,7 +257,7 @@ const HistoryModal = ({ user, history, onClose }) => {
     );
 };
 
-const LogModal = ({ user, logs, onClose }) => {
+const LogModal = ({ user, logs, onClose, onRefresh, isRefreshing }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
@@ -266,9 +266,21 @@ const LogModal = ({ user, logs, onClose }) => {
                         <Activity className="w-5 h-5 mr-2 text-indigo-600" />
                         System Log: {user.display_name}
                     </h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <X size={20} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {onRefresh && (
+                            <button
+                                onClick={onRefresh}
+                                disabled={isRefreshing}
+                                className="text-slate-600 hover:bg-slate-100 p-2 rounded transition-colors border border-slate-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                                title="Refresh"
+                            >
+                                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                            </button>
+                        )}
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
                     {logs && logs.length > 0 ? (
@@ -434,6 +446,7 @@ const UserManager = () => {
     const [historyData, setHistoryData] = useState(null);
     const [viewingLogsUser, setViewingLogsUser] = useState(null);
     const [logsData, setLogsData] = useState(null);
+    const [isLogsLoading, setIsLogsLoading] = useState(false);
     const [viewingProfileUser, setViewingProfileUser] = useState(null);
     const [isAddAdminModalOpen, setIsAddAdminModalOpen] = useState(false);
 
@@ -455,9 +468,14 @@ const UserManager = () => {
         setSortConfig({ key, direction });
     };
 
-    const { data: users = [], isLoading } = useQuery({
+    const { data: users = [], isLoading, isFetching, refetch } = useQuery({
         queryKey: ['users'],
-        queryFn: adminApi.getUsers
+        queryFn: adminApi.getUsers,
+        staleTime: 1000 * 60 * 10,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: false,
+        retry: 1
     });
 
     const broadcastMutation = useMutation({
@@ -557,6 +575,7 @@ const UserManager = () => {
 
     const handleViewLogs = async (user) => {
         try {
+            setIsLogsLoading(true);
             const response = await adminApi.getUserLogs(user.id);
             if (response.success) {
                 setLogsData(response.logs);
@@ -564,6 +583,8 @@ const UserManager = () => {
             }
         } catch (error) {
             toast.error('Failed to load logs');
+        } finally {
+            setIsLogsLoading(false);
         }
     };
 
@@ -694,6 +715,15 @@ const UserManager = () => {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => refetch()}
+                            disabled={isFetching}
+                            className="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm transition-colors whitespace-nowrap border border-slate-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                            title="Refresh users"
+                        >
+                            <RefreshCw size={16} className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                            รีเฟรช
+                        </button>
                         <button
                             onClick={() => {
                                 setBroadcastTargetUser(null);
@@ -1019,9 +1049,12 @@ const UserManager = () => {
                 <LogModal
                     user={viewingLogsUser}
                     logs={logsData}
+                    onRefresh={() => handleViewLogs(viewingLogsUser)}
+                    isRefreshing={isLogsLoading}
                     onClose={() => {
                         setViewingLogsUser(null);
                         setLogsData(null);
+                        setIsLogsLoading(false);
                     }}
                 />
             )}

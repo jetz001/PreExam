@@ -55,8 +55,8 @@ export default function HomeNavbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleLogout = () => {
-    publicService.logActivity?.('BTN_LOGOUT', { type: 'manual' });
+  const handleLogout = async () => {
+    await publicService.logActivity?.('BTN_LOGOUT', { type: 'manual' });
     authService.logout();
     setUser(null);
     setProfileOpen(false);

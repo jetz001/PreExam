@@ -21,8 +21,8 @@ const Navbar = () => {
         setUser(currentUser);
     }, [location]);
 
-    const handleLogout = () => {
-        publicService.logActivity('BTN_LOGOUT', { type: 'manual' });
+    const handleLogout = async () => {
+        await publicService.logActivity('BTN_LOGOUT', { type: 'manual' });
         authService.logout();
         setUser(null);
         navigate('/login');

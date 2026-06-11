@@ -4,6 +4,7 @@ import { LayoutDashboard, PlusCircle, List, LogOut, Wallet, Building2, User, Set
 import { useAuth } from '../context/AuthContext';
 
 import businessApi from '../services/businessApi';
+import publicService from '../services/publicService';
 import SystemBroadcast from '../components/common/SystemBroadcast';
 
 const BusinessLayout = () => {
@@ -30,7 +31,8 @@ const BusinessLayout = () => {
 
 
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await publicService.logActivity('BTN_LOGOUT', { type: 'manual' });
         logout();
         navigate('/auth/business/login');
     };
