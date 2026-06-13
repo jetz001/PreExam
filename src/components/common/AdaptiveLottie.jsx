@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Lottie from 'lottie-react';
 import { motion } from 'framer-motion';
 import { ArrowRightCircle, CheckCircle2, CircleX } from 'lucide-react';
@@ -46,6 +46,17 @@ const ONSCREEN_POSITION_BY_OFFSCREEN = {
 const parseDuration = (input) => {
     const parsed = Number.parseFloat(String(input || '').replace(/[^0-9.]/g, ''));
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 0.8;
+};
+
+const getAnimationDurationSeconds = (animationData) => {
+    const frameRate = Number(animationData?.fr);
+    const inPoint = Number(animationData?.ip);
+    const outPoint = Number(animationData?.op);
+
+    if (!Number.isFinite(frameRate) || frameRate <= 0) return null;
+    if (!Number.isFinite(inPoint) || !Number.isFinite(outPoint) || outPoint <= inPoint) return null;
+
+    return (outPoint - inPoint) / frameRate;
 };
 
 const parseDelayPercent = (input) => {
@@ -133,24 +144,13 @@ const AdaptiveLottie = ({
     durationText = '0.8s',
     delayMode = 'normal',
     delayPercent = '20',
-    useMotionPath = false
+    useMotionPath = false,
+    hideAfterDuration = false,
+    forceLoop = false,
+    overlayOffsetY = 0
 }) => {
     const lottieRef = useRef(null);
-
-    useEffect(() => {
-        if (!lottieRef.current) return undefined;
-        lottieRef.current.setSpeed?.(speed);
-        if (autoplay) {
-            lottieRef.current.play?.();
-        } else {
-            lottieRef.current.stop?.();
-        }
-    }, [animationData, autoplay, speed]);
-
-    useEffect(() => () => {
-        lottieRef.current?.stop?.();
-        lottieRef.current?.destroy?.();
-    }, []);
+    const [isVisible, setIsVisible] = useState(true);
 
     const sizeStyle = SCALE_MAP[scale] || SCALE_MAP.half;
     const offset = OFFSET_MAP[direction] || OFFSET_MAP.center;
@@ -171,7 +171,55 @@ const AdaptiveLottie = ({
         };
     }, [startPosition, endPosition, delayMode, delayPercent, durationText]);
 
-    if (!animationData) return null;
+    const effectiveLoop = useMemo(() => {
+        if (loop || forceLoop) return true;
+
+        const animationDurationSeconds = getAnimationDurationSeconds(animationData);
+        if (!animationDurationSeconds || !useMotionPath) return false;
+
+        const playbackDurationSeconds = animationDurationSeconds / (speed > 0 ? speed : 1);
+        return playbackDurationSeconds < motionConfig.duration;
+    }, [animationData, forceLoop, loop, motionConfig.duration, speed, useMotionPath]);
+
+    useEffect(() => {
+        if (!lottieRef.current) return undefined;
+        lottieRef.current.loop = effectiveLoop;
+        lottieRef.current.setSpeed?.(speed);
+        if (autoplay) {
+            lottieRef.current.play?.();
+        } else {
+            lottieRef.current.stop?.();
+        }
+    }, [animationData, autoplay, effectiveLoop, speed]);
+
+    useEffect(() => () => {
+        lottieRef.current?.stop?.();
+        lottieRef.current?.destroy?.();
+    }, []);
+
+    useEffect(() => {
+        setIsVisible(true);
+    }, [animationData, startPosition, endPosition, durationText, delayMode, delayPercent, speed]);
+
+    useEffect(() => {
+        if (!hideAfterDuration) {
+            setIsVisible(true);
+            return undefined;
+        }
+
+        if (useMotionPath) {
+            return undefined;
+        }
+
+        const timeoutMs = parseDuration(durationText) * 1000;
+        const timer = setTimeout(() => {
+            setIsVisible(false);
+        }, timeoutMs);
+
+        return () => clearTimeout(timer);
+    }, [durationText, hideAfterDuration, animationData, startPosition, endPosition, delayMode, delayPercent, speed]);
+
+    if (!animationData || !isVisible) return null;
 
     const frame = (
         <div className={`relative flex flex-col items-center justify-center ${display === 'inline' ? className : ''}`}>
@@ -187,9 +235,16 @@ const AdaptiveLottie = ({
                 <Lottie
                     lottieRef={lottieRef}
                     animationData={animationData}
-                    loop={loop}
+                    loop={effectiveLoop}
                     autoplay={autoplay}
-                    onComplete={onComplete}
+                    onComplete={() => {
+                        if (effectiveLoop) {
+                            lottieRef.current?.goToAndPlay?.(0, true);
+                            return;
+                        }
+
+                        onComplete?.();
+                    }}
                     style={{ width: '100%', height: '100%' }}
                     rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
                 />
@@ -211,7 +266,12 @@ const AdaptiveLottie = ({
                         initial={{ x: motionConfig.x[0], y: motionConfig.y[0] }}
                         animate={{ x: motionConfig.x, y: motionConfig.y }}
                         transition={{ duration: motionConfig.duration, ease: motionConfig.ease, times: motionConfig.times }}
-                        style={{ translateX: '-50%', translateY: '-50%' }}
+                        onAnimationComplete={() => {
+                            if (hideAfterDuration) {
+                                setIsVisible(false);
+                            }
+                        }}
+                        style={{ translateX: '-50%', translateY: `calc(-50% + ${overlayOffsetY}px)` }}
                     >
                         {frame}
                     </motion.div>
@@ -227,6 +287,11 @@ const AdaptiveLottie = ({
                 initial={{ x: motionConfig.x[0], y: motionConfig.y[0] }}
                 animate={{ x: motionConfig.x, y: motionConfig.y }}
                 transition={{ duration: motionConfig.duration, ease: motionConfig.ease, times: motionConfig.times }}
+                onAnimationComplete={() => {
+                    if (hideAfterDuration) {
+                        setIsVisible(false);
+                    }
+                }}
             >
                 {frame}
             </motion.div>

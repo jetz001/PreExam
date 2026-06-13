@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { X, PlayCircle, ArrowRight, Triangle, Diamond, Circle, Square } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AdaptiveLottie from '../../components/common/AdaptiveLottie';
-import { getAnimationPreset } from '../../config/animationRegistry';
+import { getAnimationAsset, getAnimationPreset } from '../../config/animationRegistry';
 
 const choiceCards = [
     { key: 'A', label: 'ส่วนราชการสามารถอนุมัติเองได้ทันที', color: 'bg-[#e21b3c]', icon: Triangle },
@@ -121,15 +121,30 @@ const buildPreviewMotionConfig = (startPosition, endPosition, startCoords, endCo
 };
 
 const PreviewAnimatedLayer = ({ isAnimationDisabled, motionConfig, motionDuration, previewState, previewConfig }) => {
-    if (isAnimationDisabled) return null;
+    const [isVisible, setIsVisible] = React.useState(true);
+
+    React.useEffect(() => {
+        setIsVisible(true);
+    }, [
+        previewState.assetKey,
+        previewState.startPosition,
+        previewState.endPosition,
+        previewState.durationText,
+        previewState.delayMode,
+        previewState.delayPercent,
+        previewState.speedText
+    ]);
+
+    if (isAnimationDisabled || !isVisible) return null;
 
     return (
         <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
             <motion.div
-                className="absolute left-1/2 top-1/2"
+                className="absolute left-1/2 top-[60%]"
                 initial={{ x: motionConfig.x[0], y: motionConfig.y[0] }}
                 animate={{ x: motionConfig.x, y: motionConfig.y }}
                 transition={{ duration: motionDuration, ease: motionConfig.ease, times: motionConfig.times }}
+                onAnimationComplete={() => setIsVisible(false)}
                 style={{ translateX: '-50%', translateY: '-50%' }}
             >
                 <AdaptiveLottie
@@ -138,7 +153,8 @@ const PreviewAnimatedLayer = ({ isAnimationDisabled, motionConfig, motionDuratio
                     scale={previewConfig.scale}
                     direction={previewConfig.direction}
                     speed={previewConfig.speed}
-                    loop
+                    forceLoop
+                    overlayOffsetY={170}
                     display="inline"
                     className="mx-auto"
                 />
@@ -246,7 +262,7 @@ const AnimationPreviewMockup = () => {
 
     const previewState = location.state || {};
     const preset = getAnimationPreset(previewState.presetKey || 'examSkipFirstAnswer');
-    const asset = previewState.assetKey ? getAnimationPreset(previewState.assetKey) : null;
+    const asset = previewState.assetKey ? getAnimationAsset(previewState.assetKey) : null;
     const isAnimationDisabled = !previewState.assetKey;
 
     const previewConfig = {

@@ -55,7 +55,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
         queryFn: publicService.getSystemSettings,
         staleTime: 60000
     });
-    const animationSettings = publicSettingsResponse?.settings?.animation_settings || {};
+    const runtimeAnimationSettings = publicSettingsResponse?.settings || {};
 
     useEffect(() => {
         if (mode === 'simulation') {
@@ -79,7 +79,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
     }, []);
 
     const showTransientAnimation = useCallback((presetKey, duration = 900) => {
-        const preset = resolveAnimationPreset(presetKey, animationSettings);
+        const preset = resolveAnimationPreset(presetKey, runtimeAnimationSettings);
         if (preset.disabled || !preset.animationData) return;
         const resolvedDuration = parseDurationMs(preset.durationText, duration);
         setTransientAnimation({
@@ -92,7 +92,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
         transientAnimationTimeoutRef.current = setTimeout(() => {
             setTransientAnimation(null);
         }, resolvedDuration);
-    }, [animationSettings]);
+    }, [runtimeAnimationSettings]);
 
     const handleAnswer = (choice) => {
         const currentQuestionId = questions[currentIndex].id;
@@ -390,6 +390,8 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
                     delayMode={transientAnimation.delayMode}
                     delayPercent={transientAnimation.delayPercent}
                     useMotionPath
+                    hideAfterDuration
+                    overlayOffsetY={170}
                     display="overlay"
                 />
             )}

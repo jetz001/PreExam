@@ -18,9 +18,9 @@ const ExamResult = ({ result, onRetry }) => {
         queryFn: publicService.getSystemSettings,
         staleTime: 60000
     });
-    const animationSettings = publicSettingsResponse?.settings?.animation_settings || {};
-    const inlineAnimation = resolveAnimationPreset(isPassed ? 'examResultPass' : 'examResultFail', animationSettings);
-    const introAnimation = resolveAnimationPreset('examFinish', animationSettings);
+    const runtimeAnimationSettings = publicSettingsResponse?.settings || {};
+    const inlineAnimation = resolveAnimationPreset(isPassed ? 'examResultPass' : 'examResultFail', runtimeAnimationSettings);
+    const introAnimation = resolveAnimationPreset('examFinish', runtimeAnimationSettings);
     const [showIntroAnimation, setShowIntroAnimation] = React.useState(true);
 
     React.useEffect(() => {
@@ -155,6 +155,7 @@ const ExamResult = ({ result, onRetry }) => {
                         delayMode={introAnimation.delayMode}
                         delayPercent={introAnimation.delayPercent}
                         useMotionPath
+                        hideAfterDuration
                         display="overlay"
                     />
                 )}
@@ -200,6 +201,7 @@ const ExamResult = ({ result, onRetry }) => {
                                 delayMode={inlineAnimation.delayMode}
                                 delayPercent={inlineAnimation.delayPercent}
                                 useMotionPath
+                                hideAfterDuration
                                 display="inline"
                                 className="mx-auto"
                             />
