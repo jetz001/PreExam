@@ -10,6 +10,7 @@ const Exam = () => {
     const [questions, setQuestions] = useState([]);
     const [config, setConfig] = useState(null);
     const [result, setResult] = useState(null);
+    const [sessionKey, setSessionKey] = useState(0);
     const location = useLocation();
 
     useEffect(() => {
@@ -32,7 +33,9 @@ const Exam = () => {
 
     const handleStart = async (examConfig) => {
         try {
+            setSessionKey((prev) => prev + 1);
             setConfig(examConfig);
+            setResult(null);
             const data = await examService.getQuestions({ ...examConfig, orderBy: 'random' });
             // Check if data.data is array (legacy) or object (paginated)
             const questionsList = Array.isArray(data.data) ? data.data : (data.data.rows || []);
@@ -78,7 +81,15 @@ const Exam = () => {
         setStep('config');
         setQuestions([]);
         setResult(null);
+        setConfig(null);
+        setSessionKey((prev) => prev + 1);
     };
+
+    useEffect(() => {
+        if (step === 'result' && questions.length > 0 && (result?.questions?.length || result?.answers)) {
+            setQuestions([]);
+        }
+    }, [questions.length, result, step]);
 
     return (
         <>
@@ -88,6 +99,7 @@ const Exam = () => {
             {/* Taking / Result keep their own layout */}
             {step === 'taking' && (
                 <ExamTaking
+                    key={`exam-taking-${sessionKey}`}
                     questions={questions}
                     mode={config.mode}
                     onSubmit={handleSubmit}
@@ -95,7 +107,7 @@ const Exam = () => {
             )}
             {step === 'result' && (
                 <div className="min-h-screen bg-gray-50 py-8">
-                    <ExamResult result={result} onRetry={handleRetry} />
+                    <ExamResult key={`exam-result-${sessionKey}`} result={result} onRetry={handleRetry} />
                 </div>
             )}
         </>

@@ -27,6 +27,8 @@ export function generateStaticParams() {
     { slug: ['admin', 'scraper'] },
     { slug: ['admin', 'generator'] },
     { slug: ['admin', 'seasons'] },
+    { slug: ['admin', 'animations'] },
+    { slug: ['admin', 'animations', 'preview'] },
     { slug: ['admin', 'support'] },
     { slug: ['admin', 'backups'] },
     { slug: ['exam'] },

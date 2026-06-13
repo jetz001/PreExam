@@ -18,8 +18,10 @@ import {
     Shield,
     Database,
     Activity,
-    Bot,
-    Trophy
+    Trophy,
+    ChevronDown,
+    FolderKanban,
+    Sparkles
 } from 'lucide-react';
 
 import { Toaster } from 'react-hot-toast';
@@ -27,6 +29,7 @@ import SystemBroadcast from '../components/common/SystemBroadcast';
 
 const AdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [collapsedGroups, setCollapsedGroups] = useState({});
     const location = useLocation();
     const navigate = useNavigate();
     const { user, loading } = useAuth();
@@ -42,30 +45,77 @@ const AdminLayout = () => {
     if (loading) return null; // Or a loader
     if (!user || user.role !== 'admin') return null;
 
-    const menuItems = [
-        { path: '/admin', label: 'ภาพรวมธุรกิจ', icon: LayoutDashboard },
-        { path: '/admin/businesses', label: 'จัดการเพจธุรกิจ', icon: Store },
-        { path: '/admin/questions', label: 'จัดการคลังข้อสอบ', icon: FileQuestion },
-        { path: '/admin/payments', label: 'ตรวจสอบการชำระเงิน', icon: CreditCard },
-        { path: '/admin/users', label: 'จัดการสมาชิก', icon: Users },
-        { path: '/admin/community', label: 'จัดการชุมชน', icon: MonitorPlay },
-        { path: '/admin/scraper', label: 'ระบบดึงข้อมูล (Scraper)', icon: Activity },
-        { path: '/admin/seasons', label: 'ฤดูกาล & แร้งกิ้ง', icon: Trophy },
-        { path: '/admin/news', label: 'ข่าวสาร & Affiliate', icon: Newspaper },
-        { path: '/admin/inbox', label: 'กล่องข้อความ & รายงาน', icon: Inbox },
-        { path: '/admin/rooms', label: 'จัดการห้องสอบ', icon: MonitorPlay },
-        { path: '/admin/ads', label: 'จัดการโฆษณา (Ads)', icon: Megaphone },
-        { path: '/admin/support', label: 'ศูนย์ช่วยเหลือ (Tickets)', icon: LifeBuoy },
-        { path: '/admin/backups', label: 'ระบบสำรองข้อมูล (Backup)', icon: Database },
-        { path: '/admin/legal', label: 'PDPA/Legal', icon: Shield },
-        { path: '/admin/settings', label: 'ตั้งค่าระบบ', icon: Settings },
-
+    const menuGroups = [
+        {
+            id: 'overview',
+            label: 'ภาพรวม',
+            items: [
+                { path: '/admin', label: 'ภาพรวมธุรกิจ', icon: LayoutDashboard },
+                { path: '/admin/users', label: 'จัดการสมาชิก', icon: Users },
+                { path: '/admin/payments', label: 'ตรวจสอบการชำระเงิน', icon: CreditCard },
+            ]
+        },
+        {
+            id: 'exam',
+            label: 'ระบบสอบ',
+            items: [
+                { path: '/admin/questions', label: 'จัดการคลังข้อสอบ', icon: FileQuestion },
+                { path: '/admin/rooms', label: 'จัดการห้องสอบ', icon: MonitorPlay },
+                { path: '/admin/seasons', label: 'ฤดูกาล & แร้งกิ้ง', icon: Trophy },
+            ]
+        },
+        {
+            id: 'motion',
+            label: 'แอนิเมชันและเอฟเฟกต์',
+            items: [
+                { path: '/admin/animations', label: 'Animation Studio', icon: Sparkles },
+            ]
+        },
+        {
+            id: 'business-content',
+            label: 'ธุรกิจและคอนเทนต์',
+            items: [
+                { path: '/admin/businesses', label: 'จัดการเพจธุรกิจ', icon: Store },
+                { path: '/admin/community', label: 'จัดการชุมชน', icon: MonitorPlay },
+                { path: '/admin/news', label: 'ข่าวสาร & Affiliate', icon: Newspaper },
+                { path: '/admin/ads', label: 'จัดการโฆษณา (Ads)', icon: Megaphone },
+            ]
+        },
+        {
+            id: 'ops',
+            label: 'ปฏิบัติการ',
+            items: [
+                { path: '/admin/inbox', label: 'กล่องข้อความ & รายงาน', icon: Inbox },
+                { path: '/admin/support', label: 'ศูนย์ช่วยเหลือ (Tickets)', icon: LifeBuoy },
+                { path: '/admin/scraper', label: 'ระบบดึงข้อมูล (Scraper)', icon: Activity },
+            ]
+        },
+        {
+            id: 'system',
+            label: 'ระบบและความปลอดภัย',
+            items: [
+                { path: '/admin/backups', label: 'ระบบสำรองข้อมูล (Backup)', icon: Database },
+                { path: '/admin/legal', label: 'PDPA/Legal', icon: Shield },
+                { path: '/admin/settings', label: 'ตั้งค่าระบบ', icon: Settings },
+            ]
+        }
     ];
+
+    const menuItems = menuGroups.flatMap((group) => group.items);
 
     const isActive = (path) => {
         if (path === '/admin' && location.pathname === '/admin') return true;
         if (path !== '/admin' && location.pathname.startsWith(path)) return true;
         return false;
+    };
+
+    const isGroupActive = (group) => group.items.some((item) => isActive(item.path));
+
+    const toggleGroup = (groupId) => {
+        setCollapsedGroups((prev) => ({
+            ...prev,
+            [groupId]: !prev[groupId]
+        }));
     };
 
     return (
@@ -87,23 +137,89 @@ const AdminLayout = () => {
                 </div>
 
                 <nav className="flex-1 overflow-y-auto py-4">
-                    <ul className="space-y-1 px-2">
-                        {menuItems.map((item) => (
-                            <li key={item.path}>
-                                <Link
-                                    to={item.path}
-                                    className={`flex items-center p-3 rounded-lg transition-colors group
-                                        ${isActive(item.path)
-                                            ? 'bg-gradient-to-r from-yellow-500/20 to-transparent text-yellow-300 border-l-4 border-yellow-400'
-                                            : 'text-slate-300 hover:bg-white/10 hover:text-white'}
-                                    `}
-                                >
-                                    <item.icon size={24} strokeWidth={1.5} className={`${isActive(item.path) ? 'text-yellow-400' : 'text-slate-400 group-hover:text-white'}`} />
-                                    {sidebarOpen && <span className="ml-3 font-medium">{item.label}</span>}
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
+                    <div className="px-3">
+                        {sidebarOpen && (
+                            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
+                                <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                                    <FolderKanban size={16} className="text-yellow-300" />
+                                    เมนูแอดมิน
+                                </div>
+                                <p className="mt-1 text-xs leading-5 text-slate-300">
+                                    โครงสร้างนี้รองรับการเพิ่มเมนูใหม่ได้ง่าย แยกตามหมวดเพื่อไม่ให้ sidebar ยาวเกินไป
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="space-y-3">
+                            {menuGroups.map((group) => {
+                                const collapsed = !!collapsedGroups[group.id];
+                                const groupActive = isGroupActive(group);
+
+                                return (
+                                    <div key={group.id} className="rounded-2xl border border-white/8 bg-white/[0.03]">
+                                        {sidebarOpen ? (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleGroup(group.id)}
+                                                    className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left transition-colors ${
+                                                        groupActive ? 'bg-white/10 text-white' : 'text-slate-200 hover:bg-white/8'
+                                                    }`}
+                                                >
+                                                    <div>
+                                                        <div className="text-sm font-semibold">{group.label}</div>
+                                                        <div className="text-[11px] text-slate-400">{group.items.length} เมนู</div>
+                                                    </div>
+                                                    <ChevronDown
+                                                        size={18}
+                                                        className={`transition-transform ${collapsed ? '-rotate-90' : 'rotate-0'} ${groupActive ? 'text-yellow-300' : 'text-slate-400'}`}
+                                                    />
+                                                </button>
+
+                                                {!collapsed && (
+                                                    <ul className="space-y-1 px-2 pb-2">
+                                                        {group.items.map((item) => (
+                                                            <li key={item.path}>
+                                                                <Link
+                                                                    to={item.path}
+                                                                    className={`flex items-center rounded-xl p-3 transition-colors group
+                                                                        ${isActive(item.path)
+                                                                            ? 'bg-gradient-to-r from-yellow-500/20 to-transparent text-yellow-300 border-l-4 border-yellow-400'
+                                                                            : 'text-slate-300 hover:bg-white/10 hover:text-white'}
+                                                                    `}
+                                                                >
+                                                                    <item.icon size={22} strokeWidth={1.5} className={`${isActive(item.path) ? 'text-yellow-400' : 'text-slate-400 group-hover:text-white'}`} />
+                                                                    <span className="ml-3 font-medium">{item.label}</span>
+                                                                </Link>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <ul className="space-y-1 p-2">
+                                                {group.items.map((item) => (
+                                                    <li key={item.path}>
+                                                        <Link
+                                                            to={item.path}
+                                                            title={item.label}
+                                                            className={`flex items-center justify-center rounded-xl p-3 transition-colors group
+                                                                ${isActive(item.path)
+                                                                    ? 'bg-gradient-to-r from-yellow-500/20 to-transparent text-yellow-300 border-l-4 border-yellow-400'
+                                                                    : 'text-slate-300 hover:bg-white/10 hover:text-white'}
+                                                            `}
+                                                        >
+                                                            <item.icon size={22} strokeWidth={1.5} className={`${isActive(item.path) ? 'text-yellow-400' : 'text-slate-400 group-hover:text-white'}`} />
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </nav>
 
                 <div className="p-4 border-t border-royal-blue-800">

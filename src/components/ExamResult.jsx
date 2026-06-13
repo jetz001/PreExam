@@ -1,15 +1,35 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { CheckCircle, XCircle } from 'lucide-react';
 import DetailedSolution from './exam/DetailedSolution';
 import AdSlot from './ads/AdSlot';
 import HomeNavbar from './HomeNavbar';
+import AdaptiveLottie from './common/AdaptiveLottie';
+import publicService from '../services/publicService';
+import { resolveAnimationPreset } from '../config/animationRuntime';
 
 const ExamResult = ({ result, onRetry }) => {
     const score = result.score || 0;
     const totalScore = result.total_score || result.total_questions || (result.questions ? result.questions.length : 1);
     const percentage = totalScore > 0 ? (score / totalScore) * 100 : 0;
     const isPassed = percentage >= 60;
+    const { data: publicSettingsResponse } = useQuery({
+        queryKey: ['publicSystemSettings'],
+        queryFn: publicService.getSystemSettings,
+        staleTime: 60000
+    });
+    const animationSettings = publicSettingsResponse?.settings?.animation_settings || {};
+    const inlineAnimation = resolveAnimationPreset(isPassed ? 'examResultPass' : 'examResultFail', animationSettings);
+    const introAnimation = resolveAnimationPreset('examFinish', animationSettings);
+    const [showIntroAnimation, setShowIntroAnimation] = React.useState(true);
+
+    React.useEffect(() => {
+        setShowIntroAnimation(true);
+        const parsedDuration = Number.parseFloat(String(introAnimation.durationText || '').replace(/[^0-9.]/g, ''));
+        const introDurationMs = Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration * 1000 : 950;
+        const timer = setTimeout(() => setShowIntroAnimation(false), introDurationMs);
+        return () => clearTimeout(timer);
+    }, [introAnimation.durationText, isPassed, result?.id]);
 
     return (
         <>
@@ -122,6 +142,23 @@ const ExamResult = ({ result, onRetry }) => {
                 {/* Floating Transparent Navbar */}
                 <HomeNavbar />
 
+                {showIntroAnimation && !introAnimation.disabled && introAnimation.animationData && (
+                    <AdaptiveLottie
+                        key={`${introAnimation.key}-${isPassed ? 'pass' : 'fail'}`}
+                        animationData={introAnimation.animationData}
+                        scale="full"
+                        direction={introAnimation.direction}
+                        speed={introAnimation.speed}
+                        startPosition={introAnimation.startPosition}
+                        endPosition={introAnimation.endPosition}
+                        durationText={introAnimation.durationText}
+                        delayMode={introAnimation.delayMode}
+                        delayPercent={introAnimation.delayPercent}
+                        useMotionPath
+                        display="overlay"
+                    />
+                )}
+
                 {/* Background blobs */}
                 <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
                     <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'60vw', height:'60vw', maxWidth:600, maxHeight:600, borderRadius:'50%', background: isPassed ? 'radial-gradient(circle at 40% 40%,#22c55e 0%,#15803d 60%,transparent 100%)' : 'radial-gradient(circle at 40% 40%,#e53935 0%,#c62828 60%,transparent 100%)', animation:'erBlobDrift 14s ease-in-out infinite', willChange: 'transform' }}/>
@@ -150,11 +187,22 @@ const ExamResult = ({ result, onRetry }) => {
 
 
                 <div className="er-card">
-                    <div className="w-32 h-32 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-md shadow-xl mb-6 border-4 border-white/30">
-                        {isPassed ? (
-                            <CheckCircle className="h-16 w-16 text-white" />
-                        ) : (
-                            <XCircle className="h-16 w-16 text-white" />
+                    <div className="mb-2 flex w-full justify-center">
+                        {!inlineAnimation.disabled && inlineAnimation.animationData && (
+                            <AdaptiveLottie
+                                animationData={inlineAnimation.animationData}
+                                scale={inlineAnimation.scale}
+                                direction={inlineAnimation.direction}
+                                speed={inlineAnimation.speed}
+                                startPosition={inlineAnimation.startPosition}
+                                endPosition={inlineAnimation.endPosition}
+                                durationText={inlineAnimation.durationText}
+                                delayMode={inlineAnimation.delayMode}
+                                delayPercent={inlineAnimation.delayPercent}
+                                useMotionPath
+                                display="inline"
+                                className="mx-auto"
+                            />
                         )}
                     </div>
 

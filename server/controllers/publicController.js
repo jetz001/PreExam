@@ -1,6 +1,7 @@
-
+const { db: firestore } = require('../config/firebase');
 const { User, Question, ExamResult } = require('../models');
 const { logActivity } = require('../utils/activityLogger');
+const settingsRef = firestore.collection('system_settings');
 
 exports.getLandingStats = async (req, res) => {
     try {
@@ -39,28 +40,18 @@ exports.getLandingStats = async (req, res) => {
 
 exports.getSystemSettings = async (req, res) => {
     try {
-        const { SystemSetting } = require('../models');
-        const settings = await SystemSetting.findAll();
-
-        // Convert to object
         const settingsObj = {};
-        settings.forEach(s => {
-            if (s.value === 'true') settingsObj[s.key] = true;
-            else if (s.value === 'false') settingsObj[s.key] = false;
-            else {
-                try {
-                    settingsObj[s.key] = s.value;
-                } catch (e) {
-                    settingsObj[s.key] = s.value;
-                }
-            }
+        const snapshot = await settingsRef.get();
+        snapshot.docs.forEach((doc) => {
+            settingsObj[doc.id] = doc.data().value;
         });
 
         const defaults = {
             announcement_text: '',
             announcement_active: false,
             announcement_type: 'info',
-            blacklisted_words: ''
+            blacklisted_words: '',
+            animation_settings: {}
         };
 
         res.json({ success: true, settings: { ...defaults, ...settingsObj } });

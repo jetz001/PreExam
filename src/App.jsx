@@ -27,6 +27,8 @@ import BackupManager from './views/admin/BackupManager'; // New Import
 import ScraperManager from './views/admin/ScraperManager';
 import GeneratorManager from './views/admin/GeneratorManager';
 import SeasonManager from './views/admin/SeasonManager';
+import AnimationManager from './views/admin/AnimationManager';
+import AnimationPreviewMockup from './views/admin/AnimationPreviewMockup';
 import PolicyPage from './views/PolicyPage';
 import FAQPage from './views/support/FAQPage';
 
@@ -167,6 +169,8 @@ function App() {
             <Route path="scraper" element={<ScraperManager />} />
             <Route path="generator" element={<GeneratorManager />} />
             <Route path="seasons" element={<SeasonManager />} />
+            <Route path="animations" element={<AnimationManager />} />
+            <Route path="animations/preview" element={<AnimationPreviewMockup />} />
             <Route path="support" element={<SupportTicketManager />} />
             <Route path="backups" element={<BackupManager />} />
           </Route>

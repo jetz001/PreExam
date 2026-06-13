@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Clock, Flag, ChevronLeft, ChevronRight, AlertTriangle, Bookmark, Share2, Type } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +12,9 @@ import useUserRole from '../hooks/useUserRole';
 import PacingAlert from './exam/PacingAlert';
 import toast from 'react-hot-toast';
 import HomeNavbar from './HomeNavbar'; // Import Navbar!
+import AdaptiveLottie from './common/AdaptiveLottie';
+import publicService from '../services/publicService';
+import { resolveAnimationPreset } from '../config/animationRuntime';
 
 const decodeHtml = (html) => {
     const txt = document.createElement("textarea");
@@ -26,6 +30,11 @@ const decodeHtml = (html) => {
     return decoded;
 };
 
+const parseDurationMs = (input, fallback = 900) => {
+    const parsed = Number.parseFloat(String(input || '').replace(/[^0-9.]/g, ''));
+    return Number.isFinite(parsed) && parsed > 0 ? parsed * 1000 : fallback;
+};
+
 const ExamTaking = ({ questions, mode, onSubmit }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const navigate = useNavigate();
@@ -37,7 +46,16 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
     const [fontSizeScale, setFontSizeScale] = useState(1);
     const [showFontMenu, setShowFontMenu] = useState(false);
     const [fullScreenImage, setFullScreenImage] = useState(null);
+    const [transientAnimation, setTransientAnimation] = useState(null);
     const { isPremium } = useUserRole();
+    const answerAdvanceTimeoutRef = useRef(null);
+    const transientAnimationTimeoutRef = useRef(null);
+    const { data: publicSettingsResponse } = useQuery({
+        queryKey: ['publicSystemSettings'],
+        queryFn: publicService.getSystemSettings,
+        staleTime: 60000
+    });
+    const animationSettings = publicSettingsResponse?.settings?.animation_settings || {};
 
     useEffect(() => {
         if (mode === 'simulation') {
@@ -55,25 +73,57 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
         }
     }, [mode]);
 
+    useEffect(() => () => {
+        if (answerAdvanceTimeoutRef.current) clearTimeout(answerAdvanceTimeoutRef.current);
+        if (transientAnimationTimeoutRef.current) clearTimeout(transientAnimationTimeoutRef.current);
+    }, []);
+
+    const showTransientAnimation = useCallback((presetKey, duration = 900) => {
+        const preset = resolveAnimationPreset(presetKey, animationSettings);
+        if (preset.disabled || !preset.animationData) return;
+        const resolvedDuration = parseDurationMs(preset.durationText, duration);
+        setTransientAnimation({
+            ...preset,
+            durationMs: resolvedDuration,
+            renderKey: `${preset.key}-${Date.now()}`
+        });
+
+        if (transientAnimationTimeoutRef.current) clearTimeout(transientAnimationTimeoutRef.current);
+        transientAnimationTimeoutRef.current = setTimeout(() => {
+            setTransientAnimation(null);
+        }, resolvedDuration);
+    }, [animationSettings]);
+
     const handleAnswer = (choice) => {
-        setAnswers({ ...answers, [questions[currentIndex].id]: choice });
-        
-        // Wait briefly before moving to next question if not in practice mode
-        setTimeout(() => {
+        const currentQuestionId = questions[currentIndex].id;
+        const isFirstAnswer = !answers[currentQuestionId];
+        const nextAnswers = { ...answers, [currentQuestionId]: choice };
+
+        setAnswers(nextAnswers);
+
+        if (answerAdvanceTimeoutRef.current) clearTimeout(answerAdvanceTimeoutRef.current);
+
+        // Show animation only on the first answer to avoid replaying when users come back to edit
+        if (isFirstAnswer) {
+            showTransientAnimation('examSkipFirstAnswer', 850);
+
             if (mode !== 'practice') {
-                const unanswered = questions.map((_, i) => i).filter(i => i !== currentIndex && !answers[questions[i].id]);
-                if (currentIndex < questions.length - 1 && !answers[questions[currentIndex + 1].id]) {
-                    // Normal flow: just go to next question
-                    setCurrentIndex(currentIndex + 1);
-                } else if (unanswered.length > 0) {
-                    // Go to the first unanswered question (could be before or after)
-                    const nextUnanswered = unanswered.find(i => i > currentIndex) ?? unanswered[0];
-                    setCurrentIndex(nextUnanswered);
-                } else if (currentIndex < questions.length - 1) {
-                    setCurrentIndex(currentIndex + 1);
-                }
+                answerAdvanceTimeoutRef.current = setTimeout(() => {
+                    const unanswered = questions
+                        .map((_, i) => i)
+                        .filter((i) => i !== currentIndex && !nextAnswers[questions[i].id]);
+
+                    if (currentIndex < questions.length - 1 && !nextAnswers[questions[currentIndex + 1].id]) {
+                        setCurrentIndex(currentIndex + 1);
+                    } else if (unanswered.length > 0) {
+                        const nextUnanswered = unanswered.find((i) => i > currentIndex) ?? unanswered[0];
+                        setCurrentIndex(nextUnanswered);
+                    } else if (currentIndex < questions.length - 1) {
+                        setCurrentIndex(currentIndex + 1);
+                    }
+                }, 520);
             }
-        }, 1200);
+        }
     };
 
     const toggleFlag = () => {
@@ -326,6 +376,23 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
             </PermissionGate>
             <PacingAlert timeUsed={(questions.length * 60) - timeLeft} totalTime={questions.length * 60} />
             {showReportModal && <ReportModal questionId={currentQuestion.id} onClose={() => setShowReportModal(false)} />}
+
+            {transientAnimation?.animationData && (
+                <AdaptiveLottie
+                    key={transientAnimation.renderKey}
+                    animationData={transientAnimation.animationData}
+                    scale={transientAnimation.scale}
+                    direction={transientAnimation.direction}
+                    speed={transientAnimation.speed}
+                    startPosition={transientAnimation.startPosition}
+                    endPosition={transientAnimation.endPosition}
+                    durationText={transientAnimation.durationText}
+                    delayMode={transientAnimation.delayMode}
+                    delayPercent={transientAnimation.delayPercent}
+                    useMotionPath
+                    display="overlay"
+                />
+            )}
             
             {/* Full Screen Image Modal */}
             {fullScreenImage && (
