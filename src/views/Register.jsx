@@ -34,10 +34,15 @@ const Register = () => {
             });
             navigate('/profile');
         } catch (err) {
-            const apiMessage = err.response?.data?.message;
-            const mappedMessage = apiMessage === 'Email already registered'
-                ? 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบหรือใช้อีเมลอื่น'
-                : 'สมัครสมาชิกไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง';
+            const apiMessage = err.response?.data?.message || '';
+            let mappedMessage = 'สมัครสมาชิกไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง';
+            
+            if (apiMessage === 'Email already in use' || apiMessage === 'Email already registered') {
+                mappedMessage = 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบหรือใช้อีเมลอื่น';
+            } else if (apiMessage === 'invalid_params') {
+                mappedMessage = 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบรูปแบบอีเมลและความยาวรหัสผ่าน (อย่างน้อย 6 ตัวอักษร)';
+            }
+            
             setError(mappedMessage);
         }
     };
