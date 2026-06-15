@@ -192,10 +192,13 @@ const AdaptiveLottie = ({
             let fetchUrl = animationUrl;
             
             if (fetchUrl.startsWith('data:')) {
-                fetch(fetchUrl)
-                    .then((res) => res.json())
-                    .then((data) => setFetchedData(data))
-                    .catch((err) => console.error('Failed to parse lottie data:', err));
+                try {
+                    const base64 = fetchUrl.split(',')[1];
+                    const jsonString = decodeURIComponent(escape(atob(base64)));
+                    setFetchedData(JSON.parse(jsonString));
+                } catch (err) {
+                    console.error('Failed to parse lottie data:', err);
+                }
                 return;
             }
 
