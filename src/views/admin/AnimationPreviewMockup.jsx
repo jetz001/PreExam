@@ -150,6 +150,7 @@ const PreviewAnimatedLayer = ({ isAnimationDisabled, motionConfig, motionDuratio
                 <AdaptiveLottie
                     key={`${previewState.presetKey || 'preset'}-${previewState.assetKey || 'disabled'}-${previewState.speedText || previewConfig.speed || 1}`}
                     animationData={previewConfig.animationData}
+                    animationUrl={previewConfig.animationUrl}
                     scale={previewConfig.scale}
                     direction={previewConfig.direction}
                     speed={previewConfig.speed}

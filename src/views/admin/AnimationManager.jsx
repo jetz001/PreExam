@@ -588,6 +588,7 @@ const AnimationManager = () => {
                         <AdaptiveLottie
                             key={`${previewUsageKey}-${selectedAssetKey || 'disabled'}-${speedText}`}
                             animationData={previewConfig.animationData}
+                            animationUrl={previewConfig.animationUrl}
                             scale={previewConfig.scale}
                             direction={previewConfig.direction}
                             speed={previewConfig.speed}
