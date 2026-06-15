@@ -109,7 +109,7 @@ const AnimationManager = () => {
             acc[usage.value] = legacyConfig && !legacyConfig.disabled && sourceFile ? [sourceFile] : [];
             return acc;
         }, {});
-    }, [savedLegacyAnimationSettings, systemSettings?.animation_usage_map]);
+    }, [savedLegacyAnimationSettings, systemSettings?.settings?.animation_usage_map]);
 
     const initialAsset = assets[0]?.value || '';
     const initialFormState = buildAssetFormState(initialAsset);
