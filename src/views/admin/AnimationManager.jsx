@@ -287,6 +287,25 @@ const AnimationManager = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadForm, setUploadForm] = useState({ name: '', url: '' });
 
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target.result;
+            try {
+                JSON.parse(text); // validate
+                const base64 = btoa(unescape(encodeURIComponent(text)));
+                const dataUri = `data:application/json;base64,${base64}`;
+                setUploadForm({ ...uploadForm, name: file.name.replace('.json', ''), url: dataUri });
+                toast.success('โหลดไฟล์สำเร็จ กรุณากดปุ่มเพิ่มแอนิเมชัน');
+            } catch (err) {
+                toast.error('ไฟล์ JSON ไม่ถูกต้อง');
+            }
+        };
+        reader.readAsText(file);
+    };
+
     const handleUploadAnimation = (e) => {
         e.preventDefault();
         if (!uploadForm.name || !uploadForm.url) return;
@@ -370,6 +389,25 @@ const AnimationManager = () => {
                                 onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
                                 className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
                             />
+                            
+                            <div className="relative flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 py-4 transition-colors hover:bg-slate-100">
+                                <input
+                                    type="file"
+                                    accept=".json"
+                                    onChange={handleFileUpload}
+                                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                />
+                                <span className="text-sm font-medium text-slate-500">
+                                    คลิกเพื่ออัปโหลดไฟล์ .json
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <hr className="flex-1 border-slate-200" />
+                                <span className="text-xs text-slate-400">หรือวางลิงก์</span>
+                                <hr className="flex-1 border-slate-200" />
+                            </div>
+
                             <input
                                 type="text"
                                 placeholder="Lottie JSON URL (รองรับ Google Drive)"

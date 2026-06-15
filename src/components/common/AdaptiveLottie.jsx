@@ -190,6 +190,15 @@ const AdaptiveLottie = ({
     useEffect(() => {
         if (!animationData && animationUrl) {
             let fetchUrl = animationUrl;
+            
+            if (fetchUrl.startsWith('data:')) {
+                fetch(fetchUrl)
+                    .then((res) => res.json())
+                    .then((data) => setFetchedData(data))
+                    .catch((err) => console.error('Failed to parse lottie data:', err));
+                return;
+            }
+
             if (fetchUrl.includes('export=view')) {
                 fetchUrl = fetchUrl.replace('export=view', 'export=download');
             }
