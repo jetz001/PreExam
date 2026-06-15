@@ -94,8 +94,8 @@ const AnimationManager = () => {
         queryFn: adminApi.getSystemSettings
     });
 
-    const savedLegacyAnimationSettings = systemSettings?.animation_settings || {};
-    const savedAssetConfigs = systemSettings?.animation_asset_configs || {};
+    const savedLegacyAnimationSettings = useMemo(() => systemSettings?.animation_settings || {}, [systemSettings?.animation_settings]);
+    const savedAssetConfigs = useMemo(() => systemSettings?.animation_asset_configs || {}, [systemSettings?.animation_asset_configs]);
     const savedUsageMap = useMemo(() => {
         if (systemSettings?.animation_usage_map && Object.keys(systemSettings.animation_usage_map).length > 0) {
             return systemSettings.animation_usage_map;
