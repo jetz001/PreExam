@@ -77,12 +77,16 @@ const buildPreviewMotionConfig = (startPosition, endPosition, startCoords, endCo
         y: (startCoords.y + endCoords.y) / 2
     };
 
+    const isStartFade = String(startPosition).includes('fade');
+    const isEndFade = String(endPosition).includes('fade');
+
     if (delayMode === 'start') {
         const visibleStart = getVisibleHoldCoords(startPosition, startCoords);
         const moveInTime = (visibleStart.x !== startCoords.x || visibleStart.y !== startCoords.y) ? 0.18 : 0;
         return {
             x: [startCoords.x, visibleStart.x, visibleStart.x, endCoords.x],
             y: [startCoords.y, visibleStart.y, visibleStart.y, endCoords.y],
+            opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
             times: [0, moveInTime, Math.min(moveInTime + hold, 0.92), 1],
             ease: 'linear'
         };
@@ -94,6 +98,7 @@ const buildPreviewMotionConfig = (startPosition, endPosition, startCoords, endCo
         return {
             x: [startCoords.x, midPoint.x, midPoint.x, endCoords.x],
             y: [startCoords.y, midPoint.y, midPoint.y, endCoords.y],
+            opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
             times: [0, startMoveEnd, endMoveStart, 1],
             ease: 'linear'
         };
@@ -107,6 +112,7 @@ const buildPreviewMotionConfig = (startPosition, endPosition, startCoords, endCo
         return {
             x: [startCoords.x, visibleEnd.x, visibleEnd.x, endCoords.x],
             y: [startCoords.y, visibleEnd.y, visibleEnd.y, endCoords.y],
+            opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
             times: [0, holdStart, holdEnd, 1],
             ease: 'linear'
         };
@@ -115,6 +121,7 @@ const buildPreviewMotionConfig = (startPosition, endPosition, startCoords, endCo
     return {
         x: [startCoords.x, endCoords.x],
         y: [startCoords.y, endCoords.y],
+        opacity: [isStartFade ? 0 : 1, isEndFade ? 0 : 1],
         times: [0, 1],
         ease: 'easeInOut'
     };
@@ -141,8 +148,16 @@ const PreviewAnimatedLayer = ({ isAnimationDisabled, motionConfig, motionDuratio
         <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
             <motion.div
                 className="absolute left-1/2 top-[60%]"
-                initial={{ x: motionConfig.x[0], y: motionConfig.y[0] }}
-                animate={{ x: motionConfig.x, y: motionConfig.y }}
+                initial={{ 
+                    x: motionConfig.x[0], 
+                    y: motionConfig.y[0],
+                    opacity: motionConfig.opacity ? motionConfig.opacity[0] : 1
+                }}
+                animate={{ 
+                    x: motionConfig.x, 
+                    y: motionConfig.y,
+                    opacity: motionConfig.opacity || 1
+                }}
                 transition={{ duration: motionDuration, ease: motionConfig.ease, times: motionConfig.times }}
                 onAnimationComplete={() => setIsVisible(false)}
                 style={{ translateX: '-50%', translateY: '-50%' }}
