@@ -26,11 +26,12 @@ export const resolveAnimationPreset = (presetKey, animationSettings = {}) => {
         const assetPreset = getAnimationAsset(randomAssetFile);
         const savedAssetConfig = assetConfigs?.[randomAssetFile] || {};
 
-        if (!assetPreset?.animationData) {
+        if (!assetPreset?.animationData && !savedAssetConfig?.animationUrl) {
             return {
                 ...basePreset,
                 disabled: true,
-                animationData: null
+                animationData: null,
+                animationUrl: null
             };
         }
 
@@ -40,7 +41,8 @@ export const resolveAnimationPreset = (presetKey, animationSettings = {}) => {
             assetKey: randomAssetFile,
             sourceFile: randomAssetFile,
             disabled: false,
-            animationData: assetPreset.animationData,
+            animationData: assetPreset?.animationData || null,
+            animationUrl: savedAssetConfig?.animationUrl || null,
             scale: savedAssetConfig.scale || basePreset.scale,
             direction: savedAssetConfig.direction || basePreset.direction,
             speed: parseSpeed(savedAssetConfig.speedText ?? savedAssetConfig.speed, basePreset.speed || 1)
@@ -65,6 +67,7 @@ export const resolveAnimationPreset = (presetKey, animationSettings = {}) => {
         ...savedConfig,
         disabled: false,
         animationData: assetPreset?.animationData || basePreset.animationData,
+        animationUrl: savedConfig.animationUrl || null,
         scale: savedConfig.scale || basePreset.scale,
         direction: savedConfig.direction || basePreset.direction,
         speed: parseSpeed(savedConfig.speedText ?? savedConfig.speed, basePreset.speed || 1)

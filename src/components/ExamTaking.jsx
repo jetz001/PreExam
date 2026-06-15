@@ -80,7 +80,7 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
 
     const showTransientAnimation = useCallback((presetKey, duration = 900) => {
         const preset = resolveAnimationPreset(presetKey, runtimeAnimationSettings);
-        if (preset.disabled || !preset.animationData) return;
+        if (preset.disabled || (!preset.animationData && !preset.animationUrl)) return;
         const resolvedDuration = parseDurationMs(preset.durationText, duration);
         setTransientAnimation({
             ...preset,
@@ -377,10 +377,11 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
             <PacingAlert timeUsed={(questions.length * 60) - timeLeft} totalTime={questions.length * 60} />
             {showReportModal && <ReportModal questionId={currentQuestion.id} onClose={() => setShowReportModal(false)} />}
 
-            {transientAnimation?.animationData && (
+            {transientAnimation && !transientAnimation.disabled && (
                 <AdaptiveLottie
                     key={transientAnimation.renderKey}
                     animationData={transientAnimation.animationData}
+                    animationUrl={transientAnimation.animationUrl}
                     scale={transientAnimation.scale}
                     direction={transientAnimation.direction}
                     speed={transientAnimation.speed}

@@ -142,10 +142,11 @@ const ExamResult = ({ result, onRetry }) => {
                 {/* Floating Transparent Navbar */}
                 <HomeNavbar />
 
-                {showIntroAnimation && !introAnimation.disabled && introAnimation.animationData && (
+                {showIntroAnimation && !introAnimation.disabled && (introAnimation.animationData || introAnimation.animationUrl) && (
                     <AdaptiveLottie
                         key={`${introAnimation.key}-${isPassed ? 'pass' : 'fail'}`}
                         animationData={introAnimation.animationData}
+                        animationUrl={introAnimation.animationUrl}
                         scale="full"
                         direction={introAnimation.direction}
                         speed={introAnimation.speed}
@@ -189,9 +190,10 @@ const ExamResult = ({ result, onRetry }) => {
 
                 <div className="er-card">
                     <div className="mb-2 flex w-full justify-center">
-                        {!inlineAnimation.disabled && inlineAnimation.animationData && (
+                        {!inlineAnimation.disabled && (inlineAnimation.animationData || inlineAnimation.animationUrl) && (
                             <AdaptiveLottie
                                 animationData={inlineAnimation.animationData}
+                                animationUrl={inlineAnimation.animationUrl}
                                 scale={inlineAnimation.scale}
                                 direction={inlineAnimation.direction}
                                 speed={inlineAnimation.speed}
