@@ -39,6 +39,7 @@ export default function HomeNavbar() {
   const location   = useLocation();
 
   const isLightMode = location.pathname.startsWith('/pricing');
+  const isAuthPage = ['/login', '/register'].some(path => location.pathname.startsWith(path));
 
   /* load user */
   useEffect(() => {
@@ -284,21 +285,44 @@ export default function HomeNavbar() {
           ) : (
             /* ── Not logged in: Login + Register pills ── */
             <>
-              <Link to="/login" className="hn-pill" style={{
-                background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)',
-                border: isLightMode ? '2px solid rgba(0,0,0,0.15)' : '2px solid rgba(255,255,255,0.35)',
-                color: isLightMode ? '#46178f' : '#fff',
-                backdropFilter:'blur(10px)',
-              }}>
-                เข้าสู่ระบบ
-              </Link>
-              <Link to="/register" className="hn-pill" style={{
-                background:'linear-gradient(135deg,#ffcc00,#ff9800)',
-                color:'#1a0533',
-                boxShadow:'0 4px 20px rgba(255,200,0,0.4)',
-              }}>
-                สมัครฟรี 🚀
-              </Link>
+              {isAuthPage ? (
+                location.pathname.startsWith('/login') ? (
+                  <Link to="/register" className="hn-pill" style={{
+                    background:'linear-gradient(135deg,#ffcc00,#ff9800)',
+                    color:'#1a0533',
+                    boxShadow:'0 4px 20px rgba(255,200,0,0.4)',
+                  }}>
+                    สมัครสมาชิก 🚀
+                  </Link>
+                ) : (
+                  <Link to="/login" className="hn-pill" style={{
+                    background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)',
+                    border: isLightMode ? '2px solid rgba(0,0,0,0.15)' : '2px solid rgba(255,255,255,0.35)',
+                    color: isLightMode ? '#46178f' : '#fff',
+                    backdropFilter:'blur(10px)',
+                  }}>
+                    เข้าสู่ระบบ
+                  </Link>
+                )
+              ) : (
+                <>
+                  <Link to="/login" className="hn-pill" style={{
+                    background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)',
+                    border: isLightMode ? '2px solid rgba(0,0,0,0.15)' : '2px solid rgba(255,255,255,0.35)',
+                    color: isLightMode ? '#46178f' : '#fff',
+                    backdropFilter:'blur(10px)',
+                  }}>
+                    เข้าสู่ระบบ
+                  </Link>
+                  <Link to="/register" className="hn-pill" style={{
+                    background:'linear-gradient(135deg,#ffcc00,#ff9800)',
+                    color:'#1a0533',
+                    boxShadow:'0 4px 20px rgba(255,200,0,0.4)',
+                  }}>
+                    สมัครฟรี 🚀
+                  </Link>
+                </>
+              )}
             </>
           )}
         </div>
