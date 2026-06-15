@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckSquare, Save, Sparkles, PlayCircle } from 'lucide-react';
+import { CheckSquare, Save, Sparkles, PlayCircle, Trash2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdaptiveLottie from '../../components/common/AdaptiveLottie';
@@ -94,7 +94,19 @@ const buildAssetFormState = (assetFile, savedConfig = {}) => {
 const AnimationManager = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const assets = useMemo(() => animationAssetOptions, []);
+    
+    const { data: dbAssets = [] } = useQuery({
+        queryKey: ['assets'],
+        queryFn: adminApi.getAssets
+    });
+
+    const assets = useMemo(() => {
+        const customAnimations = dbAssets
+            .filter((a) => a.type === 'animation')
+            .map((a) => ({ value: a.id, label: a.name, isCustom: true, url: a.url }));
+        return [...animationAssetOptions, ...customAnimations];
+    }, [dbAssets]);
+
     const { data: systemSettings } = useQuery({
         queryKey: ['systemSettings'],
         queryFn: adminApi.getSystemSettings
@@ -132,12 +144,25 @@ const AnimationManager = () => {
     const [showPreview, setShowPreview] = useState(false);
 
     const previewPreset = getAnimationPreset(previewUsageKey);
-    const selectedAsset = selectedAssetKey ? getAnimationAsset(selectedAssetKey) : null;
+    const selectedAsset = useMemo(() => {
+        if (!selectedAssetKey) return null;
+        const custom = assets.find((a) => a.value === selectedAssetKey && a.isCustom);
+        if (custom) {
+            return {
+                key: custom.value,
+                sourceFile: custom.label,
+                animationUrl: custom.url
+            };
+        }
+        return getAnimationAsset(selectedAssetKey);
+    }, [selectedAssetKey, assets]);
+
     const parsedSpeed = Number.parseFloat(String(speedText || '').replace(/[^0-9.]/g, ''));
     const resolvedSpeed = Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : (previewPreset.speed || 1);
     const previewConfig = {
         ...previewPreset,
         animationData: selectedAsset?.animationData || null,
+        animationUrl: selectedAsset?.animationUrl || null,
         scale: 'card',
         direction: 'center',
         speed: resolvedSpeed,
@@ -236,6 +261,50 @@ const AnimationManager = () => {
         ));
     };
 
+    const uploadMutation = useMutation({
+        mutationFn: adminApi.uploadAsset,
+        onSuccess: () => {
+            toast.success('อัปโหลดแอนิเมชันสำเร็จ!');
+            queryClient.invalidateQueries(['assets']);
+            setIsUploading(false);
+            setUploadForm({ name: '', url: '' });
+        },
+        onError: () => toast.error('อัปโหลดไม่สำเร็จ')
+    });
+
+    const deleteAssetMutation = useMutation({
+        mutationFn: adminApi.deleteAsset,
+        onSuccess: () => {
+            toast.success('ลบแอนิเมชันสำเร็จ');
+            queryClient.invalidateQueries(['assets']);
+            if (selectedAssetKey && assets.find(a => a.value === selectedAssetKey)?.isCustom) {
+                setSelectedAssetKey(assets[0]?.value || '');
+            }
+        },
+        onError: () => toast.error('ลบไม่สำเร็จ')
+    });
+
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadForm, setUploadForm] = useState({ name: '', url: '' });
+
+    const handleUploadAnimation = (e) => {
+        e.preventDefault();
+        if (!uploadForm.name || !uploadForm.url) return;
+        
+        let finalUrl = uploadForm.url;
+        const driveMatch = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (driveMatch) {
+            finalUrl = `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+        }
+
+        uploadMutation.mutate({
+            name: uploadForm.name,
+            type: 'animation',
+            url: finalUrl,
+            is_premium: false
+        });
+    };
+
     return (
         <div className="space-y-6 pb-20">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -254,21 +323,63 @@ const AnimationManager = () => {
                         รายการ asset .json
                     </div>
 
-                    <div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">
+                    <div className="max-h-[400px] space-y-2 overflow-y-auto pr-1">
                         {assets.map((asset) => (
-                            <button
-                                key={asset.value}
-                                type="button"
-                                onClick={() => setSelectedAssetKey(asset.value)}
-                                className={`w-full rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
-                                    selectedAssetKey === asset.value
-                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                }`}
-                            >
-                                {asset.label}
-                            </button>
+                            <div key={asset.value} className={`flex items-center justify-between rounded-xl border p-1 pl-4 transition-colors ${
+                                selectedAssetKey === asset.value
+                                    ? 'border-blue-500 bg-blue-50'
+                                    : 'border-slate-300 bg-white hover:bg-slate-50'
+                            }`}>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedAssetKey(asset.value)}
+                                    className="flex-1 py-2 text-left text-sm font-medium text-slate-700"
+                                >
+                                    {asset.label}
+                                </button>
+                                {asset.isCustom && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (window.confirm('ยืนยันการลบแอนิเมชันนี้?')) {
+                                                deleteAssetMutation.mutate(asset.value);
+                                            }
+                                        }}
+                                        className="rounded p-2 text-red-500 hover:bg-red-100"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
+                            </div>
                         ))}
+                    </div>
+
+                    <div className="mt-4 border-t pt-4">
+                        <div className="mb-3 text-sm font-semibold text-slate-700">อัปโหลดแอนิเมชัน (JSON Link)</div>
+                        <form onSubmit={handleUploadAnimation} className="space-y-3">
+                            <input
+                                type="text"
+                                placeholder="ชื่อแอนิเมชัน"
+                                value={uploadForm.name}
+                                onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
+                                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                            />
+                            <input
+                                type="text"
+                                placeholder="Lottie JSON URL (รองรับ Google Drive)"
+                                value={uploadForm.url}
+                                onChange={(e) => setUploadForm({ ...uploadForm, url: e.target.value })}
+                                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                            />
+                            <button
+                                type="submit"
+                                disabled={isUploading || uploadMutation.isLoading || !uploadForm.name || !uploadForm.url}
+                                className="w-full rounded-xl bg-blue-600 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                {uploadMutation.isLoading ? 'กำลังอัปโหลด...' : 'เพิ่มแอนิเมชัน'}
+                            </button>
+                        </form>
                     </div>
                 </section>
 

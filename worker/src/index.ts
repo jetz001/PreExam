@@ -1717,12 +1717,35 @@ if (assetMatch) {
   }
 }
 
+if (url.pathname === "/api/proxy") {
+  if (request.method === "GET") {
+    const targetUrl = url.searchParams.get("url");
+    if (!targetUrl) return json({ error: "Missing URL" }, { status: 400 });
+    
+    try {
+      const response = await fetch(targetUrl);
+      const data = await response.text();
+      return new Response(data, {
+        headers: {
+          "Content-Type": response.headers.get("Content-Type") || "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "*"
+        }
+      });
+    } catch (e) {
+      return json({ error: "Failed to fetch" }, { status: 500 });
+    }
+  }
+}
+
+
 if (url.pathname === "/api/admin/settings") {
   const auth = await requireAuthUserId(request, env);
   if ("error" in auth) return auth.error;
   if (request.method === "GET") {
     try {
-      const settings = await firestore.getDocument("system_config", "general_settings");
+      const settings = await firestore.getDocument("system_config", "general_settings", true);
       return json({ success: true, settings: settings || {} });
     } catch (e) {
       return json({ success: true, settings: {} });
@@ -1743,7 +1766,7 @@ if (url.pathname === "/api/admin/settings") {
 if (url.pathname === "/api/public/settings") {
   if (request.method === "GET") {
     try {
-      const settings = await firestore.getDocument("system_config", "general_settings");
+      const settings = await firestore.getDocument("system_config", "general_settings", true);
       return json({ success: true, settings: settings || {} });
     } catch (e) {
       return json({ success: true, settings: {} });

@@ -22,7 +22,7 @@ const timingSafeEqual = (a: Uint8Array, b: Uint8Array) => {
 };
 
 export const hashPassword = async (password: string) => {
-  const iterations = 120_000;
+  const iterations = 100_000;
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const keyMaterial = await crypto.subtle.importKey(
     "raw",

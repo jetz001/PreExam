@@ -157,6 +157,7 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, 
 
 const AdaptiveLottie = ({
     animationData,
+    animationUrl,
     scale = 'half',
     direction = 'center',
     display = 'inline',
@@ -180,10 +181,24 @@ const AdaptiveLottie = ({
 }) => {
     const lottieRef = useRef(null);
     const [isVisible, setIsVisible] = useState(true);
+    const [fetchedData, setFetchedData] = useState(null);
     const [windowSize, setWindowSize] = useState({
         width: typeof window !== 'undefined' ? window.innerWidth : 1200,
         height: typeof window !== 'undefined' ? window.innerHeight : 800
     });
+
+    useEffect(() => {
+        if (!animationData && animationUrl) {
+            fetch(`/api/proxy?url=${encodeURIComponent(animationUrl)}`)
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data && !data.error) {
+                        setFetchedData(data);
+                    }
+                })
+                .catch((err) => console.error('Failed to load lottie:', err));
+        }
+    }, [animationData, animationUrl]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return undefined;
@@ -216,15 +231,17 @@ const AdaptiveLottie = ({
         };
     }, [startPosition, endPosition, delayMode, delayPercent, durationText, windowSize]);
 
+    const activeAnimationData = animationData || fetchedData;
+
     const effectiveLoop = useMemo(() => {
         if (loop || forceLoop) return true;
 
-        const animationDurationSeconds = getAnimationDurationSeconds(animationData);
+        const animationDurationSeconds = getAnimationDurationSeconds(activeAnimationData);
         if (!animationDurationSeconds || !useMotionPath) return false;
 
         const playbackDurationSeconds = animationDurationSeconds / (speed > 0 ? speed : 1);
         return playbackDurationSeconds < motionConfig.duration;
-    }, [animationData, forceLoop, loop, motionConfig.duration, speed, useMotionPath]);
+    }, [activeAnimationData, forceLoop, loop, motionConfig.duration, speed, useMotionPath]);
 
     useEffect(() => {
         if (!lottieRef.current) return undefined;
@@ -235,7 +252,7 @@ const AdaptiveLottie = ({
         } else {
             lottieRef.current.stop?.();
         }
-    }, [animationData, autoplay, effectiveLoop, speed]);
+    }, [activeAnimationData, autoplay, effectiveLoop, speed]);
 
     useEffect(() => () => {
         lottieRef.current?.stop?.();
@@ -244,7 +261,7 @@ const AdaptiveLottie = ({
 
     useEffect(() => {
         setIsVisible(true);
-    }, [animationData, startPosition, endPosition, durationText, delayMode, delayPercent, speed]);
+    }, [activeAnimationData, startPosition, endPosition, durationText, delayMode, delayPercent, speed]);
 
     useEffect(() => {
         if (!hideAfterDuration) {
@@ -262,9 +279,9 @@ const AdaptiveLottie = ({
         }, timeoutMs);
 
         return () => clearTimeout(timer);
-    }, [durationText, hideAfterDuration, animationData, startPosition, endPosition, delayMode, delayPercent, speed]);
+    }, [durationText, hideAfterDuration, activeAnimationData, startPosition, endPosition, delayMode, delayPercent, speed]);
 
-    if (!animationData || !isVisible) return null;
+    if (!activeAnimationData || !isVisible) return null;
 
     const frame = (
         <div className={`relative flex flex-col items-center justify-center ${display === 'inline' ? className : ''}`}>
@@ -279,7 +296,7 @@ const AdaptiveLottie = ({
             >
                 <Lottie
                     lottieRef={lottieRef}
-                    animationData={animationData}
+                    animationData={activeAnimationData}
                     loop={effectiveLoop}
                     autoplay={autoplay}
                     onComplete={() => {

@@ -141,10 +141,12 @@ export class FirestoreClient {
     return data;
   }
 
-  async getDocument(collectionPath: string, docId: string): Promise<any | null> {
+  async getDocument(collectionPath: string, docId: string, skipCache: boolean = false): Promise<any | null> {
     const cacheKey = `get_${collectionPath}_${docId}`;
-    const cached = queryCache.get(cacheKey);
-    if (cached && cached.exp > Date.now()) return cached.data;
+    if (!skipCache) {
+      const cached = queryCache.get(cacheKey);
+      if (cached && cached.exp > Date.now()) return cached.data;
+    }
 
     try {
       const doc = await this.fetchApi(`/${collectionPath}/${docId}`);
