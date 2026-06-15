@@ -649,6 +649,8 @@ const AnimationManager = () => {
                         inlinePreviewState={{
                             presetKey: previewUsageKey,
                             assetKey: selectedAssetKey,
+                            assetLabel: selectedAsset?.sourceFile,
+                            animationUrl: previewConfig.animationUrl,
                             scale: scaleMode,
                             startPosition,
                             endPosition,

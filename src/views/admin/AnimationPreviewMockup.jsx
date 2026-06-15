@@ -235,7 +235,7 @@ const ResultPreviewMockup = ({ isPassed, previewState, previewConfig, motionConf
 
             <div className="mt-auto flex w-full items-center justify-between border-t border-white/20 bg-white/10 px-6 py-4 text-white backdrop-blur-md">
                 <div className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium">
-                    asset: {previewState.assetKey ? `${previewState.assetKey}.json` : 'ปิดแอนิเมชัน'}
+                    asset: {previewState.assetKey ? (previewState.assetLabel || `${previewState.assetKey}.json`) : 'ปิดแอนิเมชัน'}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -269,6 +269,7 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler }) => {
     const previewConfig = {
         ...preset,
         animationData: asset?.animationData || null,
+        animationUrl: previewState.animationUrl || asset?.animationUrl || null,
         scale: previewState.scale || preset.scale,
         direction: 'center',
         speed: Number.parseFloat(String(previewState.speedText || '').replace(/[^0-9.]/g, '')) || preset.speed || 1,
@@ -363,7 +364,7 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler }) => {
 
                 <div className="mt-auto flex w-full items-center justify-between border-t border-white/20 bg-white/10 px-6 py-4 text-white backdrop-blur-md">
                     <div className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium">
-                        asset: {previewState.assetKey ? `${previewState.assetKey}.json` : 'ปิดแอนิเมชัน'}
+                        asset: {previewState.assetKey ? (previewState.assetLabel || `${previewState.assetKey}.json`) : 'ปิดแอนิเมชัน'}
                     </div>
 
                     <div className="flex items-center gap-3">
