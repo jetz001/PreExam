@@ -294,7 +294,12 @@ const AnimationManager = () => {
         let finalUrl = uploadForm.url;
         const driveMatch = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
         if (driveMatch) {
-            finalUrl = `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+            finalUrl = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+        }
+
+        // Also fix if it's already a uc?export=view link
+        if (finalUrl.includes('export=view')) {
+            finalUrl = finalUrl.replace('export=view', 'export=download');
         }
 
         uploadMutation.mutate({

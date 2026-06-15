@@ -189,7 +189,12 @@ const AdaptiveLottie = ({
 
     useEffect(() => {
         if (!animationData && animationUrl) {
-            fetch(`/api/proxy?url=${encodeURIComponent(animationUrl)}`)
+            let fetchUrl = animationUrl;
+            if (fetchUrl.includes('export=view')) {
+                fetchUrl = fetchUrl.replace('export=view', 'export=download');
+            }
+            
+            fetch(`/api/proxy?url=${encodeURIComponent(fetchUrl)}`)
                 .then((res) => res.json())
                 .then((data) => {
                     if (data && !data.error) {
