@@ -21,14 +21,22 @@ const POSITION_COORDS = {
     'offscreen-left': { x: -900, y: 0 },
     'offscreen-right': { x: 900, y: 0 },
     'offscreen-top': { x: 0, y: -560 },
-    'offscreen-bottom': { x: 0, y: 560 }
+    'offscreen-bottom': { x: 0, y: 560 },
+    'fade-offscreen-left': { x: -900, y: 0 },
+    'fade-offscreen-right': { x: 900, y: 0 },
+    'fade-offscreen-top': { x: 0, y: -560 },
+    'fade-offscreen-bottom': { x: 0, y: 560 }
 };
 
 const ONSCREEN_POSITION_BY_OFFSCREEN = {
     'offscreen-left': 'left',
     'offscreen-right': 'right',
     'offscreen-top': 'up',
-    'offscreen-bottom': 'down'
+    'offscreen-bottom': 'down',
+    'fade-offscreen-left': 'left',
+    'fade-offscreen-right': 'right',
+    'fade-offscreen-top': 'up',
+    'fade-offscreen-bottom': 'down'
 };
 
 const POSITION_LABELS = {
@@ -40,7 +48,11 @@ const POSITION_LABELS = {
     'offscreen-left': 'นอกจอซ้าย',
     'offscreen-right': 'นอกจอขวา',
     'offscreen-top': 'นอกจอบน',
-    'offscreen-bottom': 'นอกจอล่าง'
+    'offscreen-bottom': 'นอกจอล่าง',
+    'fade-offscreen-left': 'นอกจอซ้าย (Fade)',
+    'fade-offscreen-right': 'นอกจอขวา (Fade)',
+    'fade-offscreen-top': 'นอกจอบน (Fade)',
+    'fade-offscreen-bottom': 'นอกจอล่าง (Fade)'
 };
 
 const DELAY_LABELS = {
