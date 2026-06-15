@@ -65,18 +65,32 @@ const parseDelayPercent = (input) => {
     return Math.min(Math.max(parsed, 0), 80) / 100;
 };
 
-const getVisibleHoldCoords = (positionKey, fallbackCoords) => {
+const getScaledCoords = (coords, windowSize) => {
+    if (!windowSize) return coords;
+    // Base resolution is assumed to be 1200x800 for the hardcoded coordinates
+    const scaleX = windowSize.width < 1200 ? windowSize.width / 1200 : 1;
+    const scaleY = windowSize.height < 800 ? windowSize.height / 800 : 1;
+    return {
+        x: coords.x * scaleX,
+        y: coords.y * scaleY
+    };
+};
+
+const getVisibleHoldCoords = (positionKey, fallbackCoords, windowSize) => {
     const mappedPosition = ONSCREEN_POSITION_BY_OFFSCREEN[positionKey];
     if (mappedPosition && POSITION_COORDS[mappedPosition]) {
-        return POSITION_COORDS[mappedPosition];
+        return getScaledCoords(POSITION_COORDS[mappedPosition], windowSize);
     }
 
     return fallbackCoords;
 };
 
-const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent) => {
-    const startCoords = POSITION_COORDS[startPosition] || POSITION_COORDS.center;
-    const endCoords = POSITION_COORDS[endPosition] || POSITION_COORDS.center;
+const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, windowSize) => {
+    const rawStart = POSITION_COORDS[startPosition] || POSITION_COORDS.center;
+    const rawEnd = POSITION_COORDS[endPosition] || POSITION_COORDS.center;
+    const startCoords = getScaledCoords(rawStart, windowSize);
+    const endCoords = getScaledCoords(rawEnd, windowSize);
+    
     const hold = parseDelayPercent(delayPercent);
     const midPoint = {
         x: (startCoords.x + endCoords.x) / 2,
@@ -84,7 +98,7 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent) 
     };
 
     if (delayMode === 'start') {
-        const visibleStart = getVisibleHoldCoords(startPosition, startCoords);
+        const visibleStart = getVisibleHoldCoords(startPosition, startCoords, windowSize);
         const moveInTime = (visibleStart.x !== startCoords.x || visibleStart.y !== startCoords.y) ? 0.18 : 0;
         return {
             x: [startCoords.x, visibleStart.x, visibleStart.x, endCoords.x],
@@ -106,7 +120,7 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent) 
     }
 
     if (delayMode === 'end') {
-        const visibleEnd = getVisibleHoldCoords(endPosition, endCoords);
+        const visibleEnd = getVisibleHoldCoords(endPosition, endCoords, windowSize);
         const moveOutTime = (visibleEnd.x !== endCoords.x || visibleEnd.y !== endCoords.y) ? 0.18 : 0;
         const holdStart = Math.max(0.08, 1 - hold - moveOutTime);
         const holdEnd = Math.min(0.96, holdStart + hold);
@@ -151,6 +165,22 @@ const AdaptiveLottie = ({
 }) => {
     const lottieRef = useRef(null);
     const [isVisible, setIsVisible] = useState(true);
+    const [windowSize, setWindowSize] = useState({
+        width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+        height: typeof window !== 'undefined' ? window.innerHeight : 800
+    });
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+        const handleResize = () => {
+            setWindowSize({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const sizeStyle = SCALE_MAP[scale] || SCALE_MAP.half;
     const offset = OFFSET_MAP[direction] || OFFSET_MAP.center;
@@ -164,12 +194,12 @@ const AdaptiveLottie = ({
     }), [offset.x, offset.y, sizeStyle]);
 
     const motionConfig = useMemo(() => {
-        const config = buildMotionConfig(startPosition, endPosition, delayMode, delayPercent);
+        const config = buildMotionConfig(startPosition, endPosition, delayMode, delayPercent, windowSize);
         return {
             ...config,
             duration: parseDuration(durationText)
         };
-    }, [startPosition, endPosition, delayMode, delayPercent, durationText]);
+    }, [startPosition, endPosition, delayMode, delayPercent, durationText, windowSize]);
 
     const effectiveLoop = useMemo(() => {
         if (loop || forceLoop) return true;
