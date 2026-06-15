@@ -96,11 +96,11 @@ const AnimationManager = () => {
         queryFn: adminApi.getSystemSettings
     });
 
-    const savedLegacyAnimationSettings = useMemo(() => systemSettings?.animation_settings || {}, [systemSettings?.animation_settings]);
-    const savedAssetConfigs = useMemo(() => systemSettings?.animation_asset_configs || {}, [systemSettings?.animation_asset_configs]);
+    const savedLegacyAnimationSettings = useMemo(() => systemSettings?.settings?.animation_settings || {}, [systemSettings?.settings?.animation_settings]);
+    const savedAssetConfigs = useMemo(() => systemSettings?.settings?.animation_asset_configs || {}, [systemSettings?.settings?.animation_asset_configs]);
     const savedUsageMap = useMemo(() => {
-        if (systemSettings?.animation_usage_map && Object.keys(systemSettings.animation_usage_map).length > 0) {
-            return systemSettings.animation_usage_map;
+        if (systemSettings?.settings?.animation_usage_map && Object.keys(systemSettings.settings.animation_usage_map).length > 0) {
+            return systemSettings.settings.animation_usage_map;
         }
 
         return usageOptions.reduce((acc, usage) => {
@@ -167,11 +167,17 @@ const AnimationManager = () => {
     const saveMutation = useMutation({
         mutationFn: async (payload) => adminApi.updateSystemSettings(payload),
         onSuccess: (data, payload) => {
-            queryClient.setQueryData(['systemSettings'], (old) => ({
-                ...old,
-                animation_asset_configs: payload.animation_asset_configs,
-                animation_usage_map: payload.animation_usage_map
-            }));
+            queryClient.setQueryData(['systemSettings'], (old) => {
+                const oldSettings = old?.settings || {};
+                return {
+                    ...old,
+                    settings: {
+                        ...oldSettings,
+                        animation_asset_configs: payload.animation_asset_configs,
+                        animation_usage_map: payload.animation_usage_map
+                    }
+                };
+            });
             queryClient.invalidateQueries({ queryKey: ['systemSettings'] });
             toast.success('บันทึก animation ลง Firebase แล้ว');
         },
