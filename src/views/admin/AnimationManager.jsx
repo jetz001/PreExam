@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import AdaptiveLottie from '../../components/common/AdaptiveLottie';
 import { animationAssetOptions, animationCatalog, getAnimationAsset, getAnimationPreset, getAnimationSourceFile } from '../../config/animationRegistry';
 import adminApi from '../../services/adminApi';
+import AnimationPreviewMockup from './AnimationPreviewMockup';
+import { createPortal } from 'react-dom';
 
 const positionOptions = [
     { value: 'center', label: 'กลางจอ' },
@@ -123,6 +125,7 @@ const AnimationManager = () => {
     const [noteText, setNoteText] = useState(initialFormState.noteText);
     const [selectedUsageKeys, setSelectedUsageKeys] = useState([]);
     const [previewUsageKey, setPreviewUsageKey] = useState(usageOptions[0]?.value || 'examSkipFirstAnswer');
+    const [showPreview, setShowPreview] = useState(false);
 
     const previewPreset = getAnimationPreset(previewUsageKey);
     const selectedAsset = selectedAssetKey ? getAnimationAsset(selectedAssetKey) : null;
@@ -173,20 +176,7 @@ const AnimationManager = () => {
     });
 
     const handlePreview = () => {
-        navigate('/admin/animations/preview', {
-            state: {
-                presetKey: previewUsageKey,
-                assetKey: selectedAssetKey,
-                scale: scaleMode,
-                startPosition,
-                endPosition,
-                durationText,
-                speedText,
-                delayMode,
-                delayPercent,
-                noteText
-            }
-        });
+        setShowPreview(true);
     };
 
     const handleSave = () => {
@@ -482,6 +472,27 @@ const AnimationManager = () => {
                     </div>
                 </section>
             </div>
+
+            {showPreview && createPortal(
+                <div className="fixed inset-0 z-[9999]">
+                    <AnimationPreviewMockup
+                        inlinePreviewState={{
+                            presetKey: previewUsageKey,
+                            assetKey: selectedAssetKey,
+                            scale: scaleMode,
+                            startPosition,
+                            endPosition,
+                            durationText,
+                            speedText,
+                            delayMode,
+                            delayPercent,
+                            noteText
+                        }}
+                        onCloseHandler={() => setShowPreview(false)}
+                    />
+                </div>,
+                document.body
+            )}
         </div>
     );
 };

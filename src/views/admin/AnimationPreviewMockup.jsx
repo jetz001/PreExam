@@ -256,11 +256,11 @@ const ResultPreviewMockup = ({ isPassed, previewState, previewConfig, motionConf
     </div>
 );
 
-const AnimationPreviewMockup = () => {
+const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const previewState = location.state || {};
+    const previewState = inlinePreviewState || location.state || {};
     const preset = getAnimationPreset(previewState.presetKey || 'examSkipFirstAnswer');
     const asset = previewState.assetKey ? getAnimationAsset(previewState.assetKey) : null;
     const isAnimationDisabled = !previewState.assetKey;
@@ -296,7 +296,7 @@ const AnimationPreviewMockup = () => {
                 motionConfig={motionConfig}
                 motionDuration={motionDuration}
                 isAnimationDisabled={isAnimationDisabled}
-                onClose={() => navigate('/admin/animations')}
+                onClose={() => onCloseHandler ? onCloseHandler() : navigate('/admin/animations')}
             />
         );
     }
@@ -316,7 +316,7 @@ const AnimationPreviewMockup = () => {
                 </div>
                 <button
                     type="button"
-                    onClick={() => navigate('/admin/animations')}
+                    onClick={() => onCloseHandler ? onCloseHandler() : navigate('/admin/animations')}
                     className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/12 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20"
                 >
                     <X size={16} />
