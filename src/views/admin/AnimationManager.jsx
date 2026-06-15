@@ -18,7 +18,11 @@ const positionOptions = [
     { value: 'offscreen-left', label: 'นอกจอซ้าย' },
     { value: 'offscreen-right', label: 'นอกจอขวา' },
     { value: 'offscreen-top', label: 'นอกจอบน' },
-    { value: 'offscreen-bottom', label: 'นอกจอล่าง' }
+    { value: 'offscreen-bottom', label: 'นอกจอล่าง' },
+    { value: 'fade-offscreen-left', label: 'นอกจอซ้าย (Fade)' },
+    { value: 'fade-offscreen-right', label: 'นอกจอขวา (Fade)' },
+    { value: 'fade-offscreen-top', label: 'นอกจอบน (Fade)' },
+    { value: 'fade-offscreen-bottom', label: 'นอกจอล่าง (Fade)' }
 ];
 
 const delayModeOptions = [
