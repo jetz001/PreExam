@@ -244,7 +244,7 @@ const AnimationManager = () => {
                     delayMode,
                     delayPercent,
                     noteText,
-                    animationUrl: selectedAsset?.downloadUrl || '',
+                    animationUrl: selectedAsset?.url || '',
                     updatedAt: new Date().toISOString()
                 }
             },
