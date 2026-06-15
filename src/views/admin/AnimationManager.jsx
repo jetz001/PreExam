@@ -166,7 +166,12 @@ const AnimationManager = () => {
 
     const saveMutation = useMutation({
         mutationFn: async (payload) => adminApi.updateSystemSettings(payload),
-        onSuccess: () => {
+        onSuccess: (data, payload) => {
+            queryClient.setQueryData(['systemSettings'], (old) => ({
+                ...old,
+                animation_asset_configs: payload.animation_asset_configs,
+                animation_usage_map: payload.animation_usage_map
+            }));
             queryClient.invalidateQueries({ queryKey: ['systemSettings'] });
             toast.success('บันทึก animation ลง Firebase แล้ว');
         },
