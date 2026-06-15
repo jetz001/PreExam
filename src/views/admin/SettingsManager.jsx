@@ -27,6 +27,18 @@ const SettingsManager = () => {
         announcement_active: false,
         announcement_type: 'info', // info, warning, success
         blacklisted_words: '' // Comma separated
+    });
+
+    useQuery({
+        queryKey: ['systemSettings'],
+        queryFn: async () => {
+            const res = await adminApi.getSystemSettings();
+            if (res) setSettings(res);
+            return res;
+        }
+    });
+
+    const updateSettingsMutation = useMutation({
         mutationFn: adminApi.updateSystemSettings,
         onSuccess: () => toast.success('Settings updated successfully!'),
         onError: () => toast.error('Failed to update settings')
