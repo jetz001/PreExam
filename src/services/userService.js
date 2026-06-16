@@ -12,7 +12,7 @@ const userService = {
     },
 
     getStats: async () => {
-        const response = await api.get('/users/stats');
+        const response = await api.get(`/users/stats?_t=${Date.now()}`);
         return response.data;
     },
 
@@ -27,7 +27,7 @@ const userService = {
     },
 
     getMyRanking: async () => {
-        const response = await api.get('/rankings/me');
+        const response = await api.get(`/rankings/me?_t=${Date.now()}`);
         return response.data;
     },
 

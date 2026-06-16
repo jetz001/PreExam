@@ -37,7 +37,7 @@ const examService = {
     },
 
     getHistory: async () => {
-        const response = await api.get('/exams/history');
+        const response = await api.get(`/exams/history?_t=${Date.now()}`);
         return response.data;
     },
 
