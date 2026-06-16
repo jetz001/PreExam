@@ -1170,6 +1170,27 @@ export default {
 
         if (url.pathname === "/api/users/stats/radar") return json({ success: true, data: [] });
         if (url.pathname === "/api/users/stats/heatmap") return json({ success: true, data: [] });
+        if (url.pathname === "/api/reports" && request.method === "POST") {
+            try {
+                const body = await readJson(request) as any;
+                const auth = await authenticateUser(request, env);
+                const userId = ("error" in auth) ? 'anonymous' : auth.userId;
+                
+                const reportData = {
+                    question_id: body?.question_id || 'unknown',
+                    reason: body?.reason || 'No reason provided',
+                    user_id: userId,
+                    status: 'pending',
+                    created_at: new Date().toISOString()
+                };
+                
+                await firestore.createDocument("reports", reportData);
+                return json({ success: true, message: "Report submitted successfully" });
+            } catch (e) {
+                return json({ success: false, message: "Failed to submit report" }, { status: 500 });
+            }
+        }
+
         if (url.pathname === "/api/bookmarks") return json({ success: true, data: [] });
         const userThreadsMatch = url.pathname.match(/^\/api\/community\/threads\/user\/([a-zA-Z0-9_-]+)$/);
         if (userThreadsMatch && request.method === "GET") {
