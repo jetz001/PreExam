@@ -1173,7 +1173,7 @@ export default {
         if (url.pathname === "/api/reports" && request.method === "POST") {
             try {
                 const body = await readJson(request) as any;
-                const auth = await authenticateUser(request, env);
+                const auth = await requireAuthUserId(request, env);
                 const userId = ("error" in auth) ? 'anonymous' : auth.userId;
                 
                 const reportData = {
