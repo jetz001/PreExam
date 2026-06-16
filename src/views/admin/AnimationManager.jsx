@@ -22,7 +22,9 @@ const positionOptions = [
     { value: 'fade-offscreen-left', label: 'นอกจอซ้าย (Fade)' },
     { value: 'fade-offscreen-right', label: 'นอกจอขวา (Fade)' },
     { value: 'fade-offscreen-top', label: 'นอกจอบน (Fade)' },
-    { value: 'fade-offscreen-bottom', label: 'นอกจอล่าง (Fade)' }
+    { value: 'fade-offscreen-bottom', label: 'นอกจอล่าง (Fade)' },
+    { value: 'scale-up-center', label: 'ขยายออกจากตรงกลาง' },
+    { value: 'scale-down-center', label: 'ยุบเข้ากลาง' }
 ];
 
 const delayModeOptions = [

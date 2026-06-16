@@ -52,7 +52,9 @@ const POSITION_LABELS = {
     'fade-offscreen-left': 'นอกจอซ้าย (Fade)',
     'fade-offscreen-right': 'นอกจอขวา (Fade)',
     'fade-offscreen-top': 'นอกจอบน (Fade)',
-    'fade-offscreen-bottom': 'นอกจอล่าง (Fade)'
+    'fade-offscreen-bottom': 'นอกจอล่าง (Fade)',
+    'scale-up-center': 'ขยายออกจากตรงกลาง',
+    'scale-down-center': 'ยุบเข้ากลาง'
 };
 
 const DELAY_LABELS = {
@@ -91,14 +93,17 @@ const buildPreviewMotionConfig = (startPosition, endPosition, startCoords, endCo
 
     const isStartFade = String(startPosition).includes('fade');
     const isEndFade = String(endPosition).includes('fade');
+    const isStartScaleUp = startPosition === 'scale-up-center';
+    const isEndScaleDown = endPosition === 'scale-down-center';
 
     if (delayMode === 'start') {
         const visibleStart = getVisibleHoldCoords(startPosition, startCoords);
-        const moveInTime = (visibleStart.x !== startCoords.x || visibleStart.y !== startCoords.y) ? 0.18 : 0;
+        const moveInTime = (visibleStart.x !== startCoords.x || visibleStart.y !== startCoords.y || isStartScaleUp || isStartFade) ? 0.18 : 0;
         return {
             x: [startCoords.x, visibleStart.x, visibleStart.x, endCoords.x],
             y: [startCoords.y, visibleStart.y, visibleStart.y, endCoords.y],
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
+            scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
             times: [0, moveInTime, Math.min(moveInTime + hold, 0.92), 1],
             ease: 'linear'
         };
@@ -111,6 +116,7 @@ const buildPreviewMotionConfig = (startPosition, endPosition, startCoords, endCo
             x: [startCoords.x, midPoint.x, midPoint.x, endCoords.x],
             y: [startCoords.y, midPoint.y, midPoint.y, endCoords.y],
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
+            scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
             times: [0, startMoveEnd, endMoveStart, 1],
             ease: 'linear'
         };
@@ -118,13 +124,14 @@ const buildPreviewMotionConfig = (startPosition, endPosition, startCoords, endCo
 
     if (delayMode === 'end') {
         const visibleEnd = getVisibleHoldCoords(endPosition, endCoords);
-        const moveOutTime = (visibleEnd.x !== endCoords.x || visibleEnd.y !== endCoords.y) ? 0.18 : 0;
+        const moveOutTime = (visibleEnd.x !== endCoords.x || visibleEnd.y !== endCoords.y || isEndScaleDown || isEndFade) ? 0.18 : 0;
         const holdStart = Math.max(0.08, 1 - hold - moveOutTime);
         const holdEnd = Math.min(0.96, holdStart + hold);
         return {
             x: [startCoords.x, visibleEnd.x, visibleEnd.x, endCoords.x],
             y: [startCoords.y, visibleEnd.y, visibleEnd.y, endCoords.y],
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
+            scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
             times: [0, holdStart, holdEnd, 1],
             ease: 'linear'
         };
@@ -134,6 +141,7 @@ const buildPreviewMotionConfig = (startPosition, endPosition, startCoords, endCo
         x: [startCoords.x, endCoords.x],
         y: [startCoords.y, endCoords.y],
         opacity: [isStartFade ? 0 : 1, isEndFade ? 0 : 1],
+        scale: [isStartScaleUp ? 0 : 1, isEndScaleDown ? 0 : 1],
         times: [0, 1],
         ease: 'easeInOut'
     };

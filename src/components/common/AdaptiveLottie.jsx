@@ -37,7 +37,9 @@ const POSITION_COORDS = {
     'fade-offscreen-left': { x: -900, y: 0 },
     'fade-offscreen-right': { x: 900, y: 0 },
     'fade-offscreen-top': { x: 0, y: -560 },
-    'fade-offscreen-bottom': { x: 0, y: 560 }
+    'fade-offscreen-bottom': { x: 0, y: 560 },
+    'scale-up-center': { x: 0, y: 0 },
+    'scale-down-center': { x: 0, y: 0 }
 };
 
 const ONSCREEN_POSITION_BY_OFFSCREEN = {
@@ -48,7 +50,9 @@ const ONSCREEN_POSITION_BY_OFFSCREEN = {
     'fade-offscreen-left': 'left',
     'fade-offscreen-right': 'right',
     'fade-offscreen-top': 'up',
-    'fade-offscreen-bottom': 'down'
+    'fade-offscreen-bottom': 'down',
+    'scale-up-center': 'center',
+    'scale-down-center': 'center'
 };
 
 const parseDuration = (input) => {
@@ -107,14 +111,17 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, 
 
     const isStartFade = String(startPosition).includes('fade');
     const isEndFade = String(endPosition).includes('fade');
+    const isStartScaleUp = startPosition === 'scale-up-center';
+    const isEndScaleDown = endPosition === 'scale-down-center';
 
     if (delayMode === 'start') {
         const visibleStart = getVisibleHoldCoords(startPosition, startCoords, windowSize);
-        const moveInTime = (visibleStart.x !== startCoords.x || visibleStart.y !== startCoords.y) ? 0.18 : 0;
+        const moveInTime = (visibleStart.x !== startCoords.x || visibleStart.y !== startCoords.y || isStartScaleUp || isStartFade) ? 0.18 : 0;
         return {
             x: [startCoords.x, visibleStart.x, visibleStart.x, endCoords.x],
             y: [startCoords.y, visibleStart.y, visibleStart.y, endCoords.y],
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
+            scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
             times: [0, moveInTime, Math.min(moveInTime + hold, 0.92), 1],
             ease: 'linear'
         };
@@ -127,6 +134,7 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, 
             x: [startCoords.x, midPoint.x, midPoint.x, endCoords.x],
             y: [startCoords.y, midPoint.y, midPoint.y, endCoords.y],
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
+            scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
             times: [0, startMoveEnd, endMoveStart, 1],
             ease: 'linear'
         };
@@ -134,13 +142,14 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, 
 
     if (delayMode === 'end') {
         const visibleEnd = getVisibleHoldCoords(endPosition, endCoords, windowSize);
-        const moveOutTime = (visibleEnd.x !== endCoords.x || visibleEnd.y !== endCoords.y) ? 0.18 : 0;
+        const moveOutTime = (visibleEnd.x !== endCoords.x || visibleEnd.y !== endCoords.y || isEndScaleDown || isEndFade) ? 0.18 : 0;
         const holdStart = Math.max(0.08, 1 - hold - moveOutTime);
         const holdEnd = Math.min(0.96, holdStart + hold);
         return {
             x: [startCoords.x, visibleEnd.x, visibleEnd.x, endCoords.x],
             y: [startCoords.y, visibleEnd.y, visibleEnd.y, endCoords.y],
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
+            scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
             times: [0, holdStart, holdEnd, 1],
             ease: 'linear'
         };
@@ -150,6 +159,7 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, 
         x: [startCoords.x, endCoords.x],
         y: [startCoords.y, endCoords.y],
         opacity: [isStartFade ? 0 : 1, isEndFade ? 0 : 1],
+        scale: [isStartScaleUp ? 0 : 1, isEndScaleDown ? 0 : 1],
         times: [0, 1],
         ease: 'linear'
     };
