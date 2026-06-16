@@ -355,12 +355,14 @@ const AdaptiveLottie = ({
                         initial={{ 
                             x: motionConfig.x[0], 
                             y: motionConfig.y[0],
-                            opacity: motionConfig.opacity ? motionConfig.opacity[0] : 1 
+                            opacity: motionConfig.opacity ? motionConfig.opacity[0] : 1,
+                            scale: motionConfig.scale ? motionConfig.scale[0] : 1
                         }}
                         animate={{ 
                             x: motionConfig.x, 
                             y: motionConfig.y,
-                            opacity: motionConfig.opacity || 1
+                            opacity: motionConfig.opacity || 1,
+                            scale: motionConfig.scale || 1
                         }}
                         transition={{ duration: motionConfig.duration, ease: motionConfig.ease, times: motionConfig.times }}
                         onAnimationComplete={() => {
@@ -381,8 +383,8 @@ const AdaptiveLottie = ({
         return (
             <motion.div
                 className={className}
-                initial={{ x: motionConfig.x[0], y: motionConfig.y[0] }}
-                animate={{ x: motionConfig.x, y: motionConfig.y }}
+                initial={{ x: motionConfig.x[0], y: motionConfig.y[0], opacity: motionConfig.opacity ? motionConfig.opacity[0] : 1, scale: motionConfig.scale ? motionConfig.scale[0] : 1 }}
+                animate={{ x: motionConfig.x, y: motionConfig.y, opacity: motionConfig.opacity || 1, scale: motionConfig.scale || 1 }}
                 transition={{ duration: motionConfig.duration, ease: motionConfig.ease, times: motionConfig.times }}
                 onAnimationComplete={() => {
                     if (hideAfterDuration) {

@@ -103,12 +103,12 @@ const Exam = () => {
                     questions={questions}
                     mode={config.mode}
                     onSubmit={handleSubmit}
+                    config={config}
                 />
             )}
             {step === 'result' && (
                 <div className="min-h-screen bg-gray-50 py-8">
                     <ExamResult key={`exam-result-${sessionKey}`} result={result} onRetry={handleRetry} />
-                </div>
             )}
         </>
     );

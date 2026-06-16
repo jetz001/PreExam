@@ -18,7 +18,8 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
         exam_year: '',
         exam_set: '',
         theme: { background_id: null, frame_id: null },
-        tutor_submode: 'step' // 'step' or 'independent'
+        tutor_submode: 'step', // 'step' or 'independent'
+        disable_animation: false
     });
 
     const [questionSource, setQuestionSource] = useState('platform');
@@ -46,7 +47,8 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                 exam_year: '',
                 exam_set: '',
                 theme: { background_id: null, frame_id: null },
-                tutor_submode: 'step'
+                tutor_submode: 'step',
+                disable_animation: false
             });
             fetchOptions();
             fetchAssets();
@@ -347,6 +349,21 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                                <div>
+                                    <label className="crm-label flex items-center justify-between">
+                                        <span>🎬 แอนิเมชันตอนทำข้อสอบ</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold text-white/80">{formData.disable_animation ? 'ปิด' : 'เปิด'}</span>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, disable_animation: !prev.disable_animation }))}
+                                                className={`relative w-12 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out ${!formData.disable_animation ? 'bg-[#22c55e]' : 'bg-white/20'}`}
+                                            >
+                                                <div className={`w-4 h-4 rounded-full bg-white transition-transform duration-200 ease-in-out ${!formData.disable_animation ? 'translate-x-6' : 'translate-x-0'}`} />
+                                            </button>
+                                        </div>
+                                    </label>
                                 </div>
                             </div>
                         </div>

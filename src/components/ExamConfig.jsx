@@ -39,6 +39,7 @@ export default function ExamConfig({ onStart }) {
     const [mode, setMode] = useState('practice');
     const [quickAmount, setQuickAmount] = useState(10);
     const [loading, setLoading] = useState(false);
+    const [disableAnimation, setDisableAnimation] = useState(false);
 
     // Advanced state
     const [subjects, setSubjects]     = useState([]);
@@ -89,15 +90,15 @@ export default function ExamConfig({ onStart }) {
 
     const handleQuickStart = async () => {
         setLoading(true);
-        publicService.logActivity('BTN_START_EXAM', { mode, limit: quickAmount, type: 'quick' });
-        await onStart({ category: '', subject: '', exam_year: '', exam_set: '', limit: quickAmount, mode });
+        publicService.logActivity('BTN_START_EXAM', { mode, limit: quickAmount, type: 'quick', disable_animation: disableAnimation });
+        await onStart({ category: '', subject: '', exam_year: '', exam_set: '', limit: quickAmount, mode, disable_animation: disableAnimation });
         setLoading(false);
     };
 
     const handleAdvancedSubmit = (e) => {
         e.preventDefault();
-        publicService.logActivity('BTN_START_EXAM_ADVANCED', { ...config, mode });
-        onStart({ ...config, mode });
+        publicService.logActivity('BTN_START_EXAM_ADVANCED', { ...config, mode, disable_animation: disableAnimation });
+        onStart({ ...config, mode, disable_animation: disableAnimation });
     };
 
     const handleChange = (e) =>
@@ -431,6 +432,18 @@ export default function ExamConfig({ onStart }) {
                                 {n}
                             </button>
                         ))}
+                    </div>
+
+                    {/* Animation toggle */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '16px', color: '#fff', fontSize: '0.9rem', fontWeight: 600 }}>
+                        <input 
+                            type="checkbox" 
+                            id="anim-toggle" 
+                            checked={!disableAnimation}
+                            onChange={(e) => setDisableAnimation(!e.target.checked)}
+                            style={{ width: '16px', height: '16px', accentColor: '#ffcc00', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="anim-toggle" style={{ cursor: 'pointer' }}>เปิดใช้งานแอนิเมชันตอนตอบ</label>
                     </div>
 
                     {/* Start button */}

@@ -35,7 +35,7 @@ const parseDurationMs = (input, fallback = 900) => {
     return Number.isFinite(parsed) && parsed > 0 ? parsed * 1000 : fallback;
 };
 
-const ExamTaking = ({ questions, mode, onSubmit }) => {
+const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const navigate = useNavigate();
     const [answers, setAnswers] = useState({});
@@ -73,12 +73,29 @@ const ExamTaking = ({ questions, mode, onSubmit }) => {
         }
     }, [mode]);
 
+    useEffect(() => {
+        if (mode === 'simulation') {
+            const timer = setInterval(() => {
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        handleSubmit();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [mode]);
+
     useEffect(() => () => {
         if (answerAdvanceTimeoutRef.current) clearTimeout(answerAdvanceTimeoutRef.current);
         if (transientAnimationTimeoutRef.current) clearTimeout(transientAnimationTimeoutRef.current);
     }, []);
 
-    const showTransientAnimation = useCallback((presetKey, duration = 900) => {
+    const showTransientAnimation = useCallback((presetKey, duration = 1500) => {
+        if (config?.disable_animation) return;
         const preset = resolveAnimationPreset(presetKey, runtimeAnimationSettings);
         if (preset.disabled || (!preset.animationData && !preset.animationUrl)) return;
         const resolvedDuration = parseDurationMs(preset.durationText, duration);
