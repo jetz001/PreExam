@@ -123,7 +123,7 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, 
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
             scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
             times: [0, moveInTime, Math.min(moveInTime + hold, 0.92), 1],
-            ease: 'linear'
+            ease: ['easeOut', 'linear', 'easeIn']
         };
     }
 
@@ -136,7 +136,7 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, 
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
             scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
             times: [0, startMoveEnd, endMoveStart, 1],
-            ease: 'linear'
+            ease: ['easeInOut', 'linear', 'easeInOut']
         };
     }
 
@@ -151,7 +151,7 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, 
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
             scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
             times: [0, holdStart, holdEnd, 1],
-            ease: 'linear'
+            ease: ['easeOut', 'linear', 'easeIn']
         };
     }
 
@@ -161,7 +161,7 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, 
         opacity: [isStartFade ? 0 : 1, isEndFade ? 0 : 1],
         scale: [isStartScaleUp ? 0 : 1, isEndScaleDown ? 0 : 1],
         times: [0, 1],
-        ease: 'linear'
+        ease: 'easeInOut'
     };
 };
 
