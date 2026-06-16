@@ -55,8 +55,8 @@ const QuestionManager = () => {
 
     // Fetch Questions
     const { data: queryData, isLoading } = useQuery({
-        queryKey: ['questions', filters, page],
-        queryFn: () => adminApi.getQuestions({ ...filters, page, limit })
+        queryKey: ['questions', filters, page, sortConfig.direction],
+        queryFn: () => adminApi.getQuestions({ ...filters, page, limit, orderDir: sortConfig.direction })
     });
 
     const questions = queryData?.rows || [];
@@ -495,7 +495,7 @@ const QuestionManager = () => {
                                     <ReactQuill
                                         theme="snow"
                                         value={formData.question_text}
-                                        onChange={(content) => setFormData({ ...formData, question_text: content })}
+                                        onChange={(content) => setFormData(prev => ({ ...prev, question_text: content }))}
                                         modules={{
                                             toolbar: [
                                                 [{ 'header': [1, 2, false] }],
@@ -520,10 +520,10 @@ const QuestionManager = () => {
                                             required
                                             className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                             value={formData.options ? formData.options[opt] : ''}
-                                            onChange={(e) => setFormData({
-                                                ...formData,
-                                                options: { ...(formData.options || {}), [opt]: e.target.value }
-                                            })}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                options: { ...(prev.options || {}), [opt]: e.target.value }
+                                            }))}
                                         />
                                     </div>
                                 ))}
@@ -535,7 +535,7 @@ const QuestionManager = () => {
                                     <select
                                         className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                         value={formData.correct_answer}
-                                        onChange={(e) => setFormData({ ...formData, correct_answer: e.target.value })}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, correct_answer: e.target.value }))}
                                     >
                                         <option value="a">Option A</option>
                                         <option value="b">Option B</option>
@@ -549,7 +549,7 @@ const QuestionManager = () => {
                                         type="text"
                                         className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                         value={formData.subject}
-                                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
                                         placeholder="e.g. Math, English"
                                     />
                                 </div>
@@ -559,7 +559,7 @@ const QuestionManager = () => {
                                         type="text"
                                         className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                         value={formData.skill}
-                                        onChange={(e) => setFormData({ ...formData, skill: e.target.value })}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, skill: e.target.value }))}
                                         placeholder="e.g. Analysis, Critical Thinking"
                                     />
                                 </div>
@@ -569,7 +569,7 @@ const QuestionManager = () => {
                                         type="number"
                                         className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                         value={formData.exam_year}
-                                        onChange={(e) => setFormData({ ...formData, exam_year: e.target.value })}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, exam_year: e.target.value }))}
                                         placeholder="e.g. 2567"
                                     />
                                 </div>
@@ -578,7 +578,7 @@ const QuestionManager = () => {
                                     <select
                                         className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                         value={formData.exam_set}
-                                        onChange={(e) => setFormData({ ...formData, exam_set: e.target.value })}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, exam_set: e.target.value }))}
                                     >
                                         <option value="">Select Set...</option>
                                         <option value="Mock Exam">แนวข้อสอบ (Mock Exam)</option>
@@ -591,7 +591,7 @@ const QuestionManager = () => {
                                         type="text"
                                         className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-royal-blue-500 outline-none text-gray-900"
                                         value={formData.catalogs}
-                                        onChange={(e) => setFormData({ ...formData, catalogs: e.target.value })}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, catalogs: e.target.value }))}
                                         placeholder="e.g. Exam A, Local Gov (Separate with comma)"
                                     />
                                 </div>
@@ -603,7 +603,7 @@ const QuestionManager = () => {
                                     <ReactQuill
                                         theme="snow"
                                         value={formData.explanation}
-                                        onChange={(content) => setFormData({ ...formData, explanation: content })}
+                                        onChange={(content) => setFormData(prev => ({ ...prev, explanation: content }))}
                                         className="mb-12"
                                         style={{ height: '150px', marginBottom: '50px' }}
                                     />

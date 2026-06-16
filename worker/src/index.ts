@@ -806,6 +806,7 @@ export default {
           const pageStr = url.searchParams.get("page") || "1";
           const orderBy = url.searchParams.get("orderBy");
           const search = url.searchParams.get("search");
+          const orderDir = url.searchParams.get("orderDir") || "desc";
 
           const limit = parseInt(limitStr, 10);
           const page = parseInt(pageStr, 10);
@@ -860,10 +861,17 @@ export default {
             rows.sort((a, b) => {
               const numA = Number(a.id);
               const numB = Number(b.id);
-              if (!isNaN(numA) && !isNaN(numB)) {
-                return numA - numB;
+              const isNumA = !isNaN(numA);
+              const isNumB = !isNaN(numB);
+              
+              if (isNumA && isNumB) {
+                return orderDir === "desc" ? numB - numA : numA - numB;
               }
-              return String(a.id).localeCompare(String(b.id));
+              if (isNumA && !isNumB) return orderDir === "desc" ? 1 : -1;
+              if (!isNumA && isNumB) return orderDir === "desc" ? -1 : 1;
+              
+              const strCompare = String(a.id).localeCompare(String(b.id));
+              return orderDir === "desc" ? -strCompare : strCompare;
             });
           }
 
@@ -880,6 +888,91 @@ export default {
             },
           });
         }
+
+        // /api/questions (Create)
+        if (url.pathname === "/api/questions" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const userDoc = await firestore.getDocument("users", auth.userId);
+          if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
+          
+          const body: any = await readJson(request);
+          if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
+          
+          const { catalogs, category, skill, exam_year, exam_set, ...rest } = body;
+          
+          let finalCatalogs = catalogs || [];
+          if (category && !finalCatalogs.includes(category)) {
+              finalCatalogs.push(category);
+          }
+          if (typeof finalCatalogs === "string") {
+              try { finalCatalogs = JSON.parse(finalCatalogs); } catch (e) { finalCatalogs = [finalCatalogs]; }
+          }
+          
+          let maxId = 0;
+          try {
+             const allDocs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+             for (const doc of allDocs) {
+                 const num = Number(doc.id);
+                 if (!isNaN(num) && num > maxId) {
+                     maxId = num;
+                 }
+             }
+          } catch(e) {
+             console.error("Failed to fetch max ID", e);
+          }
+          
+          const newDocRef = (maxId + 1).toString();
+          
+          const newQuestion = {
+              id: newDocRef,
+              ...rest,
+              category: category || (finalCatalogs.length > 0 ? finalCatalogs[0] : 'General'),
+              catalogs: finalCatalogs,
+              skill: skill || null,
+              exam_year: exam_year || null,
+              exam_set: exam_set || null,
+              created_at: new Date().toISOString()
+          };
+          
+          await firestore.createDocument("questions", newQuestion, newDocRef);
+          return json({ success: true, data: newQuestion }, { status: 201 });
+        }
+
+        // /api/questions/:id (Update)
+        if (qIdMatch && request.method === "PUT") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const userDoc = await firestore.getDocument("users", auth.userId);
+          if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
+          
+          const body: any = await readJson(request);
+          if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
+          
+          const doc = await firestore.getDocument("questions", qIdMatch[1]);
+          if (!doc) return json({ success: false, message: "Question not found" }, { status: 404 });
+          
+          const updateData = { ...body, updated_at: new Date().toISOString() };
+          await firestore.updateDocument("questions", qIdMatch[1], updateData);
+          
+          const updated = await firestore.getDocument("questions", qIdMatch[1]);
+          return json({ success: true, data: normalizeQuestion(updated) });
+        }
+
+        // /api/questions/:id (Delete)
+        if (qIdMatch && request.method === "DELETE") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const userDoc = await firestore.getDocument("users", auth.userId);
+          if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
+          
+          const doc = await firestore.getDocument("questions", qIdMatch[1]);
+          if (!doc) return json({ success: false, message: "Question not found" }, { status: 404 });
+          
+          await firestore.deleteDocument("questions", qIdMatch[1]);
+          return json({ success: true, message: "Question deleted" });
+        }
+
         // /api/exams/submit
         if (url.pathname === "/api/exams/submit" && request.method === "POST") {
           const auth = await requireAuthUserId(request, env);

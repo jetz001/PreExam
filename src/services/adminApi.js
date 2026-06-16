@@ -9,7 +9,7 @@ const adminApi = {
 
     // Question Manager
     getQuestions: async (filters) => {
-        const response = await api.get('/questions', { params: { ...filters, orderBy: 'id' } });
+        const response = await api.get('/questions', { params: { orderBy: 'id', ...filters } });
         return response.data.data;
     },
     getSubjects: async () => {
