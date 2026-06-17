@@ -49,7 +49,12 @@ const SupportTicketManager = () => {
     const fetchTickets = async () => {
         try {
             const res = await supportService.getAdminTickets();
-            setTickets(res.data);
+            const mappedTickets = (res.data || []).map(t => ({
+                ...t,
+                id: t.id || t.ticket_id,
+                subject: t.subject || t.title || 'ไม่มีหัวข้อ',
+            }));
+            setTickets(mappedTickets);
         } catch (error) {
             console.error(error);
             toast.error('โหลดข้อมูล Ticket ไม่สำเร็จ');
@@ -70,9 +75,14 @@ const SupportTicketManager = () => {
     };
 
     const filteredTickets = (tickets || []).filter(t => {
-        const matchesSearch = t.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.id.toString().includes(searchQuery) ||
-            t.user?.display_name?.toLowerCase().includes(searchQuery.toLowerCase());
+        const subjectText = (t.subject || t.title || '').toLowerCase();
+        const idText = (t.id || t.ticket_id || '').toString();
+        const userText = (t.user?.display_name || '').toLowerCase();
+        const query = (searchQuery || '').toLowerCase();
+        
+        const matchesSearch = subjectText.includes(query) ||
+            idText.includes(query) ||
+            userText.includes(query);
         const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter;
         return matchesSearch && matchesCategory;
     });
