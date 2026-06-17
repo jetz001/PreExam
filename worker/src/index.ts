@@ -2010,16 +2010,60 @@ if (url.pathname === "/api/legal/policy") {
                     from: [{ collectionId: "tickets" }],
                     orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }]
                 });
-                return json(results);
+                return json({ success: true, data: results });
             } catch (e) {
-                return json([]);
+                return json({ success: false, data: [] });
             }
         }
         if (url.pathname === "/api/admin/backups") return json([]);
         if (url.pathname === "/api/admin/backups/logs") return json([]);
         if (url.pathname === "/api/admin/messages") return json([]);
         if (url.pathname === "/api/admin/reports") return json([]);
-        if (url.pathname === "/api/support/tickets/my") return json([]);
+        if (url.pathname === "/api/support/tickets" && request.method === "POST") {
+            try {
+                const body = await readJson(request) as any;
+                const auth = await authenticateUser(request, env);
+                const userId = ("error" in auth) ? 'anonymous' : auth.userId;
+                
+                const ticketData = {
+                    ticket_id: Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
+                    title: body?.subject || 'แจ้งปัญหา',
+                    description: body?.description || 'ไม่มีรายละเอียด',
+                    category: body?.category || 'general',
+                    status: 'open',
+                    user_id: userId,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                const created = await firestore.createDocument("tickets", ticketData);
+                return json({ success: true, data: created });
+            } catch (e) {
+                return json({ success: false, message: "Failed to create ticket" }, { status: 500 });
+            }
+        }
+
+        if (url.pathname === "/api/support/tickets/my" && request.method === "GET") {
+            try {
+                const auth = await authenticateUser(request, env);
+                if ("error" in auth) return auth.error;
+                
+                const results = await firestore.runQuery({
+                    from: [{ collectionId: "tickets" }],
+                    where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
+                });
+                
+                results.sort((a: any, b: any) => {
+                  const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                  const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                  return tB - tA;
+                });
+                
+                return json({ success: true, data: results });
+            } catch (e) {
+                return json({ success: false, data: [] });
+            }
+        }
         if (url.pathname === "/api/admin/payments") return json([]);
         if (url.pathname === "/api/admin/ads/pending") return json([]);
         if (url.pathname === "/api/news/sources/all") return json({ success: true, data: [] });
