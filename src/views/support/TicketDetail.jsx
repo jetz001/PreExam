@@ -82,11 +82,16 @@ const TicketDetail = () => {
         if (!newMessage.trim()) return;
 
         try {
-            await supportService.sendMessage(id, {
+            const result = await supportService.sendMessage(id, {
                 message: newMessage,
-                is_internal_note: user.role === 'admin' ? isInternal : false
+                is_internal_note: user?.role === 'admin' ? isInternal : false
             });
             setNewMessage('');
+            if (result && result.data) {
+                setMessages(prev => [...prev, result.data]);
+            } else {
+                fetchTicketDetails();
+            }
         } catch (error) {
             console.error(error);
             toast.error('ไม่สามารถส่งข้อความได้');

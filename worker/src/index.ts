@@ -2120,7 +2120,8 @@ if (url.pathname === "/api/legal/policy") {
                 const messageData = {
                     message: body.message,
                     user_id: userId,
-                    is_admin: body.is_admin || false,
+                    is_admin: body.is_admin || body.is_internal_note || false,
+                    is_internal_note: body.is_internal_note || false,
                     created_at: new Date().toISOString()
                 };
                 
@@ -2133,6 +2134,7 @@ if (url.pathname === "/api/legal/policy") {
                 
                 return json({ success: true, data: created });
             } catch (e) {
+                console.error("Add message error:", e);
                 return json({ success: false, message: "Failed to add message" }, { status: 500 });
             }
         }
