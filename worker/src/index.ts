@@ -1176,9 +1176,11 @@ export default {
                 const auth = await requireAuthUserId(request, env);
                 const userId = ("error" in auth) ? 'anonymous' : auth.userId;
                 
+                const ticket_id = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
                 const ticketData = {
-                    ticket_id: Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
-                    title: `แจ้งปัญหาข้อสอบ: ${body?.question_id}`,
+                    id: ticket_id,
+                    ticket_id: ticket_id,
+                    subject: `แจ้งปัญหาข้อสอบ: ${body?.question_id}`,
                     description: body?.reason || 'No reason provided',
                     category: 'content',
                     status: 'open',
@@ -2022,12 +2024,14 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/support/tickets" && request.method === "POST") {
             try {
                 const body = await readJson(request) as any;
-                const auth = await authenticateUser(request, env);
+                const auth = await requireAuthUserId(request, env);
                 const userId = ("error" in auth) ? 'anonymous' : auth.userId;
                 
+                const ticket_id = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
                 const ticketData = {
-                    ticket_id: Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
-                    title: body?.subject || 'แจ้งปัญหา',
+                    id: ticket_id,
+                    ticket_id: ticket_id,
+                    subject: body?.subject || 'แจ้งปัญหา',
                     description: body?.description || 'ไม่มีรายละเอียด',
                     category: body?.category || 'general',
                     status: 'open',
@@ -2045,7 +2049,7 @@ if (url.pathname === "/api/legal/policy") {
 
         if (url.pathname === "/api/support/tickets/my" && request.method === "GET") {
             try {
-                const auth = await authenticateUser(request, env);
+                const auth = await requireAuthUserId(request, env);
                 if ("error" in auth) return auth.error;
                 
                 const results = await firestore.runQuery({
