@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import HomeNavbar from './HomeNavbar';
 import publicService from '../services/publicService';
+import AdaptiveLottie from './common/AdaptiveLottie';
 
 /* ─────────────────────────────────────────────
    ExamConfig  — Kahoot-style redesign
@@ -88,17 +89,35 @@ export default function ExamConfig({ onStart }) {
         })();
     }, [config.subject, showAdvanced]);
 
-    const handleQuickStart = async () => {
-        setLoading(true);
-        publicService.logActivity('BTN_START_EXAM', { mode, limit: quickAmount, type: 'quick', disable_animation: disableAnimation });
-        await onStart({ category: '', subject: '', exam_year: '', exam_set: '', limit: quickAmount, mode, disable_animation: disableAnimation });
-        setLoading(false);
+    const [countdown, setCountdown] = useState(null);
+    const [startConfig, setStartConfig] = useState(null);
+
+    React.useEffect(() => {
+        if (countdown === null) return;
+        if (countdown > 0) {
+            const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+            return () => clearTimeout(timer);
+        } else {
+            const executeStart = async () => {
+                setLoading(true);
+                publicService.logActivity(startConfig.type === 'quick' ? 'BTN_START_EXAM' : 'BTN_START_EXAM_ADVANCED', startConfig);
+                await onStart(startConfig);
+                setLoading(false);
+                setCountdown(null);
+            };
+            executeStart();
+        }
+    }, [countdown, startConfig, onStart]);
+
+    const handleQuickStart = () => {
+        setStartConfig({ category: '', subject: '', exam_year: '', exam_set: '', limit: quickAmount, mode, disable_animation: disableAnimation, type: 'quick' });
+        setCountdown(3);
     };
 
     const handleAdvancedSubmit = (e) => {
         e.preventDefault();
-        publicService.logActivity('BTN_START_EXAM_ADVANCED', { ...config, mode, disable_animation: disableAnimation });
-        onStart({ ...config, mode, disable_animation: disableAnimation });
+        setStartConfig({ ...config, mode, disable_animation: disableAnimation, type: 'advanced' });
+        setCountdown(3);
     };
 
     const handleChange = (e) =>
@@ -106,6 +125,46 @@ export default function ExamConfig({ onStart }) {
 
     return (
         <>
+            {countdown !== null && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(70, 23, 143, 0.95)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    color: '#fff',
+                    fontFamily: "'Nunito', 'Sarabun', sans-serif"
+                }}>
+                    <div style={{
+                        fontSize: '10rem',
+                        fontWeight: 900,
+                        animation: 'ecBounce 1s infinite',
+                        textShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 40px rgba(255,204,0,0.5)',
+                        color: countdown <= 1 ? '#ffcc00' : '#fff'
+                    }}>
+                        {countdown > 0 ? countdown : 'ไป!'}
+                    </div>
+                    <div style={{
+                        fontSize: '1.5rem',
+                        fontWeight: 700,
+                        marginTop: '20px',
+                        opacity: 0.8,
+                        animation: 'ecSlideUp 0.5s ease'
+                    }}>
+                        เตรียมตัวให้พร้อม...
+                    </div>
+                    {/* Preload animations silently into cache */}
+                    <div style={{ position: 'absolute', opacity: 0.01, pointerEvents: 'none', width: '10px', height: '10px', overflow: 'hidden' }}>
+                        <AdaptiveLottie presetKey="examSkipFirstAnswer" />
+                        <AdaptiveLottie presetKey="examFinish" />
+                        <AdaptiveLottie presetKey="examResultPass" />
+                        <AdaptiveLottie presetKey="examResultFail" />
+                    </div>
+                </div>
+            )}
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
 
