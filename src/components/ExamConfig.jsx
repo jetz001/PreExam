@@ -87,6 +87,8 @@ export default function ExamConfig({ onStart }) {
                 }
             } catch (e) { console.error(e); }
         })();
+    }, [config.subject, showAdvanced]);
+
     const handleQuickStart = async () => {
         setLoading(true);
         publicService.logActivity('BTN_START_EXAM', { mode, limit: quickAmount, type: 'quick', disable_animation: disableAnimation });
