@@ -2078,9 +2078,9 @@ if (url.pathname === "/api/legal/policy") {
                 
                 // Get messages for ticket
                 const messages = await firestore.runQuery({
-                    from: [{ collectionId: `tickets/${ticketId}/messages` }],
+                    from: [{ collectionId: "messages" }],
                     orderBy: [{ field: { fieldPath: "created_at" }, direction: "ASCENDING" }]
-                });
+                }, `tickets/${ticketId}`);
                 
                 ticket.messages = messages || [];
                 return json({ success: true, data: ticket });
