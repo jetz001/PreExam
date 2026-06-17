@@ -4,6 +4,70 @@ import ExamConfig from '../components/ExamConfig';
 import ExamTaking from '../components/ExamTaking';
 import ExamResult from '../components/ExamResult';
 import examService from '../services/examService';
+import AdaptiveLottie from '../components/common/AdaptiveLottie';
+
+const ExamCountdown = () => {
+    const [countdown, setCountdown] = useState(3);
+    
+    useEffect(() => {
+        if (countdown > 0) {
+            const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [countdown]);
+
+    return (
+        <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(70, 23, 143, 1)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            color: '#fff',
+            fontFamily: "'Nunito', 'Sarabun', sans-serif"
+        }}>
+            <style>{`
+                @keyframes ecBounce {
+                    0%, 100% { transform: translateY(0) scale(1); }
+                    30% { transform: translateY(-10px) scale(1.05); }
+                    60% { transform: translateY(-5px) scale(1.02); }
+                }
+                @keyframes ecSlideUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
+            <div style={{
+                fontSize: '15rem',
+                fontWeight: 900,
+                animation: 'ecBounce 1s infinite',
+                textShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 40px rgba(255,204,0,0.5)',
+                color: countdown <= 1 ? '#ffcc00' : '#fff'
+            }}>
+                {countdown > 0 ? countdown : 'ไป!'}
+            </div>
+            <div style={{
+                fontSize: '2rem',
+                fontWeight: 700,
+                marginTop: '20px',
+                opacity: 0.8,
+                animation: 'ecSlideUp 0.5s ease'
+            }}>
+                เตรียมตัวให้พร้อม...
+            </div>
+            {/* Preload animations silently into cache so it doesn't stutter between questions */}
+            <div style={{ position: 'absolute', opacity: 0.01, pointerEvents: 'none', width: '10px', height: '10px', overflow: 'hidden' }}>
+                <AdaptiveLottie presetKey="examSkipFirstAnswer" />
+                <AdaptiveLottie presetKey="examFinish" />
+                <AdaptiveLottie presetKey="examResultPass" />
+                <AdaptiveLottie presetKey="examResultFail" />
+            </div>
+        </div>
+    );
+};
 
 const Exam = () => {
     const [step, setStep] = useState('config'); // config, taking, result
@@ -33,31 +97,33 @@ const Exam = () => {
 
     const handleStart = async (examConfig) => {
         try {
+            setStep('countdown'); // Instantly show countdown!
             setSessionKey((prev) => prev + 1);
             setConfig(examConfig);
             setResult(null);
-            const data = await examService.getQuestions({ ...examConfig, orderBy: 'random' });
-            // Check if data.data is array (legacy) or object (paginated)
+
+            // Fetch questions AND wait for countdown to finish (3.5s) simultaneously
+            const dataPromise = examService.getQuestions({ ...examConfig, orderBy: 'random' });
+            const timerPromise = new Promise(resolve => setTimeout(resolve, 3500));
+            
+            const [data] = await Promise.all([dataPromise, timerPromise]);
+            
             const questionsList = Array.isArray(data.data) ? data.data : (data.data.rows || []);
 
             if (questionsList.length > 0) {
-                // Bug Fix: Check if we got significantly fewer questions than requested
-                // Use a soft threshold (e.g. 1) to alert user but still allow exam
                 if (questionsList.length === 1 && examConfig.limit > 1) {
                     console.warn(`Warning: Requested ${examConfig.limit} questions but only got ${questionsList.length}`);
-                    // Optional: You could alert the user here, but maybe it's better to let them take the 1 question exam
-                    // than to block them. However, user feedback says "1 question then bounce" is bad.
-                    // Let's ensure we are passing the limit correctly.
                 }
-
                 setQuestions(questionsList);
                 setStep('taking');
             } else {
                 alert('ไม่พบข้อสอบในหมวดหมู่นี้ กรุณาลองเลือกเงื่อนไขอื่น');
+                setStep('config');
             }
         } catch (error) {
             console.error('Error starting exam:', error);
             alert('เกิดข้อผิดพลาดในการเริ่มสอบ');
+            setStep('config');
         }
     };
 
@@ -95,6 +161,9 @@ const Exam = () => {
         <>
             {/* Config: full-screen Kahoot style — no wrapper */}
             {step === 'config' && <ExamConfig onStart={handleStart} />}
+            
+            {/* Full-screen Countdown Overlay */}
+            {step === 'countdown' && <ExamCountdown />}
 
             {/* Taking / Result keep their own layout */}
             {step === 'taking' && (
