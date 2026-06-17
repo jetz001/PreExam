@@ -47,6 +47,7 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     const [showFontMenu, setShowFontMenu] = useState(false);
     const [fullScreenImage, setFullScreenImage] = useState(null);
     const [transientAnimation, setTransientAnimation] = useState(null);
+    const [countdown, setCountdown] = useState(3);
     const { isPremium } = useUserRole();
     const answerAdvanceTimeoutRef = useRef(null);
     const transientAnimationTimeoutRef = useRef(null);
@@ -58,7 +59,14 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     const runtimeAnimationSettings = publicSettingsResponse?.settings || {};
 
     useEffect(() => {
-        if (mode === 'simulation') {
+        if (countdown > 0) {
+            const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [countdown]);
+
+    useEffect(() => {
+        if (mode === 'simulation' && countdown === 0) {
             const timer = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
@@ -210,6 +218,48 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
 
     return (
         <div className="relative min-h-screen bg-[#46178f] overflow-hidden font-['Nunito','Sarabun',sans-serif] flex flex-col">
+            {/* Massive Countdown Overlay */}
+            {countdown > 0 && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(70, 23, 143, 0.95)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    color: '#fff',
+                    fontFamily: "'Nunito', 'Sarabun', sans-serif"
+                }}>
+                    <div style={{
+                        fontSize: '15rem',
+                        fontWeight: 900,
+                        animation: 'ecBounce 1s infinite',
+                        textShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 40px rgba(255,204,0,0.5)',
+                        color: countdown <= 1 ? '#ffcc00' : '#fff'
+                    }}>
+                        {countdown}
+                    </div>
+                    <div style={{
+                        fontSize: '2rem',
+                        fontWeight: 700,
+                        marginTop: '20px',
+                        opacity: 0.8,
+                        animation: 'ecSlideUp 0.5s ease'
+                    }}>
+                        เตรียมตัวให้พร้อม...
+                    </div>
+                    {/* Preload animations silently into cache so it doesn't stutter between questions */}
+                    <div style={{ position: 'absolute', opacity: 0.01, pointerEvents: 'none', width: '10px', height: '10px', overflow: 'hidden' }}>
+                        <AdaptiveLottie presetKey="examSkipFirstAnswer" />
+                        <AdaptiveLottie presetKey="examFinish" />
+                        <AdaptiveLottie presetKey="examResultPass" />
+                        <AdaptiveLottie presetKey="examResultFail" />
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 @keyframes floatShape1 {
                     0% { transform: translate(0, 0) rotate(0deg); }
@@ -230,6 +280,15 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                     0% { transform: translate(0, 0) rotate(0deg); }
                     50% { transform: translate(-150px, -100px) rotate(-90deg); }
                     100% { transform: translate(0, 0) rotate(-360deg); }
+                }
+                @keyframes ecBounce {
+                    0%, 100% { transform: translateY(0) scale(1); }
+                    30% { transform: translateY(-10px) scale(1.05); }
+                    60% { transform: translateY(-5px) scale(1.02); }
+                }
+                @keyframes ecSlideUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
             
