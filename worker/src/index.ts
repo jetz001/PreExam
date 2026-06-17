@@ -2068,6 +2068,74 @@ if (url.pathname === "/api/legal/policy") {
                 return json({ success: false, data: [] });
             }
         }
+
+        const ticketMatch = url.pathname.match(/^\/api\/support\/tickets\/([a-zA-Z0-9_-]+)$/);
+        if (ticketMatch && request.method === "GET") {
+            try {
+                const ticketId = ticketMatch[1];
+                const ticket = await firestore.getDocument("tickets", ticketId);
+                if (!ticket) return json({ success: false, message: "Ticket not found" }, { status: 404 });
+                
+                // Get messages for ticket
+                const messages = await firestore.runQuery({
+                    from: [{ collectionId: `tickets/${ticketId}/messages` }],
+                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "ASCENDING" }]
+                });
+                
+                ticket.messages = messages || [];
+                return json({ success: true, data: ticket });
+            } catch (e) {
+                return json({ success: false, message: "Server error" }, { status: 500 });
+            }
+        }
+
+        const ticketStatusMatch = url.pathname.match(/^\/api\/support\/tickets\/([a-zA-Z0-9_-]+)\/status$/);
+        if (ticketStatusMatch && request.method === "PATCH") {
+            try {
+                const auth = await requireAuthUserId(request, env);
+                if ("error" in auth) return auth.error;
+                
+                const ticketId = ticketStatusMatch[1];
+                const body = await readJson(request) as any;
+                
+                await firestore.updateDocument("tickets", ticketId, {
+                    status: body.status,
+                    updated_at: new Date().toISOString()
+                });
+                
+                return json({ success: true, message: "Status updated" });
+            } catch (e) {
+                return json({ success: false, message: "Failed to update status" }, { status: 500 });
+            }
+        }
+
+        const ticketMessageMatch = url.pathname.match(/^\/api\/support\/tickets\/([a-zA-Z0-9_-]+)\/messages$/);
+        if (ticketMessageMatch && request.method === "POST") {
+            try {
+                const auth = await requireAuthUserId(request, env);
+                const userId = ("error" in auth) ? 'anonymous' : auth.userId;
+                const ticketId = ticketMessageMatch[1];
+                const body = await readJson(request) as any;
+                
+                const messageData = {
+                    message: body.message,
+                    user_id: userId,
+                    is_admin: body.is_admin || false,
+                    created_at: new Date().toISOString()
+                };
+                
+                const created = await firestore.createDocument(`tickets/${ticketId}/messages`, messageData);
+                
+                // Update ticket updated_at
+                await firestore.updateDocument("tickets", ticketId, {
+                    updated_at: new Date().toISOString()
+                });
+                
+                return json({ success: true, data: created });
+            } catch (e) {
+                return json({ success: false, message: "Failed to add message" }, { status: 500 });
+            }
+        }
         if (url.pathname === "/api/admin/payments") return json([]);
         if (url.pathname === "/api/admin/ads/pending") return json([]);
         if (url.pathname === "/api/news/sources/all") return json({ success: true, data: [] });
