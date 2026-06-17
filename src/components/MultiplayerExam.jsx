@@ -188,6 +188,11 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
             <div className="flex-1 overflow-y-auto w-full custom-scrollbar pb-4 pr-2">
                 {/* Question Area */}
                 <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[2rem] p-6 md:p-12 shadow-xl relative w-full mb-6">
+                    {/* Question ID for reference */}
+                    <div className="absolute top-4 left-4 md:top-6 md:left-8 text-white/40 text-xs md:text-sm font-mono font-semibold tracking-wider">
+                        ID: {currentQuestion.id}
+                    </div>
+
                     <div className="absolute top-4 right-4 flex gap-2">
                         <button
                             onClick={() => setShowReportModal(true)}
@@ -198,7 +203,7 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
                         </button>
                     </div>
 
-                    <h3 className="text-white font-black text-2xl md:text-4xl text-center leading-relaxed mt-4 mb-4 drop-shadow-md" style={{ fontSize: `${1.4 * fontSizeScale}rem` }}>
+                    <h3 className="text-white font-black text-2xl md:text-4xl text-left leading-relaxed mt-4 mb-4 drop-shadow-md" style={{ fontSize: `${1.4 * fontSizeScale}rem` }}>
                         <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }} />
                         <span className="block text-sm text-white/50 font-normal mt-2">
                             #{currentQuestion.id}

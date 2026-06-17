@@ -76,10 +76,10 @@ const TutorView = ({ questions, socket, roomId, isHost, currentQuestionIndex, pa
 
             {/* Question Area */}
             <div className="flex-1 flex flex-col items-center justify-center p-8 z-10 w-full max-w-6xl mx-auto">
-                <div className="bg-white px-8 py-10 w-full rounded-2xl shadow-lg border-b-8 border-gray-300 mb-8 text-center">
-                    <h3 className="text-4xl text-gray-900 font-black leading-snug">
+                <div className="bg-white px-8 py-10 w-full rounded-2xl shadow-lg border-b-8 border-gray-300 mb-8 text-left">
+                    <h2 className="text-3xl font-black text-gray-800 leading-relaxed">
                         <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text || '')) }} />
-                    </h3>
+                    </h2>
                 </div>
 
                 {currentQuestion.question_image && (

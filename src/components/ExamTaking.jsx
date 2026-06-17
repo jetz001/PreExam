@@ -295,6 +295,10 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                 {/* Question Card (Translucent, Playful) */}
                 <div className="max-w-5xl mx-auto w-full mb-6">
                     <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[2rem] p-6 md:p-12 shadow-xl relative">
+                        {/* Question ID for reference */}
+                        <div className="absolute top-4 left-4 md:top-6 md:left-8 text-white/40 text-xs md:text-sm font-mono font-semibold tracking-wider">
+                            ID: {currentQuestion.id}
+                        </div>
                         {/* Quick actions on card */}
                         <div className="absolute top-4 right-4 flex gap-2">
                             <button onClick={toggleFlag} className={`p-2 rounded-full ${flagged[currentQuestion.id] ? 'bg-yellow-400 text-yellow-900' : 'bg-white/20 text-white hover:bg-white/30'} transition`} title="ปักหมุดข้อนี้">
@@ -308,7 +312,7 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                             </button>
                         </div>
 
-                        <h3 className="text-white font-black text-2xl md:text-4xl text-center leading-relaxed mt-4 mb-4 drop-shadow-md" style={{ fontSize: `${1.4 * fontSizeScale}rem` }}>
+                        <h3 className="text-white font-black text-2xl md:text-4xl text-left leading-relaxed mt-4 mb-4 drop-shadow-md" style={{ fontSize: `${1.4 * fontSizeScale}rem` }}>
                             <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }} />
                         </h3>
                         {currentQuestion.question_image && (

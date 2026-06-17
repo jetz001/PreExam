@@ -72,7 +72,7 @@ const TutorPlayerView = ({ questions, currentQuestionIndex, isAnswerRevealed, on
             <div className="flex-1 flex flex-col justify-center max-w-4xl w-full mx-auto">
                 {!selectedChoice ? (
                     <>
-                        <h2 className="text-center text-3xl font-black text-gray-800 mb-8 px-4 bg-white py-6 rounded-2xl shadow-lg border-b-4 border-gray-300">
+                        <h2 className="text-left text-3xl font-black text-gray-800 mb-8 px-4 bg-white py-6 rounded-2xl shadow-lg border-b-4 border-gray-300">
                             <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text || '')) }} />
                         </h2>
                         <div className="grid grid-cols-2 gap-4 w-full h-[60vh]">
