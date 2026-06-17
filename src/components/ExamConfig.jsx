@@ -81,8 +81,8 @@ export default function ExamConfig({ onStart }) {
                 const res = await examService.getCategories({ subject: config.subject });
                 if (res.success) {
                     setCategories(res.data);
-                    if (res.data.length > 0 && !res.data.includes(config.category))
-                        setConfig(p => ({ ...p, category: res.data[0] }));
+                    if (res.data.length > 0 && config.category !== '' && !res.data.includes(config.category))
+                        setConfig(p => ({ ...p, category: '' }));
                 }
             } catch (e) { console.error(e); }
         })();
