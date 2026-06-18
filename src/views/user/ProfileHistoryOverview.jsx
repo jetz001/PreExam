@@ -61,9 +61,6 @@ const ProfileHistoryOverview = () => {
                 <div className="stat-card teal"><span className="sc-icon">✅</span><div className="sc-value" style={{ color: 'var(--k-teal)' }}>{gamesWon}</div><div className="sc-label">Games Won</div></div>
                 <div className="stat-card orange"><span className="sc-icon">📅</span><div className="sc-value" style={{ color: 'var(--k-orange)' }}>{daysActive}</div><div className="sc-label">Days Active</div></div>
             </div>
-
-            </div>
-
             <div className="tab-bar">
                 <button className={`tab-btn ${period === 7 ? 'active' : ''}`} onClick={() => setPeriod(7)}>7 วัน</button>
                 <button className={`tab-btn ${period === 30 ? 'active' : ''}`} onClick={() => setPeriod(30)}>30 วัน</button>
