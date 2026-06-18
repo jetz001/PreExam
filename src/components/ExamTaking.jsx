@@ -11,6 +11,7 @@ import PermissionGate from './common/PermissionGate';
 import useUserRole from '../hooks/useUserRole';
 import PacingAlert from './exam/PacingAlert';
 import toast from 'react-hot-toast';
+import bookmarkService from '../services/bookmarkService';
 import HomeNavbar from './HomeNavbar'; // Import Navbar!
 import AdaptiveLottie from './common/AdaptiveLottie';
 import publicService from '../services/publicService';
