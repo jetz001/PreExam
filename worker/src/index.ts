@@ -2612,7 +2612,24 @@ if (url.pathname === "/api/legal/policy") {
         }
 
         if (url.pathname === "/api/business/my-business" && request.method === "GET") {
-            return json({ success: true, data: null });
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            
+            try {
+                const businesses = await firestore.runQuery({
+                    from: [{ collectionId: "businesses" }],
+                    where: { compositeFilter: { op: "AND", filters: [{ fieldFilter: { field: { fieldPath: "owner_uid" }, op: "EQUAL", value: { stringValue: auth.userId } } }] } },
+                    limit: 1
+                });
+                
+                if (!businesses || businesses.length === 0) {
+                    return json({ success: false, message: 'Business not found.' }, { status: 404 });
+                }
+                
+                return json({ success: true, business: businesses[0] });
+            } catch (err) {
+                return json({ success: false, message: "Error fetching business.", error: String(err) }, { status: 500 });
+            }
         }
         if (url.pathname === "/api/business/my-business" && request.method === "DELETE") {
             const auth = await requireAuthUserId(request, env);
