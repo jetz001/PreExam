@@ -1861,24 +1861,24 @@ export default {
             const subjectStats: Record<string, { score: number, full: number }> = {};
             
             results.forEach((r: any) => {
-              if (r.subject_scores) {
-                Object.keys(r.subject_scores).forEach(subj => {
-                  if (!subjectStats[subj]) subjectStats[subj] = { score: 0, full: 0 };
-                  subjectStats[subj].score += Number(r.subject_scores[subj]) || 0;
-                  // Estimate full mark. Normally each question is 1 point. We might not have exact full mark per subject per exam.
-                  // But if subject_scores doesn't include total, we can use the length of questions filtered by subject if available, 
-                  // or just fallback to 10 points per subject per exam.
-                  // For now, let's assume we can calculate it from r.questions
-                });
-              }
-              
-              if (r.questions && Array.isArray(r.questions)) {
-                r.questions.forEach((q: any) => {
-                   if (q.subject) {
-                     if (!subjectStats[q.subject]) subjectStats[q.subject] = { score: 0, full: 0 };
-                     subjectStats[q.subject].full += 1;
-                   }
-                });
+              try {
+                if (r.subject_scores && typeof r.subject_scores === 'object') {
+                  Object.keys(r.subject_scores).forEach(subj => {
+                    if (!subjectStats[subj]) subjectStats[subj] = { score: 0, full: 0 };
+                    subjectStats[subj].score += Number(r.subject_scores[subj]) || 0;
+                  });
+                }
+                
+                if (r.questions && Array.isArray(r.questions)) {
+                  r.questions.forEach((q: any) => {
+                     if (q && typeof q === 'object' && q.subject) {
+                       if (!subjectStats[q.subject]) subjectStats[q.subject] = { score: 0, full: 0 };
+                       subjectStats[q.subject].full += 1;
+                     }
+                  });
+                }
+              } catch (innerError) {
+                console.error("Radar aggregation error for result", r, innerError);
               }
             });
             
