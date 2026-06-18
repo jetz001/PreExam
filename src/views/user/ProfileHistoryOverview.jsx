@@ -72,6 +72,7 @@ const ProfileHistoryOverview = () => {
                 <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                     No history data available.
                 </div>
+            ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '18px', padding: '28px', textAlign: 'center', animation: 'fadeSlideIn 0.4s both' }}>
                         <div style={{ fontSize: '48px', marginBottom: '12px' }}>📈</div>
