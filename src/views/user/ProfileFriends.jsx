@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import friendService from '../../services/friendService';
 
 const ProfileFriends = () => {
+    const navigate = useNavigate();
     const [friends, setFriends] = useState([]);
     const [pending, setPending] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -75,7 +77,7 @@ const ProfileFriends = () => {
                                             {friend.isOnline ? 'Online' : 'Offline'}
                                         </div>
                                     </div>
-                                    <button className="btn-outline" style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'rgba(255,255,255,0.1)' }}>ทักทาย</button>
+                                    <button onClick={() => navigate('/profile/messages')} className="btn-outline" style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'rgba(255,255,255,0.1)' }}>ทักทาย</button>
                                 </div>
                             )) : (
                                 <div style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '10px' }}>

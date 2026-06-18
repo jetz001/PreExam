@@ -1257,7 +1257,78 @@ export default {
             return json({ success: false, threads: [] });
           }
         }
-        if (url.pathname === "/api/chat/inbox/conversations") return json({ success: true, data: [] });
+        if (url.pathname.startsWith("/api/chat")) {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const myId = auth.userId;
+
+          if (url.pathname === "/api/chat/inbox/conversations" && request.method === "GET") {
+              const sent = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "sender_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+              const received = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "receiver_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+              
+              const allMsgs = [...sent, ...received];
+              const convsMap = new Map();
+              for (const m of allMsgs) {
+                  const friendId = m.sender_id === myId ? m.receiver_id : m.sender_id;
+                  const current = convsMap.get(friendId);
+                  const mDate = new Date(m.created_at).getTime();
+                  if (!current || mDate > new Date(current.created_at).getTime()) {
+                      convsMap.set(friendId, m);
+                  }
+              }
+
+              const conversations = await Promise.all(Array.from(convsMap.entries()).map(async ([friendId, lastMessage]) => {
+                  const friendDoc = await firestore.getDocument("users", friendId);
+                  const isRead = lastMessage.sender_id === myId || lastMessage.is_read;
+                  return {
+                      friend: friendDoc ? { id: friendId, display_name: friendDoc.display_name, avatar: friendDoc.avatar } : { id: friendId, display_name: 'Unknown User' },
+                      lastMessage,
+                      isRead
+                  };
+              }));
+
+              conversations.sort((a, b) => new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime());
+              return json({ success: true, data: conversations });
+          }
+          
+          if (url.pathname === "/api/chat/send" && request.method === "POST") {
+              const body = await readJson(request) as any;
+              if (!body.friendId || !body.message) return json({ success: false, message: "Missing fields" }, { status: 400 });
+              
+              const newMsg = await firestore.createDocument("messages", {
+                  sender_id: myId,
+                  receiver_id: body.friendId,
+                  content: body.message,
+                  is_read: false,
+                  created_at: new Date().toISOString()
+              });
+              return json({ success: true, data: newMsg });
+          }
+          
+          if (url.pathname === "/api/chat/read" && request.method === "POST") {
+              const body = await readJson(request) as any;
+              const friendId = body.friendId;
+              const received = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "receiver_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+              const unreadFromFriend = received.filter((m: any) => m.sender_id === friendId && !m.is_read);
+              
+              for (const m of unreadFromFriend) {
+                  await firestore.updateDocument("messages", m.id, { is_read: true });
+              }
+              return json({ success: true });
+          }
+
+          const chatMatch = url.pathname.match(/^\/api\/chat\/([a-zA-Z0-9_-]+)$/);
+          if (chatMatch && request.method === "GET") {
+              const friendId = chatMatch[1];
+              const sent = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "sender_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+              const received = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "receiver_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+              
+              const chatHistory = [...sent.filter((m: any) => m.receiver_id === friendId), ...received.filter((m: any) => m.sender_id === friendId)];
+              chatHistory.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+              
+              return json({ success: true, data: chatHistory });
+          }
+        }
 
         // /api/community/threads (GET)
         if (url.pathname === "/api/community/threads" && request.method === "GET") {
