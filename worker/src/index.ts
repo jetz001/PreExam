@@ -2553,6 +2553,20 @@ if (url.pathname === "/api/legal/policy") {
             }
         }
 
+        // Stub missing business/ads routes
+        if (url.pathname === "/api/business/my-business" && request.method === "GET") {
+            return json({ success: true, data: null });
+        }
+        if (url.pathname === "/api/ads/stats/daily-burn" && request.method === "GET") {
+            return json({ success: true, data: [] });
+        }
+        if (url.pathname === "/api/ads/dashboard" && request.method === "GET") {
+            return json({ success: true, data: { activeCampaigns: 0, totalSpend: 0, impressions: 0, clicks: 0, ctr: 0 } });
+        }
+        if (url.pathname === "/api/ads/wallet" && request.method === "GET") {
+            return json({ success: true, data: { balance: 0, transactions: [] } });
+        }
+
         if (url.pathname === "/api/business/posts" && request.method === "GET") {
             try {
                 const businessId = url.searchParams.get("business_id");
