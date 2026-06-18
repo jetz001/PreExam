@@ -295,7 +295,7 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                     )}
 
                     <div className="flex gap-2">
-                        <button onClick={() => setShowFontMenu(!showFontMenu)} className="bg-white/20 hover:bg-white/30 rounded-full p-2.5 text-white transition">
+                        <button onClick={() => setShowFontMenu(!showFontMenu)} className="bg-white/20 hover:bg-white/30 rounded-full p-2.5 text-white transition" title="ปรับขนาดตัวอักษร" aria-label="ปรับขนาดตัวอักษร">
                             <Type className="h-5 w-5" />
                         </button>
                     </div>
