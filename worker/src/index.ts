@@ -1919,6 +1919,24 @@ export default {
           if ("error" in auth) return auth.error;
           const myId = auth.userId;
           
+          const checkMatch = url.pathname.match(/^\/api\/friends\/check\/([a-zA-Z0-9_-]+)$/);
+          if (checkMatch && request.method === "GET") {
+             const friendId = checkMatch[1];
+             const reqs = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "requester_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             
+             const sentReq = reqs.find((r: any) => r.target_id === friendId);
+             const rcvReq = tgts.find((r: any) => r.requester_id === friendId);
+             
+             let status = 'none';
+             if (sentReq) {
+                 status = sentReq.status === 'accepted' ? 'friends' : 'sent';
+             } else if (rcvReq) {
+                 status = rcvReq.status === 'accepted' ? 'friends' : 'received';
+             }
+             return json({ status });
+          }
+
           if (url.pathname === "/api/friends/request" && request.method === "POST") {
              const body = await readJson(request) as any;
              const friendId = body.friendId;
@@ -2277,16 +2295,6 @@ if (url.pathname === "/api/legal/policy") {
 }
         if (url.pathname === "/api/groups") return json({ success: true, groups: [] });
         if (url.pathname === "/api/community/tags/trending") return json([]);
-        const friendsCheckMatch = url.pathname.match(/^\/api\/friends\/check\/([a-zA-Z0-9_-]+)$/);
-        if (friendsCheckMatch && request.method === "GET") {
-            return json({ status: 'none' });
-        }
-        if (url.pathname === "/api/friends/request" && request.method === "POST") return json({ success: true });
-        if (url.pathname === "/api/friends/accept" && request.method === "POST") return json({ success: true });
-        const friendsRemoveMatch = url.pathname.match(/^\/api\/friends\/remove\/([a-zA-Z0-9_-]+)$/);
-        if (friendsRemoveMatch && request.method === "DELETE") return json({ success: true });
-        if (url.pathname === "/api/friends/list" && request.method === "GET") return json({ success: true, friends: [] });
-        if (url.pathname === "/api/friends/pending" && request.method === "GET") return json({ success: true, data: [] });
         const cleanPathname = url.pathname.replace(/\/$/, "");
         if (cleanPathname === "/api/business" && request.method === "GET") {
             try {
