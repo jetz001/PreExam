@@ -169,24 +169,29 @@ const ProfileBookmarks = () => {
                             ) : selectedQuestion ? (
                                 <div>
                                     <div style={{ marginBottom: '20px', fontSize: '16px', lineHeight: '1.6' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedQuestion.question_text) }} />
-                                    {selectedQuestion.choices && (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                            {selectedQuestion.choices.map((c, i) => {
-                                                const isCorrect = i + 1 === selectedQuestion.correct_answer;
-                                                return (
-                                                    <div key={i} style={{
-                                                        padding: '12px 16px',
-                                                        borderRadius: '8px',
-                                                        background: isCorrect ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.05)',
-                                                        border: `1px solid ${isCorrect ? '#22c55e' : 'var(--card-border)'}`,
-                                                        color: isCorrect ? '#22c55e' : 'inherit'
-                                                    }}>
-                                                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c) }} />
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
-                                    )}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {[
+                                            { text: selectedQuestion.choice_a, key: 'A' },
+                                            { text: selectedQuestion.choice_b, key: 'B' },
+                                            { text: selectedQuestion.choice_c, key: 'C' },
+                                            { text: selectedQuestion.choice_d, key: 'D' }
+                                        ].filter(c => c.text).map((c, i) => {
+                                            const isCorrect = c.key === selectedQuestion.correct_answer;
+                                            return (
+                                                <div key={i} style={{
+                                                    padding: '12px 16px',
+                                                    borderRadius: '8px',
+                                                    background: isCorrect ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.05)',
+                                                    border: `1px solid ${isCorrect ? '#22c55e' : 'var(--card-border)'}`,
+                                                    color: isCorrect ? '#22c55e' : 'inherit',
+                                                    display: 'flex', gap: '12px'
+                                                }}>
+                                                    <span style={{ fontWeight: 'bold' }}>{c.key}.</span>
+                                                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.text) }} />
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
                                 </div>
                             ) : (
                                 <div style={{ textAlign: 'center', padding: '40px' }}>ไม่พบข้อสอบนี้ อาจถูกลบไปแล้ว</div>
