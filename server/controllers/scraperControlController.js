@@ -57,6 +57,19 @@ exports.startManualRun = async (req, res) => {
 
         console.log('Starting manual scraper run in:', SCRAPER_DIR);
 
+        // Log the trigger to Firebase database
+        const { db: firestore } = require('../config/firebase');
+        try {
+            await firestore.collection('scraper_logs').add({
+                event: 'manual_trigger',
+                message: 'Admin triggered scraper manually',
+                triggered_by: req.user ? req.user.id : 'unknown',
+                timestamp: new Date().toISOString()
+            });
+        } catch (dbError) {
+            console.error('Failed to write scraper log to Firebase:', dbError);
+        }
+
         // Determine the correct python command
         let pythonCmd = 'python';
         if (process.platform === 'win32') {
