@@ -59,6 +59,10 @@ const businessApi = {
         const response = await api.put('/', data, { headers });
         return response.data;
     },
+    deleteBusiness: async () => {
+        const response = await api.delete('/my-business');
+        return response.data;
+    },
     getBusinessById: async (id) => {
         const response = await api.get(`/${id}`);
         return response.data;

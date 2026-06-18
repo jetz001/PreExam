@@ -386,6 +386,35 @@ const BusinessSettings = () => {
                             </div>
                         </div>
 
+                        <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <h4 className="text-md font-bold text-red-600 mb-2">Danger Zone</h4>
+                            <p className="text-sm text-gray-500 mb-4">Deleting your business page will remove your profile, posts, and ads permanently. This action cannot be undone.</p>
+                            <button
+                                onClick={async () => {
+                                    if (!window.confirm("Are you sure you want to delete your business page? This action cannot be undone.")) return;
+                                    setIsSaving(true);
+                                    try {
+                                        const res = await businessApi.deleteBusiness();
+                                        if (res.success) {
+                                            toast.success('Business page deleted successfully');
+                                            navigate('/dashboard');
+                                        } else {
+                                            toast.error(res.message || 'Failed to delete business page');
+                                        }
+                                    } catch (error) {
+                                        console.error(error);
+                                        toast.error('An error occurred');
+                                    } finally {
+                                        setIsSaving(false);
+                                    }
+                                }}
+                                disabled={isSaving}
+                                className="px-6 py-2 bg-red-600 text-white font-black border-4 border-black rounded-xl hover:bg-red-700 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none transition-all disabled:opacity-50"
+                            >
+                                Delete Business Page
+                            </button>
+                        </div>
+
                     </div>
                 )}
 

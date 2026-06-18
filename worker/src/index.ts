@@ -2611,9 +2611,27 @@ if (url.pathname === "/api/legal/policy") {
             }
         }
 
-        // Stub missing business/ads routes
         if (url.pathname === "/api/business/my-business" && request.method === "GET") {
             return json({ success: true, data: null });
+        }
+        if (url.pathname === "/api/business/my-business" && request.method === "DELETE") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            
+            try {
+                // Find the business owned by the user
+                const businesses = await firestore.runQuery({
+                    from: [{ collectionId: "businesses" }],
+                    where: { compositeFilter: { op: "AND", filters: [{ fieldFilter: { field: { fieldPath: "owner_uid" }, op: "EQUAL", value: { stringValue: auth.userId } } }] } },
+                    limit: 1
+                });
+                if (businesses && businesses.length > 0) {
+                    await firestore.deleteDocument("businesses", businesses[0].id);
+                }
+                return json({ success: true, message: "Business page deleted" });
+            } catch (err) {
+                return json({ success: false, message: "Error deleting business", error: String(err) }, { status: 500 });
+            }
         }
         if (url.pathname === "/api/ads/stats/daily-burn" && request.method === "GET") {
             return json([]);
