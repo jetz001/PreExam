@@ -260,25 +260,20 @@ const BusinessProfile = () => {
                                                         onClick={async () => {
                                                             try {
                                                                 const res = await businessApi.toggleBookmark(post.id);
-                                                        if (res.success) toast.success(res.bookmarked ? 'Saved!' : 'Removed from saved');
-                                                    } catch (err) {
-                                                        if (err.response?.status === 401) return toast.error('Please login to save');
-                                                        toast.error('Failed to save');
-                                                    }
-                                                }}
-                                                className="flex items-center gap-1 hover:text-yellow-500 ml-auto"
-                                            >
-                                                <Bookmark size={16} /> Save
-                                            </button>
+                                                                if (res.success) toast.success(res.bookmarked ? 'Saved!' : 'Removed from saved');
+                                                            } catch (err) {
+                                                                if (err.response?.status === 401) return toast.error('Please login to save');
+                                                                toast.error('Failed to save');
+                                                            }
+                                                        }}
+                                                        className="flex items-center gap-2 hover:text-yellow-400 transition-colors group/btn ml-auto"
+                                                    >
+                                                        <div className="p-2 rounded-full group-hover/btn:bg-yellow-400/10 transition-colors"><Bookmark size={18} /></div> Save
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-
-                                {(activeTab === 'knowledge' ? knowledgePosts : shopPosts).length === 0 && (
-                                    <div className="text-center py-10 text-gray-400">
-                                        <div className="mb-2 opacity-50"><Grid size={40} className="mx-auto" /></div>
-                                        No {activeTab} content yet.
-                                    </div>
+                                    ))
                                 )}
                             </div>
                         )}
