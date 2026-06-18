@@ -1238,7 +1238,69 @@ export default {
             }
         }
 
-        if (url.pathname === "/api/bookmarks") return json({ success: true, data: [] });
+        const bookmarksMatch = url.pathname.match(/^\/api\/bookmarks(?:\/([a-zA-Z0-9_-]+))?$/);
+        if (bookmarksMatch) {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+
+            if (request.method === "GET") {
+                const bookmarks = await firestore.runQuery({
+                    from: [{ collectionId: "bookmarks" }],
+                    where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
+                });
+                bookmarks.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                return json({ success: true, data: bookmarks });
+            }
+
+            if (request.method === "POST") {
+                const body = await request.json() as any;
+                const { target_type, target_id, title } = body;
+                
+                if (!target_type || !target_id) {
+                    return json({ success: false, message: "Missing required fields" }, { status: 400 });
+                }
+
+                const existing = await firestore.runQuery({
+                    from: [{ collectionId: "bookmarks" }],
+                    where: {
+                        compositeFilter: {
+                            op: "AND",
+                            filters: [
+                                { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } },
+                                { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: target_id } } },
+                                { fieldFilter: { field: { fieldPath: "target_type" }, op: "EQUAL", value: { stringValue: target_type } } }
+                            ]
+                        }
+                    }
+                });
+
+                if (existing && existing.length > 0) {
+                    return json({ success: false, message: "Already bookmarked" }, { status: 400 });
+                }
+
+                const bookmark = await firestore.createDocument("bookmarks", {
+                    user_id: auth.userId,
+                    target_type,
+                    target_id,
+                    title: title || 'Untitled',
+                    created_at: new Date().toISOString()
+                });
+
+                return json({ success: true, data: bookmark });
+            }
+
+            if (request.method === "DELETE" && bookmarksMatch[1]) {
+                const bookmarkId = bookmarksMatch[1];
+                const bookmark = await firestore.getDocument("bookmarks", bookmarkId);
+                if (!bookmark) return notFound();
+                if (bookmark.user_id !== auth.userId) {
+                    return json({ success: false, message: "Unauthorized" }, { status: 403 });
+                }
+                
+                await firestore.deleteDocument("bookmarks", bookmarkId);
+                return json({ success: true });
+            }
+        }
 
         if (url.pathname.startsWith("/api/chat")) {
           const auth = await requireAuthUserId(request, env);
