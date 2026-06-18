@@ -1986,6 +1986,14 @@ export default {
             return json({ success: true, data: sanitizeUser(updatedUser) });
         }
 
+        if (url.pathname === "/api/users/profile" && request.method === "DELETE") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            
+            await firestore.deleteDocument("users", auth.userId);
+            return json({ success: true, message: "Account deleted successfully" });
+        }
+
         if (url.pathname === "/api/users/settings" && request.method === "PUT") {
             const auth = await requireAuthUserId(request, env);
             if ("error" in auth) return auth.error;

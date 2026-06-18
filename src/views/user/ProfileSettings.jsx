@@ -14,6 +14,11 @@ const ProfileSettings = () => {
     const [newMessage, setNewMessage] = useState(true);
     const [statusMsg, setStatusMsg] = useState({ text: '', type: '' });
     const [isSaving, setIsSaving] = useState(false);
+    
+    // Danger Zone state
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteInput, setDeleteInput] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -54,6 +59,22 @@ const ProfileSettings = () => {
             setStatusMsg({ text: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล (Failed to save)', type: 'error' });
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (deleteInput !== 'DELETE') return;
+        setIsDeleting(true);
+        try {
+            await userService.deleteAccount();
+            authService.logout();
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            setStatusMsg({ text: 'เกิดข้อผิดพลาดในการลบบัญชี', type: 'error' });
+            setIsDeleting(false);
+            setShowDeleteConfirm(false);
+            setDeleteInput('');
         }
     };
 
@@ -158,9 +179,54 @@ const ProfileSettings = () => {
                     <div style={{ fontSize: '15px', fontWeight: 800, color: '#ff6b87', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         🚨 Danger Zone
                     </div>
-                    <button style={{ background: 'transparent', border: '1px solid rgba(226,27,60,0.5)', color: '#ff6b87', padding: '10px 20px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={(e) => e.target.style.background = 'rgba(226,27,60,0.1)'} onMouseLeave={(e) => e.target.style.background = 'transparent'}>
-                        🗑️ ลบบัญชี
-                    </button>
+                    
+                    {!showDeleteConfirm ? (
+                        <button 
+                            onClick={() => setShowDeleteConfirm(true)}
+                            style={{ background: 'transparent', border: '1px solid rgba(226,27,60,0.5)', color: '#ff6b87', padding: '10px 20px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', transition: 'background 0.2s' }} 
+                            onMouseEnter={(e) => e.target.style.background = 'rgba(226,27,60,0.1)'} 
+                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                        >
+                            🗑️ ลบบัญชี
+                        </button>
+                    ) : (
+                        <div style={{ background: 'rgba(226,27,60,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(226,27,60,0.2)' }}>
+                            <div style={{ color: '#ff6b87', fontWeight: 'bold', marginBottom: '8px' }}>
+                                คุณแน่ใจหรือไม่ว่าต้องการลบบัญชี? (การกระทำนี้ไม่สามารถย้อนกลับได้)
+                            </div>
+                            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                                พิมพ์คำว่า <strong>DELETE</strong> ลงในช่องด้านล่างเพื่อยืนยันการลบบัญชี
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <input 
+                                    type="text" 
+                                    value={deleteInput}
+                                    onChange={(e) => setDeleteInput(e.target.value)}
+                                    placeholder="พิมพ์ DELETE"
+                                    style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(226,27,60,0.3)', borderRadius: '8px', padding: '8px 12px', color: '#fff', outline: 'none' }}
+                                />
+                                <button 
+                                    disabled={deleteInput !== 'DELETE' || isDeleting}
+                                    onClick={handleDeleteAccount}
+                                    style={{ 
+                                        background: deleteInput === 'DELETE' ? '#e21b3c' : 'rgba(255,255,255,0.1)', 
+                                        color: deleteInput === 'DELETE' ? '#fff' : 'rgba(255,255,255,0.3)',
+                                        border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', 
+                                        cursor: deleteInput === 'DELETE' ? 'pointer' : 'not-allowed',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {isDeleting ? 'กำลังลบ...' : 'ยืนยันการลบ'}
+                                </button>
+                                <button 
+                                    onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); }}
+                                    style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-muted)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+                                >
+                                    ยกเลิก
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
             </div>

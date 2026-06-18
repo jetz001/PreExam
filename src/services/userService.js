@@ -47,6 +47,11 @@ const userService = {
         return response.data;
     },
 
+    deleteAccount: async () => {
+        const response = await api.delete('/users/profile');
+        return response.data;
+    },
+
     searchUsers: async (query) => {
         const response = await api.get(`/users/search?q=${query}`);
         return response.data;
