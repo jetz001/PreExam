@@ -150,17 +150,27 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     const handleBookmark = async () => {
         const currentQuestion = questions[currentIndex];
         try {
+            if (!currentQuestion) throw new Error("No current question");
+            
+            let title = 'Untitled Question';
+            if (currentQuestion.question_text) {
+                title = String(currentQuestion.question_text).substring(0, 100);
+            }
+
             await bookmarkService.addBookmark({
                 target_type: 'question',
                 target_id: currentQuestion.id,
-                title: currentQuestion.question_text.substring(0, 100)
+                title: title
             });
             toast.success('บันทึกข้อสอบแล้ว');
         } catch (error) {
+            console.error("Bookmark error:", error);
             if (error.response?.status === 400) {
                 toast.error('คุณบันทึกข้อสอบนี้ไปแล้ว');
+            } else if (error.response?.data?.message) {
+                toast.error('ล้มเหลว: ' + error.response.data.message);
             } else {
-                toast.error('บันทึกข้อสอบล้มเหลว');
+                toast.error('บันทึกข้อสอบล้มเหลว ' + (error.message || ''));
             }
         }
     };

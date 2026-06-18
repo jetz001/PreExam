@@ -1253,31 +1253,35 @@ export default {
             }
 
             if (request.method === "POST") {
-                const body = await request.json() as any;
-                const { target_type, target_id, title } = body;
-                
-                if (!target_type || !target_id) {
-                    return json({ success: false, message: "Missing required fields" }, { status: 400 });
+                try {
+                    const body = await request.json() as any;
+                    const { target_type, target_id, title } = body;
+                    
+                    if (!target_type || !target_id) {
+                        return json({ success: false, message: "Missing required fields" }, { status: 400 });
+                    }
+
+                    const existing = await firestore.runQuery({
+                        from: [{ collectionId: "bookmarks" }],
+                        where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
+                    });
+
+                    if (existing && existing.some((b: any) => String(b.target_id) === String(target_id) && b.target_type === target_type)) {
+                        return json({ success: false, message: "Already bookmarked" }, { status: 400 });
+                    }
+
+                    const bookmark = await firestore.createDocument("bookmarks", {
+                        user_id: auth.userId,
+                        target_type,
+                        target_id: String(target_id),
+                        title: title ? String(title).substring(0, 200) : 'Untitled',
+                        created_at: new Date().toISOString()
+                    });
+
+                    return json({ success: true, data: bookmark });
+                } catch (e: any) {
+                    return json({ success: false, message: e.message || "Internal Error", stack: e.stack }, { status: 500 });
                 }
-
-                const existing = await firestore.runQuery({
-                    from: [{ collectionId: "bookmarks" }],
-                    where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
-                });
-
-                if (existing && existing.some((b: any) => String(b.target_id) === String(target_id) && b.target_type === target_type)) {
-                    return json({ success: false, message: "Already bookmarked" }, { status: 400 });
-                }
-
-                const bookmark = await firestore.createDocument("bookmarks", {
-                    user_id: auth.userId,
-                    target_type,
-                    target_id: String(target_id),
-                    title: title || 'Untitled',
-                    created_at: new Date().toISOString()
-                });
-
-                return json({ success: true, data: bookmark });
             }
 
             if (request.method === "DELETE" && bookmarksMatch[1]) {
