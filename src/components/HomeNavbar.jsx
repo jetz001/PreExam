@@ -268,8 +268,8 @@ export default function HomeNavbar() {
                   <Link to="/profile/settings" className="hn-drop-link" onClick={() => { setProfileOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: 'ตั้งค่า', path: '/profile/settings' }); }}>⚙️ ตั้งค่า</Link>
 
                   {!user.email?.startsWith('guest_') && (
-                    <Link to="/business/dashboard" className="hn-drop-link" onClick={() => { setProfileOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: 'จัดการเพจ', path: '/business/dashboard' }); }}>
-                      🏢 จัดการเพจ
+                    <Link to="/business/content" className="hn-drop-link" onClick={() => { setProfileOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: 'จัดการเพจ', path: '/business/content' }); }}>
+                      <Building2 size={16} /> จัดการเพจ
                     </Link>
                   )}
 

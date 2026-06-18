@@ -38,9 +38,8 @@ const BusinessLayout = () => {
     };
 
     const navItems = [
-        { name: 'Dashboard', path: '/business/dashboard', icon: <LayoutDashboard size={20} /> },
-        { name: 'Inbox', path: '/business/inbox', icon: <MessageSquare size={20} /> }, // New
         { name: 'Page Content', path: '/business/content', icon: <List size={20} /> }, // New
+        { name: 'Inbox', path: '/business/inbox', icon: <MessageSquare size={20} /> }, // New
         { name: 'Wallet', path: '/business/wallet', icon: <Wallet size={20} /> },
         { name: 'Create Ad', path: '/business/create-ad', icon: <PlusCircle size={20} /> },
         { name: 'My Ads', path: '/business/my-ads', icon: <List size={20} /> }, // Keeping for ads

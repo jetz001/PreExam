@@ -62,7 +62,7 @@ import PaymentCancel from './views/PaymentCancel';
 import BusinessLayout from './layouts/BusinessLayout';
 import BusinessRegister from './views/auth/BusinessRegister';
 import BusinessLogin from './views/auth/BusinessLogin';
-import BusinessDashboard from './views/business/BusinessDashboard';
+// import BusinessDashboard from './views/business/BusinessDashboard';
 import BusinessContentManager from './views/business/BusinessContentManager';
 import BusinessInbox from './views/business/BusinessInbox';
 import BusinessWelcome from './views/business/BusinessWelcome';
@@ -121,8 +121,7 @@ function App() {
 
 
         <Route path="/business" element={<BusinessLayout />}>
-          <Route index element={<BusinessDashboard />} />
-          <Route path="dashboard" element={<BusinessDashboard />} />
+          <Route index element={<Navigate to="content" replace />} />
           <Route path="content" element={<BusinessContentManager />} />
           <Route path="inbox" element={<BusinessInbox />} />
           <Route path="create-ad" element={<AdCreator />} />

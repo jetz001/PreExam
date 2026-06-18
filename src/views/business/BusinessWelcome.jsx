@@ -58,7 +58,7 @@ const BusinessWelcome = () => {
             toast.success('Business Page Created Successfully!', {
                 style: { border: '2px solid black', fontWeight: 'bold' }
             });
-            navigate('/business/dashboard');
+            navigate('/business/content');
             window.location.reload(); 
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to create business page', {

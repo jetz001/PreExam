@@ -85,8 +85,8 @@ const Navbar = () => {
                                     </Link>
 
                                     <Link
-                                        to={user.email?.startsWith('guest_') ? "/login" : "/business/dashboard"}
-                                        onClick={() => handleNavClick('Manage Page', user.email?.startsWith('guest_') ? "/login" : "/business/dashboard")}
+                                        to={user.email?.startsWith('guest_') ? "/login" : "/business/content"}
+                                        onClick={() => handleNavClick('Manage Page', user.email?.startsWith('guest_') ? "/login" : "/business/content")}
                                         className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                                     >
                                         จัดการหน้าเพจ
@@ -187,10 +187,10 @@ const Navbar = () => {
                                         </Link>
 
                                         <Link
-                                            to={user.email?.startsWith('guest_') ? "/login" : "/business/dashboard"}
+                                            to={user.email?.startsWith('guest_') ? "/login" : "/business/content"}
                                             onClick={() => {
                                                 setIsOpen(false);
-                                                handleNavClick('Manage Page', user.email?.startsWith('guest_') ? "/login" : "/business/dashboard");
+                                                handleNavClick('Manage Page', user.email?.startsWith('guest_') ? "/login" : "/business/content");
                                             }}
                                             className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
                                         >

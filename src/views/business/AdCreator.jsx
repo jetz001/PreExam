@@ -100,7 +100,7 @@ const AdCreator = () => {
                 await adsApi.createAd(payload);
                 toast.success('Campaign Launched Successfully!');
             }
-            navigate('/business/dashboard');
+            navigate('/business/content');
         } catch (error) {
             console.error(error);
             toast.error(error.response?.data?.message || 'Failed to launch campaign');
