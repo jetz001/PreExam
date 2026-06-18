@@ -265,7 +265,6 @@ export default function HomeNavbar() {
                   </div>
 
                   <Link to="/profile" className="hn-drop-link" onClick={() => { setProfileOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: 'โปรไฟล์ของฉัน', path: '/profile' }); }}>👤 โปรไฟล์ของฉัน</Link>
-                  <Link to="/profile/dashboard" className="hn-drop-link" onClick={() => { setProfileOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: 'แดชบอร์ด', path: '/profile/dashboard' }); }}>📊 แดชบอร์ด</Link>
                   <Link to="/profile/settings" className="hn-drop-link" onClick={() => { setProfileOpen(false); publicService.logActivity?.('BTN_NAV_CLICK', { label: 'ตั้งค่า', path: '/profile/settings' }); }}>⚙️ ตั้งค่า</Link>
 
                   {!user.email?.startsWith('guest_') && (
