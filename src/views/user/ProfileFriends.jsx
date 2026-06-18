@@ -27,7 +27,10 @@ const ProfileFriends = () => {
     const handleAccept = async (id) => {
         try {
             await friendService.acceptRequest(id);
-            // Refresh logic or optimism
+            const acceptedUser = pending.find(req => req.id === id);
+            if (acceptedUser) {
+                setFriends(prev => [...prev, acceptedUser]);
+            }
             setPending(prev => prev.filter(req => req.id !== id));
         } catch (err) {
             console.error('Error accepting friend:', err);
@@ -38,6 +41,7 @@ const ProfileFriends = () => {
         try {
             await friendService.removeFriend(id);
             setFriends(prev => prev.filter(f => f.id !== id));
+            setPending(prev => prev.filter(req => req.id !== id));
         } catch (err) {
             console.error('Error removing friend:', err);
         }
@@ -97,8 +101,8 @@ const ProfileFriends = () => {
                                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>ต้องการเป็นเพื่อนกับคุณ</div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '6px' }}>
-                                        <button onClick={() => handleAccept(req.request_id || req.id)} style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--k-yellow)', border: 'none', color: '#1a0533', fontWeight: 'bold', cursor: 'pointer' }}>✓</button>
-                                        <button onClick={() => handleRemove(req.request_id || req.id)} style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>✕</button>
+                                        <button onClick={() => handleAccept(req.id)} style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--k-yellow)', border: 'none', color: '#1a0533', fontWeight: 'bold', cursor: 'pointer' }}>✓</button>
+                                        <button onClick={() => handleRemove(req.id)} style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>✕</button>
                                     </div>
                                 </div>
                             )) : (
