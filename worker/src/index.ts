@@ -2578,6 +2578,71 @@ if (url.pathname === "/api/legal/policy") {
                 return json({ success: false, message: 'Error fetching businesses.', error: String(err) }, { status: 500 });
             }
         }
+        
+        if (cleanPathname === "/api/business" && (request.method === "POST" || request.method === "PUT")) {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            
+            try {
+                const body: any = await request.json();
+                
+                // Check if user already has a business page
+                const businesses = await firestore.runQuery({
+                    from: [{ collectionId: "businesses" }],
+                    where: { compositeFilter: { op: "AND", filters: [{ fieldFilter: { field: { fieldPath: "owner_uid" }, op: "EQUAL", value: { stringValue: auth.userId } } }] } },
+                    limit: 1
+                });
+                
+                if (request.method === "POST") {
+                    if (businesses && businesses.length > 0) {
+                        return json({ success: false, message: 'User already has a business page.' }, { status: 400 });
+                    }
+                    
+                    const businessData = {
+                        owner_uid: auth.userId,
+                        name: body.name || '',
+                        tagline: body.tagline || null,
+                        category: body.category || null,
+                        contact_link: body.contact_link || null,
+                        contact_line_id: body.contact_line_id || null,
+                        contact_facebook_url: body.contact_facebook_url || null,
+                        status: 'approved',
+                        stats: { followers: 0, views: 0, rating_avg: 0, rating_count: 0 },
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+                    
+                    const newDoc = await firestore.createDocument("businesses", businessData);
+                    // Add id to doc
+                    if (newDoc && newDoc.id) {
+                        businessData.id = newDoc.id;
+                        await firestore.updateDocument("businesses", newDoc.id, { id: newDoc.id });
+                    }
+                    
+                    return json({ success: true, business: businessData }, { status: 201 });
+                } else {
+                    // PUT request
+                    if (!businesses || businesses.length === 0) {
+                        return json({ success: false, message: 'Business not found.' }, { status: 404 });
+                    }
+                    
+                    const docId = businesses[0].id;
+                    const updateData: any = { updated_at: new Date().toISOString() };
+                    if (body.name !== undefined) updateData.name = body.name;
+                    if (body.tagline !== undefined) updateData.tagline = body.tagline;
+                    if (body.about !== undefined) updateData.about = body.about;
+                    if (body.category !== undefined) updateData.category = body.category;
+                    if (body.contact_link !== undefined) updateData.contact_link = body.contact_link;
+                    if (body.contact_line_id !== undefined) updateData.contact_line_id = body.contact_line_id;
+                    if (body.contact_facebook_url !== undefined) updateData.contact_facebook_url = body.contact_facebook_url;
+                    
+                    await firestore.updateDocument("businesses", docId, updateData);
+                    return json({ success: true, message: "Business updated successfully", business: { ...businesses[0], ...updateData } });
+                }
+            } catch (err) {
+                return json({ success: false, message: "Error processing business.", error: String(err) }, { status: 500 });
+            }
+        }
 
         if (url.pathname === "/api/business/feed" && request.method === "GET") {
             try {
