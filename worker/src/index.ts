@@ -2616,22 +2616,22 @@ if (url.pathname === "/api/legal/policy") {
             return json({ success: true, data: null });
         }
         if (url.pathname === "/api/ads/stats/daily-burn" && request.method === "GET") {
-            return json({ success: true, data: [] });
+            return json([]);
         }
         if (url.pathname === "/api/ads/dashboard" && request.method === "GET") {
-            return json({ success: true, data: { activeCampaigns: 0, totalSpend: 0, impressions: 0, clicks: 0, ctr: 0 } });
+            return json({ activeAds: 0, totalViews: 0, totalClicks: 0, totalSpent: 0, dailyStats: [] });
         }
         if (url.pathname === "/api/ads/wallet" && request.method === "GET") {
-            return json({ success: true, data: { balance: 0, transactions: [] } });
+            return json({ balance: 0, currency: 'THB', businessName: 'Business Name' });
         }
         if (url.pathname === "/api/business/inbox" && request.method === "GET") {
-            return json({ success: true, conversations: [] });
+            return json({ success: true, conversations: [] }); // Inbox was new api shape
         }
         if (url.pathname === "/api/ads/my-ads" && request.method === "GET") {
-            return json({ success: true, data: [] });
+            return json([]);
         }
         if (url.pathname === "/api/ads/wallet/transactions" && request.method === "GET") {
-            return json({ success: true, transactions: [] });
+            return json([]);
         }
 
         if (url.pathname === "/api/business/posts" && request.method === "GET") {
