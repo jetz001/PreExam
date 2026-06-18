@@ -1793,6 +1793,66 @@ export default {
             return json({ success: false, message: "Server error" }, { status: 500 });
           }
         }
+
+        // /api/users/claim-streak
+        if (url.pathname === "/api/users/claim-streak" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+
+          try {
+            const userDoc = await firestore.getDocument("users", auth.userId);
+            if (!userDoc) return json({ success: false, message: "User not found" }, { status: 404 });
+
+            const now = new Date();
+            const todayStr = now.toISOString().split("T")[0];
+            
+            const lastClaimDateStr = userDoc.last_claim_date;
+            
+            if (lastClaimDateStr === todayStr) {
+              return json({ success: false, message: "Already claimed today", data: { xpGained: 0 } });
+            }
+
+            let newStreak = 1;
+            if (lastClaimDateStr) {
+              const yesterday = new Date(now);
+              yesterday.setDate(yesterday.getDate() - 1);
+              const yesterdayStr = yesterday.toISOString().split("T")[0];
+              
+              if (lastClaimDateStr === yesterdayStr) {
+                newStreak = (Number(userDoc.streak_count) || 0) + 1;
+              }
+            }
+
+            const xpGained = (newStreak % 7 === 0) ? 100 : 10;
+            const currentXp = (Number(userDoc.xp) || 0) + xpGained;
+            const currentLevel = userDoc.level || 1;
+            const newLevel = Math.floor((1 + Math.sqrt(1 + 4 * (currentXp / 1000))) / 2);
+
+            const updates: any = {
+              streak_count: newStreak,
+              last_claim_date: todayStr,
+              xp: currentXp
+            };
+
+            if (newLevel > currentLevel) {
+              updates.level = newLevel;
+            }
+
+            await firestore.updateDocument("users", auth.userId, updates);
+
+            return json({
+              success: true,
+              data: {
+                xpGained,
+                newStreak,
+                newTotalXp: currentXp,
+                levelUp: newLevel > currentLevel ? newLevel : null
+              }
+            });
+          } catch (e) {
+            return json({ success: false, message: "Server error" }, { status: 500 });
+          }
+        }
         
         if (url.pathname === "/api/payments/plans" && request.method === "GET") {
           try {

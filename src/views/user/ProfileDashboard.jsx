@@ -2,11 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import examService from '../../services/examService';
 import ExpGuideModal from '../../components/ExpGuideModal';
+import toast from 'react-hot-toast';
 
 const ProfileDashboard = () => {
   const { user, stats, xpInfo } = useOutletContext();
   const [recentHistory, setRecentHistory] = useState([]);
   const [isExpGuideOpen, setIsExpGuideOpen] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [hasClaimed, setHasClaimed] = useState(false);
+
+  // Check if claimed today locally (best effort)
+  useEffect(() => {
+    if (user?.last_claim_date) {
+      const todayStr = new Date().toISOString().split("T")[0];
+      if (user.last_claim_date === todayStr) {
+        setHasClaimed(true);
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -21,6 +34,41 @@ const ProfileDashboard = () => {
     };
     fetchHistory();
   }, []);
+
+  const handleClaimStreak = async () => {
+    if (isClaiming || hasClaimed) return;
+    setIsClaiming(true);
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.NEXT_PUBLIC_VITE_API_URL || "https://preexam-api.jimwar02.workers.dev";
+      const res = await fetch(`${apiUrl}/api/users/claim-streak`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`ยินดีด้วย! คุณได้รับ ${data.data.xpGained} EXP 🔥`);
+        setHasClaimed(true);
+        if (data.data.levelUp) {
+          setTimeout(() => toast.success(`🎉 เลเวลอัปเป็น LVL ${data.data.levelUp}!`), 1000);
+        }
+      } else {
+        if (data.message === "Already claimed today") {
+          setHasClaimed(true);
+          toast.error("รับไปแล้ววันนี้ พรุ่งนี้มารับใหม่นะ!");
+        } else {
+          toast.error(data.message || "เกิดข้อผิดพลาด");
+        }
+      }
+    } catch (e) {
+      toast.error("Network error");
+    } finally {
+      setIsClaiming(false);
+    }
+  };
 
   const totalGames = stats ? stats.totalExams : 0;
   const timeTakenMinutes = stats ? Math.round(stats.timeTaken / 60) : 0;
@@ -74,7 +122,14 @@ const ProfileDashboard = () => {
           <div>
             <div className="streak-num">{user?.streak_count || 0}</div>
             <div className="streak-label">DAY STREAK — ไม่มีวันหยุด!</div>
-            <button className="btn-play" style={{ marginTop: '10px' }}>🎉 เฉลิมฉลอง!</button>
+            <button 
+              className="btn-play" 
+              style={{ marginTop: '10px', opacity: hasClaimed ? 0.6 : 1, cursor: hasClaimed ? 'not-allowed' : 'pointer' }}
+              onClick={handleClaimStreak}
+              disabled={isClaiming || hasClaimed}
+            >
+              {isClaiming ? 'กำลังรับ...' : hasClaimed ? 'รับแล้ว 🥳' : '🎉 เฉลิมฉลอง!'}
+            </button>
           </div>
         </div>
         <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '18px', padding: '20px', animation: 'fadeSlideIn 0.5s 0.15s both' }}>
