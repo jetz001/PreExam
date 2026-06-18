@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import userService from '../../services/userService';
+import authService from '../../services/authService';
 
 const ProfileSettings = () => {
     const context = useOutletContext();
@@ -8,13 +9,19 @@ const ProfileSettings = () => {
 
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
+    const [friendsOnline, setFriendsOnline] = useState(true);
+    const [streakReminder, setStreakReminder] = useState(true);
+    const [newMessage, setNewMessage] = useState(true);
     const [statusMsg, setStatusMsg] = useState({ text: '', type: '' });
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (user) {
-            setUsername(user.username || '');
+            setUsername(user.display_name || user.username || '');
             setEmail(user.email || '');
+            setFriendsOnline(user.settings_friends_online !== false);
+            setStreakReminder(user.settings_streak_reminder !== false);
+            setNewMessage(user.settings_new_message !== false);
         }
     }, [user]);
 
@@ -22,7 +29,24 @@ const ProfileSettings = () => {
         setIsSaving(true);
         setStatusMsg({ text: '', type: '' });
         try {
-            await userService.updateProfile({ username, email });
+            // Update Profile
+            await userService.updateProfile({ username });
+            
+            // Update Settings
+            await userService.updateSettings({
+                friends_online: friendsOnline,
+                streak_reminder: streakReminder,
+                new_message: newMessage
+            });
+
+            // Update local state
+            authService.updateCurrentUser({
+                display_name: username,
+                settings_friends_online: friendsOnline,
+                settings_streak_reminder: streakReminder,
+                settings_new_message: newMessage
+            });
+
             setStatusMsg({ text: 'บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว (Profile saved!)', type: 'success' });
             setTimeout(() => setStatusMsg({ text: '', type: '' }), 3000);
         } catch (error) {
@@ -73,8 +97,8 @@ const ProfileSettings = () => {
                             <input 
                                 type="email" 
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px 16px', color: '#fff', fontSize: '14px', outline: 'none' }} 
+                                readOnly
+                                style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '12px 16px', color: 'var(--text-muted)', fontSize: '14px', outline: 'none', cursor: 'not-allowed' }} 
                             />
                         </div>
                     </div>
@@ -94,8 +118,11 @@ const ProfileSettings = () => {
                             <div style={{ fontWeight: 800, fontSize: '14px' }}>แจ้งเตือนเพื่อนออนไลน์</div>
                             <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>เมื่อเพื่อนเข้าสู่ระบบ</div>
                         </div>
-                        <div style={{ width: '44px', height: '24px', background: 'var(--k-teal)', borderRadius: '99px', position: 'relative', cursor: 'pointer' }}>
-                            <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', right: '3px' }}></div>
+                        <div 
+                            style={{ width: '44px', height: '24px', background: friendsOnline ? 'var(--k-teal)' : 'rgba(255,255,255,0.2)', borderRadius: '99px', position: 'relative', cursor: 'pointer', transition: 'background 0.3s' }}
+                            onClick={() => setFriendsOnline(!friendsOnline)}
+                        >
+                            <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: friendsOnline ? '23px' : '3px', transition: 'left 0.3s' }}></div>
                         </div>
                     </div>
                     
@@ -104,8 +131,11 @@ const ProfileSettings = () => {
                             <div style={{ fontWeight: 800, fontSize: '14px' }}>Streak Reminder</div>
                             <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>แจ้งเตือนก่อนหมด Streak</div>
                         </div>
-                        <div style={{ width: '44px', height: '24px', background: 'var(--k-teal)', borderRadius: '99px', position: 'relative', cursor: 'pointer' }}>
-                            <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', right: '3px' }}></div>
+                        <div 
+                            style={{ width: '44px', height: '24px', background: streakReminder ? 'var(--k-teal)' : 'rgba(255,255,255,0.2)', borderRadius: '99px', position: 'relative', cursor: 'pointer', transition: 'background 0.3s' }}
+                            onClick={() => setStreakReminder(!streakReminder)}
+                        >
+                            <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: streakReminder ? '23px' : '3px', transition: 'left 0.3s' }}></div>
                         </div>
                     </div>
                     
@@ -114,8 +144,11 @@ const ProfileSettings = () => {
                             <div style={{ fontWeight: 800, fontSize: '14px' }}>ข้อความใหม่</div>
                             <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>เมื่อได้รับข้อความ</div>
                         </div>
-                        <div style={{ width: '44px', height: '24px', background: 'rgba(255,255,255,0.2)', borderRadius: '99px', position: 'relative', cursor: 'pointer' }}>
-                            <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: '3px' }}></div>
+                        <div 
+                            style={{ width: '44px', height: '24px', background: newMessage ? 'var(--k-teal)' : 'rgba(255,255,255,0.2)', borderRadius: '99px', position: 'relative', cursor: 'pointer', transition: 'background 0.3s' }}
+                            onClick={() => setNewMessage(!newMessage)}
+                        >
+                            <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: newMessage ? '23px' : '3px', transition: 'left 0.3s' }}></div>
                         </div>
                     </div>
                 </div>

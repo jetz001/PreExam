@@ -50,7 +50,6 @@ const authService = {
     guestLogin: async () => {
         let deviceId = localStorage.getItem('guest_device_id');
         if (!deviceId) {
-            // Generate a robust UUID if not exists
             // Generate a robust UUID if not exists. Fallback includes random hex to avoid 'guest-17' pattern.
             const randomHex = Math.random().toString(16).slice(2, 10); // 8 random hex chars
             deviceId = crypto.randomUUID ? crypto.randomUUID() : `guest-${Date.now()}-${randomHex}`;
@@ -63,6 +62,16 @@ const authService = {
             localStorage.setItem('user', JSON.stringify(response.data.user));
         }
         return response.data;
+    },
+
+    updateCurrentUser: (userData) => {
+        let current = authService.getCurrentUser();
+        if (current) {
+            const updated = { ...current, ...userData };
+            localStorage.setItem('user', JSON.stringify(updated));
+            return updated;
+        }
+        return null;
     },
 
     logout: () => {

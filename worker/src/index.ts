@@ -1962,6 +1962,48 @@ export default {
             });
         }
 
+        // User Profile & Settings
+        if (url.pathname === "/api/users/profile" && request.method === "GET") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const user = await firestore.getDocument("users", auth.userId);
+            return json({ success: true, data: sanitizeUser(user) });
+        }
+
+        if (url.pathname === "/api/users/profile" && request.method === "PUT") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const body = await readJson(request) as any;
+            if (!body || !body.username) return json({ success: false, message: "Username is required" }, { status: 400 });
+            
+            const updates = {
+                display_name: String(body.username).trim(),
+                updated_at: new Date().toISOString()
+            };
+            await firestore.updateDocument("users", auth.userId, updates);
+            
+            const updatedUser = await firestore.getDocument("users", auth.userId);
+            return json({ success: true, data: sanitizeUser(updatedUser) });
+        }
+
+        if (url.pathname === "/api/users/settings" && request.method === "PUT") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const body = await readJson(request) as any;
+            if (!body) return json({ success: false, message: "Invalid payload" }, { status: 400 });
+
+            const updates = {
+                settings_friends_online: !!body.friends_online,
+                settings_streak_reminder: !!body.streak_reminder,
+                settings_new_message: !!body.new_message,
+                updated_at: new Date().toISOString()
+            };
+            await firestore.updateDocument("users", auth.userId, updates);
+            
+            const updatedUser = await firestore.getDocument("users", auth.userId);
+            return json({ success: true, data: sanitizeUser(updatedUser) });
+        }
+
         // Stub missing routes to prevent 404 crashes
         if (url.pathname === "/api/users/stats" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
