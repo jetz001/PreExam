@@ -478,31 +478,57 @@ export default {
       const questionCount = Math.max(1, Math.min(200, Number((body as any).question_count || 20)));
       const timeLimit = Math.max(5, Math.min(60, Number((body as any).time_limit || 60)));
       const password = (body as any).password ? String((body as any).password) : null;
+      const customQuestions = (body as any).custom_questions;
 
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const settings = JSON.stringify({ time_limit: timeLimit });
 
-      // Fetch random questions based on criteria
-      const filters: any[] = [];
-      if (subject) filters.push({ fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } });
-      if (category) filters.push({ fieldFilter: { field: { fieldPath: "category" }, op: "EQUAL", value: { stringValue: category } } });
-
-      let query: any = { from: [{ collectionId: "questions" }] };
-      if (filters.length === 1) query.where = filters[0];
-      else if (filters.length > 1) query.where = { compositeFilter: { op: "AND", filters } };
-
       let selectedIds: string[] = [];
-      try {
-        const allQs = await firestore.runQuery(query);
-        // Shuffle and pick
-        const shuffled = allQs.sort(() => Math.random() - 0.5);
-        selectedIds = shuffled.slice(0, questionCount).map((q: any) => q.id);
-      } catch (e) {
-        // Fallback or empty if query fails
+      
+      if (customQuestions && Array.isArray(customQuestions) && customQuestions.length > 0) {
+        // Save custom questions
+        const insertPromises = customQuestions.map((q: any) => {
+          return firestore.createDocument("questions", {
+            question_text: q.question_text || "",
+            choices: q.choices || { A: "", B: "", C: "", D: "" },
+            correct_answer: q.correct_answer || "A",
+            explanation: q.explanation || "",
+            category: "custom",
+            subject: "custom",
+            difficulty: 50,
+            is_custom: true,
+            host_user_id: auth.userId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        });
+        try {
+          const createdDocs = await Promise.all(insertPromises);
+          selectedIds = createdDocs.map((d: any) => d.id);
+        } catch (e) {
+          return json({ success: false, message: "Failed to save custom questions." }, { status: 500 });
+        }
+      } else {
+        // Fetch random questions based on criteria
+        const filters: any[] = [];
+        if (subject) filters.push({ fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } });
+        if (category) filters.push({ fieldFilter: { field: { fieldPath: "category" }, op: "EQUAL", value: { stringValue: category } } });
+
+        let query: any = { from: [{ collectionId: "questions" }] };
+        if (filters.length === 1) query.where = filters[0];
+        else if (filters.length > 1) query.where = { compositeFilter: { op: "AND", filters } };
+
+        try {
+          const allQs = await firestore.runQuery(query);
+          const shuffled = allQs.sort(() => Math.random() - 0.5);
+          selectedIds = shuffled.slice(0, questionCount).map((q: any) => q.id);
+        } catch (e) {
+          // Fallback
+        }
       }
 
       if (selectedIds.length === 0) {
-        return json({ success: false, message: "No questions found for the selected subject/category." }, { status: 400 });
+        return json({ success: false, message: "No questions found." }, { status: 400 });
       }
 
       const room = await firestore.createDocument("exam_rooms", {
