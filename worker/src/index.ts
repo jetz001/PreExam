@@ -1262,26 +1262,17 @@ export default {
 
                 const existing = await firestore.runQuery({
                     from: [{ collectionId: "bookmarks" }],
-                    where: {
-                        compositeFilter: {
-                            op: "AND",
-                            filters: [
-                                { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } },
-                                { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: target_id } } },
-                                { fieldFilter: { field: { fieldPath: "target_type" }, op: "EQUAL", value: { stringValue: target_type } } }
-                            ]
-                        }
-                    }
+                    where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
                 });
 
-                if (existing && existing.length > 0) {
+                if (existing && existing.some((b: any) => String(b.target_id) === String(target_id) && b.target_type === target_type)) {
                     return json({ success: false, message: "Already bookmarked" }, { status: 400 });
                 }
 
                 const bookmark = await firestore.createDocument("bookmarks", {
                     user_id: auth.userId,
                     target_type,
-                    target_id,
+                    target_id: String(target_id),
                     title: title || 'Untitled',
                     created_at: new Date().toISOString()
                 });
