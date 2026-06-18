@@ -1919,23 +1919,6 @@ export default {
           if ("error" in auth) return auth.error;
           const myId = auth.userId;
           
-          const checkMatch = url.pathname.match(/^\/api\/friends\/check\/([a-zA-Z0-9_-]+)$/);
-          if (checkMatch && request.method === "GET") {
-             const friendId = checkMatch[1];
-             const reqs = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "requester_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-             
-             const sentReq = reqs.find((r: any) => r.target_id === friendId);
-             const rcvReq = tgts.find((r: any) => r.requester_id === friendId);
-             
-             let status = 'none';
-             if (sentReq) {
-                 status = sentReq.status === 'accepted' ? 'friends' : 'sent';
-             } else if (rcvReq) {
-                 status = rcvReq.status === 'accepted' ? 'friends' : 'received';
-             }
-             return json({ status });
-          }
 
           if (url.pathname === "/api/friends/request" && request.method === "POST") {
              const body = await readJson(request) as any;
@@ -2030,9 +2013,9 @@ export default {
              const r2 = tgts.find((r: any) => r.requester_id === friendId);
              
              if (r1) {
-                 return json({ success: true, status: r1.status === "accepted" ? "friends" : "pending_sent" });
+                 return json({ success: true, status: r1.status === "accepted" ? "friends" : "sent" });
              } else if (r2) {
-                 return json({ success: true, status: r2.status === "accepted" ? "friends" : "pending_received" });
+                 return json({ success: true, status: r2.status === "accepted" ? "friends" : "received" });
              } else {
                  return json({ success: true, status: "none" });
              }
