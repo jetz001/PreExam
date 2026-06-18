@@ -1194,8 +1194,9 @@ export default {
           }
         }
 
-        if (url.pathname === "/api/users/stats/radar") return json({ success: true, data: [] });
-        if (url.pathname === "/api/users/stats/heatmap") return json({ success: true, data: [] });
+        // Handled below in catch-all stats section
+        // if (url.pathname === "/api/users/stats/radar") return json({ success: true, data: [] });
+        // if (url.pathname === "/api/users/stats/heatmap") return json({ success: true, data: [] });
         if (url.pathname === "/api/reports" && request.method === "POST") {
             try {
                 const body = await readJson(request) as any;
@@ -1774,6 +1775,8 @@ export default {
 
             const accuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
             const avgAnswerTime = totalQuestions > 0 ? (timeTaken / totalQuestions).toFixed(1) : "0";
+            
+            const uniqueDays = new Set(results.map((r: any) => r.taken_at?.split('T')[0]).filter(Boolean)).size;
 
             return json({
               success: true,
@@ -1786,9 +1789,111 @@ export default {
                 accuracy,
                 avgAnswerTime,
                 badgesEarned: 0,
-                friendsCount: 0
+                friendsCount: 0,
+                daysActive: uniqueDays
               }
             });
+          } catch (e) {
+            return json({ success: false, message: "Server error" }, { status: 500 });
+          }
+        }
+
+        // /api/users/stats/heatmap
+        if (url.pathname === "/api/users/stats/heatmap" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const urlObj = new URL(request.url);
+          const periodStr = urlObj.searchParams.get("period");
+          const period = periodStr === "all" ? 9999 : parseInt(periodStr || "7", 10);
+          
+          try {
+            const results = await firestore.runQuery({
+              from: [{ collectionId: "exam_results" }],
+              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
+            });
+            
+            const now = new Date();
+            const cutoff = new Date(now.getTime() - period * 24 * 60 * 60 * 1000);
+            
+            // Map dates to counts
+            const dateCounts: Record<string, number> = {};
+            
+            results.forEach((r: any) => {
+              if (r.taken_at) {
+                const dateObj = new Date(r.taken_at);
+                if (dateObj >= cutoff) {
+                  const dateStr = r.taken_at.split('T')[0];
+                  dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
+                }
+              }
+            });
+            
+            // Generate array for the last X days to fill missing dates with 0
+            const heatmapData = [];
+            const daysToGenerate = period === 9999 ? 365 : period; // Max 1 year for 'all'
+            
+            for (let i = daysToGenerate - 1; i >= 0; i--) {
+              const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+              const dateStr = d.toISOString().split('T')[0];
+              heatmapData.push({
+                date: dateStr,
+                value: dateCounts[dateStr] || 0
+              });
+            }
+
+            return json({ success: true, data: heatmapData });
+          } catch (e) {
+            return json({ success: false, message: "Server error" }, { status: 500 });
+          }
+        }
+
+        // /api/users/stats/radar
+        if (url.pathname === "/api/users/stats/radar" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          
+          try {
+            const results = await firestore.runQuery({
+              from: [{ collectionId: "exam_results" }],
+              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
+            });
+            
+            const subjectStats: Record<string, { score: number, full: number }> = {};
+            
+            results.forEach((r: any) => {
+              if (r.subject_scores) {
+                Object.keys(r.subject_scores).forEach(subj => {
+                  if (!subjectStats[subj]) subjectStats[subj] = { score: 0, full: 0 };
+                  subjectStats[subj].score += Number(r.subject_scores[subj]) || 0;
+                  // Estimate full mark. Normally each question is 1 point. We might not have exact full mark per subject per exam.
+                  // But if subject_scores doesn't include total, we can use the length of questions filtered by subject if available, 
+                  // or just fallback to 10 points per subject per exam.
+                  // For now, let's assume we can calculate it from r.questions
+                });
+              }
+              
+              if (r.questions && Array.isArray(r.questions)) {
+                r.questions.forEach((q: any) => {
+                   if (q.subject) {
+                     if (!subjectStats[q.subject]) subjectStats[q.subject] = { score: 0, full: 0 };
+                     subjectStats[q.subject].full += 1;
+                   }
+                });
+              }
+            });
+            
+            const radarData = Object.keys(subjectStats).map(subj => {
+               const stat = subjectStats[subj];
+               const fullMark = Math.max(stat.full, 1);
+               const percentage = Math.round((stat.score / fullMark) * 100);
+               return {
+                 subject: subj,
+                 score: percentage,
+                 fullMark: 100
+               };
+            });
+
+            return json({ success: true, data: radarData });
           } catch (e) {
             return json({ success: false, message: "Server error" }, { status: 500 });
           }

@@ -16,8 +16,8 @@ const userService = {
         return response.data;
     },
 
-    getHeatmapStats: async () => {
-        const response = await api.get(`/users/stats/heatmap?_t=${Date.now()}`);
+    getHeatmapStats: async (period = 7) => {
+        const response = await api.get(`/users/stats/heatmap?period=${period}&_t=${Date.now()}`);
         return response.data;
     },
 
