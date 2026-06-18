@@ -122,6 +122,7 @@ function App() {
 
         <Route path="/business" element={<BusinessLayout />}>
           <Route index element={<Navigate to="content" replace />} />
+          <Route path="dashboard" element={<Navigate to="content" replace />} />
           <Route path="content" element={<BusinessContentManager />} />
           <Route path="inbox" element={<BusinessInbox />} />
           <Route path="create-ad" element={<AdCreator />} />

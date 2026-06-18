@@ -190,7 +190,7 @@ const BusinessDashboard = ({ sponsorId }) => {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-black font-black uppercase tracking-wider text-sm">Total Views</p>
-                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md text-black mt-2 drop-shadow-md">{statsData.totalViews.toLocaleString()}</h3>
+                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md text-black mt-2 drop-shadow-md">{(statsData?.totalViews || 0).toLocaleString()}</h3>
                                 </div>
                                 <div className="p-2 bg-indigo-400 text-black border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <Eye size={24} />
@@ -204,7 +204,7 @@ const BusinessDashboard = ({ sponsorId }) => {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-black font-black uppercase tracking-wider text-sm">Total Clicks</p>
-                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md text-black mt-2 drop-shadow-md">{statsData.totalClicks.toLocaleString()}</h3>
+                                    <h3 className="text-4xl font-black mt-2 drop-shadow-md text-black mt-2 drop-shadow-md">{(statsData?.totalClicks || 0).toLocaleString()}</h3>
                                 </div>
                                 <div className="p-2 bg-orange-400 text-black border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <MousePointer size={24} />
