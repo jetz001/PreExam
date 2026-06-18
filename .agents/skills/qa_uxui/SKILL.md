@@ -25,10 +25,19 @@ This skill defines the standard operating procedure for reviewing and testing UX
 - **Contrast**: Check that text on top of translucent or colored backgrounds is readable (e.g., white text on dark purple).
 - **Aria Attributes**: Ensure icon-only buttons (like the `Type` or `Flag` icons) have `title` or `aria-label` attributes for screen readers.
 
-## 5. QA Workflow (Agent Instructions)
+## 5. QA Reporting
+After completing the QA review, the agent MUST generate a structured Markdown Artifact report (e.g., `qa_report_[component_name].md`). The report should include:
+- **Executive Summary**: Brief overview of the component's state.
+- **Identified Issues**: A list of UX/UI issues found, categorized by severity (High, Medium, Low).
+- **Proposed Solutions**: Code snippets, specific Tailwind class recommendations, or design adjustments to fix each issue.
+- **Accessibility Status**: A specific note on contrast and screen-reader readiness.
+- **Before/After (if applicable)**: Any UI structural changes that will be made.
+
+## 6. QA Workflow (Agent Instructions)
 When asked to QA a specific component or page:
 1. Use `view_file` to read the component's `.jsx` file.
 2. Check the imports (Lucide icons, React hooks).
 3. Validate against the 4 points above.
 4. If issues are found, propose the fix using the `replace_file_content` tool and explain the UX reasoning.
-5. Remind the user that since the app is running Next.js in production mode, they may need to `npm run build` after fixes are applied to see them live.
+5. Create the QA Report artifact to present the findings to the user.
+6. Remind the user that since the app is running Next.js in production mode, they may need to `npm run build` after fixes are applied to see them live.
