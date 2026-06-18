@@ -59,7 +59,12 @@ const BusinessProfile = () => {
     const shopPosts = posts.filter(p => p.type === 'product');
 
     return (
-        <div className="bg-gray-50 dark:bg-slate-900 min-h-screen">
+        <div className="bg-[#0f111a] min-h-screen text-white overflow-hidden relative">
+            {/* Background Effects */}
+            <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-purple-900/40 to-transparent pointer-events-none" />
+            <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-pink-600/10 blur-[120px] pointer-events-none" />
+            <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
+
             <Helmet>
                 <title>{business.name} | Learning Center</title>
                 <meta name="description" content={business.tagline || business.about} />
@@ -69,6 +74,7 @@ const BusinessProfile = () => {
                 <meta property="og:type" content="profile" />
                 <meta property="og:url" content={window.location.href} />
             </Helmet>
+
             {/* Chat Modal */}
             <BusinessChatModal
                 isOpen={isChatOpen}
@@ -91,58 +97,64 @@ const BusinessProfile = () => {
             )}
 
             {/* Header / Cover */}
-            <div className="relative h-48 md:h-64 bg-gray-300 dark:bg-slate-800">
-                {businessData.cover_image && (
-                    <img src={getImageUrl(businessData.cover_image)} alt="Cover" className="w-full h-full object-cover" />
+            <div className="relative h-64 md:h-80 w-full overflow-hidden">
+                {businessData.cover_image ? (
+                    <img src={getImageUrl(businessData.cover_image)} alt="Cover" className="w-full h-full object-cover opacity-60 mix-blend-overlay" />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-indigo-900 to-purple-800" />
                 )}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f111a] to-transparent" />
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="relative -mt-16 sm:-mt-24 pb-8 border-b border-gray-200 dark:border-slate-700 mb-8">
-                    <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div className="relative -mt-24 sm:-mt-32 pb-8 mb-8">
+                    <div className="flex flex-col md:flex-row items-center md:items-end gap-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl">
                         {/* Profile Image */}
-                        <div className="w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-slate-800 rounded-full border-4 border-white dark:border-slate-900 shadow-md overflow-hidden flex-shrink-0">
+                        <div className="w-32 h-32 md:w-44 md:h-44 bg-[#0f111a] rounded-3xl border-2 border-white/20 shadow-2xl overflow-hidden flex-shrink-0 group relative">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                             {businessData.logo_image ? (
-                                <img src={getImageUrl(businessData.logo_image)} alt={businessData.name} className="w-full h-full object-cover" />
+                                <img src={getImageUrl(businessData.logo_image)} alt={businessData.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-800">
-                                    <User size={48} />
+                                <div className="w-full h-full flex items-center justify-center text-gray-500 bg-white/5">
+                                    <User size={64} />
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex-1 min-w-0 pt-2">
-                            <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0 text-center md:text-left w-full">
+                            <div className="flex flex-col md:flex-row md:justify-between items-center md:items-start gap-4">
                                 <div>
-                                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                                    <h1 className="text-3xl sm:text-4xl font-black text-white flex items-center justify-center md:justify-start gap-3 drop-shadow-md">
                                         {business.name}
                                         {business.is_verified && <CheckBadge />}
                                     </h1>
-                                    <p className="text-gray-500">{business.category}</p>
+                                    <span className="inline-block mt-2 px-4 py-1.5 bg-white/10 text-pink-300 text-sm rounded-full font-bold border border-white/10 backdrop-blur-sm tracking-wide">
+                                        {business.category}
+                                    </span>
                                 </div>
                                 <button
                                     onClick={() => followMutation.mutate(isFollowing)}
-                                    className={`px-6 py-2 rounded-full font-medium shadow-sm active:scale-95 transition-all ${isFollowing ? 'bg-gray-200 text-gray-800' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                                    className={`px-8 py-3 rounded-full font-bold shadow-lg transition-all duration-300 flex items-center gap-2 ${isFollowing ? 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-white/30' : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:scale-105 hover:shadow-[0_0_20px_rgba(236,72,153,0.5)]'}`}
                                 >
                                     {isFollowing ? 'Following' : 'Follow'}
                                 </button>
                             </div>
 
-                            <p className="mt-3 text-gray-700">{business.tagline}</p>
+                            <p className="mt-6 text-gray-300 text-lg max-w-2xl leading-relaxed">{business.tagline}</p>
 
-                            <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-500">
+                            <div className="flex flex-wrap justify-center md:justify-start gap-6 mt-6 pt-6 border-t border-white/10 text-sm font-medium text-gray-300">
                                 {business.contact_link && (
-                                    <a href={business.contact_link} target="_blank" rel="noopener noreferrer" className="flex items-center hover:text-indigo-600">
-                                        <LinkIcon size={16} className="mr-1" /> Contact
+                                    <a href={business.contact_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-pink-400 transition-colors bg-white/5 px-4 py-2 rounded-xl">
+                                        <LinkIcon size={16} /> Contact
                                     </a>
                                 )}
-                                <div className="flex items-center gap-1">
-                                    <User size={16} /> {business.stats?.followers || 0} Followers
+                                <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl">
+                                    <User size={16} className="text-blue-400" /> {business.stats?.followers || 0} Followers
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl">
                                     <Star size={16} className="text-yellow-400" /> {business.rating_avg || '0.0'} ({business.rating_count} reviews)
                                 </div>
-                                <button onClick={() => setIsChatOpen(true)} className="flex items-center gap-1 hover:text-indigo-600 cursor-pointer text-gray-400 hover:text-blue-500 transition-colors">
+                                <button onClick={() => setIsChatOpen(true)} className="flex items-center gap-2 text-gray-300 hover:text-indigo-400 transition-colors bg-white/5 px-4 py-2 rounded-xl hover:bg-white/10">
                                     <MessageCircle size={16} /> Message
                                 </button>
                             </div>
@@ -152,90 +164,102 @@ const BusinessProfile = () => {
             </div>
 
             {/* Content Tabs */}
-            <div className="max-w-4xl mx-auto px-4">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[500px]">
-                    <div className="flex border-b">
+            <div className="max-w-5xl mx-auto px-4 pb-20">
+                <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden min-h-[500px] shadow-2xl">
+                    <div className="flex border-b border-white/10 bg-black/20 p-2 gap-2">
                         <button
                             onClick={() => setActiveTab('knowledge')}
-                            className={`flex-1 py-4 text-center font-bold text-sm border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'knowledge' ? 'border-primary text-primary bg-indigo-50/50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
+                            className={`flex-1 py-4 text-center font-bold text-sm rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'knowledge' ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border border-white/10 shadow-lg' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'}`}
                         >
-                            <BookOpen size={18} /> Knowledge ({knowledgePosts.length})
+                            <BookOpen size={18} /> Knowledge <span className="bg-white/10 px-2 py-0.5 rounded-md text-xs">{knowledgePosts.length}</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('shop')}
-                            className={`flex-1 py-4 text-center font-bold text-sm border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'shop' ? 'border-primary text-primary bg-indigo-50/50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
+                            className={`flex-1 py-4 text-center font-bold text-sm rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'shop' ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border border-white/10 shadow-lg' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'}`}
                         >
-                            <ShoppingBag size={18} /> Shop ({shopPosts.length})
+                            <ShoppingBag size={18} /> Shop <span className="bg-white/10 px-2 py-0.5 rounded-md text-xs">{shopPosts.length}</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('reviews')}
-                            className={`flex-1 py-4 text-center font-bold text-sm border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'reviews' ? 'border-primary text-primary bg-indigo-50/50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
+                            className={`flex-1 py-4 text-center font-bold text-sm rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'reviews' ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border border-white/10 shadow-lg' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'}`}
                         >
-                            <Star size={18} /> Reviews ({business.rating_count})
+                            <Star size={18} /> Reviews <span className="bg-white/10 px-2 py-0.5 rounded-md text-xs">{business.rating_count}</span>
                         </button>
                     </div>
 
-                    <div className="p-6">
+                    <div className="p-6 md:p-8">
                         {activeTab === 'reviews' ? (
                             <ReviewsSection businessId={id} ownerUid={business.owner_uid} />
                         ) : isPostsLoading ? (
-                            <div className="text-center py-10">Loading Content...</div>
+                            <div className="flex justify-center py-20">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+                            </div>
                         ) : (
-                            <div className="space-y-6">
-                                {(activeTab === 'knowledge' ? knowledgePosts : shopPosts).map(post => (
-                                    <div key={post.id} className="border-b last:border-0 pb-6 last:pb-0">
-                                        <div className="flex gap-2 mb-2">
-                                            {post.tags.map((tag, i) => (
-                                                <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">#{tag}</span>
-                                            ))}
-                                            {post.is_pinned && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full font-bold">PINNED</span>}
-                                        </div>
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">{post.title}</h3>
-                                        <ReadMoreText content={post.content} limit={200} className="text-gray-600 text-sm mb-4" />
+                            <div className="space-y-8">
+                                {(activeTab === 'knowledge' ? knowledgePosts : shopPosts).length === 0 ? (
+                                    <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/10 text-gray-400">
+                                        <Grid size={48} className="mx-auto mb-4 opacity-40 text-pink-400" />
+                                        <p className="text-xl font-bold text-white mb-2">No Content Yet</p>
+                                        <p className="text-sm">Check back later for updates from {business.name}.</p>
+                                    </div>
+                                ) : (
+                                    (activeTab === 'knowledge' ? knowledgePosts : shopPosts).map(post => (
+                                        <div key={post.id} className="group bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 p-6 sm:p-8 transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:-translate-y-1 hover:shadow-2xl relative overflow-hidden">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                            
+                                            <div className="relative z-10">
+                                                <div className="flex flex-wrap gap-2 mb-4">
+                                                    {post.tags?.map((tag, i) => (
+                                                        <span key={i} className="px-3 py-1 bg-white/10 text-gray-300 text-xs rounded-full font-medium tracking-wide">#{tag}</span>
+                                                    ))}
+                                                    {post.is_pinned && <span className="px-3 py-1 bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 text-xs rounded-full font-bold border border-pink-500/30 shadow-sm">PINNED 📌</span>}
+                                                </div>
+                                                
+                                                <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-pink-300 transition-colors leading-tight">{post.title}</h3>
+                                                <ReadMoreText content={post.content} limit={200} className="text-gray-300 text-sm mb-6 leading-relaxed" />
 
-                                        {/* Action Bar */}
-                                        <div className="flex items-center gap-4 text-gray-400 text-sm">
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        const res = await businessApi.toggleLike(post.id);
-                                                        if (res.success) {
-                                                            toast.success(res.liked ? 'Liked!' : 'Unliked');
-                                                            // Optimistic update or refetch
-                                                            // For now, refetch posts query
-                                                            queryClient.invalidateQueries(['businessPosts', id]);
-                                                        }
-                                                    } catch (err) {
-                                                        if (err.response?.status === 401) return toast.error('Please login to like');
-                                                        toast.error('Failed to like');
-                                                    }
-                                                }}
-                                                className={`flex items-center gap-1 transition-colors ${post.isLiked ? 'text-red-500' : 'hover:text-red-500'}`}
-                                            >
-                                                <Star size={16} fill={post.isLiked ? "currentColor" : "none"} /> {post.likes_count || 0} Like
-                                            </button>
+                                                {/* Action Bar */}
+                                                <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-5 border-t border-white/10 text-sm font-bold text-gray-400">
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                const res = await businessApi.toggleLike(post.id);
+                                                                if (res.success) {
+                                                                    toast.success(res.liked ? 'Liked!' : 'Unliked');
+                                                                    queryClient.invalidateQueries(['businessPosts', id]);
+                                                                }
+                                                            } catch (err) {
+                                                                if (err.response?.status === 401) return toast.error('Please login to like');
+                                                                toast.error('Failed to like');
+                                                            }
+                                                        }}
+                                                        className={`flex items-center gap-2 transition-colors group/btn ${post.isLiked ? 'text-pink-500' : 'hover:text-pink-400'}`}
+                                                    >
+                                                        <div className="p-2 rounded-full group-hover/btn:bg-pink-400/10 transition-colors"><Star size={18} fill={post.isLiked ? "currentColor" : "none"} /></div>
+                                                        {post.likes_count || 0} Like
+                                                    </button>
 
-                                            <button
-                                                onClick={() => setSharePost(post)}
-                                                className="flex items-center gap-1 hover:text-blue-500"
-                                            >
-                                                <MessageCircle size={16} /> Discuss
-                                            </button>
+                                                    <button
+                                                        onClick={() => setSharePost(post)}
+                                                        className="flex items-center gap-2 hover:text-blue-400 transition-colors group/btn"
+                                                    >
+                                                        <div className="p-2 rounded-full group-hover/btn:bg-blue-400/10 transition-colors"><MessageCircle size={18} /></div> Discuss
+                                                    </button>
 
-                                            <button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(`${window.location.origin}/business/${id}?post=${post.id}`);
-                                                    toast.success('Link copied to clipboard');
-                                                }}
-                                                className="flex items-center gap-1 hover:text-green-500"
-                                            >
-                                                <Share2 size={16} /> Share
-                                            </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(`${window.location.origin}/business/${id}?post=${post.id}`);
+                                                            toast.success('Link copied to clipboard');
+                                                        }}
+                                                        className="flex items-center gap-2 hover:text-green-400 transition-colors group/btn"
+                                                    >
+                                                        <div className="p-2 rounded-full group-hover/btn:bg-green-400/10 transition-colors"><Share2 size={18} /></div> Share
+                                                    </button>
 
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        const res = await businessApi.toggleBookmark(post.id);
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                const res = await businessApi.toggleBookmark(post.id);
                                                         if (res.success) toast.success(res.bookmarked ? 'Saved!' : 'Removed from saved');
                                                     } catch (err) {
                                                         if (err.response?.status === 401) return toast.error('Please login to save');

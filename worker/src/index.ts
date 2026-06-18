@@ -2579,6 +2579,38 @@ if (url.pathname === "/api/legal/policy") {
             }
         }
 
+        if (url.pathname === "/api/business/feed" && request.method === "GET") {
+            try {
+                // Fetch recent posts
+                const posts = await firestore.runQuery({
+                    from: [{ collectionId: "business_posts" }],
+                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
+                    limit: 50
+                });
+
+                // Attach business details (name, logo_image)
+                const businessIds = Array.from(new Set(posts.map((p: any) => p.business_id).filter(Boolean)));
+                const businessesMap = new Map();
+                for (const bid of businessIds) {
+                    const b = await firestore.getDocument("businesses", String(bid));
+                    if (b) businessesMap.set(String(bid), b);
+                }
+
+                const feed = posts.map((p: any) => {
+                    const b = businessesMap.get(p.business_id);
+                    return {
+                        ...p,
+                        business_name: b ? b.name : 'Unknown Business',
+                        business_logo: b ? b.logo_image : null
+                    };
+                });
+
+                return json({ success: true, feed });
+            } catch (err) {
+                return json({ success: true, feed: [] }); // Fallback to empty if table missing
+            }
+        }
+
         // Stub missing business/ads routes
         if (url.pathname === "/api/business/my-business" && request.method === "GET") {
             return json({ success: true, data: null });
