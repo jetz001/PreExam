@@ -41,7 +41,6 @@ const ProfileHistoryOverview = () => {
                 setLoading(false);
             }
         };
-        };
         fetchData();
     }, [period]);
 
