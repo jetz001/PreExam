@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 import publicService from '../services/publicService';
+import { Building2 } from 'lucide-react';
 
 /* ──────────────────────────────────────────────────────
    HomeNavbar  — Kahoot-style overlay navbar for Home page
