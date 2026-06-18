@@ -60,8 +60,8 @@ const ProfileFriends = () => {
                             {friends.length > 0 ? friends.map((friend, i) => (
                                 <div key={friend.id || i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', borderRadius: '10px', transition: 'background 0.2s', cursor: 'pointer' }} className="hover-bg">
                                     <div style={{ position: 'relative' }}>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg,#ff7700,#e21b3c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                                            {friend.avatar ? <img src={friend.avatar} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : '😎'}
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg,#ff7700,#e21b3c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', overflow: 'hidden' }}>
+                                            {friend.avatar ? <img src={friend.avatar.startsWith('http') ? friend.avatar : `https://preexam.online${friend.avatar}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '😎'}
                                         </div>
                                         <div style={{ position: 'absolute', bottom: 0, right: 0, width: '12px', height: '12px', background: friend.isOnline ? 'var(--k-teal)' : 'var(--k-orange)', border: '2px solid var(--k-bg)', borderRadius: '50%' }}></div>
                                     </div>
@@ -75,7 +75,7 @@ const ProfileFriends = () => {
                                 </div>
                             )) : (
                                 <div style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '10px' }}>
-                                    ยังไม่มีเพื่อน (Coming Soon / No Data)
+                                    ยังไม่มีเพื่อน 
                                 </div>
                             )}
                         </div>
@@ -89,21 +89,21 @@ const ProfileFriends = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {pending.length > 0 ? pending.map((req, i) => (
                                 <div key={req.id || i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', borderRadius: '10px', transition: 'background 0.2s' }} className="hover-bg">
-                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,119,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                                        {req.user?.avatar ? <img src={req.user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : '🐉'}
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,119,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', overflow: 'hidden' }}>
+                                        {req.avatar ? <img src={req.avatar.startsWith('http') ? req.avatar : `https://preexam.online${req.avatar}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐉'}
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 800, fontSize: '14px' }}>{req.user?.display_name || req.user?.username || 'User'}</div>
+                                        <div style={{ fontWeight: 800, fontSize: '14px' }}>{req.display_name || 'User'}</div>
                                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>ต้องการเป็นเพื่อนกับคุณ</div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '6px' }}>
-                                        <button onClick={() => handleAccept(req.id)} style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--k-yellow)', border: 'none', color: '#1a0533', fontWeight: 'bold', cursor: 'pointer' }}>✓</button>
-                                        <button onClick={() => handleRemove(req.id)} style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>✕</button>
+                                        <button onClick={() => handleAccept(req.request_id || req.id)} style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--k-yellow)', border: 'none', color: '#1a0533', fontWeight: 'bold', cursor: 'pointer' }}>✓</button>
+                                        <button onClick={() => handleRemove(req.request_id || req.id)} style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>✕</button>
                                     </div>
                                 </div>
                             )) : (
                                 <div style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '10px' }}>
-                                    ไม่มีคำขอเป็นเพื่อน (Coming Soon / No Data)
+                                    ไม่มีคำขอเป็นเพื่อน
                                 </div>
                             )}
                         </div>
