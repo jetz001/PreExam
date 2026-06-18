@@ -16,6 +16,10 @@ const chatApi = {
     markRead: async (friendId) => {
         const response = await api.post('/chat/read', { friendId });
         return response.data;
+    },
+    getUnreadCount: async () => {
+        const response = await api.get('/chat/unread-count');
+        return response.data.data.unread;
     }
 };
 

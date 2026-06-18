@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import '../assets/css/profile.css';
 import authService from '../services/authService';
 import userService from '../services/userService';
+import chatApi from '../services/chatApi';
+import notificationApi from '../services/notificationApi';
 
 const ProfileLayout = () => {
   const navigate = useNavigate();
@@ -10,6 +12,11 @@ const ProfileLayout = () => {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
   const [xpInfo, setXpInfo] = useState({ currentXP: 0, nextLevelXP: 1000, level: 1, percentage: 0 });
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const notifRef = useRef(null);
 
   useEffect(() => {
     const linkId = 'profile-fonts';
@@ -18,8 +25,24 @@ const ProfileLayout = () => {
       link.id = linkId;
       link.href = 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Lilita+One&display=swap';
       link.rel = 'stylesheet';
+      link.rel = 'stylesheet';
       document.head.appendChild(link);
     }
+
+    const fetchCounts = async () => {
+      try {
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser) return;
+        const msgCount = await chatApi.getUnreadCount();
+        const notifCount = await notificationApi.getUnreadCount();
+        setUnreadMessages(msgCount || 0);
+        setUnreadNotifications(notifCount || 0);
+      } catch (err) {
+        console.error('Error fetching unread counts', err);
+      }
+    };
+    fetchCounts();
+    const countInterval = setInterval(fetchCounts, 30000);
 
     const loadData = async () => {
       try {
@@ -80,7 +103,40 @@ const ProfileLayout = () => {
     };
     
     loadData();
+    return () => clearInterval(countInterval);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setShowNotifDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleToggleNotifications = async () => {
+    setShowNotifDropdown(!showNotifDropdown);
+    if (!showNotifDropdown) {
+      try {
+        const notifs = await notificationApi.getNotifications(10);
+        setNotifications(notifs || []);
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+      }
+    }
+  };
+
+  const handleMarkNotificationRead = async (id) => {
+    try {
+      await notificationApi.markRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      setUnreadNotifications(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
 
   const navItems = [
     { to: '/profile/dashboard', label: 'Dashboard', icon: '🎮' },
@@ -88,7 +144,7 @@ const ProfileLayout = () => {
     { to: '/profile/history', label: 'History', icon: '🕐' },
     { to: '/profile/bookmarks', label: 'Bookmarks', icon: '🔖' },
     { to: '/profile/threads', label: 'My Threads', icon: '💬' },
-    { to: '/profile/messages', label: 'Messages', icon: '📩', badge: 3 },
+    { to: '/profile/messages', label: 'Messages', icon: '📩', badge: unreadMessages > 0 ? unreadMessages : null },
     { to: '/profile/friends', label: 'Friends', icon: '👥', divider: true },
     { to: '/profile/settings', label: 'Settings', icon: '⚙️' },
   ];
@@ -139,7 +195,63 @@ const ProfileLayout = () => {
               </div>
               <span className="xp-text">{xpInfo.currentXP.toLocaleString()} / {xpInfo.nextLevelXP.toLocaleString()} XP</span>
             </div>
-            <button className="notif-btn" title="Notifications">🔔</button>
+            
+            <div ref={notifRef} style={{ position: 'relative' }}>
+              <button className="notif-btn" title="Notifications" onClick={handleToggleNotifications} style={{ position: 'relative' }}>
+                🔔
+                {unreadNotifications > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '-4px', right: '-4px',
+                    background: '#e21b3c', color: 'white',
+                    fontSize: '10px', fontWeight: 'bold',
+                    padding: '2px 6px', borderRadius: '10px',
+                    border: '2px solid var(--k-bg)'
+                  }}>
+                    {unreadNotifications}
+                  </span>
+                )}
+              </button>
+              
+              {showNotifDropdown && (
+                <div style={{
+                  position: 'absolute', top: '100%', right: '0', marginTop: '10px',
+                  width: '320px', background: 'var(--card-bg)', borderRadius: '12px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 1000,
+                  border: '1px solid var(--card-border)', overflow: 'hidden'
+                }}>
+                  <div style={{ padding: '16px', borderBottom: '1px solid var(--card-border)', fontWeight: 'bold' }}>
+                    การแจ้งเตือน
+                  </div>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        ไม่มีการแจ้งเตือนใหม่
+                      </div>
+                    ) : (
+                      notifications.map(n => (
+                        <div 
+                          key={n.id} 
+                          onClick={() => { if (!n.is_read) handleMarkNotificationRead(n.id); }}
+                          style={{
+                            padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            background: n.is_read ? 'transparent' : 'rgba(255,255,255,0.03)',
+                            cursor: 'pointer', transition: 'background 0.2s'
+                          }}
+                        >
+                          <div style={{ fontSize: '14px', marginBottom: '4px', opacity: n.is_read ? 0.7 : 1 }}>
+                            {n.message || n.content || 'มีแจ้งเตือนใหม่'}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {new Date(n.created_at).toLocaleDateString('th-TH')} {new Date(n.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="avatar-btn" onClick={() => navigate('/profile/settings')}>
               {user?.avatar ? <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : '🦊'}
             </div>

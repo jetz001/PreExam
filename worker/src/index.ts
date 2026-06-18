@@ -1302,6 +1302,12 @@ export default {
           if ("error" in auth) return auth.error;
           const myId = auth.userId;
 
+          if (url.pathname === "/api/chat/unread-count" && request.method === "GET") {
+              const received = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "receiver_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+              const unreadCount = received.filter((m: any) => !m.is_read).length;
+              return json({ success: true, data: { unread: unreadCount } });
+          }
+
           if (url.pathname === "/api/chat/inbox/conversations" && request.method === "GET") {
               const sent = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "sender_id" }, op: "EQUAL", value: { stringValue: myId } } } });
               const received = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "receiver_id" }, op: "EQUAL", value: { stringValue: myId } } } });
@@ -1368,6 +1374,51 @@ export default {
               
               return json({ success: true, data: chatHistory });
           }
+        }
+
+        // Notifications
+        if (url.pathname.startsWith("/api/notifications")) {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const myId = auth.userId;
+
+            if (url.pathname === "/api/notifications" && request.method === "GET") {
+                const limitStr = url.searchParams.get("limit") || "50";
+                const notifications = await firestore.runQuery({
+                    from: [{ collectionId: "notifications" }],
+                    where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: myId } } },
+                });
+                // Sort descending manually (or through firestore query if supported)
+                notifications.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                return json({ success: true, data: notifications.slice(0, parseInt(limitStr, 10)) });
+            }
+
+            if (url.pathname === "/api/notifications/unread-count" && request.method === "GET") {
+                const notifications = await firestore.runQuery({
+                    from: [{ collectionId: "notifications" }],
+                    where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: myId } } }
+                });
+                const unreadCount = notifications.filter((n: any) => !n.is_read).length;
+                return json({ success: true, data: { unread: unreadCount } });
+            }
+
+            if (url.pathname === "/api/notifications/read" && request.method === "POST") {
+                const body = await readJson(request) as any;
+                if (body.id) {
+                    await firestore.updateDocument("notifications", body.id, { is_read: true });
+                } else {
+                    // Mark all as read
+                    const notifications = await firestore.runQuery({
+                        from: [{ collectionId: "notifications" }],
+                        where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: myId } } }
+                    });
+                    const unread = notifications.filter((n: any) => !n.is_read);
+                    for (const n of unread) {
+                        await firestore.updateDocument("notifications", n.id, { is_read: true });
+                    }
+                }
+                return json({ success: true });
+            }
         }
 
         // /api/community/threads (GET)
