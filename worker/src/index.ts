@@ -1099,6 +1099,32 @@ export default {
             console.error("Failed to update ranking:", e);
           }
 
+          // XP System Calculation
+          const xpGained = (total_score * 10) + 50;
+          try {
+            const userDoc = await firestore.getDocument("users", auth.userId);
+            if (userDoc) {
+              const currentXp = (Number(userDoc.xp) || 0) + xpGained;
+              
+              // Progressive Level Calculation
+              const currentLevel = userDoc.level || 1;
+              const newLevel = Math.floor((1 + Math.sqrt(1 + 4 * (currentXp / 1000))) / 2);
+
+              const updates: any = { xp: currentXp };
+              if (newLevel > currentLevel) {
+                updates.level = newLevel;
+              }
+              await firestore.updateDocument("users", auth.userId, updates);
+              
+              // Add to examResult for frontend display
+              examResult.xpGained = xpGained;
+              examResult.newTotalXp = currentXp;
+              examResult.levelUp = newLevel > currentLevel ? newLevel : null;
+            }
+          } catch(e) {
+            console.error("Failed to update user XP:", e);
+          }
+
           return json({ success: true, data: examResult }, { status: 201 });
         }
 
@@ -1725,7 +1751,48 @@ export default {
         }
 
         // Stub missing routes to prevent 404 crashes
-        if (url.pathname === "/api/users/stats") return json({ success: true, stats: { total_tests: 0, avg_score: 0 }});
+        if (url.pathname === "/api/users/stats" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+
+          try {
+            const results = await firestore.runQuery({
+              from: [{ collectionId: "exam_results" }],
+              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
+            });
+
+            const totalExams = results.length;
+            const totalScore = results.reduce((acc: number, curr: any) => acc + (Number(curr.score) || 0), 0);
+            const totalQuestions = results.reduce((acc: number, curr: any) => acc + (Number(curr.total_score) || 0), 0);
+            const timeTaken = results.reduce((acc: number, curr: any) => acc + (Number(curr.time_taken) || 0), 0);
+
+            const gamesWon = results.filter((r: any) => {
+              const sc = Number(r.score) || 0;
+              const ts = Number(r.total_score) || 10;
+              return sc >= ts * 0.8;
+            }).length;
+
+            const accuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
+            const avgAnswerTime = totalQuestions > 0 ? (timeTaken / totalQuestions).toFixed(1) : "0";
+
+            return json({
+              success: true,
+              data: {
+                totalExams,
+                totalQuestions,
+                totalScore,
+                timeTaken,
+                gamesWon,
+                accuracy,
+                avgAnswerTime,
+                badgesEarned: 0,
+                friendsCount: 0
+              }
+            });
+          } catch (e) {
+            return json({ success: false, message: "Server error" }, { status: 500 });
+          }
+        }
         
         if (url.pathname === "/api/payments/plans" && request.method === "GET") {
           try {
