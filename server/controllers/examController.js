@@ -74,76 +74,70 @@ exports.submitExam = async (req, res) => {
             time_taken: total_time || 0,
         });
 
-        // Update User Streak, XP & Level
+        // Update User Streak, XP & Level via Firebase Only
         try {
-            const { User: SqlUser } = require('../models');
             const { User: FbUser } = require('../firebaseModels');
             
-            const user = await SqlUser.findByPk(req.user.id);
+            // Assume req.user.id or public_id maps to Firebase document ID
+            const userId = req.user.public_id || req.user.id;
+            const fbUserDoc = await FbUser.findByPk(userId);
 
-            if (user) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+            let currentStreak = 0;
+            let currentXp = 0;
+            let currentLastActive = null;
 
-                const lastActive = user.last_active_at ? new Date(user.last_active_at) : null;
-                if (lastActive) lastActive.setHours(0, 0, 0, 0);
+            if (fbUserDoc) {
+                currentStreak = fbUserDoc.streak_count || 0;
+                currentXp = fbUserDoc.xp || 0;
+                if (fbUserDoc.last_active_at) {
+                    currentLastActive = new Date(fbUserDoc.last_active_at);
+                }
+            }
 
-                let newStreak = user.streak_count || 0;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-                if (!lastActive) {
-                    newStreak = 1;
-                } else if (today.getTime() === lastActive.getTime()) {
-                    // Same day, keep streak
-                } else if (today.getTime() - lastActive.getTime() === 86400000) {
-                    newStreak += 1;
+            if (currentLastActive) currentLastActive.setHours(0, 0, 0, 0);
+
+            let newStreak = currentStreak;
+
+            if (!currentLastActive) {
+                newStreak = 1;
+            } else if (today.getTime() === currentLastActive.getTime()) {
+                // Same day, keep streak
+            } else if (today.getTime() - currentLastActive.getTime() === 86400000) {
+                newStreak += 1;
+            } else {
+                newStreak = 1;
+            }
+
+            // XP Calculation
+            const earnedXP = score * 10;
+            const newXP = currentXp + earnedXP;
+            
+            // Calculate Level based on Total XP
+            let newLevel = 1;
+            while (true) {
+                const reqXp = ((newLevel * (newLevel + 1)) / 2) * 100;
+                if (newXP >= reqXp) {
+                    newLevel++;
                 } else {
-                    newStreak = 1;
+                    break;
                 }
+            }
 
-                // XP Calculation
-                const earnedXP = score * 10;
-                const newXP = (user.xp || 0) + earnedXP;
-                
-                // Calculate Level based on Total XP
-                // Formula: XP required for level N = (N*(N-1)/2) * 100
-                let newLevel = 1;
-                while (true) {
-                    const reqXp = ((newLevel * (newLevel + 1)) / 2) * 100;
-                    if (newXP >= reqXp) {
-                        newLevel++;
-                    } else {
-                        break;
-                    }
-                }
+            const updateData = {
+                streak_count: newStreak,
+                last_active_at: new Date().toISOString(),
+                xp: newXP,
+                level: newLevel
+            };
 
-                // Update SQL User
-                await user.update({
-                    streak_count: newStreak,
-                    last_active_at: new Date(),
-                    xp: newXP,
-                    level: newLevel
-                });
-
-                // Update Firebase User
-                try {
-                    const fbUserDoc = await FbUser.findByPk(user.public_id || req.user.id);
-                    if (fbUserDoc) {
-                        await fbUserDoc.update({
-                            xp: newXP,
-                            level: newLevel,
-                            streak_count: newStreak
-                        });
-                    } else {
-                        // If doesn't exist, create/upsert it
-                        await FbUser.collection.doc(String(user.public_id || req.user.id)).set({
-                            xp: newXP,
-                            level: newLevel,
-                            streak_count: newStreak
-                        }, { merge: true });
-                    }
-                } catch (fbErr) {
-                    console.warn('Skipping Firebase User update:', fbErr.message);
-                }
+            // Update or Create Firebase User
+            if (fbUserDoc) {
+                await fbUserDoc.update(updateData);
+            } else {
+                await FbUser.collection.doc(String(userId)).set(updateData, { merge: true });
             }
         } catch (streakErr) {
             console.warn('Skipping user stats update:', streakErr.message);
