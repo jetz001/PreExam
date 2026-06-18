@@ -96,6 +96,10 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                 alert('โปรดตั้งชื่อห้อง');
                 return;
             }
+            if (step === 2 && questionSource === 'custom' && customQuestions.length === 0) {
+                alert('โปรดเพิ่มข้อสอบอย่างน้อย 1 ข้อ หรือนำเข้าไฟล์ CSV');
+                return;
+            }
             setStep(step + 1);
         } else {
             onCreate({ ...formData, custom_questions: questionSource === 'custom' ? customQuestions : null });

@@ -46,8 +46,8 @@ const BusinessSettings = () => {
                     setBusinessInfo(res.business);
                     setProfileData(prev => ({
                         ...prev,
-                        page_name: res.business.name || '',
-                        page_tagline: res.business.tagline || ''
+                        page_name: res.business?.name || '',
+                        page_tagline: res.business?.tagline || ''
                     }));
                 }
             } catch (err) {
