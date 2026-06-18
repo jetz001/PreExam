@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import chatApi from '../../services/chatApi';
 
 const ProfileMessages = ({ user }) => {
+    const location = useLocation();
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeChat, setActiveChat] = useState(null);
@@ -13,7 +15,27 @@ const ProfileMessages = ({ user }) => {
     const fetchConversations = async () => {
         try {
             const data = await chatApi.getInboxConversations();
-            setConversations(data || []);
+            let finalData = data || [];
+            
+            // If navigated from "Say Hi" in Friends page
+            if (location.state?.friend) {
+                const targetFriend = location.state.friend;
+                const exists = finalData.find(c => c.friend.id === targetFriend.id);
+                if (!exists) {
+                    // Add dummy conversation to top so we can chat with them
+                    finalData = [{
+                        friend: targetFriend,
+                        lastMessage: { content: 'เริ่มบทสนทนาใหม่' },
+                        isRead: true
+                    }, ...finalData];
+                }
+                // Only select automatically if there's no active chat yet
+                if (!activeChat) {
+                    handleSelectChat(targetFriend);
+                }
+            }
+            
+            setConversations(finalData);
         } catch (err) {
             console.error('Error fetching conversations:', err);
         } finally {
@@ -23,7 +45,7 @@ const ProfileMessages = ({ user }) => {
 
     useEffect(() => {
         fetchConversations();
-    }, []);
+    }, [location.state?.friend]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -33,7 +55,7 @@ const ProfileMessages = ({ user }) => {
         scrollToBottom();
     }, [messages]);
 
-    const handleSelectChat = async (friend) => {
+    async function handleSelectChat(friend) {
         setActiveChat(friend);
         setLoadingMessages(true);
         try {

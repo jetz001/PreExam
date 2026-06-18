@@ -77,7 +77,7 @@ const ProfileFriends = () => {
                                             {friend.isOnline ? 'Online' : 'Offline'}
                                         </div>
                                     </div>
-                                    <button onClick={() => navigate('/profile/messages')} className="btn-outline" style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'rgba(255,255,255,0.1)' }}>ทักทาย</button>
+                                    <button onClick={() => navigate('/profile/messages', { state: { friend } })} className="btn-outline" style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'rgba(255,255,255,0.1)' }}>ทักทาย</button>
                                 </div>
                             )) : (
                                 <div style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '10px' }}>
