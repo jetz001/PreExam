@@ -1239,24 +1239,7 @@ export default {
         }
 
         if (url.pathname === "/api/bookmarks") return json({ success: true, data: [] });
-        const userThreadsMatch = url.pathname.match(/^\/api\/community\/threads\/user\/([a-zA-Z0-9_-]+)$/);
-        if (userThreadsMatch && request.method === "GET") {
-          try {
-            const userId = userThreadsMatch[1];
-            const results = await firestore.runQuery({
-              from: [{ collectionId: "threads" }],
-              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: userId } } }
-            });
-            results.sort((a: any, b: any) => {
-              const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
-              const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
-              return tB - tA;
-            });
-            return json({ success: true, threads: results });
-          } catch (e) {
-            return json({ success: false, threads: [] });
-          }
-        }
+
         if (url.pathname.startsWith("/api/chat")) {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
@@ -1459,6 +1442,40 @@ export default {
           }
           
           return json(threadDoc); // Note: frontend expects raw thread data here
+        }
+
+        // /api/community/threads/user/:userId (GET)
+        const userThreadsMatch = url.pathname.match(/^\/api\/community\/threads\/user\/([a-zA-Z0-9_-]+)$/);
+        if (userThreadsMatch && request.method === "GET") {
+          const userId = userThreadsMatch[1];
+          const threads = await firestore.runQuery({
+            from: [{ collectionId: "threads" }],
+            where: {
+              fieldFilter: {
+                field: { fieldPath: "user_id" },
+                op: "EQUAL",
+                value: { stringValue: userId }
+              }
+            }
+          });
+          threads.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          return json({ success: true, data: threads });
+        }
+
+        // /api/community/threads/:id (DELETE)
+        if (threadIdMatch && request.method === "DELETE") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          
+          const threadDoc = await firestore.getDocument("threads", threadIdMatch[1]);
+          if (!threadDoc) return notFound();
+          
+          if (threadDoc.user_id !== auth.userId) {
+              return json({ success: false, message: "Unauthorized" }, { status: 403 });
+          }
+          
+          await firestore.deleteDocument("threads", threadIdMatch[1]);
+          return json({ success: true });
         }
 
         // /api/community/comments/:threadId (GET)
