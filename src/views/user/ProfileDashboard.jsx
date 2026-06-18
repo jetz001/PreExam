@@ -11,6 +11,14 @@ const ProfileDashboard = () => {
   const [isExpGuideOpen, setIsExpGuideOpen] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const [hasClaimed, setHasClaimed] = useState(false);
+  const [localStreak, setLocalStreak] = useState(0);
+
+  // Sync initial user state
+  useEffect(() => {
+    if (user) {
+      setLocalStreak(user.streak_count || 0);
+    }
+  }, [user]);
 
   // Check if claimed today locally (best effort)
   useEffect(() => {
@@ -45,6 +53,9 @@ const ProfileDashboard = () => {
       if (data.success) {
         toast.success(`ยินดีด้วย! คุณได้รับ ${data.data.xpGained} EXP 🔥`);
         setHasClaimed(true);
+        if (data.data.newStreak !== undefined) {
+          setLocalStreak(data.data.newStreak);
+        }
         if (data.data.levelUp) {
           setTimeout(() => toast.success(`🎉 เลเวลอัปเป็น LVL ${data.data.levelUp}!`), 1000);
         }
@@ -85,7 +96,7 @@ const ProfileDashboard = () => {
           <div className="profile-chips">
             <span className="chip yellow">🏆 Champion</span>
             <span className="chip teal">⚡ Speed Runner</span>
-            {user?.streak_count > 0 && <span className="chip red">🔥 {user.streak_count}-Day Streak</span>}
+            {localStreak > 0 && <span className="chip red">🔥 {localStreak}-Day Streak</span>}
           </div>
         </div>
         <div className="profile-stats">
@@ -113,7 +124,7 @@ const ProfileDashboard = () => {
         <div className="streak-card">
           <div className="streak-fire">🔥</div>
           <div>
-            <div className="streak-num">{user?.streak_count || 0}</div>
+            <div className="streak-num">{localStreak}</div>
             <div className="streak-label">DAY STREAK — ไม่มีวันหยุด!</div>
             <button 
               className="btn-play" 
