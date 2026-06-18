@@ -102,6 +102,7 @@ const ProfileBookmarks = () => {
                                         }}>
                                             {bm.target_type === 'thread' ? 'กระทู้' : 'ข้อสอบ'}
                                         </span>
+                                        <span style={{ color: 'var(--text-muted)' }}>ID: {bm.target_id}</span>
                                         {bm.created_at && (
                                             <span>บันทึกเมื่อ: {new Date(bm.created_at).toLocaleDateString()}</span>
                                         )}
@@ -160,7 +161,9 @@ const ProfileBookmarks = () => {
                         display: 'flex', flexDirection: 'column', overflow: 'hidden'
                     }}>
                         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3 style={{ margin: 0 }}>รายละเอียดข้อสอบ</h3>
+                            <h3 style={{ margin: 0 }}>
+                                รายละเอียดข้อสอบ {selectedQuestion && <span style={{ color: 'var(--text-muted)', fontSize: '14px', marginLeft: '8px', fontWeight: 'normal' }}>(ID: {selectedQuestion.id})</span>}
+                            </h3>
                             <button onClick={() => { setIsQuestionModalOpen(false); setSelectedQuestion(null); }} style={{ background: 'none', border: 'none', fontSize: '24px', color: 'var(--text-muted)', cursor: 'pointer' }}>&times;</button>
                         </div>
                         <div style={{ padding: '20px', overflowY: 'auto' }}>
