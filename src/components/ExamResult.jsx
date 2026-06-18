@@ -223,6 +223,9 @@ const ExamResult = ({ result, onRetry }) => {
                             <div className="text-7xl font-black text-white">
                                 {score} <span className="text-3xl text-white/60">/ {totalScore}</span>
                             </div>
+                            <div className="mt-3 inline-block bg-[#fbbf24]/20 border border-[#fbbf24]/40 rounded-full px-4 py-1 text-[#fbbf24] font-bold text-lg drop-shadow-md">
+                                ✨ ได้รับ +{score * 10} EXP
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">

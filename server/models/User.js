@@ -94,6 +94,14 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: true,
         },
+        xp: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0,
+        },
+        level: {
+            type: DataTypes.INTEGER,
+            defaultValue: 1,
+        },
         // Privacy Settings
         is_public_stats: {
             type: DataTypes.BOOLEAN,

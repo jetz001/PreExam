@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import examService from '../../services/examService';
+import ExpGuideModal from '../../components/ExpGuideModal';
 
 const ProfileDashboard = () => {
   const { user, stats, xpInfo } = useOutletContext();
   const [recentHistory, setRecentHistory] = useState([]);
+  const [isExpGuideOpen, setIsExpGuideOpen] = useState(false);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -26,11 +28,15 @@ const ProfileDashboard = () => {
 
   return (
     <div id="sec-dashboard">
+      <ExpGuideModal isOpen={isExpGuideOpen} onClose={() => setIsExpGuideOpen(false)} />
       {/* Profile Hero */}
       <div className="profile-hero">
         <div className="avatar-big">
           {user?.avatar ? <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : '🦊'}
-          <div className="level-badge">LVL {xpInfo?.level || 1}</div>
+          <div className="level-badge" onClick={() => setIsExpGuideOpen(true)} style={{cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'}}>
+            LVL {xpInfo?.level || user?.level || 1} 
+            <span style={{background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px'}}>?</span>
+          </div>
         </div>
         <div className="profile-info">
           <h1>{displayName}</h1>

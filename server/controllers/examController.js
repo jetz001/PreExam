@@ -74,9 +74,11 @@ exports.submitExam = async (req, res) => {
             time_taken: total_time || 0,
         });
 
-        // Update User Streak & Last Active
+        // Update User Streak, XP & Level
         try {
             const { User: SqlUser } = require('../models');
+            const { User: FbUser } = require('../firebaseModels');
+            
             const user = await SqlUser.findByPk(req.user.id);
 
             if (user) {
@@ -89,25 +91,62 @@ exports.submitExam = async (req, res) => {
                 let newStreak = user.streak_count || 0;
 
                 if (!lastActive) {
-                    // First time
                     newStreak = 1;
                 } else if (today.getTime() === lastActive.getTime()) {
                     // Same day, keep streak
                 } else if (today.getTime() - lastActive.getTime() === 86400000) {
-                    // Consecutive day
                     newStreak += 1;
                 } else {
-                    // Streak broken
                     newStreak = 1;
                 }
 
+                // XP Calculation
+                const earnedXP = score * 10;
+                const newXP = (user.xp || 0) + earnedXP;
+                
+                // Calculate Level based on Total XP
+                // Formula: XP required for level N = (N*(N-1)/2) * 100
+                let newLevel = 1;
+                while (true) {
+                    const reqXp = ((newLevel * (newLevel + 1)) / 2) * 100;
+                    if (newXP >= reqXp) {
+                        newLevel++;
+                    } else {
+                        break;
+                    }
+                }
+
+                // Update SQL User
                 await user.update({
                     streak_count: newStreak,
-                    last_active_at: new Date()
+                    last_active_at: new Date(),
+                    xp: newXP,
+                    level: newLevel
                 });
+
+                // Update Firebase User
+                try {
+                    const fbUserDoc = await FbUser.findByPk(user.public_id || req.user.id);
+                    if (fbUserDoc) {
+                        await fbUserDoc.update({
+                            xp: newXP,
+                            level: newLevel,
+                            streak_count: newStreak
+                        });
+                    } else {
+                        // If doesn't exist, create/upsert it
+                        await FbUser.collection.doc(String(user.public_id || req.user.id)).set({
+                            xp: newXP,
+                            level: newLevel,
+                            streak_count: newStreak
+                        }, { merge: true });
+                    }
+                } catch (fbErr) {
+                    console.warn('Skipping Firebase User update:', fbErr.message);
+                }
             }
         } catch (streakErr) {
-            console.warn('Skipping streak update:', streakErr.message);
+            console.warn('Skipping user stats update:', streakErr.message);
         }
 
         res.status(201).json({ success: true, data: examResult });
