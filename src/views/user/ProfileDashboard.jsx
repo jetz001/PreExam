@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import examService from '../../services/examService';
+import api from '../../services/api';
 import ExpGuideModal from '../../components/ExpGuideModal';
 import toast from 'react-hot-toast';
 
@@ -39,16 +40,8 @@ const ProfileDashboard = () => {
     if (isClaiming || hasClaimed) return;
     setIsClaiming(true);
     try {
-      const token = localStorage.getItem('token');
-      const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.NEXT_PUBLIC_VITE_API_URL || "https://preexam-api.jimwar02.workers.dev";
-      const res = await fetch(`${apiUrl}/api/users/claim-streak`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
+      const res = await api.post('/users/claim-streak');
+      const data = res.data;
       if (data.success) {
         toast.success(`ยินดีด้วย! คุณได้รับ ${data.data.xpGained} EXP 🔥`);
         setHasClaimed(true);
