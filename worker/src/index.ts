@@ -2624,6 +2624,15 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/ads/wallet" && request.method === "GET") {
             return json({ success: true, data: { balance: 0, transactions: [] } });
         }
+        if (url.pathname === "/api/business/inbox" && request.method === "GET") {
+            return json({ success: true, data: [] });
+        }
+        if (url.pathname === "/api/ads/my-ads" && request.method === "GET") {
+            return json({ success: true, data: [] });
+        }
+        if (url.pathname === "/api/ads/wallet/transactions" && request.method === "GET") {
+            return json({ success: true, data: [] });
+        }
 
         if (url.pathname === "/api/business/posts" && request.method === "GET") {
             try {
