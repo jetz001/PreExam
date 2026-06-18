@@ -3,6 +3,8 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useInView } from 'react-intersection-observer';
 import { MessageCircle, Heart, Share2, MoreVertical, Store } from 'lucide-react';
 import communityService from '../../services/communityService';
+import friendService from '../../services/friendService';
+import { useAuth } from '../../context/AuthContext';
 
 const CATEGORY_MAP = {
     all: 'ทั้งหมด',
@@ -31,6 +33,8 @@ const PLAYFUL_COLORS = [
 
 const CommunityFeed = ({ onThreadSelect, onBurst }) => {
     const [categoryFilter, setCategoryFilter] = useState('all');
+    const [activeDropdown, setActiveDropdown] = useState(null);
+    const { user } = useAuth();
 
     const { ref, inView } = useInView();
 
@@ -60,6 +64,18 @@ const CommunityFeed = ({ onThreadSelect, onBurst }) => {
         return `${path.startsWith('/') ? '' : '/'}${path}`;
     };
 
+    const handleAddFriend = async (e, friendId) => {
+        e.stopPropagation();
+        setActiveDropdown(null);
+        try {
+            await friendService.sendRequest(friendId);
+            alert('ส่งคำขอเป็นเพื่อนเรียบร้อยแล้ว');
+        } catch (err) {
+            console.error(err);
+            alert('ไม่สามารถส่งคำขอได้ หรือส่งคำขอไปแล้ว');
+        }
+    };
+
     const renderPost = (post) => {
         const catColor = CATEGORY_COLORS[post.category] || '#4361ee';
         const colorIndex = post.id ? String(post.id).charCodeAt(0) % PLAYFUL_COLORS.length : 0;
@@ -86,8 +102,23 @@ const CommunityFeed = ({ onThreadSelect, onBurst }) => {
                         </div>
                         <div className="post-tm">{new Date(post.created_at).toLocaleString('th-TH')}</div>
                     </div>
-                    <div className="post-more" onClick={(e) => e.stopPropagation()}>
+                    <div className="post-more" onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === post.id ? null : post.id); }} style={{position: 'relative'}}>
                         <MoreVertical size={16} />
+                        {activeDropdown === post.id && (
+                            <div className="absolute right-0 top-6 bg-[#2a2a4a] border border-[#3a3a5a] rounded-xl shadow-lg z-50 overflow-hidden min-w-[150px]">
+                                {user && user.id !== post.user_id && (
+                                    <div 
+                                        className="px-4 py-3 hover:bg-[#3a3a5a] cursor-pointer text-sm flex items-center gap-2"
+                                        onClick={(e) => handleAddFriend(e, post.user_id)}
+                                    >
+                                        ➕ เพิ่มเพื่อน
+                                    </div>
+                                )}
+                                <div className="px-4 py-3 hover:bg-[#3a3a5a] cursor-pointer text-sm text-gray-400" onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }}>
+                                    ปิดเมนู
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -75,11 +75,6 @@ const CommunityRightBar = ({ onBurst, user }) => {
         fetchTrending();
     }, []);
 
-    const handleDailyChallenge = () => {
-        if (typeof onBurst === 'function') onBurst();
-        // Navigate to daily challenge
-        navigate('/exam/daily');
-    };
 
     return (
         <div>
@@ -119,8 +114,10 @@ const CommunityRightBar = ({ onBurst, user }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {friends.slice(0, 5).map((f, i) => (
                             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-lighter)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{f.avatar || '👤'}</div>
-                                <div style={{ fontSize: '13px' }}>{f.username || f.display_name || 'Friend'}</div>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-lighter)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                    {f.avatar ? <img src={f.avatar.startsWith('http') ? f.avatar : `https://preexam.online${f.avatar}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+                                </div>
+                                <div style={{ fontSize: '13px' }}>{f.display_name || f.username || 'Friend'}</div>
                             </div>
                         ))}
                     </div>
@@ -194,16 +191,6 @@ const CommunityRightBar = ({ onBurst, user }) => {
                 )}
             </div>
 
-            {/* daily challenge */}
-            <div className="daily pcard" style={{ animationDelay: '.13s' }}>
-                <div className="pc-head" style={{ color: 'var(--c-yellow)' }}>⚡ Daily Challenge</div>
-                <span className="daily-icon">🎯</span>
-                <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Quiz ประจำวันนี้</div>
-                <div style={{ fontSize: '12px', color: 'var(--c-muted)', marginBottom: '4px' }}>ภูมิศาสตร์โลก · 10 ข้อ · 5 นาที</div>
-                <div style={{ fontSize: '11px', color: 'var(--c-muted)', marginBottom: '2px' }}>🏅 รางวัล: +200 XP + Badge พิเศษ</div>
-                <div style={{ fontSize: '11px', color: 'rgba(247,37,133,.8)', fontWeight: 700, marginBottom: '2px' }}>⏳ หมดเวลาใน 08:24:17</div>
-                <button className="play-btn" onClick={handleDailyChallenge}>▶ เริ่มเลย!</button>
-            </div>
         </div>
     );
 };

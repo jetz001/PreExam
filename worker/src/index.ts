@@ -1898,6 +1898,115 @@ export default {
             return json({ success: false, message: "Server error" }, { status: 500 });
           }
         }
+        // --- FRIENDS API ---
+        if (url.pathname.startsWith("/api/friends")) {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const myId = auth.userId;
+          
+          if (url.pathname === "/api/friends/request" && request.method === "POST") {
+             const body = await readJson(request) as any;
+             const friendId = body.friendId;
+             if (!friendId || friendId === myId) return json({ success: false, message: "Invalid friend ID" }, { status: 400 });
+             
+             const reqs = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "requester_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             
+             const exists = reqs.find((r: any) => r.target_id === friendId) || tgts.find((r: any) => r.requester_id === friendId);
+             
+             if (exists) return json({ success: false, message: "Request already exists or already friends" }, { status: 400 });
+             
+             const newReq = await firestore.createDocument("friends", {
+                 requester_id: myId,
+                 target_id: friendId,
+                 status: "pending",
+                 created_at: new Date().toISOString()
+             });
+             return json({ success: true, data: newReq });
+          }
+          
+          if (url.pathname === "/api/friends/accept" && request.method === "POST") {
+             const body = await readJson(request) as any;
+             const friendId = body.friendId;
+             
+             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const req = tgts.find((r: any) => r.requester_id === friendId && r.status === "pending");
+             
+             if (!req) return json({ success: false, message: "Request not found" }, { status: 404 });
+             
+             await firestore.updateDocument("friends", req.id, { status: "accepted" });
+             return json({ success: true });
+          }
+          
+          const removeMatch = url.pathname.match(/^\/api\/friends\/remove\/(.+)$/);
+          if (removeMatch && request.method === "DELETE") {
+             const friendId = removeMatch[1];
+             const reqs = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "requester_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             
+             const toDelete = [
+                 ...reqs.filter((r: any) => r.target_id === friendId),
+                 ...tgts.filter((r: any) => r.requester_id === friendId)
+             ];
+             
+             for (const doc of toDelete) {
+                 await firestore.deleteDocument("friends", doc.id);
+             }
+             return json({ success: true });
+          }
+          
+          if (url.pathname === "/api/friends/list" && request.method === "GET") {
+             const reqs = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "requester_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             
+             const friendsList = [
+                 ...reqs.filter((r: any) => r.status === "accepted"),
+                 ...tgts.filter((r: any) => r.status === "accepted")
+             ];
+             const friendIds = friendsList.map((f: any) => f.requester_id === myId ? f.target_id : f.requester_id);
+             
+             const friendProfiles = await Promise.all(friendIds.map(async (fid: string) => {
+                 const doc = await firestore.getDocument("users", fid);
+                 if (!doc) return null;
+                 return { id: fid, display_name: doc.display_name, avatar: doc.avatar, level: doc.level };
+             }));
+             
+             return json({ success: true, data: friendProfiles.filter(Boolean) });
+          }
+          
+          if (url.pathname === "/api/friends/pending" && request.method === "GET") {
+             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const pendingList = tgts.filter((r: any) => r.status === "pending");
+             
+             const pendingProfiles = await Promise.all(pendingList.map(async (f: any) => {
+                 const doc = await firestore.getDocument("users", f.requester_id);
+                 if (!doc) return null;
+                 return { id: f.requester_id, display_name: doc.display_name, avatar: doc.avatar, level: doc.level, request_id: f.id };
+             }));
+             
+             return json({ success: true, data: pendingProfiles.filter(Boolean) });
+          }
+          
+          const checkMatch = url.pathname.match(/^\/api\/friends\/check\/(.+)$/);
+          if (checkMatch && request.method === "GET") {
+             const friendId = checkMatch[1];
+             const reqs = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "requester_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             
+             const r1 = reqs.find((r: any) => r.target_id === friendId);
+             const r2 = tgts.find((r: any) => r.requester_id === friendId);
+             
+             if (r1) {
+                 return json({ success: true, status: r1.status === "accepted" ? "friends" : "pending_sent" });
+             } else if (r2) {
+                 return json({ success: true, status: r2.status === "accepted" ? "friends" : "pending_received" });
+             } else {
+                 return json({ success: true, status: "none" });
+             }
+          }
+          
+          return json({ success: false, message: "Not found in friends API" }, { status: 404 });
+        }
 
         // /api/users/claim-streak
         if (url.pathname === "/api/users/claim-streak" && request.method === "POST") {
