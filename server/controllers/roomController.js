@@ -81,7 +81,20 @@ exports.getRooms = async (req, res) => {
                                        .limit(50)
                                        .get();
 
-        let filteredDocs = snapshot.docs.filter(doc => ['waiting', 'in_progress'].includes(doc.data().status));
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+        const now = Date.now();
+
+        let filteredDocs = snapshot.docs.filter(doc => {
+            const data = doc.data();
+            if (!['waiting', 'in_progress'].includes(data.status)) return false;
+            
+            // Check if room is older than 24 hours
+            if (data.created_at) {
+                const createdAt = new Date(data.created_at).getTime();
+                if (now - createdAt > ONE_DAY_MS) return false;
+            }
+            return true;
+        });
         filteredDocs = filteredDocs.slice(0, limit);
 
         const data = await Promise.all(filteredDocs.map(async doc => {
@@ -131,6 +144,12 @@ exports.joinRoom = async (req, res) => {
 
         const roomDoc = snapshot.docs[0];
         const room = roomDoc.data();
+
+        // Check if room is older than 24 hours
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+        if (room.created_at && Date.now() - new Date(room.created_at).getTime() > ONE_DAY_MS) {
+            return res.status(403).json({ success: false, message: 'ห้องสอบนี้หมดอายุแล้ว (เกิน 24 ชั่วโมง)' });
+        }
 
         if (room.password) {
             if (!password) return res.status(403).json({ success: false, message: 'Password required', requirePassword: true });
