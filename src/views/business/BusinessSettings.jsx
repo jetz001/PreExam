@@ -397,7 +397,7 @@ const BusinessSettings = () => {
                                         const res = await businessApi.deleteBusiness();
                                         if (res.success) {
                                             toast.success('Business page deleted successfully');
-                                            navigate('/dashboard');
+                                            navigate('/business/welcome');
                                         } else {
                                             toast.error(res.message || 'Failed to delete business page');
                                         }
