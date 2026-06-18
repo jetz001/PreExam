@@ -672,8 +672,36 @@
 /* Responsive */
 @media (max-width: 768px) {
   .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
   .profile-stats { display: none; }
-  .content { padding: 16px; }
-  .sidebar { width: 60px; }
-  .main { margin-left: 60px; }
+  .content { padding: 16px; overflow-x: hidden; }
+  .sidebar { width: 60px; z-index: 1000; }
+  .main { margin-left: 60px; max-width: calc(100vw - 60px); overflow-x: hidden; }
+  
+  /* Topbar */
+  .topbar { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; }
+  .topbar-right { flex-wrap: wrap; justify-content: space-between; gap: 10px; width: 100%; }
+  .xp-bar-wrap { flex: 1; min-width: 100%; margin-bottom: 4px; justify-content: space-between; }
+  
+  /* Hero */
+  .profile-hero { flex-direction: column; text-align: center; gap: 16px; padding: 20px 16px; }
+  .profile-hero::before { display: none; }
+  .profile-chips { justify-content: center; }
+  
+  /* Streak */
+  .streak-card { flex-direction: column; text-align: center; gap: 12px; }
+  .streak-card > div { display: flex; flex-direction: column; align-items: center; }
+  .btn-play { width: 100%; justify-content: center; }
+
+  /* Leaderboard & Activity */
+  .lb-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+  .act-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
 }
+
+@media (max-width: 480px) {
+  .grid-3 { grid-template-columns: 1fr; }
+  .xp-text { font-size: 10px; }
+  .topbar-title { font-size: 18px; justify-content: center; }
+  .badges-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
