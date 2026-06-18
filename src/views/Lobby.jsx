@@ -75,7 +75,7 @@ export default function Lobby() {
       }
     } catch (error) {
       console.error('Error creating room:', error);
-      alert('Failed to create room');
+      alert(error.response?.data?.message || 'Failed to create room');
     }
   };
 

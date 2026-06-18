@@ -501,6 +501,10 @@ export default {
         // Fallback or empty if query fails
       }
 
+      if (selectedIds.length === 0) {
+        return json({ success: false, message: "No questions found for the selected subject/category." }, { status: 400 });
+      }
+
       const room = await firestore.createDocument("exam_rooms", {
         code,
         name,

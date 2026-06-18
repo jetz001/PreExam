@@ -508,7 +508,7 @@ const Room = () => {
                                         // Emit that user is finished to server so dashboard shows 100%
                                         socket.emit('submit_progress', { roomId: id, userId: currentUser.id, questionIndex: room.questions.length });
                                     }}
-                                    timeLimit={room.settings?.time_limit || 60}
+                                    timeLimit={typeof room.settings === 'string' ? JSON.parse(room.settings).time_limit : room.settings?.time_limit || 60}
                                 />
                             )
                         ) : (
@@ -540,7 +540,7 @@ const Room = () => {
                             roomId={id}
                             userId={currentUser.id}
                             onFinish={handleExamFinish}
-                            timeLimit={room.settings?.time_limit}
+                            timeLimit={typeof room.settings === 'string' ? JSON.parse(room.settings).time_limit : room.settings?.time_limit}
                         />
                     )}
                 </div>
