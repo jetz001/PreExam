@@ -175,26 +175,28 @@ exports.updateSettings = async (req, res) => {
 
 exports.getStats = async (req, res) => {
     try {
-        // ... (Existing logic can stay or be replaced, but let's keep it simple and redirect to new methods if needed, or just return basic summary)
         const results = await ExamResult.findAll({
             where: { user_id: req.user.id }
         });
 
-        const totalExams = results.length;
+        if (!results || !Array.isArray(results)) {
+            return res.json({ success: true, data: { totalExams: 0, totalQuestions: 0, totalScore: 0, timeTaken: 0, gamesWon: 0, accuracy: 0, avgAnswerTime: 0, badgesEarned: 0, friendsCount: 0 } });
+        }
 
-        // Let's rely on getHeatmapStats and getRadarStats for main dashboard.
-        // This endpoint can return the "Key Stats" box data.
-        const totalScore = results.reduce((acc, curr) => acc + (curr.score || 0), 0);
-        const totalQuestions = results.reduce((acc, curr) => acc + (curr.total_score || 0), 0); // Assuming total_score is the max possible score for the exam
-        const timeTaken = results.reduce((acc, curr) => acc + (curr.time_taken || 0), 0);
+        const validResults = results.filter(r => r !== null && typeof r === 'object');
+        const totalExams = validResults.length;
+
+        const totalScore = validResults.reduce((acc, curr) => acc + (Number(curr.score) || 0), 0);
+        const totalQuestions = validResults.reduce((acc, curr) => acc + (Number(curr.total_score) || 0), 0);
+        const timeTaken = validResults.reduce((acc, curr) => acc + (Number(curr.time_taken) || 0), 0);
         
-        // Let's say a game is "won" if score >= 80%
-        const gamesWon = results.filter(r => r.score >= (r.total_score || 10) * 0.8).length;
+        const gamesWon = validResults.filter(r => {
+            const sc = Number(r.score) || 0;
+            const ts = Number(r.total_score) || 10;
+            return sc >= ts * 0.8;
+        }).length;
 
-        // Calculate Accuracy
         const accuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
-
-        // Calculate Average Answer Time (assuming time_taken is in seconds)
         const avgAnswerTime = totalQuestions > 0 ? (timeTaken / totalQuestions).toFixed(1) : 0;
 
         res.json({
@@ -212,7 +214,7 @@ exports.getStats = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
+        console.error('getStats Error:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };

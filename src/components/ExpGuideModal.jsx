@@ -74,7 +74,7 @@ const ExpGuideModal = ({ isOpen, onClose }) => {
 
                     <div className="mt-8 text-center">
                         <p className="text-xs text-gray-400 dark:text-gray-500">
-                            * XP ที่ต้องใช้ในการอัปเลเวลถัดไป = เลเวลปัจจุบัน x 100
+                            * XP ที่ต้องใช้ในการอัปเลเวลถัดไป = เลเวลปัจจุบัน x 1000
                         </p>
                     </div>
                 </div>

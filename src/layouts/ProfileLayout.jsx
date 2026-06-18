@@ -33,19 +33,49 @@ const ProfileLayout = () => {
 
         if (resStats.success && resStats.data) {
           setStats({ ...resStats.data, ranking: resRanking?.data || { total_score: 0 } });
-          // Calculate XP (1 question = 10 XP roughly, or totalScore * 10)
-          // Since getStats returns totalQuestions, timeTaken, totalExams. Let's say 1 Exam = 100 XP, 1 Question = 10 XP
-          const calculatedXP = (resStats.data.totalExams * 50) + (resStats.data.totalQuestions * 10);
-          const level = Math.floor(calculatedXP / 1000) + 1;
-          const nextLevelXP = level * 1000;
-          const currentLevelXP = calculatedXP % 1000;
-          const percentage = (currentLevelXP / 1000) * 100;
+          // Calculate XP using user document's direct xp and level
+          let currentXP = 0;
+          let level = 1;
           
-          setXpInfo({ currentXP: calculatedXP, nextLevelXP, level, percentage });
+          if (currentUser && currentUser.xp !== undefined) {
+              currentXP = currentUser.xp;
+              level = currentUser.level || 1;
+          } else if (resStats.success && resStats.data) {
+              // Fallback
+              currentXP = (resStats.data.totalExams * 50) + (resStats.data.totalQuestions * 10);
+              level = Math.floor((1 + Math.sqrt(1 + 4 * (currentXP / 500))) / 2);
+          }
+
+          let prevLevelReq = 500 * level * (level - 1);
+          const nextLevelXP = 500 * (level + 1) * level;
+          
+          const xpIntoLevel = currentXP - prevLevelReq;
+          const xpForThisLevel = nextLevelXP - prevLevelReq;
+          const percentage = Math.max(0, Math.min(100, (xpIntoLevel / xpForThisLevel) * 100));
+          
+          setXpInfo({ currentXP, nextLevelXP, level, percentage });
           setTimeout(() => setXpWidth(percentage), 100);
+        } else {
+            // Still calculate XP even if stats failed
+            let currentXP = currentUser?.xp || 0;
+            let level = currentUser?.level || 1;
+            let prevLevelReq = 500 * level * (level - 1);
+            const nextLevelXP = 500 * (level + 1) * level;
+            
+            const xpIntoLevel = currentXP - prevLevelReq;
+            const xpForThisLevel = nextLevelXP - prevLevelReq;
+            const percentage = Math.max(0, Math.min(100, (xpIntoLevel / xpForThisLevel) * 100));
+            setXpInfo({ currentXP, nextLevelXP, level, percentage });
+            setTimeout(() => setXpWidth(percentage), 100);
         }
       } catch (err) {
         console.error('Error fetching profile data', err);
+        // Fallback for XP if error
+        const currentUser = authService.getCurrentUser();
+        let currentXP = currentUser?.xp || 0;
+        let level = currentUser?.level || 1;
+        const nextLevelXP = 500 * (level + 1) * level;
+        setXpInfo({ currentXP, nextLevelXP, level, percentage: 0 });
       }
     };
     

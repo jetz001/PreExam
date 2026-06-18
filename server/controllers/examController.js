@@ -116,15 +116,9 @@ exports.submitExam = async (req, res) => {
             const newXP = currentXp + earnedXP;
             
             // Calculate Level based on Total XP
-            let newLevel = 1;
-            while (true) {
-                const reqXp = ((newLevel * (newLevel + 1)) / 2) * 100;
-                if (newXP >= reqXp) {
-                    newLevel++;
-                } else {
-                    break;
-                }
-            }
+            // Simple Level up formula: Cumulative XP = 500 * N * (N - 1)
+            // Solving for N: N = (1 + sqrt(1 + 4 * (xp / 500))) / 2
+            let newLevel = Math.floor((1 + Math.sqrt(1 + 4 * (newXP / 500))) / 2);
 
             const updateData = {
                 streak_count: newStreak,

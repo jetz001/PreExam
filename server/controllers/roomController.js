@@ -83,18 +83,38 @@ exports.getRooms = async (req, res) => {
 
         const ONE_DAY_MS = 24 * 60 * 60 * 1000;
         const now = Date.now();
+        const batch = firestore.batch();
+        let deletedCount = 0;
 
-        let filteredDocs = snapshot.docs.filter(doc => {
+        let filteredDocs = [];
+        for (const doc of snapshot.docs) {
             const data = doc.data();
-            if (!['waiting', 'in_progress'].includes(data.status)) return false;
             
             // Check if room is older than 24 hours
+            let isExpired = false;
             if (data.created_at) {
                 const createdAt = new Date(data.created_at).getTime();
-                if (now - createdAt > ONE_DAY_MS) return false;
+                if (now - createdAt > ONE_DAY_MS) isExpired = true;
+            } else {
+                // If it has no created_at, it's very old, consider it expired
+                isExpired = true; 
             }
-            return true;
-        });
+
+            if (isExpired) {
+                batch.delete(doc.ref);
+                deletedCount++;
+                continue;
+            }
+
+            if (!['waiting', 'in_progress'].includes(data.status)) continue;
+            
+            filteredDocs.push(doc);
+        }
+        
+        if (deletedCount > 0) {
+            await batch.commit().catch(err => console.error('Failed to delete expired rooms:', err));
+        }
+
         filteredDocs = filteredDocs.slice(0, limit);
 
         const data = await Promise.all(filteredDocs.map(async doc => {
