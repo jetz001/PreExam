@@ -1,8 +1,8 @@
-﻿import api from './api';
+import api from './api';
 
 const notificationApi = {
     getNotifications: async (limit = 50) => {
-        const response = await api.get(/notifications?limit=);
+        const response = await api.get(`/notifications?limit=${limit}`);
         return response.data.data;
     },
     getUnreadCount: async () => {
