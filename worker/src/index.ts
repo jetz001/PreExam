@@ -410,6 +410,7 @@ export default {
 
       const oneDayAgo = oneDayAgoIso();
       const filteredRooms = recentRooms.filter((r) => {
+        if (!r.created_at || r.created_at < oneDayAgo) return false;
         return r.status === "waiting" || r.status === "in_progress" || (r.status === "finished" && r.updated_at >= oneDayAgo);
       });
 
@@ -434,10 +435,20 @@ export default {
         participantCounts.set(rId, count);
       }
 
+      const hostIds = Array.from(new Set(rooms.map((r) => r.host_user_id).filter(Boolean)));
+      const hosts = new Map<string, string>();
+      for (const hid of hostIds) {
+        const u = await firestore.getDocument("users", hid as string);
+        if (u) {
+            hosts.set(hid as string, u.display_name || u.username || 'Unknown');
+        }
+      }
+
       const data = rooms.map((r) => ({
         ...r,
         password: undefined,
         participant_count: participantCounts.get(r.id) || 0,
+        host_name: r.host_name || hosts.get(r.host_user_id) || 'Unknown',
         RoomParticipants: [],
       }));
 

@@ -577,7 +577,7 @@ export default function Lobby() {
                   <div>
                     <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{room.subject}</div>
                     <div style={{ fontSize: '0.75rem', color: '#666', fontWeight: 700, marginTop: '2px' }}>
-                      By {room.Host?.display_name || 'Unknown'}
+                      By {room.host_name || room.Host?.display_name || 'Unknown'}
                     </div>
                     {room.password && <Lock size={12} className="text-gray-400 mt-1" />}
                   </div>
