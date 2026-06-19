@@ -116,6 +116,15 @@ export function toFirestoreDocument(data: any): any {
 
 const queryCache = new Map<string, { data: any, exp: number }>();
 
+function invalidateCollectionCache(collectionPath: string) {
+  if (collectionPath === "system_logs") return;
+  for (const key of queryCache.keys()) {
+    if (key.includes(collectionPath)) {
+      queryCache.delete(key);
+    }
+  }
+}
+
 export class FirestoreClient {
   private baseUrl: string;
 
@@ -161,9 +170,7 @@ export class FirestoreClient {
   }
 
   async createDocument(collectionPath: string, data: any, docId?: string): Promise<any> {
-    if (collectionPath !== "system_logs") {
-      queryCache.clear();
-    }
+    invalidateCollectionCache(collectionPath);
     const doc = toFirestoreDocument(data);
     let path = `/${collectionPath}`;
     let method = "POST";
@@ -180,9 +187,7 @@ export class FirestoreClient {
   }
 
   async updateDocument(collectionPath: string, docId: string, data: any): Promise<any> {
-    if (collectionPath !== "system_logs") {
-      queryCache.clear();
-    }
+    invalidateCollectionCache(collectionPath);
     const doc = toFirestoreDocument(data);
     const updateMask = Object.keys(data)
       .map((k) => `updateMask.fieldPaths=${encodeURIComponent(k)}`)
@@ -196,17 +201,13 @@ export class FirestoreClient {
   }
 
   async deleteDocument(collectionPath: string, docId: string): Promise<void> {
-    if (collectionPath !== "system_logs") {
-      queryCache.clear();
-    }
+    invalidateCollectionCache(collectionPath);
     await this.fetchApi(`/${collectionPath}/${docId}`, { method: "DELETE" });
   }
 
   async batchCreateDocuments(collectionPath: string, dataArray: any[]): Promise<any> {
     if (!dataArray || dataArray.length === 0) return { success: true };
-    if (collectionPath !== "system_logs") {
-      queryCache.clear();
-    }
+    invalidateCollectionCache(collectionPath);
     const writes = dataArray.map(data => {
       const doc = toFirestoreDocument(data);
       const docId = data.id || crypto.randomUUID().replace(/-/g, '');
