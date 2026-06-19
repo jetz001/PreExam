@@ -99,37 +99,6 @@ const handleFileChange = (e) => {
         }
     };
 
-            // Collect Smart Context
-            const context_data = {};
-            const pathParts = location.pathname.split('/');
-            if (location.pathname.includes('/exams/')) {
-                context_data.exam_id = pathParts[pathParts.length - 1];
-            }
-            if (location.pathname.includes('/shop/')) {
-                context_data.shop_id = pathParts[pathParts.length - 1];
-            }
-            // Add more as needed
-
-            await supportService.createTicket({
-                category,
-                subject,
-                description,
-                device_info,
-                context_data
-            });
-
-            toast.success('ส่งเรื่องแจ้งปัญหาแล้ว!');
-            setIsOpen(false);
-            setCategory('');
-            setSubject('');
-            setDescription('');
-        } catch (error) {
-            console.error(error);
-            toast.error('เกิดข้อผิดพลาดในการส่งข้อมูล');
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     return (
         <div className="fixed bottom-28 right-4 md:bottom-24 md:right-6 z-50">
