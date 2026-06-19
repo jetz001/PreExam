@@ -2972,6 +2972,8 @@ if (url.pathname === "/api/legal/policy") {
                     if (body.contact_link !== undefined) updateData.contact_link = body.contact_link;
                     if (body.contact_line_id !== undefined) updateData.contact_line_id = body.contact_line_id;
                     if (body.contact_facebook_url !== undefined) updateData.contact_facebook_url = body.contact_facebook_url;
+                    if (body.logo_image !== undefined) updateData.logo_image = body.logo_image;
+                    if (body.cover_image !== undefined) updateData.cover_image = body.cover_image;
                     
                     const updated = await updateBusiness(env.DB, docId, updateData);
                     return json({ success: true, message: "Business updated successfully", business: updated });

@@ -4,11 +4,11 @@ const adsApi = {
     // --- Sponsor Actions ---
     uploadImage: async (file) => {
         const formData = new FormData();
-        formData.append('image', file);
-        const response = await api.post('/ads/upload', formData, {
+        formData.append('file', file);
+        const response = await api.post('/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
-        return response.data; // { success: true, imageUrl: ... }
+        return response.data; // { success: true, url: ... }
     },
     createAd: async (adData) => {
         const response = await api.post('/ads/create', adData);

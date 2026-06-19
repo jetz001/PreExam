@@ -19,6 +19,8 @@ const BusinessSettings = () => {
         others: []
     });
 
+    const [logoFile, setLogoFile] = useState(null);
+    const [coverFile, setCoverFile] = useState(null);
     const [profileData, setProfileData] = useState({
         page_name: '', // Added for Business Page Name
         page_tagline: '', // Added for Business Page Tagline
@@ -65,7 +67,14 @@ const BusinessSettings = () => {
         setNotifSettings({ ...notifSettings, [e.target.name]: e.target.checked });
     };
 
-    const handleSave = async () => {
+
+    const handleLogoChange = (e) => {
+        if (e.target.files[0]) setLogoFile(e.target.files[0]);
+    };
+    const handleCoverChange = (e) => {
+        if (e.target.files[0]) setCoverFile(e.target.files[0]);
+    };
+const handleSave = async () => {
         setIsSaving(true);
         try {
             // Update User Profile
@@ -75,10 +84,30 @@ const BusinessSettings = () => {
 
             // Update Business Page Info
             if (businessInfo && businessInfo.id) {
-                await businessApi.updateBusiness({
+                let logoUrl = null;
+                let coverUrl = null;
+                
+                if (logoFile) {
+                    const res = await businessApi.uploadImage(logoFile);
+                    if (res.success) logoUrl = res.url;
+                }
+                
+                if (coverFile) {
+                    const res = await businessApi.uploadImage(coverFile);
+                    if (res.success) coverUrl = res.url;
+                }
+                
+                const bizPayload = {
                     name: profileData.page_name,
                     tagline: profileData.page_tagline,
-                });
+                };
+                // Append only if changed
+                if (logoUrl) bizPayload.logo_image = logoUrl;
+                if (coverUrl) bizPayload.cover_image = coverUrl;
+
+                await businessApi.updateBusiness(bizPayload);
+                setLogoFile(null);
+                setCoverFile(null);
             }
 
             toast.success('Business profile updated');
@@ -158,6 +187,31 @@ const BusinessSettings = () => {
             <div className="flex-1 p-8 overflow-y-auto">
                 {activeTab === 'profile' && (
                     <div className="space-y-8 max-w-2xl">
+                        <div>
+                            <h3 className="text-lg font-bold border-b pb-2 mb-4">Page Media (R2)</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Logo Image</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleLogoChange}
+                                        className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 border-4 border-black text-gray-900 dark:text-white"
+                                    />
+                                    {logoFile && <p className="text-xs text-green-600 mt-1">Logo selected</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Cover Image</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleCoverChange}
+                                        className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 border-4 border-black text-gray-900 dark:text-white"
+                                    />
+                                    {coverFile && <p className="text-xs text-green-600 mt-1">Cover selected</p>}
+                                </div>
+                            </div>
+                        </div>
                         <div>
                             <h3 className="text-lg font-bold border-b pb-2 mb-4">Business Page Info</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

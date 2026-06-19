@@ -41,6 +41,16 @@ api.interceptors.response.use(
 );
 
 const businessApi = {
+    // Media Upload
+    uploadImage: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post('/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data; // { success: true, url: ... }
+    },
+
     // Business Profile
     getMyBusiness: async () => {
         const response = await api.get('/my-business');

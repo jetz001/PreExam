@@ -62,7 +62,7 @@ const BusinessDashboard = ({ sponsorId }) => {
             if (!uploadRes.success) throw new Error('Failed to upload slip');
 
             // 2. Submit Top Up
-            await adsApi.topUpWallet(topUpAmount, uploadRes.imageUrl);
+            await adsApi.topUpWallet(topUpAmount, uploadRes.url || uploadRes.imageUrl);
 
             toast.success('Top-up request submitted! Waiting for approval.');
             setIsTopUpModalOpen(false);
