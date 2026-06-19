@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HelpCircle, Headset, X, Send, Paperclip, MessageSquare, Bug, FileText, CreditCard, Lightbulb, ShieldAlert, Flag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import supportService from '../../services/supportService';
+import api from '../../services/api';
 import { toast } from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 
@@ -19,8 +20,16 @@ const FloatingHelpWidget = () => {
     const [category, setCategory] = useState('');
     const [subject, setSubject] = useState('');
     const [description, setDescription] = useState('');
+    const [attachment, setAttachment] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const location = useLocation();
+
+const handleFileChange = (e) => {
+        if (e.target.files[0]) {
+            setAttachment(e.target.files[0]);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -31,12 +40,64 @@ const FloatingHelpWidget = () => {
 
         setIsLoading(true);
         try {
+            let attachment_url = null;
+            if (attachment) {
+                setIsUploading(true);
+                const formData = new FormData();
+                formData.append('file', attachment);
+                const uploadRes = await api.post('/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (uploadRes.data.success) {
+                    attachment_url = uploadRes.data.url;
+                }
+                setIsUploading(false);
+            }
+
             // Collect Auto-Detected Info
             const device_info = {
                 browser: navigator.userAgent,
                 os: navigator.platform,
                 screen_size: `${window.innerWidth}x${window.innerHeight}`
             };
+
+            // Collect Smart Context
+            const context_data = {};
+            const pathParts = location.pathname.split('/');
+            if (location.pathname.includes('/exams/')) {
+                context_data.exam_id = pathParts[pathParts.length - 1];
+            }
+            if (location.pathname.includes('/shop/')) {
+                context_data.shop_id = pathParts[pathParts.length - 1];
+            }
+            
+            if (attachment_url) {
+                context_data.attachment_url = attachment_url; // fallback just in case
+            }
+
+            await supportService.createTicket({
+                category,
+                subject,
+                description,
+                device_info,
+                context_data,
+                attachment_url
+            });
+
+            toast.success('ส่งเรื่องแจ้งปัญหาแล้ว!');
+            setIsOpen(false);
+            setCategory('');
+            setSubject('');
+            setDescription('');
+            setAttachment(null);
+        } catch (error) {
+            console.error(error);
+            toast.error('เกิดข้อผิดพลาดในการส่งข้อมูล');
+        } finally {
+            setIsLoading(false);
+            setIsUploading(false);
+        }
+    };
 
             // Collect Smart Context
             const context_data = {};
@@ -145,12 +206,23 @@ const FloatingHelpWidget = () => {
                                 />
                             </div>
 
+<div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                                    <Paperclip size={14} /> ไฟล์แนบ (ถ้ามี)
+                                </label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="w-full p-2 text-sm text-gray-500 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700"
+                                />
+                            </div>
+
                             <button
-                                type="submit"
-                                disabled={isLoading}
+                                disabled={isLoading || isUploading}
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                             >
-                                {isLoading ? (
+                                {isLoading || isUploading ? (
                                     "กำลังส่ง..."
                                 ) : (
                                     <>

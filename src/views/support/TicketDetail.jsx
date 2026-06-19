@@ -237,6 +237,14 @@ const TicketDetail = () => {
                                     <span className="font-bold text-indigo-900 dark:text-indigo-200">{ticket.user?.display_name} (เริ่มต้น)</span>
                                 </div>
                                 <p className="text-gray-900 dark:text-white whitespace-pre-wrap">{ticket.description}</p>
+                                {ticket.attachment_url && (
+                                    <div className="mt-3">
+                                        <p className="text-xs text-gray-500 mb-1">ไฟล์แนบ:</p>
+                                        <a href={getImageUrl(ticket.attachment_url)} target="_blank" rel="noopener noreferrer">
+                                            <img src={getImageUrl(ticket.attachment_url)} alt="Attachment" className="max-w-[200px] rounded border border-gray-200" />
+                                        </a>
+                                    </div>
+                                )}
                                 <p className="text-[10px] text-indigo-400 mt-2 text-right">
                                     {new Date(ticket.created_at).toLocaleString('th-TH')}
                                 </p>

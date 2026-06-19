@@ -540,6 +540,8 @@ const buildExamRoomRow = (data: Record<string, any>) => {
     host_user_id: data.host_user_id ?? data.host_id ?? null,
     subject: data.subject ?? null,
     category: data.category ?? null,
+    attachment_url: data.attachment_url ?? null,
+    attachment_url: data.attachment_url ?? null,
     max_participants: Number(data.max_participants ?? 20),
     question_count: Number(data.question_count ?? 0),
     settings: parseStructuredValue<Record<string, any>>(data.settings, {}),
@@ -1435,8 +1437,8 @@ export async function createTicket(db: D1Database, data: Record<string, any>) {
     category: data.category ?? null,
   };
   await db
-    .prepare("INSERT INTO tickets (id, user_id, subject, status, created_at, updated_at, ticket_id, description, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    .bind(row.id, row.user_id, row.subject, row.status, row.created_at, row.updated_at, row.ticket_id, row.description, row.category)
+    .prepare("INSERT INTO tickets (id, user_id, subject, status, created_at, updated_at, ticket_id, description, category, attachment_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(row.id, row.user_id, row.subject, row.status, row.created_at, row.updated_at, row.ticket_id, row.description, row.category, row.attachment_url)
     .run();
   return row;
 }

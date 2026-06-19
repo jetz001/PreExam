@@ -3117,6 +3117,7 @@ if (url.pathname === "/api/legal/policy") {
                     subject: body?.subject || 'แจ้งปัญหา',
                     description: body?.description || 'ไม่มีรายละเอียด',
                     category: body?.category || 'general',
+                    attachment_url: body?.attachment_url || null,
                     status: 'open',
                     user_id: userId,
                     created_at: new Date().toISOString(),
