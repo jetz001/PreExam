@@ -44,7 +44,7 @@ const ShapeIcon = ({ choice }) => {
     }
 };
 
-const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinish, timeLimit }, ref) => {
+const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinish, onPersistFinish, onScoreChange, onProgressChange, timeLimit }, ref) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState({});
     const [score, setScore] = useState(0);
@@ -92,10 +92,14 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
         return () => clearInterval(timer);
     }, [onFinish, score, answers, isStarting]);
 
-    const handleFinish = (finalScore, answersOverride) => {
+    const handleFinish = async (finalScore, answersOverride) => {
         const timeTaken = initialTime - timeLeft;
         const finalAnswers = answersOverride || answers;
-        socket.emit('finish_exam', { roomId, userId, score: finalScore, timeTaken, answers: finalAnswers });
+        if (socket) {
+            socket.emit('finish_exam', { roomId, userId, score: finalScore, timeTaken, answers: finalAnswers });
+        } else if (onPersistFinish) {
+            await onPersistFinish({ roomId, userId, score: finalScore, timeTaken, answers: finalAnswers });
+        }
         onFinish(finalScore, finalAnswers);
     };
 
@@ -118,17 +122,26 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
         }
 
         // Emit score update to server
-        socket.emit('submit_score', { roomId, userId, score: newScore });
+        if (socket) {
+            socket.emit('submit_score', { roomId, userId, score: newScore });
+        }
+        onScoreChange?.(newScore);
 
         // Auto advance after short delay
         setTimeout(() => {
             if (currentIndex < questions.length - 1) {
                 const nextIndex = currentIndex + 1;
                 setCurrentIndex(nextIndex);
-                socket.emit('submit_progress', { roomId, userId, questionIndex: nextIndex });
+                if (socket) {
+                    socket.emit('submit_progress', { roomId, userId, questionIndex: nextIndex });
+                }
+                onProgressChange?.(nextIndex);
             } else {
-                socket.emit('submit_progress', { roomId, userId, questionIndex: questions.length });
-                handleFinish(newScore, newAnswers);
+                if (socket) {
+                    socket.emit('submit_progress', { roomId, userId, questionIndex: questions.length });
+                }
+                onProgressChange?.(questions.length);
+                void handleFinish(newScore, newAnswers);
             }
         }, 500);
     };

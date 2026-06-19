@@ -1,8 +1,99 @@
 import { RealtimeDO, type Env } from "./realtime";
 import { requireUserId, signJwtHs256 } from "./auth";
 import { hashPassword, verifyPassword } from "./password";
-import { FirestoreClient, parseServiceAccount } from "./firestore";
 import { aiGeneratorState, runAIGenerator } from "./generator";
+import {
+  createAsset,
+  createBookmark,
+  createBusiness,
+  createComment,
+  createDirectMessage,
+  completeActiveSeasons,
+  createExamResult,
+  createExamRoom,
+  createNews,
+  createPaymentPlan,
+  createSeason,
+  createSystemLog,
+  createThread,
+  createTicket,
+  createTicketMessage,
+  createTransaction,
+  createUser,
+  createQuestion,
+  deleteExamRoom,
+  deleteNews,
+  deleteQuestion,
+  deleteUser,
+  deleteAsset,
+  deleteBookmark,
+  deleteBusiness,
+  deleteFriend,
+  deletePaymentPlan,
+  deleteThread,
+  findExamRoomByCode,
+  getActiveSeason,
+  getBookmarkById,
+  getBusinessById,
+  getBusinessByOwner,
+  getCommentById,
+  getExamResultById,
+  getExamRoomById,
+  getExamRoomParticipant,
+  getNewsById,
+  getPaymentPlanById,
+  getQuestionById,
+  getQuestionsByIds,
+  getRankingById,
+  getSeasonById,
+  getSystemConfig,
+  getThreadById,
+  getTicketById,
+  getUserByEmail,
+  getUserById,
+  listAllQuestions,
+  listAssets,
+  listBookmarksByUser,
+  listBusinesses,
+  listBusinessPosts,
+  listCommentsByThread,
+  listDirectMessagesForUser,
+  listExamRoomParticipants,
+  listExamResultsByUser,
+  listExamRooms,
+  listFriendsByUser,
+  listNotificationsByUser,
+  listPaymentPlans,
+  listPayments,
+  listReceivedMessages,
+  listRankingsBySeason,
+  listSeasons,
+  listThreads,
+  listThreadsByUser,
+  listTicketMessages,
+  listTickets,
+  listUsers,
+  markAllNotificationsRead,
+  markMessagesRead,
+  markNotificationRead,
+  resetExamRoomParticipants,
+  touchUserLastActive,
+  updateExamRoom,
+  updateFriend,
+  updateComment,
+  updatePaymentPlan,
+  updateQuestion,
+  updateSeason,
+  updateTicket,
+  updateBusiness,
+  toggleNewsFeatured,
+  updateNews,
+  updateUser,
+  upsertSystemConfig,
+  upsertRankingScore,
+  upsertExamRoomParticipant,
+  createFriendRequest,
+} from "./d1";
 
 export { RealtimeDO };
 
@@ -61,11 +152,7 @@ const requireAuthUserId = async (req: Request, env: Env) => {
   if (now - lastUpdated > 5 * 60 * 1000) {
       lastActiveUpdateCache.set(userId, now);
       try {
-          const config = parseServiceAccount(env);
-          if (config) {
-              const firestore = new FirestoreClient(config);
-              await firestore.updateDocument("users", userId, { last_active_at: new Date(now).toISOString() });
-          }
+          await touchUserLastActive(env.DB, userId, new Date(now).toISOString());
       } catch (e) {
           console.error("Failed to update last active:", e);
       }
@@ -77,10 +164,7 @@ const requireAuthUserId = async (req: Request, env: Env) => {
 const requireAdmin = async (req: Request, env: Env) => {
   const auth = await requireAuthUserId(req, env);
   if ("error" in auth) return auth;
-  const config = parseServiceAccount(env);
-  if (!config) return { error: json({ error: "missing_firestore_config" }, { status: 500 }) };
-  const firestore = new FirestoreClient(config);
-  const user = await firestore.getDocument("users", auth.userId);
+  const user = await getUserById(env.DB, auth.userId);
   if (!user || user.role !== "admin") return { error: json({ error: "forbidden" }, { status: 403 }) };
   return { userId: auth.userId };
 };
@@ -102,20 +186,65 @@ const sanitizeUser = (row: any) => {
 
 const normalizeQuestion = (q: any) => {
   if (!q) return q;
-  const ans = String(q.correct_answer || "").trim();
+  const parsedChoices =
+    typeof q.choices === "string"
+      ? (() => {
+          try {
+            return JSON.parse(q.choices);
+          } catch {
+            return null;
+          }
+        })()
+      : q.choices && typeof q.choices === "object"
+        ? q.choices
+        : null;
+
+  const normalized = {
+    ...q,
+    choice_a: q.choice_a ?? parsedChoices?.A ?? "",
+    choice_b: q.choice_b ?? parsedChoices?.B ?? "",
+    choice_c: q.choice_c ?? parsedChoices?.C ?? "",
+    choice_d: q.choice_d ?? parsedChoices?.D ?? "",
+    choices: parsedChoices ?? q.choices ?? { A: "", B: "", C: "", D: "" },
+  };
+
+  const ans = String(normalized.correct_answer || "").trim();
   const lowerAns = ans.toLowerCase();
   if (lowerAns === "a" || lowerAns === "b" || lowerAns === "c" || lowerAns === "d") {
-    return { ...q, correct_answer: ans.toUpperCase() };
+    return { ...normalized, correct_answer: ans.toUpperCase() };
   }
   
   let mapped = ans;
-  if (lowerAns === String(q.choice_a || "").trim().toLowerCase()) mapped = "A";
-  else if (lowerAns === String(q.choice_b || "").trim().toLowerCase()) mapped = "B";
-  else if (lowerAns === String(q.choice_c || "").trim().toLowerCase()) mapped = "C";
-  else if (lowerAns === String(q.choice_d || "").trim().toLowerCase()) mapped = "D";
+  if (lowerAns === String(normalized.choice_a || "").trim().toLowerCase()) mapped = "A";
+  else if (lowerAns === String(normalized.choice_b || "").trim().toLowerCase()) mapped = "B";
+  else if (lowerAns === String(normalized.choice_c || "").trim().toLowerCase()) mapped = "C";
+  else if (lowerAns === String(normalized.choice_d || "").trim().toLowerCase()) mapped = "D";
   
-  return { ...q, correct_answer: mapped.toUpperCase() };
+  return { ...normalized, correct_answer: mapped.toUpperCase() };
 };
+
+const parseRoomSettings = (room: any) => {
+  const raw = room?.settings;
+  if (raw && typeof raw === "object") return { ...raw };
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch {}
+  }
+  return {};
+};
+
+const createEmptyAnswerCounts = () => ({ A: 0, B: 0, C: 0, D: 0 });
+
+const createTutorState = (settings: any = {}) => ({
+  current_question_index: Number(settings?.tutor_state?.current_question_index ?? 0),
+  is_answer_revealed: Boolean(settings?.tutor_state?.is_answer_revealed ?? false),
+  answer_counts: {
+    ...createEmptyAnswerCounts(),
+    ...(settings?.tutor_state?.answer_counts || {}),
+  },
+});
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
@@ -126,23 +255,11 @@ export default {
     }
 
     if (url.pathname === "/api/health") {
-      const saConfig = parseServiceAccount(env);
-      if (!saConfig) {
-        return json({
-          ok: false,
-          status: "error",
-          services: {
-            firebase: "missing_config",
-            jwt: env.JWT_SECRET ? "configured" : "missing_config",
-          },
-        }, { status: 500 });
-      }
-
       return json({
         ok: true,
         status: "healthy",
         services: {
-          firebase: "configured",
+          d1: "configured",
           jwt: env.JWT_SECRET ? "configured" : "missing_config",
         },
       });
@@ -153,10 +270,6 @@ export default {
       const stub = env.REALTIME.get(id);
       return stub.fetch(request);
     }
-
-    const saConfig = parseServiceAccount(env);
-    if (!saConfig) return json({ error: "missing_firebase_config" }, { status: 500 });
-    const firestore = new FirestoreClient(saConfig);
 
     if (url.pathname === "/api/auth/register" && request.method === "POST") {
       const secret = requireJwtSecret(env);
@@ -171,16 +284,11 @@ export default {
         return json({ success: false, message: "invalid_params" }, { status: 400 });
       }
 
-      const existingUsers = await firestore.runQuery({
-        from: [{ collectionId: "users" }],
-        where: { fieldFilter: { field: { fieldPath: "email" }, op: "EQUAL", value: { stringValue: email } } },
-        limit: 1,
-      });
-
-      if (existingUsers.length > 0) return json({ success: false, message: "Email already in use" }, { status: 409 });
+      const existingUser = await getUserByEmail(env.DB, email);
+      if (existingUser) return json({ success: false, message: "Email already in use" }, { status: 409 });
 
       const passwordHash = await hashPassword(password);
-      const user = await firestore.createDocument("users", {
+      const user = await createUser(env.DB, {
         email,
         password_hash: passwordHash,
         display_name: displayName,
@@ -204,40 +312,39 @@ export default {
       const deviceId = body.deviceId;
       const email = `guest_${deviceId}@preexam.com`;
 
-      const existing = await firestore.runQuery({
-        from: [{ collectionId: "users" }],
-        where: { fieldFilter: { field: { fieldPath: "email" }, op: "EQUAL", value: { stringValue: email } } },
-        limit: 1
-      });
+      const existing = await getUserByEmail(env.DB, email);
 
-      let user;
-      if (existing.length > 0) {
-        user = existing[0];
+      let user = existing;
+      if (existing) {
         try { 
-          await firestore.updateDocument("users", user.id, { last_active_at: new Date().toISOString() }); 
+          await touchUserLastActive(env.DB, user.id, new Date().toISOString()); 
           user.last_active_at = new Date().toISOString(); 
         } catch(e){}
       } else {
         const shortId = deviceId.slice(-5) + Math.floor(100 + Math.random() * 900);
-        user = await firestore.createDocument("users", {
+        user = await createUser(env.DB, {
           email,
           display_name: `Guest-${shortId}`,
           role: "user",
           plan_type: "free",
+          status: "active",
           created_at: new Date().toISOString(),
-          last_active_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString(),
         });
       }
 
       const token = await signJwtHs256({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET || "default_secret");
       
       try {
-        await firestore.createDocument("system_logs", {
-          action: existing.length > 0 ? "SYS_GUEST_LOGIN" : "SYS_GUEST_CREATE",
-          details: JSON.stringify({ type: "auto" }),
+        await createSystemLog(env.DB, {
+          action: existing ? "SYS_GUEST_LOGIN" : "SYS_GUEST_CREATE",
+          details: {
+            type: "auto",
+            ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
+            user_agent: request.headers.get("user-agent") || "unknown",
+          },
           user_id: user.id,
-          ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
-          user_agent: request.headers.get("user-agent") || "unknown",
           created_at: new Date().toISOString()
         });
       } catch (e) {}
@@ -261,56 +368,42 @@ export default {
 
       if (!email) return json({ success: false, message: "Email not provided by Google" }, { status: 400 });
 
-      let user;
-      const existingByGoogleId = await firestore.runQuery({
-        from: [{ collectionId: "users" }],
-        where: { fieldFilter: { field: { fieldPath: "google_id" }, op: "EQUAL", value: { stringValue: googleId } } },
-        limit: 1
-      });
-
-      if (existingByGoogleId.length > 0) {
-        user = existingByGoogleId[0];
+      let user = await getUserByEmail(env.DB, email);
+      if (user) {
         const updates: any = { last_active_at: new Date().toISOString() };
         if (picture && user.avatar !== picture) {
           updates.avatar = picture;
         }
         try { 
-          await firestore.updateDocument("users", user.id, updates); 
+          user = await updateUser(env.DB, user.id, updates); 
           user.last_active_at = updates.last_active_at; 
         } catch(e){}
       } else {
-        const existingByEmail = await firestore.runQuery({
-          from: [{ collectionId: "users" }],
-          where: { fieldFilter: { field: { fieldPath: "email" }, op: "EQUAL", value: { stringValue: email } } },
-          limit: 1
+        user = await createUser(env.DB, {
+          email,
+          display_name: name,
+          avatar: picture,
+          role: "user",
+          plan_type: "free",
+          status: "active",
+          last_active_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         });
-        if (existingByEmail.length > 0) {
-          user = existingByEmail[0];
-          const updates: any = { google_id: googleId };
-          if (picture) updates.avatar = picture;
-          await firestore.updateDocument("users", user.id, updates);
-        } else {
-          user = await firestore.createDocument("users", {
-            email,
-            display_name: name,
-            google_id: googleId,
-            avatar: picture,
-            role: "user",
-            plan_type: "free",
-            created_at: new Date().toISOString()
-          });
-        }
       }
 
       const token = await signJwtHs256({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET || "default_secret");
       
       try {
-        await firestore.createDocument("system_logs", {
+        await createSystemLog(env.DB, {
           action: "SYS_GOOGLE_LOGIN",
-          details: JSON.stringify({ type: "auto" }),
+          details: {
+            type: "auto",
+            google_id: googleId,
+            ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
+            user_agent: request.headers.get("user-agent") || "unknown",
+          },
           user_id: user.id,
-          ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
-          user_agent: request.headers.get("user-agent") || "unknown",
           created_at: new Date().toISOString()
         });
       } catch (e) {}
@@ -328,29 +421,25 @@ export default {
       const password = String((body as any).password || "");
       if (!email || !password) return json({ success: false, message: "invalid_params" }, { status: 400 });
 
-      const users = await firestore.runQuery({
-        from: [{ collectionId: "users" }],
-        where: { fieldFilter: { field: { fieldPath: "email" }, op: "EQUAL", value: { stringValue: email } } },
-        limit: 1,
-      });
-
-      const user = users[0];
+      const user = await getUserByEmail(env.DB, email);
       if (!user || !user.password_hash) return json({ success: false, message: "Invalid credentials" }, { status: 401 });
       const ok = await verifyPassword(password, String(user.password_hash));
       if (!ok) return json({ success: false, message: "Invalid credentials" }, { status: 401 });
 
-      try { await firestore.updateDocument("users", user.id, { last_active_at: new Date().toISOString() }); user.last_active_at = new Date().toISOString(); } catch(e){}
+      try { await touchUserLastActive(env.DB, user.id, new Date().toISOString()); user.last_active_at = new Date().toISOString(); } catch(e){}
 
       const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
       const token = await signJwtHs256({ id: user.id, exp }, secret);
 
       try {
-        await firestore.createDocument("system_logs", {
+        await createSystemLog(env.DB, {
           action: "SYS_EMAIL_LOGIN",
-          details: JSON.stringify({ type: "auto" }),
+          details: {
+            type: "auto",
+            ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
+            user_agent: request.headers.get("user-agent") || "unknown",
+          },
           user_id: user.id,
-          ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
-          user_agent: request.headers.get("user-agent") || "unknown",
           created_at: new Date().toISOString()
         });
       } catch (e) {}
@@ -368,16 +457,10 @@ export default {
       if (!deviceId) return json({ success: false, message: "invalid_params" }, { status: 400 });
 
       const email = `guest_${deviceId}@guest.local`;
-      const users = await firestore.runQuery({
-        from: [{ collectionId: "users" }],
-        where: { fieldFilter: { field: { fieldPath: "email" }, op: "EQUAL", value: { stringValue: email } } },
-        limit: 1,
-      });
-
-      let user = users[0];
+      let user = await getUserByEmail(env.DB, email);
       if (!user) {
         const displayName = `Guest-${deviceId.slice(0, 6)}`;
-        user = await firestore.createDocument("users", {
+        user = await createUser(env.DB, {
           email,
           password_hash: null,
           display_name: displayName,
@@ -401,7 +484,7 @@ export default {
       const userId = await requireUserId(request, secret);
       if (!userId) return json({ success: false, message: "Unauthorized" }, { status: 401 });
 
-      const user = await firestore.getDocument("users", userId);
+      const user = await getUserById(env.DB, userId);
       if (!user) return json({ success: false, message: "Unauthorized" }, { status: 401 });
       return json({ success: true, user: sanitizeUser(user) });
     }
@@ -413,11 +496,7 @@ export default {
       const page = Math.max(1, Number(url.searchParams.get("page") || 1));
       const limit = Math.max(1, Math.min(50, Number(url.searchParams.get("limit") || 20)));
 
-      const recentRooms = await firestore.runQuery({
-        from: [{ collectionId: "exam_rooms" }],
-        orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
-        limit: 100, // Fetch up to 100 to filter in memory
-      });
+      const recentRooms = await listExamRooms(env.DB, 100);
 
       const oneDayAgo = oneDayAgoIso();
       const filteredRooms = recentRooms.filter((r) => {
@@ -438,18 +517,14 @@ export default {
       const participantCounts = new Map<string, number>();
 
       for (const rId of roomIds) {
-        // Use runCountQuery instead of fetching all documents
-        const count = await firestore.runCountQuery(
-          { from: [{ collectionId: "participants" }] },
-          `exam_rooms/${rId}`
-        );
-        participantCounts.set(rId, count);
+        const participants = await listExamRoomParticipants(env.DB, rId);
+        participantCounts.set(rId, participants.length);
       }
 
       const hostIds = Array.from(new Set(rooms.map((r) => r.host_user_id).filter(Boolean)));
       const hosts = new Map<string, string>();
       for (const hid of hostIds) {
-        const u = await firestore.getDocument("users", hid as string);
+        const u = await getUserById(env.DB, hid as string);
         if (u) {
             hosts.set(hid as string, u.display_name || u.username || 'Unknown');
         }
@@ -485,7 +560,7 @@ export default {
 
       const subject = (body as any).subject ? String((body as any).subject) : null;
       const category = (body as any).category ? String((body as any).category) : null;
-      const maxParticipants = Math.min(20, Math.max(2, Number((body as any).max_participants || 20)));
+      const maxParticipants = Math.min(20, Math.max(1, Number((body as any).max_participants || 20)));
       const questionCount = Math.max(1, Math.min(200, Number((body as any).question_count || 20)));
       const timeLimit = Math.max(5, Math.min(60, Number((body as any).time_limit || 60)));
       const password = (body as any).password ? String((body as any).password) : null;
@@ -495,78 +570,74 @@ export default {
       const settings = JSON.stringify({ time_limit: timeLimit });
 
       let selectedIds: string[] = [];
+      let customQuestionsPayload: any[] | null = null;
       
       if (customQuestions && Array.isArray(customQuestions) && customQuestions.length > 0) {
-        // Save custom questions
-        const insertPromises = customQuestions.map((q: any) => {
-          return firestore.createDocument("questions", {
-            question_text: q.question_text || "",
-            choices: q.choices || { A: "", B: "", C: "", D: "" },
-            correct_answer: q.correct_answer || "A",
-            explanation: q.explanation || "",
-            category: "custom",
-            subject: "custom",
-            difficulty: 50,
-            is_custom: true,
-            host_user_id: auth.userId,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-        });
-        try {
-          const createdDocs = await Promise.all(insertPromises);
-          selectedIds = createdDocs.map((d: any) => d.id);
-        } catch (e) {
-          return json({ success: false, message: "Failed to save custom questions." }, { status: 500 });
-        }
+        customQuestionsPayload = customQuestions.map((q: any) => ({
+          question_text: q.question_text || "",
+          choices: q.choices || { A: "", B: "", C: "", D: "" },
+          correct_answer: q.correct_answer || "A",
+          explanation: q.explanation || "",
+          category: "custom",
+          subject: "custom",
+          is_custom: true,
+        }));
+        selectedIds = [];
       } else {
-        // Fetch random questions based on criteria
-        const filters: any[] = [];
-        if (subject) filters.push({ fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } });
-        if (category) filters.push({ fieldFilter: { field: { fieldPath: "category" }, op: "EQUAL", value: { stringValue: category } } });
-
-        let query: any = { from: [{ collectionId: "questions" }] };
-        if (filters.length === 1) query.where = filters[0];
-        else if (filters.length > 1) query.where = { compositeFilter: { op: "AND", filters } };
-
         try {
-          const allQs = await firestore.runQuery(query);
-          const shuffled = allQs.sort(() => Math.random() - 0.5);
-          selectedIds = shuffled.slice(0, questionCount).map((q: any) => q.id);
+          const whereParts: string[] = [];
+          const params: any[] = [];
+          if (subject) {
+            whereParts.push("subject = ?");
+            params.push(subject);
+          }
+          if (category) {
+            whereParts.push("category = ?");
+            params.push(category);
+          }
+          const whereClause = whereParts.length ? `WHERE ${whereParts.join(" AND ")}` : "";
+          const { results } = await env.DB
+            .prepare(`SELECT id FROM questions ${whereClause} ORDER BY RANDOM() LIMIT ?`)
+            .bind(...params, questionCount)
+            .all();
+          selectedIds = (results || []).map((q: any) => String(q.id));
         } catch (e) {
           // Fallback
         }
       }
 
-      if (selectedIds.length === 0) {
+      if (selectedIds.length === 0 && !customQuestionsPayload?.length) {
         return json({ success: false, message: "No questions found." }, { status: 400 });
       }
 
-      const room = await firestore.createDocument("exam_rooms", {
+      const room = await createExamRoom(env.DB, {
         code,
         name,
         mode,
+        tutor_submode: (body as any).tutor_submode || "step",
         host_user_id: auth.userId,
         subject,
         category,
         max_participants: maxParticipants,
-        question_count: selectedIds.length > 0 ? selectedIds.length : questionCount,
+        question_count: customQuestionsPayload?.length ? customQuestionsPayload.length : (selectedIds.length > 0 ? selectedIds.length : questionCount),
         status: "waiting",
         settings,
         password,
-        question_ids: JSON.stringify(selectedIds),
+        question_ids: selectedIds,
+        custom_questions: customQuestionsPayload,
+        theme: (body as any).theme || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
 
-      await firestore.createDocument(`exam_rooms/${room.id}/participants`, {
+      await upsertExamRoomParticipant(env.DB, room.id, auth.userId, {
         user_id: auth.userId,
         score: 0,
         status: "joined",
         current_question_index: 0,
-        created_at: new Date().toISOString(),
+        joined_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      }, auth.userId);
+      });
 
       return json({ success: true, data: room }, { status: 201 });
     }
@@ -581,13 +652,7 @@ export default {
       const password = (body as any).password ? String((body as any).password) : null;
       if (!code) return json({ success: false, message: "invalid_params" }, { status: 400 });
 
-      const rooms = await firestore.runQuery({
-        from: [{ collectionId: "exam_rooms" }],
-        where: { fieldFilter: { field: { fieldPath: "code" }, op: "EQUAL", value: { stringValue: code } } },
-        limit: 1,
-      });
-
-      const room = rooms[0];
+      const room = await findExamRoomByCode(env.DB, code);
       if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
 
       if (room.password) {
@@ -600,17 +665,17 @@ export default {
       }
 
       // Check if already joined
-      const existingPart = await firestore.getDocument(`exam_rooms/${room.id}/participants`, auth.userId);
+      const existingPart = await getExamRoomParticipant(env.DB, room.id, auth.userId);
 
       if (!existingPart) {
-        await firestore.createDocument(`exam_rooms/${room.id}/participants`, {
+        await upsertExamRoomParticipant(env.DB, room.id, auth.userId, {
           user_id: auth.userId,
           score: 0,
           status: "joined",
           current_question_index: 0,
-          created_at: new Date().toISOString(),
+          joined_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        }, auth.userId);
+        });
       }
 
       return json({ success: true, data: { ...room, password: undefined } });
@@ -622,10 +687,10 @@ export default {
       if ("error" in auth) return auth.error;
 
       const roomId = roomIdMatch[1];
-      const room = await firestore.getDocument("exam_rooms", roomId);
+      const room = await getExamRoomById(env.DB, roomId);
       if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
 
-      const participants = await firestore.listDocuments(`exam_rooms/${roomId}/participants`);
+      const participants = await listExamRoomParticipants(env.DB, roomId);
 
       // Fetch users for participants using cache
       const userIds = participants.map((p: any) => p.user_id);
@@ -641,7 +706,7 @@ export default {
       
       for (let i = 0; i < missingUserIds.length; i += 30) {
         const chunk = missingUserIds.slice(i, i + 30);
-        const userPromises = chunk.map((id: any) => firestore.getDocument("users", String(id)));
+        const userPromises = chunk.map((id: any) => getUserById(env.DB, String(id)));
         const users = await Promise.all(userPromises);
         for (const u of users) {
           if (u && u.id) {
@@ -656,7 +721,7 @@ export default {
         User: usersMap.get(String(p.user_id)) ? sanitizeUser(usersMap.get(String(p.user_id))) : { display_name: "Unknown", avatar: null }
       }));
 
-      const questionIds = room.question_ids ? JSON.parse(String(room.question_ids)) : [];
+      const questionIds = Array.isArray(room.question_ids) ? room.question_ids : [];
       const questionsMap = new Map();
       const missingQIds: string[] = [];
 
@@ -668,8 +733,7 @@ export default {
 
       for (let i = 0; i < missingQIds.length; i += 30) {
         const chunk = missingQIds.slice(i, i + 30);
-        const qPromises = chunk.map((id: string) => firestore.getDocument("questions", String(id)));
-        const qs = await Promise.all(qPromises);
+        const qs = await getQuestionsByIds(env.DB, chunk);
         for (const q of qs) {
           if (q && q.id) {
             questionsMap.set(String(q.id), normalizeQuestion(q));
@@ -677,7 +741,9 @@ export default {
           }
         }
       }
-      const questions = questionIds.map((id: string) => questionsMap.get(String(id))).filter(Boolean);
+      const questions = room.custom_questions?.length
+        ? room.custom_questions.map((q: any, idx: number) => normalizeQuestion({ ...q, id: q.id || `custom_${idx}` }))
+        : questionIds.map((id: string) => questionsMap.get(String(id))).filter(Boolean);
 
       return json({
         success: true,
@@ -691,32 +757,347 @@ export default {
       });
     }
 
+    const roomStartMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/start$/);
+    if (roomStartMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomStartMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+      if (String(room.host_user_id) !== auth.userId) {
+        return json({ success: false, message: "Not authorized to start this room" }, { status: 403 });
+      }
+
+      const settings = parseRoomSettings(room);
+
+      const updated = await updateExamRoom(env.DB, roomId, {
+        status: "in_progress",
+        settings: {
+          ...settings,
+          tutor_state: {
+            current_question_index: 0,
+            is_answer_revealed: false,
+            answer_counts: createEmptyAnswerCounts(),
+          },
+        },
+        updated_at: new Date().toISOString(),
+      });
+      return json({ success: true, data: updated });
+    }
+
+    const roomFinishMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/finish$/);
+    if (roomFinishMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomFinishMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+
+      const body = await readJson(request);
+      if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
+
+      const score = Number((body as any).score || 0);
+      const timeTaken = Number((body as any).timeTaken || 0);
+      const answers = (body as any).answers && typeof (body as any).answers === "object" ? (body as any).answers : {};
+      const totalScore = Array.isArray(room.question_ids) && room.question_ids.length
+        ? room.question_ids.length
+        : (Array.isArray(room.custom_questions) ? room.custom_questions.length : Number(room.question_count || 0));
+
+      await upsertExamRoomParticipant(env.DB, roomId, auth.userId, {
+        user_id: auth.userId,
+        score,
+        time_taken: timeTaken,
+        status: "finished",
+        current_question_index: totalScore,
+        answers,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      await createExamResult(env.DB, {
+        user_id: auth.userId,
+        classroom_id: roomId,
+        score,
+        total_score: totalScore,
+        mode: room.mode || "exam",
+        questions: answers,
+        time_taken: timeTaken,
+        taken_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      const participants = await listExamRoomParticipants(env.DB, roomId);
+      const unfinished = participants.some((participant: any) => String(participant.status) !== "finished");
+      const nextStatus = unfinished ? "in_progress" : "finished";
+
+      const updated = await updateExamRoom(env.DB, roomId, {
+        status: nextStatus,
+        updated_at: new Date().toISOString(),
+      });
+
+      return json({ success: true, data: updated });
+    }
+
+    const roomScoreMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/score$/);
+    if (roomScoreMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomScoreMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+      const body = await readJson(request);
+      if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
+
+      await upsertExamRoomParticipant(env.DB, roomId, auth.userId, {
+        user_id: auth.userId,
+        score: Number((body as any).score || 0),
+        status: (body as any).status || undefined,
+        updated_at: new Date().toISOString(),
+      });
+
+      return json({ success: true });
+    }
+
+    const roomProgressMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/progress$/);
+    if (roomProgressMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomProgressMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+      const body = await readJson(request);
+      if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
+
+      await upsertExamRoomParticipant(env.DB, roomId, auth.userId, {
+        user_id: auth.userId,
+        current_question_index: Number((body as any).questionIndex || 0),
+        updated_at: new Date().toISOString(),
+      });
+
+      return json({ success: true });
+    }
+
+    const roomNicknameMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/nickname$/);
+    if (roomNicknameMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomNicknameMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+      const body = await readJson(request);
+      const nickname = String((body as any)?.nickname || "").trim();
+      if (!nickname) return json({ success: false, message: "invalid_nickname" }, { status: 400 });
+
+      await upsertExamRoomParticipant(env.DB, roomId, auth.userId, {
+        user_id: auth.userId,
+        nickname,
+        updated_at: new Date().toISOString(),
+      });
+
+      return json({ success: true });
+    }
+
+    const roomChatMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/chat$/);
+    if (roomChatMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomChatMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+      const body = await readJson(request);
+      const message = String((body as any)?.message || "").trim();
+      const displayName = String((body as any)?.displayName || "").trim();
+      if (!message) return json({ success: false, message: "invalid_message" }, { status: 400 });
+
+      const settings = parseRoomSettings(room);
+      const nextMessages = Array.isArray(settings.chat_messages) ? [...settings.chat_messages] : [];
+      nextMessages.push({
+        id: crypto.randomUUID(),
+        userId: auth.userId,
+        displayName: displayName || "ผู้ใช้",
+        message,
+        timestamp: new Date().toISOString(),
+      });
+
+      await updateExamRoom(env.DB, roomId, {
+        settings: {
+          ...settings,
+          chat_messages: nextMessages.slice(-50),
+        },
+        updated_at: new Date().toISOString(),
+      });
+
+      return json({ success: true });
+    }
+
+    const roomTutorNavigateMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/tutor\/navigate$/);
+    if (roomTutorNavigateMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomTutorNavigateMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+      if (String(room.host_user_id) !== auth.userId) {
+        return json({ success: false, message: "Not authorized" }, { status: 403 });
+      }
+      const body = await readJson(request);
+      const settings = parseRoomSettings(room);
+      const tutorState = createTutorState(settings);
+      tutorState.current_question_index = Number((body as any)?.questionIndex || 0);
+      tutorState.is_answer_revealed = false;
+      tutorState.answer_counts = createEmptyAnswerCounts();
+
+      await updateExamRoom(env.DB, roomId, {
+        settings: {
+          ...settings,
+          tutor_state: tutorState,
+        },
+        updated_at: new Date().toISOString(),
+      });
+
+      return json({ success: true });
+    }
+
+    const roomTutorRevealMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/tutor\/reveal$/);
+    if (roomTutorRevealMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomTutorRevealMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+      if (String(room.host_user_id) !== auth.userId) {
+        return json({ success: false, message: "Not authorized" }, { status: 403 });
+      }
+
+      const settings = parseRoomSettings(room);
+      const tutorState = createTutorState(settings);
+      tutorState.is_answer_revealed = true;
+
+      await updateExamRoom(env.DB, roomId, {
+        settings: {
+          ...settings,
+          tutor_state: tutorState,
+        },
+        updated_at: new Date().toISOString(),
+      });
+
+      return json({ success: true });
+    }
+
+    const roomTutorAnswerMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/tutor\/answer$/);
+    if (roomTutorAnswerMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomTutorAnswerMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+      const body = await readJson(request);
+      const choice = String((body as any)?.choice || "").trim().toUpperCase();
+      if (!["A", "B", "C", "D"].includes(choice)) {
+        return json({ success: false, message: "invalid_choice" }, { status: 400 });
+      }
+
+      const settings = parseRoomSettings(room);
+      const tutorState = createTutorState(settings);
+      tutorState.answer_counts = {
+        ...createEmptyAnswerCounts(),
+        ...tutorState.answer_counts,
+        [choice]: Number(tutorState.answer_counts?.[choice] || 0) + 1,
+      };
+
+      await updateExamRoom(env.DB, roomId, {
+        settings: {
+          ...settings,
+          tutor_state: tutorState,
+        },
+        updated_at: new Date().toISOString(),
+      });
+
+      return json({ success: true });
+    }
+
+    const roomCloseMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/close$/);
+    if (roomCloseMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomCloseMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+      if (String(room.host_user_id) !== auth.userId) {
+        return json({ success: false, message: "Not authorized" }, { status: 403 });
+      }
+
+      const updated = await updateExamRoom(env.DB, roomId, {
+        status: "finished",
+        updated_at: new Date().toISOString(),
+      });
+
+      return json({ success: true, data: updated });
+    }
+
+    const roomResetMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/reset$/);
+    if (roomResetMatch && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const roomId = roomResetMatch[1];
+      const room = await getExamRoomById(env.DB, roomId);
+      if (!room) return json({ success: false, message: "Room not found" }, { status: 404 });
+      if (String(room.host_user_id) !== auth.userId) {
+        return json({ success: false, message: "Not authorized" }, { status: 403 });
+      }
+
+      const settings = parseRoomSettings(room);
+      await resetExamRoomParticipants(env.DB, roomId);
+      const updated = await updateExamRoom(env.DB, roomId, {
+        status: "waiting",
+        settings: {
+          ...settings,
+          tutor_state: {
+            current_question_index: 0,
+            is_answer_revealed: false,
+            answer_counts: createEmptyAnswerCounts(),
+          },
+        },
+        updated_at: new Date().toISOString(),
+      });
+
+      return json({ success: true, data: updated });
+    }
+
     if (roomIdMatch && request.method === "DELETE") {
       const auth = await requireAuthUserId(request, env);
       if ("error" in auth) return auth.error;
 
       const roomId = roomIdMatch[1];
-      const room = await firestore.getDocument("exam_rooms", roomId);
+      const room = await getExamRoomById(env.DB, roomId);
       if (!room) return json({ success: true, message: "Room already deleted or not found" });
 
       if (String(room.host_user_id) !== auth.userId) {
         return json({ success: false, message: "Not authorized to delete this room" }, { status: 403 });
       }
 
-      const participants = await firestore.listDocuments(`exam_rooms/${roomId}/participants`);
-
-      for (const p of participants) {
-        await firestore.deleteDocument(`exam_rooms/${roomId}/participants`, p.id);
-      }
-      await firestore.deleteDocument("exam_rooms", roomId);
+      await deleteExamRoom(env.DB, roomId);
       return json({ success: true, message: "Room deleted successfully" });
     }
 
     if (url.pathname.startsWith("/api/")) {
       try {
-        const saConfig = parseServiceAccount(env);
-        if (!saConfig) return json({ error: "missing_firebase_config" }, { status: 500 });
-        const firestore = new FirestoreClient(saConfig);
+        if (url.pathname.startsWith("/api/admin/")) {
+          const admin = await requireAdmin(request, env);
+          if ("error" in admin) return admin.error;
+        }
 
         // /api/public/log
         if (url.pathname === "/api/public/log" && request.method === "POST") {
@@ -736,12 +1117,14 @@ export default {
 
           let created: any = null;
           try {
-            created = await firestore.createDocument("system_logs", {
+            created = await createSystemLog(env.DB, {
               action,
-              details,
+              details: {
+                ...(typeof details === "object" && details ? details as Record<string, unknown> : { value: details }),
+                ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
+                user_agent: request.headers.get("user-agent") || "unknown",
+              },
               user_id: userId,
-              ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
-              user_agent: request.headers.get("user-agent") || "unknown",
               created_at: new Date().toISOString()
             });
           } catch (e: any) {
@@ -772,7 +1155,7 @@ export default {
           const cacheKey = "qs_subjects";
           let cached = getCache(cacheKey);
           if (!cached) {
-            const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+            const qs = await listAllQuestions(env.DB);
             const subjects = new Set<string>();
             for (const q of qs) if (q.subject) subjects.add(q.subject);
             cached = Array.from(subjects).sort();
@@ -786,7 +1169,7 @@ export default {
           const cacheKey = "qs_years";
           let cached = getCache(cacheKey);
           if (!cached) {
-            const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+            const qs = await listAllQuestions(env.DB);
             const years = new Set<string>();
             for (const q of qs) if (q.exam_year) years.add(String(q.exam_year));
             cached = Array.from(years).sort((a: any, b: any) => b.localeCompare(a));
@@ -800,7 +1183,7 @@ export default {
           const cacheKey = "qs_sets";
           let cached = getCache(cacheKey);
           if (!cached) {
-            const qs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+            const qs = await listAllQuestions(env.DB);
             const sets = new Set<string>();
             for (const q of qs) if (q.exam_set) sets.add(q.exam_set);
             cached = Array.from(sets).sort();
@@ -815,11 +1198,8 @@ export default {
           const cacheKey = `qs_cats_${subject || 'all'}`;
           let cached = getCache(cacheKey);
           if (!cached) {
-            const query: any = { from: [{ collectionId: "questions" }] };
-            if (subject && subject !== "undefined" && subject !== "null") {
-              query.where = { fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } };
-            }
-            const qs = await firestore.runQuery(query);
+            let qs = await listAllQuestions(env.DB);
+            if (subject && subject !== "undefined" && subject !== "null") qs = qs.filter((q: any) => q.subject === subject);
             const allTags = new Set<string>();
             for (const q of qs) {
               if (q.category) {
@@ -843,7 +1223,7 @@ export default {
         // /api/questions/:id
         const qIdMatch = url.pathname.match(/^\/api\/questions\/([a-zA-Z0-9_-]+)$/);
         if (qIdMatch && request.method === "GET") {
-          const q = await firestore.getDocument("questions", qIdMatch[1]);
+          const q = await getQuestionById(env.DB, qIdMatch[1]);
           if (!q) return json({ success: false, message: "Question not found" }, { status: 404 });
           return json({ success: true, data: normalizeQuestion(q) });
         }
@@ -864,28 +1244,13 @@ export default {
           const page = parseInt(pageStr, 10);
           const offset = (page - 1) * limit;
 
-          const filters: any[] = [];
-          if (subject && subject !== "undefined" && subject !== "null") {
-            filters.push({ fieldFilter: { field: { fieldPath: "subject" }, op: "EQUAL", value: { stringValue: subject } } });
-          }
-          if (exam_year && exam_year !== "undefined" && exam_year !== "null") {
-            filters.push({ fieldFilter: { field: { fieldPath: "exam_year" }, op: "EQUAL", value: { stringValue: exam_year } } });
-          }
-          if (exam_set && exam_set !== "undefined" && exam_set !== "null") {
-            filters.push({ fieldFilter: { field: { fieldPath: "exam_set" }, op: "EQUAL", value: { stringValue: exam_set } } });
-          }
-
-          let query: any = { from: [{ collectionId: "questions" }] };
-          if (filters.length === 1) {
-            query.where = filters[0];
-          } else if (filters.length > 1) {
-            query.where = { compositeFilter: { op: "AND", filters } };
-          }
-
-          const cacheKey = `qs_list_${JSON.stringify(query)}`;
+          const cacheKey = `qs_list_${JSON.stringify({ subject, exam_year, exam_set })}`;
           let allQs = getCache(cacheKey);
           if (!allQs) {
-            allQs = await firestore.runQuery(query);
+            allQs = await listAllQuestions(env.DB);
+            if (subject && subject !== "undefined" && subject !== "null") allQs = allQs.filter((q: any) => q.subject === subject);
+            if (exam_year && exam_year !== "undefined" && exam_year !== "null") allQs = allQs.filter((q: any) => String(q.exam_year) === String(exam_year));
+            if (exam_set && exam_set !== "undefined" && exam_set !== "null") allQs = allQs.filter((q: any) => String(q.exam_set) === String(exam_set));
             setCache(cacheKey, allQs, 60 * 1000); // 1 minute cache
           }
 
@@ -945,7 +1310,7 @@ export default {
         if (url.pathname === "/api/questions" && request.method === "POST") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const userDoc = await firestore.getDocument("users", auth.userId);
+          const userDoc = await getUserById(env.DB, auth.userId);
           if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
           
           const body: any = await readJson(request);
@@ -963,7 +1328,7 @@ export default {
           
           let maxId = 0;
           try {
-             const allDocs = await firestore.runQuery({ from: [{ collectionId: "questions" }] });
+             const allDocs = await listAllQuestions(env.DB);
              for (const doc of allDocs) {
                  const num = Number(doc.id);
                  if (!isNaN(num) && num > maxId) {
@@ -984,30 +1349,29 @@ export default {
               skill: skill || null,
               exam_year: exam_year || null,
               exam_set: exam_set || null,
-              created_at: new Date().toISOString()
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
           };
           
-          await firestore.createDocument("questions", newQuestion, newDocRef);
-          return json({ success: true, data: newQuestion }, { status: 201 });
+          const createdQuestion = await createQuestion(env.DB, newQuestion);
+          return json({ success: true, data: createdQuestion }, { status: 201 });
         }
 
         // /api/questions/:id (Update)
         if (qIdMatch && request.method === "PUT") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const userDoc = await firestore.getDocument("users", auth.userId);
+          const userDoc = await getUserById(env.DB, auth.userId);
           if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
           
           const body: any = await readJson(request);
           if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
           
-          const doc = await firestore.getDocument("questions", qIdMatch[1]);
+          const doc = await getQuestionById(env.DB, qIdMatch[1]);
           if (!doc) return json({ success: false, message: "Question not found" }, { status: 404 });
           
           const updateData = { ...body, updated_at: new Date().toISOString() };
-          await firestore.updateDocument("questions", qIdMatch[1], updateData);
-          
-          const updated = await firestore.getDocument("questions", qIdMatch[1]);
+          const updated = await updateQuestion(env.DB, qIdMatch[1], updateData);
           return json({ success: true, data: normalizeQuestion(updated) });
         }
 
@@ -1015,13 +1379,13 @@ export default {
         if (qIdMatch && request.method === "DELETE") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const userDoc = await firestore.getDocument("users", auth.userId);
+          const userDoc = await getUserById(env.DB, auth.userId);
           if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
           
-          const doc = await firestore.getDocument("questions", qIdMatch[1]);
+          const doc = await getQuestionById(env.DB, qIdMatch[1]);
           if (!doc) return json({ success: false, message: "Question not found" }, { status: 404 });
           
-          await firestore.deleteDocument("questions", qIdMatch[1]);
+          await deleteQuestion(env.DB, qIdMatch[1]);
           return json({ success: true, message: "Question deleted" });
         }
 
@@ -1050,8 +1414,7 @@ export default {
 
           for (let i = 0; i < missingIds.length; i += 30) {
             const chunk = missingIds.slice(i, i + 30);
-            const qPromises = chunk.map(id => firestore.getDocument("questions", String(id)));
-            const qs = await Promise.all(qPromises);
+            const qs = await getQuestionsByIds(env.DB, chunk);
             for (const q of qs) {
               if (q && q.id) {
                 questionsMap.set(String(q.id), q);
@@ -1108,7 +1471,7 @@ export default {
             });
           }
 
-          const examResult = await firestore.createDocument("exam_results", {
+          const examResult = await createExamResult(env.DB, {
             user_id: auth.userId,
             classroom_id: classroom_id || null,
             score,
@@ -1123,29 +1486,9 @@ export default {
 
           // Update ranking
           try {
-            const activeSeasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "active" } } }, limit: 1 });
-            if (activeSeasons.length > 0) {
-              const seasonId = activeSeasons[0].id;
-              const rankingId = `${seasonId}_${auth.userId}`;
-              const existingRanking = await firestore.getDocument("rankings", rankingId);
-              
-              if (existingRanking) {
-                const newTotalScore = (Number(existingRanking.total_score) || 0) + score;
-                const newExamsTaken = (Number(existingRanking.exams_taken) || 0) + 1;
-                await firestore.updateDocument("rankings", rankingId, {
-                  total_score: newTotalScore,
-                  exams_taken: newExamsTaken,
-                  updated_at: new Date().toISOString()
-                });
-              } else {
-                await firestore.createDocument("rankings", {
-                  season_id: seasonId,
-                  user_id: auth.userId,
-                  total_score: score,
-                  exams_taken: 1,
-                  updated_at: new Date().toISOString()
-                }, rankingId);
-              }
+            const activeSeason = await getActiveSeason(env.DB);
+            if (activeSeason) {
+              await upsertRankingScore(env.DB, activeSeason.id, auth.userId, score);
             }
           } catch(e) {
             console.error("Failed to update ranking:", e);
@@ -1154,7 +1497,7 @@ export default {
           // XP System Calculation
           const xpGained = (total_score * 10) + 50;
           try {
-            const userDoc = await firestore.getDocument("users", auth.userId);
+            const userDoc = await getUserById(env.DB, auth.userId);
             if (userDoc) {
               const currentXp = (Number(userDoc.xp) || 0) + xpGained;
               
@@ -1166,7 +1509,7 @@ export default {
               if (newLevel > currentLevel) {
                 updates.level = newLevel;
               }
-              await firestore.updateDocument("users", auth.userId, updates);
+              await updateUser(env.DB, auth.userId, updates);
               
               // Add to examResult for frontend display
               examResult.xpGained = xpGained;
@@ -1185,33 +1528,27 @@ export default {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
 
-          const seasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "active" } } }, limit: 1 });
-          if (seasons.length === 0) return json({ success: true, data: { total_score: 0, exams_taken: 0 } });
-          const activeSeasonId = seasons[0].id;
+          const activeSeason = await getActiveSeason(env.DB);
+          if (!activeSeason) return json({ success: true, data: { total_score: 0, exams_taken: 0 } });
           
-          const rankingId = `${activeSeasonId}_${auth.userId}`;
-          const ranking = await firestore.getDocument("rankings", rankingId);
+          const rankingId = `${activeSeason.id}_${auth.userId}`;
+          const ranking = await getRankingById(env.DB, rankingId);
           return json({ success: true, data: ranking || { total_score: 0, exams_taken: 0 } });
         }
 
         // /api/rankings
         if (url.pathname === "/api/rankings" && request.method === "GET") {
-          const seasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "active" } } }, limit: 1 });
-          if (seasons.length === 0) return json({ success: true, data: [] });
-          const activeSeasonId = seasons[0].id;
+          const activeSeason = await getActiveSeason(env.DB);
+          if (!activeSeason) return json({ success: true, data: [] });
+          const activeSeasonId = activeSeason.id;
           
           const cacheKey = `rankings_${activeSeasonId}`;
           let rankings = getCache(cacheKey);
           if (!rankings) {
-            rankings = await firestore.runQuery({ 
-              from: [{ collectionId: "rankings" }], 
-              where: { fieldFilter: { field: { fieldPath: "season_id" }, op: "EQUAL", value: { stringValue: activeSeasonId } } },
-              orderBy: [{ field: { fieldPath: "total_score" }, direction: "DESCENDING" }], 
-              limit: 50 
-            });
+            rankings = await listRankingsBySeason(env.DB, activeSeasonId, 50);
             // Fetch users for rankings
             for (const r of rankings) {
-              const u = await firestore.getDocument("users", String(r.user_id));
+              const u = await getUserById(env.DB, String(r.user_id));
               if (u) {
                 r.user_name = u.display_name;
                 r.user_avatar = u.avatar;
@@ -1228,18 +1565,7 @@ export default {
           if ("error" in auth) return auth.error;
 
           try {
-            const results = await firestore.runQuery({
-              from: [{ collectionId: "exam_results" }],
-              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
-            });
-
-            // Sort in JavaScript to avoid composite index requirements
-            results.sort((a: any, b: any) => {
-              const tA = a.taken_at ? new Date(a.taken_at).getTime() : 0;
-              const tB = b.taken_at ? new Date(b.taken_at).getTime() : 0;
-              return tB - tA;
-            });
-
+            const results = await listExamResultsByUser(env.DB, auth.userId);
             return json({ success: true, data: results });
           } catch (e) {
             return json({ success: false, data: [] });
@@ -1268,7 +1594,7 @@ export default {
                     updated_at: new Date().toISOString()
                 };
                 
-                await firestore.createDocument("tickets", ticketData);
+                await createTicket(env.DB, ticketData);
                 return json({ success: true, message: "Report submitted successfully" });
             } catch (e) {
                 return json({ success: false, message: "Failed to submit report" }, { status: 500 });
@@ -1281,11 +1607,7 @@ export default {
             if ("error" in auth) return auth.error;
 
             if (request.method === "GET") {
-                const bookmarks = await firestore.runQuery({
-                    from: [{ collectionId: "bookmarks" }],
-                    where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
-                });
-                bookmarks.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                const bookmarks = await listBookmarksByUser(env.DB, auth.userId);
                 return json({ success: true, data: bookmarks });
             }
 
@@ -1298,16 +1620,13 @@ export default {
                         return json({ success: false, message: "Missing required fields" }, { status: 400 });
                     }
 
-                    const existing = await firestore.runQuery({
-                        from: [{ collectionId: "bookmarks" }],
-                        where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
-                    });
+                    const existing = await listBookmarksByUser(env.DB, auth.userId);
 
                     if (existing && existing.some((b: any) => String(b.target_id) === String(target_id) && b.target_type === target_type)) {
                         return json({ success: false, message: "Already bookmarked" }, { status: 400 });
                     }
 
-                    const bookmark = await firestore.createDocument("bookmarks", {
+                    const bookmark = await createBookmark(env.DB, {
                         user_id: auth.userId,
                         target_type,
                         target_id: String(target_id),
@@ -1323,13 +1642,13 @@ export default {
 
             if (request.method === "DELETE" && bookmarksMatch[1]) {
                 const bookmarkId = bookmarksMatch[1];
-                const bookmark = await firestore.getDocument("bookmarks", bookmarkId);
+                const bookmark = await getBookmarkById(env.DB, bookmarkId);
                 if (!bookmark) return notFound();
                 if (bookmark.user_id !== auth.userId) {
                     return json({ success: false, message: "Unauthorized" }, { status: 403 });
                 }
                 
-                await firestore.deleteDocument("bookmarks", bookmarkId);
+                await deleteBookmark(env.DB, bookmarkId);
                 return json({ success: true });
             }
         }
@@ -1340,16 +1659,13 @@ export default {
           const myId = auth.userId;
 
           if (url.pathname === "/api/chat/unread-count" && request.method === "GET") {
-              const received = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "receiver_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+              const received = await listReceivedMessages(env.DB, myId);
               const unreadCount = received.filter((m: any) => !m.is_read).length;
               return json({ success: true, data: { unread: unreadCount } });
           }
 
           if (url.pathname === "/api/chat/inbox/conversations" && request.method === "GET") {
-              const sent = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "sender_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-              const received = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "receiver_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-              
-              const allMsgs = [...sent, ...received];
+              const allMsgs = await listDirectMessagesForUser(env.DB, myId);
               const convsMap = new Map();
               for (const m of allMsgs) {
                   const friendId = m.sender_id === myId ? m.receiver_id : m.sender_id;
@@ -1361,7 +1677,7 @@ export default {
               }
 
               const conversations = await Promise.all(Array.from(convsMap.entries()).map(async ([friendId, lastMessage]) => {
-                  const friendDoc = await firestore.getDocument("users", friendId);
+                  const friendDoc = await getUserById(env.DB, friendId);
                   const isRead = lastMessage.sender_id === myId || lastMessage.is_read;
                   return {
                       friend: friendDoc ? { id: friendId, display_name: friendDoc.display_name, avatar: friendDoc.avatar } : { id: friendId, display_name: 'Unknown User' },
@@ -1378,7 +1694,7 @@ export default {
               const body = await readJson(request) as any;
               if (!body.friendId || !body.message) return json({ success: false, message: "Missing fields" }, { status: 400 });
               
-              const newMsg = await firestore.createDocument("messages", {
+              const newMsg = await createDirectMessage(env.DB, {
                   sender_id: myId,
                   receiver_id: body.friendId,
                   content: body.message,
@@ -1391,22 +1707,15 @@ export default {
           if (url.pathname === "/api/chat/read" && request.method === "POST") {
               const body = await readJson(request) as any;
               const friendId = body.friendId;
-              const received = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "receiver_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-              const unreadFromFriend = received.filter((m: any) => m.sender_id === friendId && !m.is_read);
-              
-              for (const m of unreadFromFriend) {
-                  await firestore.updateDocument("messages", m.id, { is_read: true });
-              }
+              await markMessagesRead(env.DB, myId, friendId);
               return json({ success: true });
           }
 
           const chatMatch = url.pathname.match(/^\/api\/chat\/([a-zA-Z0-9_-]+)$/);
           if (chatMatch && request.method === "GET") {
               const friendId = chatMatch[1];
-              const sent = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "sender_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-              const received = await firestore.runQuery({ from: [{ collectionId: "messages" }], where: { fieldFilter: { field: { fieldPath: "receiver_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-              
-              const chatHistory = [...sent.filter((m: any) => m.receiver_id === friendId), ...received.filter((m: any) => m.sender_id === friendId)];
+              const allMsgs = await listDirectMessagesForUser(env.DB, myId);
+              const chatHistory = allMsgs.filter((m: any) => (m.sender_id === myId && m.receiver_id === friendId) || (m.sender_id === friendId && m.receiver_id === myId));
               chatHistory.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
               
               return json({ success: true, data: chatHistory });
@@ -1421,20 +1730,12 @@ export default {
 
             if (url.pathname === "/api/notifications" && request.method === "GET") {
                 const limitStr = url.searchParams.get("limit") || "50";
-                const notifications = await firestore.runQuery({
-                    from: [{ collectionId: "notifications" }],
-                    where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: myId } } },
-                });
-                // Sort descending manually (or through firestore query if supported)
-                notifications.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                return json({ success: true, data: notifications.slice(0, parseInt(limitStr, 10)) });
+                const notifications = await listNotificationsByUser(env.DB, myId, parseInt(limitStr, 10));
+                return json({ success: true, data: notifications });
             }
 
             if (url.pathname === "/api/notifications/unread-count" && request.method === "GET") {
-                const notifications = await firestore.runQuery({
-                    from: [{ collectionId: "notifications" }],
-                    where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: myId } } }
-                });
+                const notifications = await listNotificationsByUser(env.DB, myId, 1000);
                 const unreadCount = notifications.filter((n: any) => !n.is_read).length;
                 return json({ success: true, data: { unread: unreadCount } });
             }
@@ -1442,17 +1743,9 @@ export default {
             if (url.pathname === "/api/notifications/read" && request.method === "POST") {
                 const body = await readJson(request) as any;
                 if (body.id) {
-                    await firestore.updateDocument("notifications", body.id, { is_read: true });
+                    await markNotificationRead(env.DB, body.id);
                 } else {
-                    // Mark all as read
-                    const notifications = await firestore.runQuery({
-                        from: [{ collectionId: "notifications" }],
-                        where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: myId } } }
-                    });
-                    const unread = notifications.filter((n: any) => !n.is_read);
-                    for (const n of unread) {
-                        await firestore.updateDocument("notifications", n.id, { is_read: true });
-                    }
+                    await markAllNotificationsRead(env.DB, myId);
                 }
                 return json({ success: true });
             }
@@ -1483,7 +1776,10 @@ export default {
             query.where = { compositeFilter: { op: "AND", filters } };
           }
 
-          let allThreads = await firestore.runQuery(query);
+          let allThreads = await listThreads(env.DB, 200);
+          if (category && category !== "all" && category !== "undefined" && category !== "null") {
+            allThreads = allThreads.filter((t: any) => t.category === category);
+          }
           
           // Client-side search filtering
           if (search && search !== "undefined") {
@@ -1500,8 +1796,7 @@ export default {
           const usersMap = new Map();
           for (let i = 0; i < userIds.length; i += 30) {
             const chunk = userIds.slice(i, i + 30);
-            const userPromises = chunk.map(id => firestore.getDocument("users", String(id)));
-            const users = await Promise.all(userPromises);
+            const users = await Promise.all(chunk.map(id => getUserById(env.DB, String(id))));
             for (const u of users) {
               if (u && u.id) usersMap.set(String(u.id), u);
             }
@@ -1557,7 +1852,7 @@ export default {
             deleted_at: null,
           };
 
-          const created = await firestore.createDocument("threads", threadData);
+          const created = await createThread(env.DB, threadData);
           return json({ success: true, data: created }, { status: 201 });
         }
 
@@ -1567,7 +1862,7 @@ export default {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
 
-          const result = await firestore.getDocument("exam_results", examIdMatch[1]);
+          const result = await getExamResultById(env.DB, examIdMatch[1]);
           if (!result) return json({ success: false, message: "Result not found" }, { status: 404 });
 
           return json({ success: true, data: result });
@@ -1576,12 +1871,12 @@ export default {
         // /api/community/threads/:id (GET)
         const threadIdMatch = url.pathname.match(/^\/api\/community\/threads\/([a-zA-Z0-9_-]+)$/);
         if (threadIdMatch && request.method === "GET") {
-          const threadDoc = await firestore.getDocument("threads", threadIdMatch[1]);
+          const threadDoc = await getThreadById(env.DB, threadIdMatch[1]);
           if (!threadDoc) return notFound();
           
           if (!threadDoc.stats) threadDoc.stats = { views: threadDoc.views || 0, likes: threadDoc.likes || 0, comments_count: 0 };
           
-          const u = await firestore.getDocument("users", String(threadDoc.user_id));
+          const u = await getUserById(env.DB, String(threadDoc.user_id));
           if (u) {
             threadDoc.User = { id: u.id, display_name: u.display_name || "Unknown User", avatar: u.avatar || null, plan_type: u.plan_type || "free" };
           }
@@ -1593,16 +1888,7 @@ export default {
         const userThreadsMatch = url.pathname.match(/^\/api\/community\/threads\/user\/([a-zA-Z0-9_-]+)$/);
         if (userThreadsMatch && request.method === "GET") {
           const userId = userThreadsMatch[1];
-          const threads = await firestore.runQuery({
-            from: [{ collectionId: "threads" }],
-            where: {
-              fieldFilter: {
-                field: { fieldPath: "user_id" },
-                op: "EQUAL",
-                value: { stringValue: userId }
-              }
-            }
-          });
+          const threads = await listThreadsByUser(env.DB, userId);
           threads.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           return json({ success: true, data: threads });
         }
@@ -1612,14 +1898,14 @@ export default {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           
-          const threadDoc = await firestore.getDocument("threads", threadIdMatch[1]);
+          const threadDoc = await getThreadById(env.DB, threadIdMatch[1]);
           if (!threadDoc) return notFound();
           
           if (threadDoc.user_id !== auth.userId) {
               return json({ success: false, message: "Unauthorized" }, { status: 403 });
           }
           
-          await firestore.deleteDocument("threads", threadIdMatch[1]);
+          await deleteThread(env.DB, threadIdMatch[1]);
           return json({ success: true });
         }
 
@@ -1628,24 +1914,14 @@ export default {
         if (commentsMatch && request.method === "GET") {
           const threadId = commentsMatch[1];
           // Fetch comments
-          let comments = await firestore.runQuery({
-            from: [{ collectionId: "comments" }],
-            where: {
-              fieldFilter: {
-                field: { fieldPath: "thread_id" },
-                op: "EQUAL",
-                value: { stringValue: threadId }
-              }
-            }
-          });
+          let comments = await listCommentsByThread(env.DB, threadId);
           
           // Fetch users for comments
           const userIds = [...new Set(comments.map((c: any) => c.user_id).filter(Boolean))];
           const usersMap = new Map();
           for (let i = 0; i < userIds.length; i += 30) {
             const chunk = userIds.slice(i, i + 30);
-            const userPromises = chunk.map(id => firestore.getDocument("users", String(id)));
-            const users = await Promise.all(userPromises);
+            const users = await Promise.all(chunk.map(id => getUserById(env.DB, String(id))));
             for (const u of users) {
               if (u && u.id) usersMap.set(String(u.id), u);
             }
@@ -1681,7 +1957,7 @@ export default {
              updated_at: new Date().toISOString()
           };
           
-          const created = await firestore.createDocument("comments", commentData);
+          const created = await createComment(env.DB, commentData);
           
           return json({ success: true, data: created });
         }
@@ -1693,11 +1969,11 @@ export default {
           if ("error" in auth) return auth.error;
           
           const commentId = commentLikeMatch[1];
-          const comment = await firestore.getDocument("comments", commentId);
+          const comment = await getCommentById(env.DB, commentId);
           if (!comment) return notFound();
           
           const currentLikes = comment.likes || 0;
-          await firestore.updateDocument("comments", commentId, { likes: currentLikes + 1 });
+          await updateComment(env.DB, commentId, { likes: currentLikes + 1 });
           
           return json({ success: true, likes: currentLikes + 1 });
         }
@@ -1708,7 +1984,18 @@ export default {
             const agency = url.searchParams.get("agency");
             const search = url.searchParams.get("search");
             const { results } = await env.DB.prepare("SELECT * FROM news ORDER BY created_at DESC LIMIT 100").all();
-            const news = results.map((r: any) => ({ ...r, metadata: r.metadata ? JSON.parse(r.metadata) : null }));
+            const news = results.map((r: any) => {
+              const metadata = r.metadata ? JSON.parse(r.metadata) : {};
+              return {
+                ...r,
+                metadata,
+                summary: metadata?.summary || null,
+                is_featured: !!metadata?.is_featured,
+                recruitment_type: metadata?.recruitment_type || null,
+                published_date: metadata?.published_date || null,
+                views: metadata?.views || 0,
+              };
+            });
             const category = url.searchParams.get("category");
             let filteredNews = news.filter((n: any) => n.status !== 'expired');
             if (category && category !== 'undefined') {
@@ -1745,17 +2032,8 @@ export default {
             body.updated_at = new Date().toISOString();
             body.views = 0;
             
-            const metadataStr = body.metadata ? JSON.stringify(body.metadata) : null;
-            await env.DB.prepare(`
-                INSERT INTO news (id, title, content, category, agency, author, external_link, status, application_start, application_end, metadata, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).bind(
-                body.id || crypto.randomUUID(), body.title || '', body.content || '', body.category || '', body.agency || '', body.author || '',
-                body.external_link || '', body.status || 'active', body.application_start || '', body.application_end || '', metadataStr,
-                body.created_at, body.updated_at
-            ).run();
-            
-            return json({ success: true, data: body });
+            const created = await createNews(env.DB, body);
+            return json({ success: true, data: created });
         }
 
         // /api/news/agency-stats
@@ -1763,7 +2041,15 @@ export default {
             try {
                 const typeFilter = url.searchParams.get("type");
                 const { results } = await env.DB.prepare("SELECT * FROM news ORDER BY created_at DESC LIMIT 100").all();
-                const news = results.map((r: any) => ({ ...r, metadata: r.metadata ? JSON.parse(r.metadata) : null }));
+                const news = results.map((r: any) => {
+                    const metadata = r.metadata ? JSON.parse(r.metadata) : {};
+                    return {
+                      ...r,
+                      metadata,
+                      recruitment_type: metadata?.recruitment_type || null,
+                      published_date: metadata?.published_date || null,
+                    };
+                });
                 const govNews = news.filter((n: any) => n.category === "งานราชการ" && n.status !== "expired");
                 const statsMap: any = {};
                 
@@ -1850,7 +2136,7 @@ export default {
         if (newsIdMatch && request.method === "GET") {
             try {
                 const id = newsIdMatch[1];
-                const doc = await firestore.getDocument("news", id);
+                const doc = await getNewsById(env.DB, id);
                 if (!doc) return json({ success: false, message: "not_found" }, { status: 404 });
                 return json({ success: true, data: doc });
             } catch (e) {
@@ -1864,7 +2150,8 @@ export default {
             const id = newsIdMatch[1];
             const body = await readJson(request) as any;
             body.updated_at = new Date().toISOString();
-            const updated = await firestore.updateDocument("news", id, body);
+            const updated = await updateNews(env.DB, id, body);
+            if (!updated) return json({ success: false, message: "not_found" }, { status: 404 });
             return json({ success: true, data: updated });
         }
 
@@ -1872,7 +2159,7 @@ export default {
             const auth = await requireAuthUserId(request, env);
             if ("error" in auth) return auth.error;
             const id = newsIdMatch[1];
-            await firestore.deleteDocument("news", id);
+            await deleteNews(env.DB, id);
             return json({ success: true, message: "Deleted" });
         }
 
@@ -1881,9 +2168,8 @@ export default {
             const auth = await requireAuthUserId(request, env);
             if ("error" in auth) return auth.error;
             const id = newsFeatureMatch[1];
-            const item = await firestore.getDocument("news", id);
-            if (!item) return json({ success: false, message: "Not found" }, { status: 404 });
-            const updated = await firestore.updateDocument("news", id, { is_featured: !item.is_featured });
+            const updated = await toggleNewsFeatured(env.DB, id);
+            if (!updated) return json({ success: false, message: "Not found" }, { status: 404 });
             return json({ success: true, data: updated });
         }
 
@@ -1967,10 +2253,45 @@ export default {
         // /api/news/sources/all
         if (url.pathname === "/api/news/sources/all" && request.method === "GET") {
             try {
-              const sources = await firestore.runQuery({ from: [{ collectionId: "news_sources" }] });
+              const { results: sources } = await env.DB.prepare("SELECT * FROM news_sources ORDER BY name ASC").all();
               return json({ success: true, data: sources });
             } catch(e) {
               return json({ success: true, data: [] });
+            }
+        }
+
+        // /api/news/sources
+        if (url.pathname === "/api/news/sources" && request.method === "POST") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const body = await readJson(request);
+            if (!body || !body.name) return json({ success: false, message: "name is required" }, { status: 400 });
+            
+            const id = "src_" + Date.now() + Math.random().toString(36).substr(2, 5);
+            const name = String(body.name).trim();
+            const url_str = String(body.url || "").trim();
+            const created_at = new Date().toISOString();
+
+            try {
+                await env.DB.prepare(
+                    "INSERT INTO news_sources (id, name, url, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+                ).bind(id, name, url_str, 1, created_at, created_at).run();
+                return json({ success: true, data: { id, name, url: url_str, is_active: 1, created_at, updated_at: created_at } });
+            } catch (e) {
+                return json({ success: false, message: "failed to create source" }, { status: 500 });
+            }
+        }
+
+        const newsSourceIdMatch = url.pathname.match(/^\/api\/news\/sources\/([a-zA-Z0-9_-]+)$/);
+        if (newsSourceIdMatch && request.method === "DELETE") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            const id = newsSourceIdMatch[1];
+            try {
+                await env.DB.prepare("DELETE FROM news_sources WHERE id = ?").bind(id).run();
+                return json({ success: true, message: "Deleted" });
+            } catch (e) {
+                return json({ success: false, message: "failed to delete source" }, { status: 500 });
             }
         }
 
@@ -1990,7 +2311,7 @@ export default {
             const jobData: any = body;
             jobData.created_at = new Date().toISOString();
             jobData.published_at = new Date().toISOString();
-            const created = await firestore.createDocument("news", jobData);
+            const created = await createNews(env.DB, jobData);
             return json({ success: true, data: created });
         }
 
@@ -2016,7 +2337,7 @@ export default {
         if (url.pathname === "/api/users/profile" && request.method === "GET") {
             const auth = await requireAuthUserId(request, env);
             if ("error" in auth) return auth.error;
-            const user = await firestore.getDocument("users", auth.userId);
+            const user = await getUserById(env.DB, auth.userId);
             return json({ success: true, data: sanitizeUser(user) });
         }
 
@@ -2030,9 +2351,9 @@ export default {
                 display_name: String(body.username).trim(),
                 updated_at: new Date().toISOString()
             };
-            await firestore.updateDocument("users", auth.userId, updates);
+            await updateUser(env.DB, auth.userId, updates);
             
-            const updatedUser = await firestore.getDocument("users", auth.userId);
+            const updatedUser = await getUserById(env.DB, auth.userId);
             return json({ success: true, data: sanitizeUser(updatedUser) });
         }
 
@@ -2040,7 +2361,7 @@ export default {
             const auth = await requireAuthUserId(request, env);
             if ("error" in auth) return auth.error;
             
-            await firestore.deleteDocument("users", auth.userId);
+            await deleteUser(env.DB, auth.userId);
             return json({ success: true, message: "Account deleted successfully" });
         }
 
@@ -2056,9 +2377,9 @@ export default {
                 settings_new_message: !!body.new_message,
                 updated_at: new Date().toISOString()
             };
-            await firestore.updateDocument("users", auth.userId, updates);
+            await updateUser(env.DB, auth.userId, updates);
             
-            const updatedUser = await firestore.getDocument("users", auth.userId);
+            const updatedUser = await getUserById(env.DB, auth.userId);
             return json({ success: true, data: sanitizeUser(updatedUser) });
         }
 
@@ -2068,10 +2389,7 @@ export default {
           if ("error" in auth) return auth.error;
 
           try {
-            const results = await firestore.runQuery({
-              from: [{ collectionId: "exam_results" }],
-              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
-            });
+            const results = await listExamResultsByUser(env.DB, auth.userId);
 
             const totalExams = results.length;
             const totalScore = results.reduce((acc: number, curr: any) => acc + (Number(curr.score) || 0), 0);
@@ -2118,10 +2436,7 @@ export default {
           const period = periodStr === "all" ? 9999 : parseInt(periodStr || "7", 10);
           
           try {
-            const results = await firestore.runQuery({
-              from: [{ collectionId: "exam_results" }],
-              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
-            });
+            const results = await listExamResultsByUser(env.DB, auth.userId);
             
             const now = new Date();
             const cutoff = new Date(now.getTime() - period * 24 * 60 * 60 * 1000);
@@ -2164,10 +2479,7 @@ export default {
           if ("error" in auth) return auth.error;
           
           try {
-            const results = await firestore.runQuery({
-              from: [{ collectionId: "exam_results" }],
-              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
-            });
+            const results = await listExamResultsByUser(env.DB, auth.userId);
             
             const subjectStats: Record<string, { score: number, full: number }> = {};
             
@@ -2221,19 +2533,13 @@ export default {
              const friendId = body.friendId;
              if (!friendId || friendId === myId) return json({ success: false, message: "Invalid friend ID" }, { status: 400 });
              
-             const reqs = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "requester_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const relations = await listFriendsByUser(env.DB, myId);
              
-             const exists = reqs.find((r: any) => r.target_id === friendId) || tgts.find((r: any) => r.requester_id === friendId);
+             const exists = relations.find((r: any) => (r.requester_id === myId && r.target_id === friendId) || (r.target_id === myId && r.requester_id === friendId));
              
              if (exists) return json({ success: false, message: "Request already exists or already friends" }, { status: 400 });
              
-             const newReq = await firestore.createDocument("friends", {
-                 requester_id: myId,
-                 target_id: friendId,
-                 status: "pending",
-                 created_at: new Date().toISOString()
-             });
+             const newReq = await createFriendRequest(env.DB, myId, friendId);
              return json({ success: true, data: newReq });
           }
           
@@ -2241,44 +2547,40 @@ export default {
              const body = await readJson(request) as any;
              const friendId = body.friendId;
              
-             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const tgts = await listFriendsByUser(env.DB, myId);
              const req = tgts.find((r: any) => r.requester_id === friendId && r.status === "pending");
              
              if (!req) return json({ success: false, message: "Request not found" }, { status: 404 });
              
-             await firestore.updateDocument("friends", req.id, { status: "accepted" });
+             await updateFriend(env.DB, req.id, { status: "accepted" });
              return json({ success: true });
           }
           
           const removeMatch = url.pathname.match(/^\/api\/friends\/remove\/(.+)$/);
           if (removeMatch && request.method === "DELETE") {
              const friendId = removeMatch[1];
-             const reqs = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "requester_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const relations = await listFriendsByUser(env.DB, myId);
              
              const toDelete = [
-                 ...reqs.filter((r: any) => r.target_id === friendId),
-                 ...tgts.filter((r: any) => r.requester_id === friendId)
+                 ...relations.filter((r: any) => r.target_id === friendId || r.requester_id === friendId)
              ];
              
              for (const doc of toDelete) {
-                 await firestore.deleteDocument("friends", doc.id);
+                 await deleteFriend(env.DB, doc.id);
              }
              return json({ success: true });
           }
           
           if (url.pathname === "/api/friends/list" && request.method === "GET") {
-             const reqs = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "requester_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const relations = await listFriendsByUser(env.DB, myId);
              
              const friendsList = [
-                 ...reqs.filter((r: any) => r.status === "accepted"),
-                 ...tgts.filter((r: any) => r.status === "accepted")
+                 ...relations.filter((r: any) => r.status === "accepted")
              ];
              const friendIds = friendsList.map((f: any) => f.requester_id === myId ? f.target_id : f.requester_id);
              
              const friendProfiles = await Promise.all(friendIds.map(async (fid: string) => {
-                 const doc = await firestore.getDocument("users", fid);
+                 const doc = await getUserById(env.DB, fid);
                  if (!doc) return null;
                  return { id: fid, display_name: doc.display_name, avatar: doc.avatar, level: doc.level };
              }));
@@ -2287,11 +2589,11 @@ export default {
           }
           
           if (url.pathname === "/api/friends/pending" && request.method === "GET") {
-             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const tgts = await listFriendsByUser(env.DB, myId);
              const pendingList = tgts.filter((r: any) => r.status === "pending");
              
              const pendingProfiles = await Promise.all(pendingList.map(async (f: any) => {
-                 const doc = await firestore.getDocument("users", f.requester_id);
+                 const doc = await getUserById(env.DB, f.requester_id);
                  if (!doc) return null;
                  return { id: f.requester_id, display_name: doc.display_name, avatar: doc.avatar, level: doc.level, request_id: f.id };
              }));
@@ -2302,11 +2604,10 @@ export default {
           const checkMatch = url.pathname.match(/^\/api\/friends\/check\/(.+)$/);
           if (checkMatch && request.method === "GET") {
              const friendId = checkMatch[1];
-             const reqs = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "requester_id" }, op: "EQUAL", value: { stringValue: myId } } } });
-             const tgts = await firestore.runQuery({ from: [{ collectionId: "friends" }], where: { fieldFilter: { field: { fieldPath: "target_id" }, op: "EQUAL", value: { stringValue: myId } } } });
+             const relations = await listFriendsByUser(env.DB, myId);
              
-             const r1 = reqs.find((r: any) => r.target_id === friendId);
-             const r2 = tgts.find((r: any) => r.requester_id === friendId);
+             const r1 = relations.find((r: any) => r.requester_id === myId && r.target_id === friendId);
+             const r2 = relations.find((r: any) => r.target_id === myId && r.requester_id === friendId);
              
              if (r1) {
                  return json({ success: true, status: r1.status === "accepted" ? "friends" : "sent" });
@@ -2326,7 +2627,7 @@ export default {
           if ("error" in auth) return auth.error;
 
           try {
-            const userDoc = await firestore.getDocument("users", auth.userId);
+            const userDoc = await getUserById(env.DB, auth.userId);
             if (!userDoc) return json({ success: false, message: "User not found" }, { status: 404 });
 
             const now = new Date();
@@ -2364,7 +2665,7 @@ export default {
               updates.level = newLevel;
             }
 
-            await firestore.updateDocument("users", auth.userId, updates);
+            await updateUser(env.DB, auth.userId, updates);
 
             return json({
               success: true,
@@ -2382,9 +2683,7 @@ export default {
         
         if (url.pathname === "/api/payments/plans" && request.method === "GET") {
           try {
-            const results = await firestore.runQuery({
-              from: [{ collectionId: "payment_plans" }]
-            });
+            const results = await listPaymentPlans(env.DB);
             results.sort((a: any, b: any) => (a.price || 0) - (b.price || 0));
             return json({ success: true, plans: results });
           } catch (e) {
@@ -2400,7 +2699,7 @@ export default {
             const body = await request.json();
             const { plan_id, payment_method } = body as any;
             
-            const planDoc = await firestore.getDocument("payment_plans", plan_id);
+            const planDoc: any = await getPaymentPlanById(env.DB, plan_id);
             if (!planDoc) {
               return json({ success: false, message: "Plan not found" }, { status: 404 });
             }
@@ -2416,7 +2715,7 @@ export default {
               created_at: new Date().toISOString()
             };
 
-            await firestore.createDocument("transactions", transactionData, transactionData.id);
+            await createTransaction(env.DB, transactionData);
 
             return json({ success: true, transaction: transactionData });
           } catch (e: any) {
@@ -2432,11 +2731,11 @@ export default {
           const id = decodeURIComponent(adminPlanMatch[1]);
           if (request.method === "PUT") {
             const body = await request.json();
-            await firestore.updateDocument("payment_plans", id, { ...(body as any), updated_at: new Date().toISOString() });
+            await updatePaymentPlan(env.DB, id, { ...(body as any), updated_at: new Date().toISOString() });
             return json({ success: true });
           }
           if (request.method === "DELETE") {
-            await firestore.deleteDocument("payment_plans", id);
+            await deletePaymentPlan(env.DB, id);
             return json({ success: true });
           }
         } else if (url.pathname === "/api/admin/payments/plans") {
@@ -2445,7 +2744,7 @@ export default {
 
           if (request.method === "GET") {
             try {
-              const results = await firestore.runQuery({ from: [{ collectionId: "payment_plans" }] });
+              const results = await listPaymentPlans(env.DB);
               return json({ success: true, plans: results });
             } catch(e) {
               return json({ success: true, plans: [] });
@@ -2453,9 +2752,7 @@ export default {
           }
           if (request.method === "POST") {
             const body = await request.json() as any;
-            const id = crypto.randomUUID();
-            const planData = { ...body, id, created_at: new Date().toISOString() };
-            await firestore.createDocument("payment_plans", planData, id);
+            const planData = await createPaymentPlan(env.DB, { ...body, id: crypto.randomUUID(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
             return json({ success: true, plan: planData });
           }
         }
@@ -2466,13 +2763,13 @@ if (assetMatch) {
   if (request.method === "DELETE") {
     const auth = await requireAuthUserId(request, env);
     if ("error" in auth) return auth.error;
-    await firestore.deleteDocument("assets", id);
+    await deleteAsset(env.DB, id);
     return json({ success: true });
   }
 } else if (url.pathname === "/api/assets") {
   if (request.method === "GET") {
     try {
-      const results = await firestore.runQuery({ from: [{ collectionId: "assets" }] });
+      const results = await listAssets(env.DB);
       return json({ success: true, data: results });
     } catch(e) {
       return json({ success: true, data: [] });
@@ -2482,9 +2779,7 @@ if (assetMatch) {
     const auth = await requireAuthUserId(request, env);
     if ("error" in auth) return auth.error;
     const body = await request.json() as any;
-    const id = crypto.randomUUID();
-    const assetData = { ...body, id, created_at: new Date().toISOString() };
-    await firestore.createDocument("assets", assetData, id);
+    const assetData = await createAsset(env.DB, { ...body, id: crypto.randomUUID(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
     return json({ success: true, data: assetData });
   }
 }
@@ -2517,7 +2812,7 @@ if (url.pathname === "/api/admin/settings") {
   if ("error" in auth) return auth.error;
   if (request.method === "GET") {
     try {
-      const settings = await firestore.getDocument("system_config", "general_settings", true);
+      const settings = await getSystemConfig(env.DB, "general_settings");
       return json({ success: true, settings: settings || {} });
     } catch (e) {
       return json({ success: true, settings: {} });
@@ -2525,12 +2820,7 @@ if (url.pathname === "/api/admin/settings") {
   }
   if (request.method === "PUT") {
     const body = await request.json() as any;
-    const existing = await firestore.getDocument("system_config", "general_settings");
-    if (existing) {
-      await firestore.updateDocument("system_config", "general_settings", body);
-    } else {
-      await firestore.createDocument("system_config", body, "general_settings");
-    }
+    await upsertSystemConfig(env.DB, "general_settings", body);
     return json({ success: true, settings: body });
   }
 }
@@ -2538,7 +2828,7 @@ if (url.pathname === "/api/admin/settings") {
 if (url.pathname === "/api/public/settings") {
   if (request.method === "GET") {
     try {
-      const settings = await firestore.getDocument("system_config", "general_settings", true);
+      const settings = await getSystemConfig(env.DB, "general_settings");
       return json({ success: true, settings: settings || {} });
     } catch (e) {
       return json({ success: true, settings: {} });
@@ -2549,7 +2839,7 @@ if (url.pathname === "/api/public/settings") {
 if (url.pathname === "/api/legal/policy") {
   if (request.method === "GET") {
     try {
-      const policy = await firestore.getDocument("system_config", "privacy_policy");
+      const policy = await getSystemConfig(env.DB, "privacy_policy");
       return json({ success: true, content: policy?.content || "" });
     } catch (e: any) {
       return json({ success: false, error: e.message || String(e) }, { status: 500 });
@@ -2560,12 +2850,7 @@ if (url.pathname === "/api/legal/policy") {
       const auth = await requireAuthUserId(request, env);
       if ("error" in auth) return auth.error;
       const body: any = await request.json();
-      const existing = await firestore.getDocument("system_config", "privacy_policy");
-      if (existing) {
-        await firestore.updateDocument("system_config", "privacy_policy", { content: body.content });
-      } else {
-        await firestore.createDocument("system_config", { content: body.content }, "privacy_policy");
-      }
+      await upsertSystemConfig(env.DB, "privacy_policy", { content: body.content });
       return json({ success: true, message: "Policy updated" });
     } catch (e: any) {
       return json({ success: false, error: e.message || String(e) }, { status: 500 });
@@ -2580,11 +2865,7 @@ if (url.pathname === "/api/legal/policy") {
                 const search = url.searchParams.get("search");
                 const category = url.searchParams.get("category");
 
-                let businesses = await firestore.runQuery({
-                    from: [{ collectionId: "businesses" }],
-                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
-                    limit: 50
-                });
+                let businesses = await listBusinesses(env.DB, 50);
 
                 if (category) {
                     businesses = businesses.filter((b: any) => b.category === category);
@@ -2611,18 +2892,14 @@ if (url.pathname === "/api/legal/policy") {
                 const body: any = await request.json();
                 
                 // Check if user already has a business page
-                const businesses = await firestore.runQuery({
-                    from: [{ collectionId: "businesses" }],
-                    where: { compositeFilter: { op: "AND", filters: [{ fieldFilter: { field: { fieldPath: "owner_uid" }, op: "EQUAL", value: { stringValue: auth.userId } } }] } },
-                    limit: 1
-                });
+                const business = await getBusinessByOwner(env.DB, auth.userId);
                 
                 if (request.method === "POST") {
-                    if (businesses && businesses.length > 0) {
+                    if (business) {
                         return json({ success: false, message: 'User already has a business page.' }, { status: 400 });
                     }
                     
-                    const businessData = {
+                    const businessData: any = {
                         owner_uid: auth.userId,
                         name: body.name || '',
                         tagline: body.tagline || null,
@@ -2636,21 +2913,15 @@ if (url.pathname === "/api/legal/policy") {
                         updated_at: new Date().toISOString()
                     };
                     
-                    const newDoc = await firestore.createDocument("businesses", businessData);
-                    // Add id to doc
-                    if (newDoc && newDoc.id) {
-                        businessData.id = newDoc.id;
-                        await firestore.updateDocument("businesses", newDoc.id, { id: newDoc.id });
-                    }
-                    
-                    return json({ success: true, business: businessData }, { status: 201 });
+                    const createdBusiness = await createBusiness(env.DB, businessData);
+                    return json({ success: true, business: createdBusiness }, { status: 201 });
                 } else {
                     // PUT request
-                    if (!businesses || businesses.length === 0) {
+                    if (!business) {
                         return json({ success: false, message: 'Business not found.' }, { status: 404 });
                     }
                     
-                    const docId = businesses[0].id;
+                    const docId = business.id;
                     const updateData: any = { updated_at: new Date().toISOString() };
                     if (body.name !== undefined) updateData.name = body.name;
                     if (body.tagline !== undefined) updateData.tagline = body.tagline;
@@ -2660,8 +2931,8 @@ if (url.pathname === "/api/legal/policy") {
                     if (body.contact_line_id !== undefined) updateData.contact_line_id = body.contact_line_id;
                     if (body.contact_facebook_url !== undefined) updateData.contact_facebook_url = body.contact_facebook_url;
                     
-                    await firestore.updateDocument("businesses", docId, updateData);
-                    return json({ success: true, message: "Business updated successfully", business: { ...businesses[0], ...updateData } });
+                    const updated = await updateBusiness(env.DB, docId, updateData);
+                    return json({ success: true, message: "Business updated successfully", business: updated });
                 }
             } catch (err) {
                 return json({ success: false, message: "Error processing business.", error: String(err) }, { status: 500 });
@@ -2671,17 +2942,13 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/business/feed" && request.method === "GET") {
             try {
                 // Fetch recent posts
-                const posts = await firestore.runQuery({
-                    from: [{ collectionId: "business_posts" }],
-                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
-                    limit: 50
-                });
+                const posts = await listBusinessPosts(env.DB, undefined, 50);
 
                 // Attach business details (name, logo_image)
                 const businessIds = Array.from(new Set(posts.map((p: any) => p.business_id).filter(Boolean)));
                 const businessesMap = new Map();
                 for (const bid of businessIds) {
-                    const b = await firestore.getDocument("businesses", String(bid));
+                    const b = await getBusinessById(env.DB, String(bid));
                     if (b) businessesMap.set(String(bid), b);
                 }
 
@@ -2705,17 +2972,12 @@ if (url.pathname === "/api/legal/policy") {
             if ("error" in auth) return auth.error;
             
             try {
-                const businesses = await firestore.runQuery({
-                    from: [{ collectionId: "businesses" }],
-                    where: { compositeFilter: { op: "AND", filters: [{ fieldFilter: { field: { fieldPath: "owner_uid" }, op: "EQUAL", value: { stringValue: auth.userId } } }] } },
-                    limit: 1
-                });
-                
-                if (!businesses || businesses.length === 0) {
+                const business = await getBusinessByOwner(env.DB, auth.userId);
+                if (!business) {
                     return json({ success: false, message: 'Business not found.' }, { status: 404 });
                 }
                 
-                return json({ success: true, business: businesses[0] });
+                return json({ success: true, business });
             } catch (err) {
                 return json({ success: false, message: "Error fetching business.", error: String(err) }, { status: 500 });
             }
@@ -2726,14 +2988,8 @@ if (url.pathname === "/api/legal/policy") {
             
             try {
                 // Find the business owned by the user
-                const businesses = await firestore.runQuery({
-                    from: [{ collectionId: "businesses" }],
-                    where: { compositeFilter: { op: "AND", filters: [{ fieldFilter: { field: { fieldPath: "owner_uid" }, op: "EQUAL", value: { stringValue: auth.userId } } }] } },
-                    limit: 1
-                });
-                if (businesses && businesses.length > 0) {
-                    await firestore.deleteDocument("businesses", businesses[0].id);
-                }
+                const business = await getBusinessByOwner(env.DB, auth.userId);
+                if (business) await deleteBusiness(env.DB, business.id);
                 return json({ success: true, message: "Business page deleted" });
             } catch (err) {
                 return json({ success: false, message: "Error deleting business", error: String(err) }, { status: 500 });
@@ -2764,19 +3020,7 @@ if (url.pathname === "/api/legal/policy") {
                 if (!businessId) return json({ success: false, message: 'business_id is required' }, { status: 400 });
 
                 // Try fetching from business_posts collection, fallback to empty
-                const posts = await firestore.runQuery({
-                    from: [{ collectionId: "business_posts" }],
-                    where: {
-                        compositeFilter: {
-                            op: "AND",
-                            filters: [
-                                { fieldFilter: { field: { fieldPath: "business_id" }, op: "EQUAL", value: { stringValue: businessId } } }
-                            ]
-                        }
-                    },
-                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
-                    limit: 50
-                });
+                const posts = await listBusinessPosts(env.DB, businessId, 50);
 
                 return json({ success: true, posts });
             } catch (err) {
@@ -2789,7 +3033,7 @@ if (url.pathname === "/api/legal/policy") {
         if (businessMatch && request.method === "GET") {
             try {
                 const id = businessMatch[1];
-                const business = await firestore.getDocument("businesses", id);
+                const business = await getBusinessById(env.DB, id);
                 if (!business) {
                     return json({ success: false, message: 'Business not found.' }, { status: 404 });
                 }
@@ -2806,10 +3050,7 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/ads/admin/config") return json({ communityViewCost: 0.1, communityClickCost: 5.0, newsViewCost: 0.15, newsClickCost: 6.0, resultViewCost: 0.2, resultClickCost: 8.0, inFeedFrequency: 10, adSenseBackupId: '', examResultSlotId: '', homeSlotId: '' });
         if (url.pathname === "/api/support/admin/tickets") {
             try {
-                const results = await firestore.runQuery({
-                    from: [{ collectionId: "tickets" }],
-                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }]
-                });
+                const results = await listTickets(env.DB);
                 return json({ success: true, data: results });
             } catch (e) {
                 return json({ success: false, data: [] });
@@ -2838,7 +3079,7 @@ if (url.pathname === "/api/legal/policy") {
                     updated_at: new Date().toISOString()
                 };
                 
-                const created = await firestore.createDocument("tickets", ticketData);
+                const created = await createTicket(env.DB, ticketData);
                 return json({ success: true, data: created });
             } catch (e) {
                 return json({ success: false, message: "Failed to create ticket" }, { status: 500 });
@@ -2850,10 +3091,7 @@ if (url.pathname === "/api/legal/policy") {
                 const auth = await requireAuthUserId(request, env);
                 if ("error" in auth) return auth.error;
                 
-                const results = await firestore.runQuery({
-                    from: [{ collectionId: "tickets" }],
-                    where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: auth.userId } } }
-                });
+                const results = await listTickets(env.DB, auth.userId);
                 
                 results.sort((a: any, b: any) => {
                   const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -2871,14 +3109,10 @@ if (url.pathname === "/api/legal/policy") {
         if (ticketMatch && request.method === "GET") {
             try {
                 const ticketId = ticketMatch[1];
-                const ticket = await firestore.getDocument("tickets", ticketId);
+                const ticket = await getTicketById(env.DB, ticketId);
                 if (!ticket) return json({ success: false, message: "Ticket not found" }, { status: 404 });
                 
-                // Get messages for ticket
-                const messages = await firestore.runQuery({
-                    from: [{ collectionId: "messages" }],
-                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "ASCENDING" }]
-                }, `tickets/${ticketId}`);
+                const messages = await listTicketMessages(env.DB, ticketId);
                 
                 ticket.messages = messages || [];
                 return json({ success: true, data: ticket });
@@ -2896,7 +3130,7 @@ if (url.pathname === "/api/legal/policy") {
                 const ticketId = ticketStatusMatch[1];
                 const body = await readJson(request) as any;
                 
-                await firestore.updateDocument("tickets", ticketId, {
+                await updateTicket(env.DB, ticketId, {
                     status: body.status,
                     updated_at: new Date().toISOString()
                 });
@@ -2923,10 +3157,10 @@ if (url.pathname === "/api/legal/policy") {
                     created_at: new Date().toISOString()
                 };
                 
-                const created = await firestore.createDocument(`tickets/${ticketId}/messages`, messageData);
+                const created = await createTicketMessage(env.DB, ticketId, messageData);
                 
                 // Update ticket updated_at
-                await firestore.updateDocument("tickets", ticketId, {
+                await updateTicket(env.DB, ticketId, {
                     updated_at: new Date().toISOString()
                 });
                 
@@ -2936,9 +3170,12 @@ if (url.pathname === "/api/legal/policy") {
                 return json({ success: false, message: "Failed to add message" }, { status: 500 });
             }
         }
-        if (url.pathname === "/api/admin/payments") return json([]);
+        if (url.pathname === "/api/admin/payments") return json(await listPayments(env.DB, undefined, 100));
         if (url.pathname === "/api/admin/ads/pending") return json([]);
-        if (url.pathname === "/api/news/sources/all") return json({ success: true, data: [] });
+        if (url.pathname === "/api/news/sources/all") {
+            const { results } = await env.DB.prepare("SELECT * FROM news_sources ORDER BY name ASC").all();
+            return json({ success: true, data: results || [] });
+        }
         if (url.pathname === "/api/assets") return json({ success: true, data: [] });
 
         // Admin and System Stubs / Simple Implementation
@@ -2947,38 +3184,26 @@ if (url.pathname === "/api/legal/policy") {
             if ("error" in auth) return auth.error;
 
             try {
-                // Use COUNT API for users to save Firestore Read Quota
-                const totalUsers = await firestore.runCountQuery({ from: [{ collectionId: "users" }] });
-                const premiumUsers = await firestore.runCountQuery({ 
-                    from: [{ collectionId: "users" }],
-                    where: { fieldFilter: { field: { fieldPath: "plan_type" }, op: "EQUAL", value: { stringValue: "premium" } } }
-                });
-
                 const now = new Date();
                 const startOfDay = new Date(now);
                 startOfDay.setHours(0, 0, 0, 0);
 
-                let realActiveUsers = Math.floor(totalUsers * 0.1); // Fallback
-                try {
-                    realActiveUsers = await firestore.runCountQuery({
-                        from: [{ collectionId: "users" }],
-                        where: {
-                            fieldFilter: {
-                                field: { fieldPath: "last_active_at" },
-                                op: "GREATER_THAN_OR_EQUAL",
-                                value: { stringValue: startOfDay.toISOString() }
-                            }
-                        }
-                    });
-                } catch (e) {
-                    console.error("Error querying active users:", e);
-                }
+                const totalUsersRes = await env.DB.prepare("SELECT COUNT(*) AS c FROM users").first() as any;
+                const premiumUsersRes = await env.DB.prepare("SELECT COUNT(*) AS c FROM users WHERE plan_type = 'premium'").first() as any;
+                const activeUsersRes = await env.DB
+                    .prepare("SELECT COUNT(*) AS c FROM users WHERE last_active_at >= ?")
+                    .bind(startOfDay.toISOString())
+                    .first() as any;
+
+                const totalUsers = Number(totalUsersRes?.c || 0);
+                const premiumUsers = Number(premiumUsersRes?.c || 0);
+                const realActiveUsers = Number(activeUsersRes?.c || 0);
 
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
 
                 // Fetch recent payments for trend map only (Limit to 200 to prevent massive reads)
-                const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], limit: 200, orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }] });
+                const payments = await listPayments(env.DB, undefined, 200);
                 
                 const trendMap: any = {};
                 for (let i = 5; i >= 0; i--) {
@@ -3008,34 +3233,23 @@ if (url.pathname === "/api/legal/policy") {
                 const startOfMonth = new Date(currentYear, currentMonth, 1).toISOString();
                 const successStatuses = ["approved", "completed", "success"];
 
-                const revenueQuery = async (statusOp: string, statusValue: any, dateStart?: string) => {
-                    const filters: any[] = [];
-                    if (Array.isArray(statusValue)) {
-                        filters.push({ fieldFilter: { field: { fieldPath: "status" }, op: "IN", value: { arrayValue: { values: statusValue.map(v => ({ stringValue: v })) } } } });
-                    } else {
-                        filters.push({ fieldFilter: { field: { fieldPath: "status" }, op: statusOp, value: { stringValue: statusValue } } });
-                    }
-                    if (dateStart) {
-                        filters.push({ fieldFilter: { field: { fieldPath: "created_at" }, op: "GREATER_THAN_OR_EQUAL", value: { stringValue: dateStart } } });
-                    }
-                    
-                    const query = filters.length > 1 ? { compositeFilter: { op: "AND", filters } } : filters[0];
-                    const aggregations = [{ alias: "total", sum: { field: { fieldPath: "amount" } } }];
-                    
-                    try {
-                        const res = await firestore.runAggregationQuery({ from: [{ collectionId: "payments" }], where: query }, aggregations);
-                        const val = res?.total?.integerValue || res?.total?.doubleValue || 0;
-                        return Number(val);
-                    } catch (e) {
-                        return 0; // Fallback or missing index
-                    }
+                const revenueQuery = async (statuses: string[], dateStart?: string) => {
+                    const placeholders = statuses.map(() => "?").join(", ");
+                    const sql = dateStart
+                      ? `SELECT COALESCE(SUM(amount), 0) AS total FROM payments WHERE lower(status) IN (${placeholders}) AND created_at >= ?`
+                      : `SELECT COALESCE(SUM(amount), 0) AS total FROM payments WHERE lower(status) IN (${placeholders})`;
+                    const stmt = env.DB.prepare(sql);
+                    const row = dateStart
+                      ? await stmt.bind(...statuses.map((s) => s.toLowerCase()), dateStart).first() as any
+                      : await stmt.bind(...statuses.map((s) => s.toLowerCase())).first() as any;
+                    return Number(row?.total || 0);
                 };
 
                 const [pendingRevenue, totalRevenue, yearlyRevenue, monthlyRevenue] = await Promise.all([
-                    revenueQuery("EQUAL", "pending"),
-                    revenueQuery("IN", successStatuses),
-                    revenueQuery("IN", successStatuses, startOfYear),
-                    revenueQuery("IN", successStatuses, startOfMonth)
+                    revenueQuery(["pending"]),
+                    revenueQuery(successStatuses),
+                    revenueQuery(successStatuses, startOfYear),
+                    revenueQuery(successStatuses, startOfMonth)
                 ]);
 
                 return json({
@@ -3081,20 +3295,12 @@ if (url.pathname === "/api/legal/policy") {
           const userId = adminUserLogsMatch[1];
 
           const fetchLogs = async (value: any) => {
-            return firestore.runQuery({
-              from: [{ collectionId: "system_logs" }],
-              where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value } },
-              orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
-              limit: 10
-            }).catch(async () => {
-              const allLogs = await firestore.runQuery({
-                from: [{ collectionId: "system_logs" }],
-                where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value } },
-                limit: 50
-              });
-              allLogs.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-              return allLogs.slice(0, 10);
-            });
+            const rawUserId = value?.stringValue ?? value?.integerValue ?? value;
+            const { results } = await env.DB
+              .prepare("SELECT * FROM system_logs WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT 10")
+              .bind(String(rawUserId))
+              .all();
+            return results || [];
           };
 
           const logsA = await fetchLogs({ stringValue: userId });
@@ -3117,10 +3323,10 @@ if (url.pathname === "/api/legal/policy") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const id = adminUserHistoryMatch[1];
-          const userDoc = await firestore.getDocument("users", id);
+          const userDoc = await getUserById(env.DB, id);
           if (!userDoc) return json({ message: "User not found" }, { status: 404 });
-          const examHistory = await firestore.runQuery({ from: [{ collectionId: "exam_results" }], where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: id } } }, limit: 20 });
-          const paymentHistory = await firestore.runQuery({ from: [{ collectionId: "payments" }], where: { fieldFilter: { field: { fieldPath: "user_id" }, op: "EQUAL", value: { stringValue: id } } }, limit: 10 });
+          const examHistory = await listExamResultsByUser(env.DB, id, 20);
+          const paymentHistory = await listPayments(env.DB, id, 10);
           return json({ success: true, user: userDoc, examHistory, paymentHistory });
         }
 
@@ -3129,7 +3335,7 @@ if (url.pathname === "/api/legal/policy") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const body = await request.json() as any;
-          await firestore.updateDocument("users", adminUserStatusMatch[1], { status: body.status });
+          await updateUser(env.DB, adminUserStatusMatch[1], { status: body.status });
           return json({ success: true });
         }
 
@@ -3138,7 +3344,7 @@ if (url.pathname === "/api/legal/policy") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const body = await request.json() as any;
-          await firestore.updateDocument("users", adminUserPermMatch[1], { admin_permissions: body.permissions });
+          await updateUser(env.DB, adminUserPermMatch[1], { admin_permissions: body.permissions });
           return json({ success: true });
         }
 
@@ -3147,7 +3353,7 @@ if (url.pathname === "/api/legal/policy") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const body = await request.json() as any;
-          await firestore.updateDocument("users", adminUserUpdateMatch[1], body);
+          await updateUser(env.DB, adminUserUpdateMatch[1], body);
           return json({ success: true });
         }
 
@@ -3155,11 +3361,7 @@ if (url.pathname === "/api/legal/policy") {
             const auth = await requireAuthUserId(request, env);
             if ("error" in auth) return auth.error;
             try {
-                const messages = await firestore.runQuery({
-                    from: [{ collectionId: "contact_messages" }],
-                    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
-                    limit: 50
-                });
+                const { results: messages } = await env.DB.prepare("SELECT * FROM contact_messages ORDER BY datetime(created_at) DESC LIMIT 50").all();
                 
                 const formattedMessages = messages.map((doc: any) => ({
                     id: doc.id,
@@ -3174,10 +3376,7 @@ if (url.pathname === "/api/legal/policy") {
             } catch (e: any) {
                 // If missing index, fetch without order
                 try {
-                    const messages = await firestore.runQuery({
-                        from: [{ collectionId: "contact_messages" }],
-                        limit: 50
-                    });
+                    const { results: messages } = await env.DB.prepare("SELECT * FROM contact_messages LIMIT 50").all();
                     const formattedMessages = messages.map((doc: any) => ({
                         id: doc.id,
                         type: doc.type || (doc.user_id ? 'User' : 'Visitor'),
@@ -3208,7 +3407,7 @@ if (url.pathname === "/api/legal/policy") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
 
-          const users = await firestore.runQuery({ from: [{ collectionId: "users" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 100 });
+          const users = await listUsers(env.DB, 100);
           return json(users);
         }
 
@@ -3216,7 +3415,7 @@ if (url.pathname === "/api/legal/policy") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           try {
-            const seasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], orderBy: [{ field: { fieldPath: "start_date" }, direction: "DESCENDING" }] });
+            const seasons = await listSeasons(env.DB);
             return json({ success: true, data: seasons });
           } catch(e) {
             // If the collection doesn't exist or missing index, return empty array
@@ -3230,20 +3429,18 @@ if (url.pathname === "/api/legal/policy") {
           const body = (await readJson(request)) as any;
           
           // Deactivate all old seasons
-          const oldSeasons = await firestore.runQuery({ from: [{ collectionId: "seasons" }], where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "active" } } } });
-          for (const s of oldSeasons) {
-            await firestore.updateDocument("seasons", s.id, { status: "completed", end_date: new Date().toISOString() });
-          }
+          await completeActiveSeasons(env.DB, new Date().toISOString());
 
           const id = body.id || String(new Date().getFullYear());
-          const newSeason = await firestore.createDocument("seasons", {
+          const newSeason = await createSeason(env.DB, {
+            id,
             name: body.name || `Season ${id}`,
             start_date: new Date().toISOString(),
             status: "active",
             responsible_admin_id: body.responsible_admin_id || auth.userId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          }, id);
+          });
           
           return json({ success: true, data: newSeason });
         }
@@ -3254,66 +3451,34 @@ if (url.pathname === "/api/legal/policy") {
           if ("error" in auth) return auth.error;
           const id = seasonMatch[1];
           const body = (await readJson(request)) as any;
-          await firestore.updateDocument("seasons", id, { ...body, updated_at: new Date().toISOString() });
+          const season = await getSeasonById(env.DB, id);
+          if (!season) return json({ success: false, message: "Season not found" }, { status: 404 });
+          await updateSeason(env.DB, id, { ...body, updated_at: new Date().toISOString() });
           return json({ success: true });
         }
         if (url.pathname === "/api/admin/businesses" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const businesses = await firestore.runQuery({ from: [{ collectionId: "businesses" }], limit: 100 });
+          const businesses = await listBusinesses(env.DB, 100);
           businesses.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
           return json(businesses);
         }
         if (url.pathname === "/api/admin/payments" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 100 });
+          const payments = await listPayments(env.DB, undefined, 100);
           return json(payments);
         }
         if (url.pathname === "/api/admin/threads" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const threads = await firestore.runQuery({ from: [{ collectionId: "threads" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 100 });
+          const threads = await listThreads(env.DB, 100);
           return json({ threads, pagination: { page: 1, totalPages: 1, total: threads.length } });
         }
         if (url.pathname === "/api/admin/migrate-news" && request.method === "POST") {
             const auth = await requireAdmin(request, env);
             if ("error" in auth) return auth.error;
-            
-            try {
-                // Fetch from Firestore
-                const firestoreNews = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 5000 });
-                if (!firestoreNews || firestoreNews.length === 0) {
-                    return json({ success: true, message: "No news found in Firestore to migrate." });
-                }
-
-                // Batch insert to D1
-                const stmt = env.DB.prepare(`
-                    INSERT OR IGNORE INTO news (id, title, content, category, agency, author, external_link, status, application_start, application_end, metadata, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `);
-                
-                const batch = firestoreNews.map((doc: any) => stmt.bind(
-                    doc.id || crypto.randomUUID(),
-                    doc.title || '',
-                    doc.content || '',
-                    doc.category || '',
-                    doc.agency || '',
-                    doc.author || '',
-                    doc.external_link || '',
-                    doc.status || 'active',
-                    doc.application_start || '',
-                    doc.application_end || '',
-                    doc.metadata ? JSON.stringify(doc.metadata) : null,
-                    doc.created_at || new Date().toISOString(),
-                    doc.updated_at || new Date().toISOString()
-                ));
-                
-                await env.DB.batch(batch);
-                return json({ success: true, message: `Migrated ${firestoreNews.length} news items to D1.` });
-            } catch (error: any) {
-                return json({ success: false, message: error.message }, { status: 500 });
-            }
+            return json({ success: true, message: "News already runs on D1." });
         }
         if (url.pathname === "/api/admin/scraper/start" && request.method === "POST") {
             mockScraperRunning = true;
@@ -3472,14 +3637,8 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/admin/generator/status") {
             let statusDoc = { isRunning: aiGeneratorState.isRunning, logs: aiGeneratorState.logs };
             try {
-                const config = parseServiceAccount(env);
-                if (config) {
-                    const firestore = new FirestoreClient(config);
-                    const doc = await firestore.getDocument("system", "generator_status");
-                    if (doc) {
-                        statusDoc = doc;
-                    }
-                }
+                const doc = await getSystemConfig(env.DB, "generator_status");
+                if (doc) statusDoc = doc;
             } catch (e) {}
             return json({ success: true, data: statusDoc });
         }
@@ -3526,10 +3685,6 @@ if (url.pathname === "/api/legal/policy") {
 };
 
 async function cleanupExpiredJobs(env: Env) {
-    const config = parseServiceAccount(env);
-    if (!config) return 0;
-    const firestore = new FirestoreClient(config);
-    
     // Helper to parse Thai date e.g. "15 มิ.ย. 2569"
     const parseThaiDate = (dateStr: string) => {
         if (!dateStr) return null;
@@ -3549,15 +3704,17 @@ async function cleanupExpiredJobs(env: Env) {
     };
     
     try {
-        const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 50 });
+        const { results: news } = await env.DB.prepare("SELECT id, category, status, application_end FROM news LIMIT 500").all();
         const now = new Date();
         let expiredCount = 0;
         
-        for (const job of news) {
+        for (const job of (news || []) as any[]) {
             if (job.category === "งานราชการ" && job.status !== "expired" && job.application_end) {
                 const endD = parseThaiDate(job.application_end);
                 if (endD && endD < now) {
-                    await firestore.updateDocument("news", job.id, { status: "expired" });
+                    await env.DB.prepare("UPDATE news SET status = ?, updated_at = ? WHERE id = ?")
+                      .bind("expired", new Date().toISOString(), job.id)
+                      .run();
                     expiredCount++;
                 }
             }
@@ -3571,11 +3728,8 @@ async function cleanupExpiredJobs(env: Env) {
 }
 
 async function cleanupExpiredRooms(env: Env) {
-    const config = parseServiceAccount(env);
-    if (!config) return 0;
-    const firestore = new FirestoreClient(config);
     try {
-        const rooms = await firestore.runQuery({ from: [{ collectionId: "exam_rooms" }], limit: 1000 });
+        const rooms = await listExamRooms(env.DB, 1000);
         const now = new Date().getTime();
         let deletedCount = 0;
         const oneDayMs = 24 * 60 * 60 * 1000;
@@ -3583,11 +3737,7 @@ async function cleanupExpiredRooms(env: Env) {
         for (const room of rooms) {
             const createdAt = new Date(String(room.created_at || room.updated_at || Date.now())).getTime();
             if (now - createdAt > oneDayMs) {
-                const participants = await firestore.listDocuments(`exam_rooms/${room.id}/participants`);
-                for (const p of participants) {
-                    await firestore.deleteDocument(`exam_rooms/${room.id}/participants`, p.id);
-                }
-                await firestore.deleteDocument("exam_rooms", room.id);
+                await deleteExamRoom(env.DB, room.id);
                 deletedCount++;
             }
         }

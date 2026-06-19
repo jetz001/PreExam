@@ -1,3 +1,5 @@
+import { compareSync } from "bcryptjs";
+
 const b64UrlToBytes = (input: string) => {
   const pad = "=".repeat((4 - (input.length % 4)) % 4);
   const b64 = (input + pad).replace(/-/g, "+").replace(/_/g, "/");
@@ -40,6 +42,14 @@ export const hashPassword = async (password: string) => {
 };
 
 export const verifyPassword = async (password: string, stored: string) => {
+  if (stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$")) {
+    try {
+      return compareSync(password, stored);
+    } catch {
+      return false;
+    }
+  }
+
   const parts = stored.split("$");
   if (parts.length !== 4) return false;
   const algo = parts[0];

@@ -4,11 +4,15 @@ import { Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
-const ChatBox = ({ socket, roomId, userId, displayName }) => {
-    const [messages, setMessages] = useState([]);
+const ChatBox = ({ socket, roomId, userId, displayName, messages: externalMessages = [], onSendMessage }) => {
+    const [messages, setMessages] = useState(externalMessages);
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
     const { user } = useAuth();
+
+    useEffect(() => {
+        setMessages(externalMessages);
+    }, [externalMessages]);
 
     useEffect(() => {
         if (!socket) return;
@@ -41,7 +45,13 @@ const ChatBox = ({ socket, roomId, userId, displayName }) => {
 
     const sendMessage = (e) => {
         e.preventDefault();
-        if (input.trim() && socket) {
+        if (!input.trim()) return;
+        if (onSendMessage) {
+            onSendMessage(input);
+            setInput('');
+            return;
+        }
+        if (socket) {
             socket.emit('send_message', {
                 roomId,
                 userId,

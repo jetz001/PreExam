@@ -1,5 +1,5 @@
 import { type Env } from "./realtime";
-import { FirestoreClient, parseServiceAccount } from "./firestore";
+import { createQuestion, upsertSystemConfig } from "./d1";
 
 // Shared state for polling
 export let aiGeneratorState = {
@@ -10,30 +10,21 @@ export let aiGeneratorState = {
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 export async function runAIGenerator(prompt: string, env: Env) {
-    const config = parseServiceAccount(env);
-    const firestore = config ? new FirestoreClient(config) : null;
-
     async function updateStatus(isRunning: boolean, logMessage?: string) {
         aiGeneratorState.isRunning = isRunning;
         if (logMessage) {
             aiGeneratorState.logs.push(logMessage);
             console.log(logMessage);
         }
-        if (firestore) {
-            try {
-                const data = {
-                    isRunning: aiGeneratorState.isRunning,
-                    logs: aiGeneratorState.logs,
-                    updatedAt: new Date().toISOString()
-                };
-                // Try update first
-                await firestore.updateDocument("system", "generator_status", data).catch(async () => {
-                    // If update fails (e.g. document doesn't exist), try create
-                    await firestore.createDocument("system", data, "generator_status");
-                });
-            } catch (e) {
-                // Ignore Firestore errors for status update
-            }
+        try {
+            const data = {
+                isRunning: aiGeneratorState.isRunning,
+                logs: aiGeneratorState.logs,
+                updatedAt: new Date().toISOString()
+            };
+            await upsertSystemConfig(env.DB, "generator_status", data);
+        } catch (e) {
+            // Ignore D1 errors for status update
         }
     }
 
@@ -149,17 +140,22 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
             throw new Error("LLM did not return a JSON array.");
         }
 
-        await updateStatus(true, `[System] Parsed ${questions.length} questions. Saving to Firestore...`);
-
-        if (!firestore) throw new Error("Firebase Service Account is not configured in environment.");
+        await updateStatus(true, `[System] Parsed ${questions.length} questions. Saving to D1...`);
 
         let successCount = 0;
         for (const q of questions) {
-            q.id = Math.floor(Math.random() * 1000000000);
-            q.createdAt = new Date().toISOString();
-            q.updatedAt = q.createdAt;
+            q.id = Math.floor(Math.random() * 1000000000).toString();
+            q.created_at = new Date().toISOString();
+            q.updated_at = q.created_at;
+            q.catalogs = typeof q.catalogs === "string" ? (() => { try { return JSON.parse(q.catalogs); } catch { return [q.catalogs]; } })() : (q.catalogs || []);
+            q.choices = {
+              A: q.choice_a || "",
+              B: q.choice_b || "",
+              C: q.choice_c || "",
+              D: q.choice_d || "",
+            };
             
-            await firestore.createDocument("questions", q);
+            await createQuestion(env.DB, q);
             successCount++;
             await updateStatus(true, `[Database] Inserted question ${successCount}/${questions.length}: "${q.question_text.substring(0, 30)}..."`);
             await delay(100); 

@@ -43,7 +43,7 @@ const MyAds = () => {
     };
 
     const filteredAds = ads ? ads.filter(ad =>
-        (ad.title || ad.campaignName || '').toLowerCase().includes(searchTerm.toLowerCase())
+        (ad.title || ad.campaignName || '').toLowerCase().includes((searchTerm || '').toLowerCase())
     ) : [];
 
     return (

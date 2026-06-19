@@ -136,8 +136,8 @@ const QuestionManager = () => {
     };
 
     const filteredQuestions = questions.filter(q =>
-        q.question_text.toLowerCase().includes(filter.toLowerCase()) ||
-        q.category.toLowerCase().includes(filter.toLowerCase())
+        (q.question_text || '').toLowerCase().includes((filter || '').toLowerCase()) ||
+        (q.category || '').toLowerCase().includes((filter || '').toLowerCase())
     );
 
     return (

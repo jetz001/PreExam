@@ -15,6 +15,7 @@ if (result.error) {
 
 const http = require('http');
 const { Server } = require('socket.io');
+const { WebSocketServer, WebSocket } = require('ws');
 const { db: firestore } = require('./config/firebase');
 
 const app = express();
@@ -37,6 +38,139 @@ socketHandler(io);
 require('./services/cronService')();
 
 const PORT = process.env.PORT || 3000;
+const WORKER_API_BASE = String(process.env.WORKER_API_BASE || '').trim().replace(/\/+$/, '');
+const SOLO_FLOW_USE_WORKER = ['1', 'true', 'yes', 'on'].includes(String(process.env.SOLO_FLOW_USE_WORKER || '').trim().toLowerCase()) && Boolean(WORKER_API_BASE);
+
+const shouldProxySoloPath = (pathname = '') => {
+    if (!SOLO_FLOW_USE_WORKER) return false;
+    return (
+        pathname === '/api/auth/register' ||
+        pathname === '/api/auth/login' ||
+        pathname === '/api/auth/guest' ||
+        pathname === '/api/auth/me' ||
+        pathname === '/api/questions' ||
+        pathname === '/api/questions/subjects' ||
+        pathname === '/api/questions/years' ||
+        pathname === '/api/questions/sets' ||
+        pathname === '/api/questions/categories' ||
+        pathname.startsWith('/api/questions/') ||
+        pathname.startsWith('/api/exams') ||
+        pathname.startsWith('/api/rooms') ||
+        pathname.startsWith('/api/ws')
+    );
+};
+
+const toWorkerUrl = (requestPath) => new URL(requestPath, `${WORKER_API_BASE}/`).toString();
+
+const copyProxyHeaders = (req, { websocket = false } = {}) => {
+    const headers = { ...req.headers };
+    delete headers.host;
+    delete headers['content-length'];
+    delete headers['accept-encoding'];
+
+    if (!websocket) {
+        delete headers.connection;
+        delete headers.upgrade;
+        delete headers['sec-websocket-key'];
+        delete headers['sec-websocket-version'];
+        delete headers['sec-websocket-extensions'];
+        delete headers['sec-websocket-protocol'];
+    }
+
+    headers['x-forwarded-host'] = req.headers.host || '';
+    headers['x-forwarded-proto'] = req.protocol || 'http';
+    return headers;
+};
+
+const soloFlowProxy = async (req, res, next) => {
+    if (!shouldProxySoloPath(req.path) || req.path.startsWith('/api/ws')) {
+        return next();
+    }
+
+    try {
+        const headers = copyProxyHeaders(req);
+        let body;
+        if (!['GET', 'HEAD'].includes(req.method)) {
+            if (Buffer.isBuffer(req.body)) {
+                body = req.body;
+            } else if (typeof req.body === 'string') {
+                body = req.body;
+            } else if (req.body && Object.keys(req.body).length > 0) {
+                body = JSON.stringify(req.body);
+                if (!headers['content-type']) {
+                    headers['content-type'] = 'application/json';
+                }
+            }
+        }
+
+        const upstream = await fetch(toWorkerUrl(req.originalUrl), {
+            method: req.method,
+            headers,
+            body,
+            redirect: 'manual'
+        });
+
+        res.status(upstream.status);
+        upstream.headers.forEach((value, key) => {
+            const lower = key.toLowerCase();
+            if (['content-length', 'transfer-encoding', 'connection', 'content-encoding'].includes(lower)) return;
+            res.setHeader(key, value);
+        });
+
+        const buffer = Buffer.from(await upstream.arrayBuffer());
+        res.send(buffer);
+    } catch (error) {
+        console.error('Worker solo-flow proxy error:', error);
+        next(error);
+    }
+};
+
+const wsProxyServer = new WebSocketServer({ noServer: true });
+
+server.on('upgrade', (req, socket, head) => {
+    let pathname = '';
+    try {
+        pathname = new URL(req.url, `http://${req.headers.host}`).pathname;
+    } catch (error) {
+        pathname = '';
+    }
+
+    if (!shouldProxySoloPath(pathname) || !pathname.startsWith('/api/ws')) {
+        return;
+    }
+
+    wsProxyServer.handleUpgrade(req, socket, head, (clientSocket) => {
+        const targetUrl = toWorkerUrl(req.url).replace(/^http/i, 'ws');
+        const upstreamSocket = new WebSocket(targetUrl, {
+            headers: copyProxyHeaders(req, { websocket: true })
+        });
+
+        const closeBoth = () => {
+            try { clientSocket.close(); } catch (e) {}
+            try { upstreamSocket.close(); } catch (e) {}
+        };
+
+        clientSocket.on('message', (data, isBinary) => {
+            if (upstreamSocket.readyState === WebSocket.OPEN) {
+                upstreamSocket.send(data, { binary: isBinary });
+            }
+        });
+
+        upstreamSocket.on('message', (data, isBinary) => {
+            if (clientSocket.readyState === WebSocket.OPEN) {
+                clientSocket.send(data, { binary: isBinary });
+            }
+        });
+
+        clientSocket.on('close', closeBoth);
+        clientSocket.on('error', closeBoth);
+        upstreamSocket.on('close', closeBoth);
+        upstreamSocket.on('error', (error) => {
+            console.error('Worker WS proxy error:', error);
+            closeBoth();
+        });
+    });
+});
 
 // Middleware
 app.use(cors());
@@ -51,6 +185,7 @@ app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ extended: true, limit: '500mb' }));
 app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+app.use(soloFlowProxy);
 
 const authRoutes = require('./routes/authRoutes');
 const questionRoutes = require('./routes/questionRoutes');

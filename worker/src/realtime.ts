@@ -1,4 +1,11 @@
-import { FirestoreClient, parseServiceAccount } from "./firestore";
+import {
+  createExamResult,
+  getExamRoomById,
+  listExamRoomParticipants,
+  resetExamRoomParticipants,
+  updateExamRoom,
+  upsertExamRoomParticipant,
+} from "./d1";
 
 type RealtimeMessage =
   | { event: string; data?: unknown }
@@ -50,21 +57,28 @@ export type Env = {
 };
 
 export class RealtimeDO {
-  private firestore: FirestoreClient | null = null;
+  private readonly attachments = new WeakMap<WebSocket, SocketAttachment & { token?: string }>();
 
   constructor(
     private readonly state: DurableObjectState,
     private readonly env: Env
-  ) {
-    const config = parseServiceAccount(this.env);
-    if (config) {
-      this.firestore = new FirestoreClient(config);
+  ) {}
+
+  private getAttachment(ws: WebSocket) {
+    const nativeAttachment = (ws as any).deserializeAttachment?.();
+    if (nativeAttachment && typeof nativeAttachment === "object") {
+      return nativeAttachment as SocketAttachment & { token?: string };
     }
+    return this.attachments.get(ws);
+  }
+
+  private setAttachment(ws: WebSocket, attachment: SocketAttachment & { token?: string }) {
+    this.attachments.set(ws, attachment);
+    (ws as any).serializeAttachment?.(attachment);
   }
 
   private async getRoomInfo(roomId: string) {
-    if (!this.firestore) return null;
-    const room = await this.firestore.getDocument("exam_rooms", roomId);
+    const room = await getExamRoomById(this.env.DB, roomId);
     if (!room) return null;
     return {
       id: room.id,
@@ -76,29 +90,13 @@ export class RealtimeDO {
   }
 
   private async upsertParticipant(roomId: string, userId: string, fields: { score?: number; status?: string }) {
-    if (!this.firestore) return;
     const score = Number.isFinite(fields.score as number) ? (fields.score as number) : 0;
     const status = fields.status || "joined";
-
-    const docPath = `exam_rooms/${roomId}/participants`;
-    const existing = await this.firestore.getDocument(docPath, userId);
-
-    if (existing) {
-      await this.firestore.updateDocument(docPath, userId, {
-        score: fields.score !== undefined ? score : existing.score,
-        status,
-        updated_at: new Date().toISOString(),
-      });
-    } else {
-      await this.firestore.createDocument(docPath, {
-        user_id: userId,
-        score,
-        status,
-        current_question_index: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }, userId);
-    }
+    await upsertExamRoomParticipant(this.env.DB, roomId, userId, {
+      score,
+      status,
+      updated_at: new Date().toISOString(),
+    });
   }
 
   async fetch(request: Request) {
@@ -119,7 +117,7 @@ export class RealtimeDO {
         rooms: [],
       };
 
-      server.serializeAttachment({ ...attachment, token });
+      this.setAttachment(server, { ...attachment, token });
 
       // Socket.IO Handshake
       const sid = Math.random().toString(36).substring(2, 15);
@@ -159,7 +157,7 @@ export class RealtimeDO {
     const sockets = this.state.getWebSockets();
     const payload = `42${JSON.stringify([msg.event, msg.data])}`;
     for (const ws of sockets) {
-      const attachment = ws.deserializeAttachment() as SocketAttachment | undefined;
+      const attachment = this.getAttachment(ws);
       if (room) {
         const rooms = attachment?.rooms || [];
         if (!rooms.includes(room)) continue;
@@ -211,7 +209,7 @@ export class RealtimeDO {
 
     if (!("event" in payload) || typeof payload.event !== "string") return;
 
-    const attachment = (ws.deserializeAttachment() as SocketAttachment | undefined) || {
+    const attachment = this.getAttachment(ws) || {
       rooms: [],
     };
 
@@ -223,7 +221,7 @@ export class RealtimeDO {
       if (id) {
         attachment.userId = id;
         attachment.rooms = Array.from(new Set([...(attachment.rooms || []), `user:${id}`]));
-        ws.serializeAttachment(attachment);
+        this.setAttachment(ws, attachment);
       }
       return;
     }
@@ -235,8 +233,20 @@ export class RealtimeDO {
       if (roomKey) {
         attachment.rooms = Array.from(new Set([...(attachment.rooms || []), `room:${roomKey}`]));
         if (userId !== undefined && userId !== null) attachment.userId = String(userId);
-        ws.serializeAttachment(attachment);
+        this.setAttachment(ws, attachment);
         this.broadcast({ event: "user_joined", data: { userId: attachment.userId } }, `room:${roomKey}`);
+      }
+      return;
+    }
+
+    if (event === "leave_room") {
+      const roomId = (data as any)?.roomId;
+      const userId = (data as any)?.userId;
+      const roomKey = toRoomKey(roomId);
+      if (roomKey) {
+        attachment.rooms = (attachment.rooms || []).filter((r) => r !== `room:${roomKey}`);
+        this.setAttachment(ws, attachment);
+        this.broadcast({ event: "user_left", data: { userId } }, `room:${roomKey}`);
       }
       return;
     }
@@ -245,7 +255,7 @@ export class RealtimeDO {
       const ticketId = toRoomKey(data);
       if (ticketId) {
         attachment.rooms = Array.from(new Set([...(attachment.rooms || []), `ticket:${ticketId}`]));
-        ws.serializeAttachment(attachment);
+        this.setAttachment(ws, attachment);
       }
       return;
     }
@@ -254,7 +264,7 @@ export class RealtimeDO {
       const ticketId = toRoomKey(data);
       if (ticketId) {
         attachment.rooms = (attachment.rooms || []).filter((r) => r !== `ticket:${ticketId}`);
-        ws.serializeAttachment(attachment);
+        this.setAttachment(ws, attachment);
       }
       return;
     }
@@ -263,7 +273,7 @@ export class RealtimeDO {
       const groupKey = toRoomKey(data) || toRoomKey((data as any)?.room) || toRoomKey((data as any)?.group);
       if (groupKey) {
         attachment.rooms = Array.from(new Set([...(attachment.rooms || []), `group:${groupKey}`]));
-        ws.serializeAttachment(attachment);
+        this.setAttachment(ws, attachment);
       }
       return;
     }
@@ -283,12 +293,10 @@ export class RealtimeDO {
         try {
           const info = await this.getRoomInfo(roomKey);
           if (info && info.hostUserId === String(userId)) {
-            if (this.firestore) {
-              await this.firestore.updateDocument("exam_rooms", roomKey, {
-                status: "in_progress",
-                updated_at: new Date().toISOString(),
-              });
-            }
+            await updateExamRoom(this.env.DB, roomKey, {
+              status: "in_progress",
+              updated_at: new Date().toISOString(),
+            });
             this.broadcast({ event: "exam_started" }, `room:${roomKey}`);
           }
         } catch {
@@ -319,7 +327,11 @@ export class RealtimeDO {
     if (event === "tutor_navigate") {
       const roomId = (data as any)?.roomId;
       const roomKey = toRoomKey(roomId);
-      if (roomKey) this.broadcast({ event: "navigate_question", data: { questionIndex: (data as any)?.questionIndex } }, `room:${roomKey}`);
+      if (roomKey) {
+        const payload = { questionIndex: (data as any)?.questionIndex };
+        this.broadcast({ event: "navigate_question", data: payload }, `room:${roomKey}`);
+        this.broadcast({ event: "tutor_navigate", data: payload }, `room:${roomKey}`);
+      }
       return;
     }
 
@@ -345,12 +357,10 @@ export class RealtimeDO {
       
       if (roomKey && userId !== undefined && userId !== null) {
         try {
-          if (this.firestore) {
-            await this.firestore.updateDocument(`exam_rooms/${roomKey}/participants`, String(userId), {
-              current_question_index: questionIndex,
-              updated_at: new Date().toISOString(),
-            });
-          }
+          await upsertExamRoomParticipant(this.env.DB, roomKey, String(userId), {
+            current_question_index: questionIndex,
+            updated_at: new Date().toISOString(),
+          });
           this.broadcast({ event: "progress_updated", data: { userId, questionIndex } }, `room:${roomKey}`);
         } catch {
           // ignore
@@ -367,12 +377,10 @@ export class RealtimeDO {
       
       if (roomKey && userId !== undefined && userId !== null && nickname) {
         try {
-          if (this.firestore) {
-            await this.firestore.updateDocument(`exam_rooms/${roomKey}/participants`, String(userId), {
-              nickname: String(nickname),
-              updated_at: new Date().toISOString(),
-            });
-          }
+          await upsertExamRoomParticipant(this.env.DB, roomKey, String(userId), {
+            nickname: String(nickname),
+            updated_at: new Date().toISOString(),
+          });
           this.broadcast({ event: "nickname_updated", data: { userId, nickname } }, `room:${roomKey}`);
         } catch {
           // ignore
@@ -384,21 +392,27 @@ export class RealtimeDO {
     if (event === "finish_exam") {
       const roomId = (data as any)?.roomId;
       const roomKey = toRoomKey(roomId);
-      if (roomKey && this.firestore) {
+      if (roomKey) {
         try {
           const userId = (data as any)?.userId;
           const score = Number((data as any)?.score ?? 0);
           const timeTaken = Number((data as any)?.timeTaken ?? 0);
           if (userId === undefined || userId === null) return;
 
-          await this.upsertParticipant(roomKey, String(userId), { score, status: "finished" });
+          await upsertExamRoomParticipant(this.env.DB, roomKey, String(userId), {
+            score,
+            status: "finished",
+            time_taken: timeTaken,
+            completed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
 
           const info = await this.getRoomInfo(roomKey);
           if (info) {
             const subjectScores = info.subject ? JSON.stringify({ [info.subject]: score }) : null;
-            await this.firestore.createDocument("exam_results", {
+            await createExamResult(this.env.DB, {
               user_id: String(userId),
-              classroom_id: null,
+              classroom_id: roomKey,
               score,
               total_score: info.questionCount,
               mode: "classroom",
@@ -409,12 +423,12 @@ export class RealtimeDO {
               taken_at: new Date().toISOString(),
             });
 
-            const parts = await this.firestore.listDocuments(`exam_rooms/${roomKey}/participants`);
+            const parts = await listExamRoomParticipants(this.env.DB, roomKey);
 
             const total = parts.length;
             const finished = parts.filter((p: any) => p.status === "finished").length;
             if (total > 0 && total === finished) {
-              await this.firestore.updateDocument("exam_rooms", roomKey, {
+              await updateExamRoom(this.env.DB, roomKey, {
                 status: "finished",
                 updated_at: new Date().toISOString(),
               });
@@ -433,11 +447,11 @@ export class RealtimeDO {
       const roomId = (data as any)?.roomId;
       const userId = (data as any)?.userId;
       const roomKey = toRoomKey(roomId);
-      if (roomKey && userId !== undefined && userId !== null && this.firestore) {
+      if (roomKey && userId !== undefined && userId !== null) {
         try {
           const info = await this.getRoomInfo(roomKey);
           if (info && info.hostUserId === String(userId)) {
-            await this.firestore.updateDocument("exam_rooms", roomKey, {
+            await updateExamRoom(this.env.DB, roomKey, {
               status: "finished",
               updated_at: new Date().toISOString(),
             });
@@ -453,18 +467,9 @@ export class RealtimeDO {
     if (event === "reset_exam" || event === "exam_reset") {
       const roomId = (data as any)?.roomId;
       const roomKey = toRoomKey(roomId);
-      if (roomKey && this.firestore) {
+      if (roomKey) {
         try {
-          const parts = await this.firestore.listDocuments(`exam_rooms/${roomKey}/participants`);
-
-          for (const p of parts) {
-            await this.firestore.updateDocument(`exam_rooms/${roomKey}/participants`, p.id, {
-              score: 0,
-              status: "joined",
-              current_question_index: 0,
-              updated_at: new Date().toISOString(),
-            });
-          }
+          await resetExamRoomParticipants(this.env.DB, roomKey);
           this.broadcast({ event: "exam_reset" }, `room:${roomKey}`);
         } catch {
           return;

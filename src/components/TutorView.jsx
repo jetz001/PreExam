@@ -16,7 +16,7 @@ const decodeHtml = (html) => {
     return decoded;
 };
 
-const TutorView = ({ questions, socket, roomId, isHost, currentQuestionIndex, participantCount = 0, answerCounts = {} }) => {
+const TutorView = ({ questions, socket, roomId, isHost, currentQuestionIndex, participantCount = 0, answerCounts = {}, onNavigateQuestion, onRevealAnswer }) => {
     const [localIndex, setLocalIndex] = useState(currentQuestionIndex || 0);
     const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
 
@@ -30,14 +30,16 @@ const TutorView = ({ questions, socket, roomId, isHost, currentQuestionIndex, pa
             const newIndex = Math.min(questions.length - 1, localIndex + 1);
             setLocalIndex(newIndex);
             setIsAnswerRevealed(false);
-            socket.emit('tutor_navigate', { roomId, questionIndex: newIndex });
+            if (onNavigateQuestion) onNavigateQuestion(newIndex);
+            else socket?.emit('tutor_navigate', { roomId, questionIndex: newIndex });
         }
     };
 
     const handleRevealAnswer = () => {
         if (isHost) {
             setIsAnswerRevealed(true);
-            socket.emit('tutor_show_answer', { roomId, questionIndex: localIndex });
+            if (onRevealAnswer) onRevealAnswer(localIndex);
+            else socket?.emit('tutor_show_answer', { roomId, questionIndex: localIndex });
         }
     };
 

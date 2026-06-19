@@ -115,10 +115,10 @@ export default function Lobby() {
   };
 
   const filteredRooms = rooms.filter(room =>
-    room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    room.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    room.Host?.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    room.code.toLowerCase().includes(searchTerm.toLowerCase())
+    (room.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+    (room.subject || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+    (room.Host?.display_name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+    (room.code || '').toLowerCase().includes((searchTerm || '').toLowerCase())
   );
 
   return (

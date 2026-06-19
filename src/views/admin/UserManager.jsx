@@ -84,8 +84,8 @@ const AddAdminModal = ({ users, onClose, onPromote }) => {
 
     const nonAdminUsers = (users || []).filter(u => u.role !== 'admin' && u.role !== 'sponsor');
     const displayUsers = nonAdminUsers.filter(u =>
-        (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (u.display_name && u.display_name.toLowerCase().includes(searchTerm.toLowerCase()))
+        (u.email && u.email.toLowerCase().includes((searchTerm || '').toLowerCase())) ||
+        (u.display_name && u.display_name.toLowerCase().includes((searchTerm || '').toLowerCase()))
     );
 
     return (

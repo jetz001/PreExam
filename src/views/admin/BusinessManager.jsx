@@ -56,8 +56,8 @@ const BusinessManager = () => {
     };
 
     const filteredBusinesses = businesses?.filter(b =>
-        b.name.toLowerCase().includes(search.toLowerCase()) ||
-        b.Owner?.display_name.toLowerCase().includes(search.toLowerCase())
+        (b.name || '').toLowerCase().includes((search || '').toLowerCase()) ||
+        (b.Owner?.display_name || '').toLowerCase().includes((search || '').toLowerCase())
     ) || [];
 
     if (isLoading) return <div className="p-8 text-center">Loading businesses...</div>;

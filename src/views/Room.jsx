@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
 import roomService from '../services/roomService';
 import authService from '../services/authService';
 import ChatBox from '../components/ChatBox';
@@ -27,11 +26,24 @@ const decodeHtml = (html) => {
     return decoded;
 };
 
+const emptyAnswerCounts = { A: 0, B: 0, C: 0, D: 0 };
+
+const parseRoomSettings = (room) => {
+    if (!room?.settings) return {};
+    if (typeof room.settings === 'string') {
+        try {
+            return JSON.parse(room.settings);
+        } catch {
+            return {};
+        }
+    }
+    return room.settings;
+};
+
 const Room = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [room, setRoom] = useState(null);
-    const [socket, setSocket] = useState(null);
     const [participants, setParticipants] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -43,9 +55,65 @@ const Room = () => {
     const [currentAnswerCounts, setCurrentAnswerCounts] = useState({ A: 0, B: 0, C: 0, D: 0 });
     const [activeTab, setActiveTab] = useState('participants');
     const [userAnswers, setUserAnswers] = useState({});
+    const [chatMessages, setChatMessages] = useState([]);
     const [showNicknameModal, setShowNicknameModal] = useState(false);
     const [nicknameInput, setNicknameInput] = useState('');
     const examRef = useRef(null);
+
+    const applyRoomState = (roomData, user) => {
+        if (!roomData || !user) return;
+
+        const roomParticipants = roomData.RoomParticipants || [];
+        const settings = parseRoomSettings(roomData);
+        const tutorState = settings.tutor_state || {};
+        const myParticipant = roomParticipants.find(p => p.user_id == user.id);
+        const isUserHost = roomData.host_user_id == user.id;
+
+        setRoom(roomData);
+        setParticipants(roomParticipants);
+        setChatMessages(Array.isArray(settings.chat_messages) ? settings.chat_messages : []);
+        setTutorQuestionIndex(Number(tutorState.current_question_index || 0));
+        setIsAnswerRevealed(Boolean(tutorState.is_answer_revealed));
+        setCurrentAnswerCounts({ ...emptyAnswerCounts, ...(tutorState.answer_counts || {}) });
+
+        if (!isUserHost && (!myParticipant || !myParticipant.nickname)) {
+            setShowNicknameModal(true);
+        }
+
+        if (myParticipant?.status === 'finished') {
+            setExamFinished(true);
+            setFinalScore(myParticipant.score || 0);
+            if (myParticipant.answers) {
+                setUserAnswers(typeof myParticipant.answers === 'string' ? JSON.parse(myParticipant.answers) : myParticipant.answers);
+            }
+        } else if (roomData.status === 'finished') {
+            setExamFinished(true);
+        } else {
+            setExamFinished(false);
+        }
+
+        if (roomData.status === 'in_progress' || roomData.status === 'playing' || myParticipant?.status === 'finished') {
+            setIsExamStarted(true);
+        } else {
+            setIsExamStarted(false);
+            if (roomData.status === 'waiting') {
+                setFinalScore(0);
+                setUserAnswers({});
+            }
+        }
+    };
+
+    const fetchRoomData = async (userOverride) => {
+        const activeUser = userOverride || currentUser;
+        if (!activeUser) return;
+        try {
+            const data = await roomService.getRoom(id);
+            applyRoomState(data.data, activeUser);
+        } catch (error) {
+            console.error('Error refreshing room:', error);
+            throw error;
+        }
+    };
 
     useEffect(() => {
         const user = authService.getCurrentUser();
@@ -53,161 +121,56 @@ const Room = () => {
             navigate('/login');
             return;
         }
+
         setCurrentUser(user);
+        let isMounted = true;
+        let pollTimer = null;
 
-        const fetchRoom = async () => {
+        const loadRoom = async () => {
             try {
-                const data = await roomService.getRoom(id);
-                setRoom(data.data);
-                setParticipants(data.data.RoomParticipants || []);
-
-                // Check if I am already a participant and restore state
-                const myParticipant = data.data.RoomParticipants?.find(p => p.user_id == user.id);
-                const isUserHost = data.data.host_user_id == user.id;
-
-                if (!isUserHost && (!myParticipant || !myParticipant.nickname)) {
-                    setShowNicknameModal(true);
-                }
-
-                if (myParticipant) {
-                    if (myParticipant.status === 'finished') {
-                        setExamFinished(true);
-                        setFinalScore(myParticipant.score);
-                        if (myParticipant.answers) {
-                            setUserAnswers(typeof myParticipant.answers === 'string' ? JSON.parse(myParticipant.answers) : myParticipant.answers);
-                        }
-                    }
-                }
-
-                // Connect Socket
-                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                const socketUrl = isLocal ? 'http://127.0.0.1:3000' : '/';
-                const newSocket = io(socketUrl, {
-                    path: isLocal ? '/socket.io' : '/api/ws',
-                    transports: ['websocket']
-                });
-                setSocket(newSocket);
-
-                newSocket.emit('join_room', { roomId: id, userId: user.id });
-
-                newSocket.on('user_joined', ({ userId }) => {
-                    // Refresh room data to get updated participant list
-                    // Ideally we'd just append, but fetching is safer for now
-                    fetchRoomData();
-                });
-
-                newSocket.on('exam_started', () => {
-                    setIsExamStarted(true);
-                });
-
-                newSocket.on('score_updated', ({ userId, score }) => {
-                    setParticipants(prev => prev.map(p =>
-                        p.user_id == userId ? { ...p, score } : p
-                    ));
-                });
-
-                newSocket.on('navigate_question', ({ questionIndex }) => {
-                    setTutorQuestionIndex(questionIndex);
-                    setIsAnswerRevealed(false);
-                    setCurrentAnswerCounts({ A: 0, B: 0, C: 0, D: 0 });
-                });
-
-                newSocket.on('tutor_show_answer', ({ questionIndex }) => {
-                    setIsAnswerRevealed(true);
-                });
-
-                newSocket.on('tutor_player_answered', ({ choice }) => {
-                    setCurrentAnswerCounts(prev => ({ ...prev, [choice]: (prev[choice] || 0) + 1 }));
-                });
-
-                newSocket.on('tutor_navigate', ({ questionIndex }) => {
-                    setTutorQuestionIndex(questionIndex);
-                    setIsAnswerRevealed(false);
-                    setCurrentAnswerCounts({ A: 0, B: 0, C: 0, D: 0 });
-                });
-
-                newSocket.on('progress_updated', ({ userId, questionIndex }) => {
-                    setParticipants(prev => prev.map(p =>
-                        p.user_id == userId ? { ...p, current_question_index: questionIndex } : p
-                    ));
-                });
-
-                newSocket.on('exam_reset', () => {
-                    setIsExamStarted(false);
-                    setExamFinished(false);
-                    setFinalScore(0);
-                    setParticipants(prev => prev.map(p => ({ ...p, score: 0, status: 'joined' })));
-                    setUserAnswers({});
-                });
-
-                newSocket.on('room_closed_by_host', () => {
-                    setExamFinished(true);
-                    alert('The host has closed the room.');
-                });
-
-                newSocket.on('nickname_updated', ({ userId, nickname }) => {
-                    setParticipants(prev => prev.map(p =>
-                        p.user_id == userId ? { ...p, nickname } : p
-                    ));
-                });
-
-                // Check if room is already finished when joining
-                if (data.data.status === 'finished') {
-                    setExamFinished(true);
-                    // If I am a participant, show my score
-                    const myParticipant = data.data.RoomParticipants?.find(p => p.user_id == user.id);
-                    if (myParticipant && myParticipant.status === 'finished') {
-                        setFinalScore(myParticipant.score);
-                        if (myParticipant.answers) {
-                            setUserAnswers(typeof myParticipant.answers === 'string' ? JSON.parse(myParticipant.answers) : myParticipant.answers);
-                        }
-                    }
-                    // No redirect, just show the finished view (Leaderboard)
-                } else if (data.data.status === 'in_progress' || data.data.status === 'playing') {
-                    // If room is in progress, start the exam for the user immediately
-                    setIsExamStarted(true);
-                }
-
-                return () => newSocket.disconnect();
+                await fetchRoomData(user);
+                if (!isMounted) return;
+                pollTimer = setInterval(() => {
+                    fetchRoomData(user).catch(() => {});
+                }, 1500);
             } catch (error) {
                 console.error('Error fetching room:', error);
                 alert('Room not found');
                 navigate('/lobby');
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
 
-        fetchRoom();
+        loadRoom();
+
+        return () => {
+            isMounted = false;
+            if (pollTimer) clearInterval(pollTimer);
+        };
     }, [id, navigate]);
 
-    const fetchRoomData = async () => {
+    const handleStartExam = async () => {
         try {
-            const data = await roomService.getRoom(id);
-            setRoom(data.data);
-            setParticipants(data.data.RoomParticipants || []);
+            await roomService.startRoomExam(id);
+            await fetchRoomData();
         } catch (error) {
-            console.error('Error refreshing room:', error);
+            console.error('Error starting room exam:', error);
+            alert('ไม่สามารถเริ่มสอบได้');
         }
     };
 
-    const handleStartExam = () => {
-        if (socket) {
-            socket.emit('start_exam', { roomId: id, userId: currentUser.id });
-        }
-    };
-
-    const handleSetNickname = (e) => {
+    const handleSetNickname = async (e) => {
         e.preventDefault();
         if (!nicknameInput.trim()) return;
-        if (socket) {
-            socket.emit('set_nickname', { roomId: id, userId: currentUser.id, nickname: nicknameInput.trim() });
+        try {
+            await roomService.setRoomNickname(id, { nickname: nicknameInput.trim() });
             setShowNicknameModal(false);
-            
-            // Optimistically update local participant list
             setParticipants(prev => prev.map(p =>
                 p.user_id == currentUser?.id ? { ...p, nickname: nicknameInput.trim() } : p
             ));
+        } catch (error) {
+            console.error('Error setting nickname:', error);
         }
     };
 
@@ -219,6 +182,30 @@ const Room = () => {
         setParticipants(prev => prev.map(p =>
             p.user_id == currentUser?.id ? { ...p, status: 'finished', score } : p
         ));
+    };
+
+    const handleScoreChange = (score) => {
+        setParticipants(prev => prev.map(p =>
+            p.user_id == currentUser?.id ? { ...p, score } : p
+        ));
+        roomService.submitRoomScore(id, { score }).catch((error) => {
+            console.error('Error saving score:', error);
+        });
+    };
+
+    const handlePersistFinish = async ({ score, timeTaken, answers }) => {
+        await roomService.finishRoomExam(id, {
+            score,
+            timeTaken,
+            answers,
+        });
+        await fetchRoomData();
+    };
+
+    const handleProgressChange = (questionIndex) => {
+        roomService.submitRoomProgress(id, { questionIndex }).catch((error) => {
+            console.error('Error saving progress:', error);
+        });
     };
 
     const handleTutorAnswer = (questionId, choice, isCorrect) => {
@@ -235,11 +222,12 @@ const Room = () => {
         setParticipants(prev => prev.map(p =>
             p.user_id == currentUser?.id ? { ...p, score: newScore } : p
         ));
-
-        if (socket) {
-            socket.emit('submit_score', { roomId: id, userId: currentUser.id, score: newScore });
-            socket.emit('tutor_player_answer', { roomId: id, choice });
-        }
+        roomService.submitRoomScore(id, { score: newScore }).catch((error) => {
+            console.error('Error saving tutor score:', error);
+        });
+        roomService.tutorAnswer(id, { choice }).catch((error) => {
+            console.error('Error saving tutor answer:', error);
+        });
     };
 
     if (loading || !room) return <div className="p-8 text-center">Loading Room...</div>;
@@ -346,9 +334,10 @@ const Room = () => {
                     )}
                     {isHost && room.mode === 'tutor' && !examFinished && (
                         <button
-                            onClick={() => {
+                            onClick={async () => {
                                 if (window.confirm('Are you sure you want to close this room?')) {
-                                    socket.emit('close_room', { roomId: id, userId: currentUser.id });
+                                    await roomService.closeRoom(id);
+                                    await fetchRoomData();
                                 }
                             }}
                             className="room-btn btn-leave bg-orange-500/20 text-orange-300 border-orange-500/40"
@@ -489,9 +478,10 @@ const Room = () => {
                                 <TutorDashboard 
                                     participants={participants}
                                     totalQuestions={room.questions?.length || room.question_count || 0}
-                                    onEndExam={() => {
+                                    onEndExam={async () => {
                                         if(window.confirm('ต้องการจบเกมและเฉลยหรือไม่?')) {
-                                            socket.emit('close_room', { roomId: id, userId: currentUser.id });
+                                            await roomService.closeRoom(id);
+                                            await fetchRoomData();
                                         }
                                     }}
                                 />
@@ -499,15 +489,16 @@ const Room = () => {
                                 <MultiplayerExam
                                     ref={examRef}
                                     questions={room.questions}
-                                    socket={socket}
+                                    socket={null}
                                     roomId={id}
                                     userId={currentUser.id}
                                     onFinish={(finalScore, finalAnswers) => {
                                         setFinalScore(finalScore);
                                         setUserAnswers(finalAnswers);
-                                        // Emit that user is finished to server so dashboard shows 100%
-                                        socket.emit('submit_progress', { roomId: id, userId: currentUser.id, questionIndex: room.questions.length });
                                     }}
+                                    onPersistFinish={handlePersistFinish}
+                                    onScoreChange={handleScoreChange}
+                                    onProgressChange={handleProgressChange}
                                     timeLimit={typeof room.settings === 'string' ? JSON.parse(room.settings).time_limit : room.settings?.time_limit || 60}
                                 />
                             )
@@ -515,12 +506,20 @@ const Room = () => {
                             isHost ? (
                                 <TutorView
                                     questions={room.questions}
-                                    socket={socket}
+                                    socket={null}
                                     roomId={id}
                                     isHost={isHost}
                                     currentQuestionIndex={tutorQuestionIndex}
                                     participantCount={participants.length}
                                     answerCounts={currentAnswerCounts}
+                                    onNavigateQuestion={async (questionIndex) => {
+                                        await roomService.tutorNavigate(id, { questionIndex });
+                                        await fetchRoomData();
+                                    }}
+                                    onRevealAnswer={async (questionIndex) => {
+                                        await roomService.tutorReveal(id, { questionIndex });
+                                        await fetchRoomData();
+                                    }}
                                 />
                             ) : (
                                 <TutorPlayerView
@@ -536,10 +535,13 @@ const Room = () => {
                         <MultiplayerExam
                             ref={examRef}
                             questions={room.questions}
-                            socket={socket}
+                            socket={null}
                             roomId={id}
                             userId={currentUser.id}
                             onFinish={handleExamFinish}
+                            onPersistFinish={handlePersistFinish}
+                            onScoreChange={handleScoreChange}
+                            onProgressChange={handleProgressChange}
                             timeLimit={typeof room.settings === 'string' ? JSON.parse(room.settings).time_limit : room.settings?.time_limit}
                         />
                     )}
@@ -606,10 +608,18 @@ const Room = () => {
                             ) : (
                                 <div className="flex-1 flex flex-col h-full bg-white rounded-b-3xl">
                                     <ChatBox
-                                        socket={socket}
+                                        socket={null}
                                         roomId={id}
                                         userId={currentUser?.id}
                                         displayName={currentUser?.display_name}
+                                        messages={chatMessages}
+                                        onSendMessage={async (message) => {
+                                            await roomService.sendRoomMessage(id, {
+                                                message,
+                                                displayName: currentUser?.display_name || currentUser?.username || 'ผู้ใช้',
+                                            });
+                                            await fetchRoomData();
+                                        }}
                                     />
                                 </div>
                             )}

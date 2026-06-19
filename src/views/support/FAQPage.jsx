@@ -70,8 +70,8 @@ const FAQPage = () => {
 
     const filteredFaqs = useMemo(() => {
         return faqs.filter(faq => {
-            const matchesSearch = faq.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                faq.a.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesSearch = (faq.q || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+                (faq.a || '').toLowerCase().includes((searchQuery || '').toLowerCase());
             const matchesCategory = activeCategory === 'all' || faq.category === activeCategory;
             return matchesSearch && matchesCategory;
         });
