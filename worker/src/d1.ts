@@ -540,7 +540,7 @@ const buildExamRoomRow = (data: Record<string, any>) => {
     host_user_id: data.host_user_id ?? data.host_id ?? null,
     subject: data.subject ?? null,
     category: data.category ?? null,
-    attachment_url: data.attachment_url ?? null,
+    
     attachment_url: data.attachment_url ?? null,
     max_participants: Number(data.max_participants ?? 20),
     question_count: Number(data.question_count ?? 0),
