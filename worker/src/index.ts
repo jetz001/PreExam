@@ -271,6 +271,48 @@ export default {
       return stub.fetch(request);
     }
 
+
+    if (url.pathname === '/api/upload' && request.method === 'POST') {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      if (!env.BUCKET) return json({ error: 'R2 bucket not configured' }, { status: 500 });
+
+      try {
+        const formData = await request.formData();
+        const file = formData.get('file');
+        if (!file || typeof file === 'string') return json({ error: 'No file provided' }, { status: 400 });
+
+        const extension = file.name.split('.').pop() || 'bin';
+        const key = `uploads/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+        await env.BUCKET.put(key, await file.arrayBuffer(), {
+          httpMetadata: { contentType: file.type }
+        });
+
+        return json({ success: true, url: `/api/media/${encodeURIComponent(key)}` }, { status: 201 });
+      } catch (err) {
+        return json({ error: 'Upload failed', details: err.message }, { status: 500 });
+      }
+    }
+
+    const mediaMatch = url.pathname.match(/^\/api\/media\/(.*)$/);
+    if (mediaMatch && request.method === 'GET') {
+      if (!env.BUCKET) return new Response('R2 bucket not configured', { status: 500 });
+
+      const key = decodeURIComponent(mediaMatch[1]);
+      const object = await env.BUCKET.get(key);
+
+      if (object === null) return new Response('Not Found', { status: 404 });
+
+      const headers = new Headers();
+      object.writeHttpMetadata(headers);
+      headers.set('etag', object.httpEtag);
+      headers.set('access-control-allow-origin', '*');
+
+      return new Response(object.body, { headers });
+    }
+
     if (url.pathname === "/api/auth/register" && request.method === "POST") {
       const secret = requireJwtSecret(env);
       if (!secret) return json({ error: "missing_jwt_secret" }, { status: 500 });
@@ -1845,7 +1887,7 @@ export default {
             category: body.category || "general",
             background_style: body.background_style || null,
             tags: body.tags || [],
-            image_url: body.image_base64 || null,
+            image_url: body.image_url || body.image_base64 || null,
             likes: 0,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),

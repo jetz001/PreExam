@@ -6,6 +6,7 @@ import { X, Image as ImageIcon, Video, BarChart2, Plus, Trash2 } from 'lucide-re
 import { useSocket } from '../../context/SocketContext';
 import toast from 'react-hot-toast';
 import communityService from '../../services/communityService';
+import api from '../../services/api';
 
 const CreatePostModal = ({ onClose, initialImage, ...props }) => {
     const [title, setTitle] = useState('');
@@ -144,28 +145,35 @@ const CreatePostModal = ({ onClose, initialImage, ...props }) => {
         }
 
         if (media) {
-            if (media.type.startsWith('image/')) {
-                try {
+            try {
+                let fileToUpload = media;
+                
+                // Compress only if image
+                if (media.type.startsWith('image/')) {
                     const options = {
                         maxSizeMB: 0.5,
                         maxWidthOrHeight: 1024,
                         useWebWorker: true,
                     };
-                    const compressedFile = await imageCompression(media, options);
-                    const base64 = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.readAsDataURL(compressedFile);
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = error => reject(error);
-                    });
-                    payload.image_base64 = base64;
-                } catch (err) {
-                    console.error("Image compression error", err);
-                    toast.error("Failed to process image");
-                    return;
+                    fileToUpload = await imageCompression(media, options);
                 }
-            } else {
-                toast.error("Video uploads are not supported on this environment yet.");
+                
+                const formData = new FormData();
+                formData.append('file', fileToUpload);
+
+                // Upload to new R2 worker endpoint
+                const { data } = await api.post('/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+
+                if (data && data.url) {
+                    payload.image_url = data.url;
+                } else {
+                    throw new Error("Upload failed, no URL returned.");
+                }
+            } catch (err) {
+                console.error("Media upload error", err);
+                toast.error("Failed to process media");
                 return;
             }
         }

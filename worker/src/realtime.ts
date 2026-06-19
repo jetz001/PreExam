@@ -34,6 +34,7 @@ const parseJson = async (req: Request) => {
 
 export type Env = {
   DB: D1Database;
+  BUCKET: R2Bucket;
   REALTIME: DurableObjectNamespace;
   INTERNAL_API_KEY: string;
   JWT_SECRET?: string;

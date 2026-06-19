@@ -13,6 +13,10 @@ binding = "DB"
 database_name = "preexam"
 database_id = "313bea1c-6bfa-492e-8faa-690d471ecb9d"
 
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "preexam-assets"
+
 [durable_objects]
 bindings = [{ name = "REALTIME", class_name = "RealtimeDO" }]
 
