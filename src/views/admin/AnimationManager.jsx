@@ -289,24 +289,27 @@ const AnimationManager = () => {
 
     const [isUploading, setIsUploading] = useState(false);
     const [uploadForm, setUploadForm] = useState({ name: '', url: '' });
+    const [isUploadingFile, setIsUploadingFile] = useState(false);
 
-    const handleFileUpload = (e) => {
+    const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const text = event.target.result;
-            try {
-                JSON.parse(text); // validate
-                const base64 = btoa(unescape(encodeURIComponent(text)));
-                const dataUri = `data:application/json;base64,${base64}`;
-                setUploadForm({ ...uploadForm, name: file.name.replace('.json', ''), url: dataUri });
-                toast.success('โหลดไฟล์สำเร็จ กรุณากดปุ่มเพิ่มแอนิเมชัน');
-            } catch (err) {
-                toast.error('ไฟล์ JSON ไม่ถูกต้อง');
+        
+        setIsUploadingFile(true);
+        try {
+            const result = await adminApi.uploadFileToR2(file);
+            if (result && result.url) {
+                setUploadForm({ ...uploadForm, name: file.name.replace('.json', ''), url: result.url });
+                toast.success('อัปโหลดไฟล์ไป R2 สำเร็จ กรุณากดปุ่มเพิ่มแอนิเมชัน');
+            } else {
+                toast.error('อัปโหลดไฟล์ไม่สำเร็จ');
             }
-        };
-        reader.readAsText(file);
+        } catch (err) {
+            console.error('R2 upload error:', err);
+            toast.error('เกิดข้อผิดพลาดในการอัปโหลดไฟล์');
+        } finally {
+            setIsUploadingFile(false);
+        }
     };
 
     const handleUploadAnimation = (e) => {
@@ -420,10 +423,10 @@ const AnimationManager = () => {
                             />
                             <button
                                 type="submit"
-                                disabled={isUploading || uploadMutation.isLoading || !uploadForm.name || !uploadForm.url}
+                                disabled={isUploadingFile || isUploading || uploadMutation.isLoading || !uploadForm.name || !uploadForm.url}
                                 className="w-full rounded-xl bg-blue-600 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                             >
-                                {uploadMutation.isLoading ? 'กำลังอัปโหลด...' : 'เพิ่มแอนิเมชัน'}
+                                {isUploadingFile ? 'กำลังอัปโหลดไฟล์...' : uploadMutation.isLoading ? 'กำลังเพิ่ม...' : 'เพิ่มแอนิเมชัน'}
                             </button>
                         </form>
                     </div>

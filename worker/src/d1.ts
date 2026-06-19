@@ -1477,7 +1477,36 @@ export async function createTicketMessage(db: D1Database, ticketId: string, data
 
 export async function listPayments(db: D1Database, userId?: string, limit = 200) {
   const result = userId
-    ? await db.prepare("SELECT * FROM payments WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT ?").bind(String(userId), limit).all()
-    : await db.prepare("SELECT * FROM payments ORDER BY datetime(created_at) DESC LIMIT ?").bind(limit).all();
-  return ((result.results || []) as any[]).map((row) => ({ ...row, metadata: parseMaybeJson(row.metadata) }));
+    ? await db.prepare("SELECT * FROM transactions WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT ?").bind(String(userId), limit).all()
+    : await db.prepare("SELECT * FROM transactions ORDER BY datetime(created_at) DESC LIMIT ?").bind(limit).all();
+  return ((result.results || []) as any[]).map((row) => ({ ...row, metadata: parseMaybeJson(row.session_id) }));
+}
+
+export async function approvePayment(db: D1Database, id: string, type: string) {
+  const { results } = await db.prepare("SELECT * FROM transactions WHERE id = ?").bind(id).all();
+  const tx: any = results[0];
+  if (!tx) throw new Error("Transaction not found");
+
+  if (type === 'topup' || tx.type === 'topup') {
+    // Add to business balance
+    await db.prepare("UPDATE businesses SET balance = balance + ? WHERE owner_uid = ?").bind(tx.amount, tx.user_id).run();
+    // Log ad transaction
+    await db.prepare("INSERT INTO ad_transactions (id, business_id, amount, type, reason, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(crypto.randomUUID(), tx.user_id, tx.amount, 'topup', 'Wallet Top-up Approved', nowIso()).run();
+  } else if (type === 'subscription' || tx.type === 'subscription') {
+    // Update user plan
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    await db.prepare("UPDATE users SET plan_type = 'premium', premium_start_date = ?, premium_expiry = ? WHERE id = ?")
+      .bind(nowIso(), expiryDate.toISOString(), tx.user_id).run();
+  }
+
+  await db.prepare("UPDATE transactions SET status = 'approved', updated_at = ? WHERE id = ?").bind(nowIso(), id).run();
+  return { success: true };
+}
+
+export async function rejectPayment(db: D1Database, id: string, reason: string) {
+  await db.prepare("UPDATE transactions SET status = 'rejected', updated_at = ?, session_id = ? WHERE id = ?")
+    .bind(nowIso(), JSON.stringify({ reason }), id).run();
+  return { success: true };
 }

@@ -43,6 +43,8 @@ export type Env = {
   OLLAMA_URL?: string;
   OLLAMA_MODEL?: string;
   OLLAMA_API_KEY?: string;
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
 
   WRITER_API_KEY?: string;
   WRITER_BASE_URL?: string;

@@ -1,3 +1,4 @@
+import Stripe from "stripe";
 import { RealtimeDO, type Env } from "./realtime";
 import { requireUserId, signJwtHs256 } from "./auth";
 import { hashPassword, verifyPassword } from "./password";
@@ -65,6 +66,8 @@ import {
   listNotificationsByUser,
   listPaymentPlans,
   listPayments,
+  approvePayment,
+  rejectPayment,
   listReceivedMessages,
   listRankingsBySeason,
   listSeasons,
@@ -250,7 +253,54 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") {
+    
+        if (url.pathname === "/api/webhooks/stripe" && request.method === "POST") {
+          if (!env.STRIPE_SECRET_KEY || !env.STRIPE_WEBHOOK_SECRET) {
+             return new Response("Webhook error: Stripe secrets not configured", { status: 400 });
+          }
+          
+          const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+            apiVersion: "2024-04-10" as any
+          });
+          
+          const signature = request.headers.get("stripe-signature");
+          if (!signature) {
+             return new Response("Webhook error: No signature", { status: 400 });
+          }
+
+          let event;
+          try {
+            const bodyText = await request.text();
+            event = stripe.webhooks.constructEvent(bodyText, signature, env.STRIPE_WEBHOOK_SECRET);
+          } catch (err: any) {
+            console.error(`Webhook signature verification failed: ${err.message}`);
+            return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+          }
+
+          if (event.type === 'checkout.session.completed') {
+            const session = event.data.object as any;
+            const metadata = session.metadata;
+            if (metadata && metadata.userId) {
+              const { userId, type, durationDays } = metadata;
+              const days = parseInt(durationDays || '30', 10);
+              
+              if (type === 'subscription' || type === 'PLAN_PURCHASE') {
+                 // Update premium status
+                 const expiryDate = new Date();
+                 expiryDate.setDate(expiryDate.getDate() + days);
+                 await env.DB.prepare("UPDATE users SET plan_type = 'premium', premium_start_date = ?, premium_expiry = ? WHERE id = ?")
+                   .bind(new Date().toISOString(), expiryDate.toISOString(), userId).run();
+              }
+              
+              // Update transaction
+              await env.DB.prepare("UPDATE transactions SET status = 'approved', updated_at = ? WHERE session_id = ?")
+                .bind(new Date().toISOString(), session.id).run();
+            }
+          }
+          return new Response(JSON.stringify({ received: true }), { status: 200, headers: { "Content-Type": "application/json" } });
+        }
+
+      if (request.method === "OPTIONS") {
       return withCors(new Response(null, { status: 204 }));
     }
 
@@ -2733,6 +2783,79 @@ export default {
           }
         }
 
+        
+        if (url.pathname === "/api/payments/create-checkout-session" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          
+          if (!env.STRIPE_SECRET_KEY) {
+             return json({ success: false, message: "Stripe not configured" }, { status: 500 });
+          }
+
+          try {
+            const body = await request.json() as any;
+            const { planId, amount, type } = body;
+
+            // Optional: verify plan
+            const planDoc: any = await getPaymentPlanById(env.DB, planId);
+            if (!planDoc) {
+              return json({ success: false, message: "Plan not found" }, { status: 404 });
+            }
+
+            const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+              apiVersion: "2024-04-10" as any
+            });
+
+            // Calculate duration
+            const durationDays = planDoc.duration_days || 30; // Default to 30 if missing
+
+            const session = await stripe.checkout.sessions.create({
+              payment_method_types: ['promptpay'],
+              line_items: [
+                {
+                  price_data: {
+                    currency: 'thb',
+                    product_data: {
+                      name: planDoc.name,
+                      description: `Subscription for ${durationDays} days`,
+                    },
+                    unit_amount: Math.round(planDoc.price * 100), // Stripe expects amount in smallest currency unit (satang)
+                  },
+                  quantity: 1,
+                },
+              ],
+              mode: 'payment',
+              success_url: `${url.origin}/pricing?success=true`,
+              cancel_url: `${url.origin}/pricing?canceled=true`,
+              metadata: {
+                userId: auth.userId,
+                planId: planId,
+                durationDays: String(durationDays),
+                type: type || 'subscription'
+              }
+            });
+
+            // Create pending transaction to track
+            const transactionData = {
+              id: crypto.randomUUID(),
+              user_id: auth.userId,
+              plan_id: planId,
+              amount: planDoc.price,
+              payment_method: 'promptpay',
+              status: 'pending',
+              type: type || 'subscription',
+              session_id: session.id,
+              created_at: new Date().toISOString()
+            };
+            await createTransaction(env.DB, transactionData);
+
+            return json({ url: session.url });
+          } catch (e: any) {
+            console.error("Stripe error:", e);
+            return json({ success: false, message: e.message }, { status: 500 });
+          }
+        }
+
         if (url.pathname === "/api/payments/checkout" && request.method === "POST") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
@@ -3088,10 +3211,86 @@ if (url.pathname === "/api/legal/policy") {
         }
 
         if (url.pathname === "/api/users/leaderboard") return json({ success: true, leaderboard: [] });
-        if (url.pathname === "/api/ads/admin/stats") return json({ totalRevenue: 0, activeSponsors: 0, totalViews: 0, revenueTrend: [] });
-        if (url.pathname === "/api/ads/admin/sponsors") return json([]);
-        if (url.pathname === "/api/ads/admin/pending") return json([]);
-        if (url.pathname === "/api/ads/admin/config") return json({ communityViewCost: 0.1, communityClickCost: 5.0, newsViewCost: 0.15, newsClickCost: 6.0, resultViewCost: 0.2, resultClickCost: 8.0, inFeedFrequency: 10, adSenseBackupId: '', examResultSlotId: '', homeSlotId: '' });
+                                        
+        if (url.pathname === "/api/ads/admin/stats" && request.method === "GET") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            
+            try {
+                // Total revenue from ad_transactions
+                const { results: revRes } = await env.DB.prepare("SELECT SUM(amount) as total FROM ad_transactions WHERE type='topup'").all();
+                const totalRevenue = revRes[0]?.total || 0;
+                
+                // Active sponsors
+                const { results: sponsorRes } = await env.DB.prepare("SELECT COUNT(*) as count FROM businesses WHERE status='approved'").all();
+                const activeSponsors = sponsorRes[0]?.count || 0;
+                
+                // Total views
+                const { results: viewRes } = await env.DB.prepare("SELECT SUM(views) as total FROM ads").all();
+                const totalViews = viewRes[0]?.total || 0;
+                
+                // Revenue trend (mocking daily trend based on last 7 days of transactions if possible, or fallback)
+                const revenueTrend = [
+                    { date: 'Mon', revenue: 0 },
+                    { date: 'Tue', revenue: 0 },
+                    { date: 'Wed', revenue: 0 },
+                    { date: 'Thu', revenue: 0 },
+                    { date: 'Fri', revenue: 0 },
+                    { date: 'Sat', revenue: 0 },
+                    { date: 'Sun', revenue: totalRevenue }
+                ];
+                
+                return json({ success: true, totalRevenue, activeSponsors, totalViews, revenueTrend });
+            } catch(e) {
+                return json({ success: false, error: String(e) }, { status: 500 });
+            }
+        }
+
+        if (url.pathname === "/api/ads/admin/sponsors" && request.method === "GET") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            
+            try {
+                const { results } = await env.DB.prepare(`
+                    SELECT b.id, b.name as businessName, b.contact_line_id as contact, b.balance, b.total_spent as totalSpent, b.status, b.created_at as joinDate,
+                    (SELECT COUNT(*) FROM ads WHERE business_id = b.id AND status='active') as activeAds
+                    FROM businesses b ORDER BY b.created_at DESC
+                `).all();
+                return json(results);
+            } catch(e) {
+                return json({ success: false, error: String(e) }, { status: 500 });
+            }
+        }
+
+        if (url.pathname === "/api/ads/admin/pending" && request.method === "GET") {
+            const auth = await requireAuthUserId(request, env);
+            if ("error" in auth) return auth.error;
+            
+            try {
+                const { results } = await env.DB.prepare(`
+                    SELECT a.id, b.name as sponsorName, a.title, a.content, a.target_url as targetUrl, a.placement as type, a.budget, a.cpc, a.max_views as maxViews, a.created_at as submittedAt, a.status 
+                    FROM ads a
+                    LEFT JOIN businesses b ON a.business_id = b.id
+                    WHERE a.status = 'pending'
+                `).all();
+                return json(results);
+            } catch(e) {
+                return json({ success: false, error: String(e) }, { status: 500 });
+            }
+        }
+
+        if (url.pathname === "/api/ads/admin/config" && request.method === "GET") {
+            try {
+                const { results } = await env.DB.prepare("SELECT value FROM system_config WHERE key = 'ads_config'").all();
+                if (results.length > 0 && results[0].value) {
+                    return json(JSON.parse(results[0].value));
+                }
+                return json({ communityViewCost: 0.1, communityClickCost: 5.0, newsViewCost: 0.15, newsClickCost: 6.0, resultViewCost: 0.2, resultClickCost: 8.0, inFeedFrequency: 10, adSenseBackupId: '', examResultSlotId: '', homeSlotId: '' });
+            } catch(e) {
+                return json({ success: false, error: String(e) }, { status: 500 });
+            }
+        }
+
         if (url.pathname === "/api/support/admin/tickets") {
             try {
                 const results = await listTickets(env.DB);
@@ -3102,8 +3301,6 @@ if (url.pathname === "/api/legal/policy") {
         }
         if (url.pathname === "/api/admin/backups") return json([]);
         if (url.pathname === "/api/admin/backups/logs") return json([]);
-        if (url.pathname === "/api/admin/messages") return json([]);
-        if (url.pathname === "/api/admin/reports") return json([]);
         if (url.pathname === "/api/support/tickets" && request.method === "POST") {
             try {
                 const body = await readJson(request) as any;
@@ -3452,7 +3649,7 @@ if (url.pathname === "/api/legal/policy") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
 
-          const users = await listUsers(env.DB, 100);
+          const users = await listUsers(env.DB, 10000);
           return json(users);
         }
 
@@ -3726,6 +3923,7 @@ if (url.pathname === "/api/legal/policy") {
     console.log("Running scheduled job cleanup at", new Date().toISOString());
     await cleanupExpiredJobs(env);
     await cleanupExpiredRooms(env);
+    await cleanupExpiredPremium(env);
   }
 };
 
@@ -3792,4 +3990,11 @@ async function cleanupExpiredRooms(env: Env) {
         console.error("Scheduled room cleanup failed", e);
         return 0;
     }
+}
+
+
+async function cleanupExpiredPremium(env: Env) {
+  const now = new Date().toISOString();
+  // Set users back to free if their premium_expiry is in the past
+  await env.DB.prepare("UPDATE users SET plan_type = 'free', premium_expiry = NULL, premium_start_date = NULL WHERE plan_type = 'premium' AND premium_expiry < ?").bind(now).run();
 }

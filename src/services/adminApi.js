@@ -166,6 +166,14 @@ const adminApi = {
         const response = await api.post('/assets', data);
         return response.data;
     },
+    uploadFileToR2: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post('/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
+    },
     deleteAsset: async (id) => {
         const response = await api.delete(`/assets/${id}`);
         return response.data;

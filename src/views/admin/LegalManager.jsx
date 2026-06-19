@@ -37,7 +37,7 @@ const LegalManager = () => {
     const formats = [
         'header',
         'bold', 'italic', 'underline', 'strike', 'blockquote',
-        'list', 'bullet', 'indent',
+        'list', 'indent',
         'link', 'image'
     ];
 
