@@ -18,7 +18,7 @@ let mockScraperRunning = false;
 let mockScraperLogs: string[] = [];
 
 const globalCache: Record<string, { data: any, exp: number }> = {};
-const CACHE_TTL = 5 * 60 * 1000; // 5 mins
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 function getCache(key: string) {
   const item = globalCache[key];
   if (item && item.exp > Date.now()) return item.data;
@@ -1740,7 +1740,7 @@ export default {
         if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
             try {
                 const typeFilter = url.searchParams.get("type");
-                const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 1000 });
+                const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 50 });
                 const govNews = news.filter((n: any) => n.category === "งานราชการ" && n.status !== "expired");
                 const statsMap: any = {};
                 
@@ -1920,7 +1920,7 @@ export default {
         // /api/news/agency-stats
         if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
           try {
-            const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 1000 });
+            const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 50 });
             const agencies = new Map();
             news.forEach((item: any) => {
               const agency = item.agency || (item.metadata && item.metadata.organization);
@@ -3102,7 +3102,7 @@ if (url.pathname === "/api/legal/policy") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
 
-          const users = await firestore.runQuery({ from: [{ collectionId: "users" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
+          const users = await firestore.runQuery({ from: [{ collectionId: "users" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 100 });
           return json(users);
         }
 
@@ -3154,20 +3154,20 @@ if (url.pathname === "/api/legal/policy") {
         if (url.pathname === "/api/admin/businesses" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const businesses = await firestore.runQuery({ from: [{ collectionId: "businesses" }], limit: 1000 });
+          const businesses = await firestore.runQuery({ from: [{ collectionId: "businesses" }], limit: 100 });
           businesses.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
           return json(businesses);
         }
         if (url.pathname === "/api/admin/payments" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
+          const payments = await firestore.runQuery({ from: [{ collectionId: "payments" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 100 });
           return json(payments);
         }
         if (url.pathname === "/api/admin/threads" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
-          const threads = await firestore.runQuery({ from: [{ collectionId: "threads" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 1000 });
+          const threads = await firestore.runQuery({ from: [{ collectionId: "threads" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 100 });
           return json({ threads, pagination: { page: 1, totalPages: 1, total: threads.length } });
         }
         if (url.pathname === "/api/admin/scraper/start" && request.method === "POST") {
@@ -3383,7 +3383,9 @@ if (url.pathname === "/api/legal/policy") {
 };
 
 async function cleanupExpiredJobs(env: Env) {
-    const firestore = new FirestoreClient(env);
+    const config = parseServiceAccount(env);
+    if (!config) return 0;
+    const firestore = new FirestoreClient(config);
     
     // Helper to parse Thai date e.g. "15 มิ.ย. 2569"
     const parseThaiDate = (dateStr: string) => {
@@ -3426,7 +3428,9 @@ async function cleanupExpiredJobs(env: Env) {
 }
 
 async function cleanupExpiredRooms(env: Env) {
-    const firestore = new FirestoreClient(env);
+    const config = parseServiceAccount(env);
+    if (!config) return 0;
+    const firestore = new FirestoreClient(config);
     try {
         const rooms = await firestore.runQuery({ from: [{ collectionId: "exam_rooms" }], limit: 1000 });
         const now = new Date().getTime();
