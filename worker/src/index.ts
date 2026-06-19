@@ -74,6 +74,17 @@ const requireAuthUserId = async (req: Request, env: Env) => {
   return { userId };
 };
 
+const requireAdmin = async (req: Request, env: Env) => {
+  const auth = await requireAuthUserId(req, env);
+  if ("error" in auth) return auth;
+  const config = parseServiceAccount(env);
+  if (!config) return { error: json({ error: "missing_firestore_config" }, { status: 500 }) };
+  const firestore = new FirestoreClient(config);
+  const user = await firestore.getDocument("users", auth.userId);
+  if (!user || user.role !== "admin") return { error: json({ error: "forbidden" }, { status: 403 }) };
+  return { userId: auth.userId };
+};
+
 const oneDayAgoIso = () => new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
 const sanitizeUser = (row: any) => {
@@ -1696,7 +1707,8 @@ export default {
           try {
             const agency = url.searchParams.get("agency");
             const search = url.searchParams.get("search");
-            const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 100 });
+            const { results } = await env.DB.prepare("SELECT * FROM news ORDER BY created_at DESC LIMIT 100").all();
+            const news = results.map((r: any) => ({ ...r, metadata: r.metadata ? JSON.parse(r.metadata) : null }));
             const category = url.searchParams.get("category");
             let filteredNews = news.filter((n: any) => n.status !== 'expired');
             if (category && category !== 'undefined') {
@@ -1732,15 +1744,26 @@ export default {
             body.created_at = new Date().toISOString();
             body.updated_at = new Date().toISOString();
             body.views = 0;
-            const created = await firestore.createDocument("news", body);
-            return json({ success: true, data: created });
+            
+            const metadataStr = body.metadata ? JSON.stringify(body.metadata) : null;
+            await env.DB.prepare(`
+                INSERT INTO news (id, title, content, category, agency, author, external_link, status, application_start, application_end, metadata, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+                body.id || crypto.randomUUID(), body.title || '', body.content || '', body.category || '', body.agency || '', body.author || '',
+                body.external_link || '', body.status || 'active', body.application_start || '', body.application_end || '', metadataStr,
+                body.created_at, body.updated_at
+            ).run();
+            
+            return json({ success: true, data: body });
         }
 
         // /api/news/agency-stats
         if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
             try {
                 const typeFilter = url.searchParams.get("type");
-                const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 50 });
+                const { results } = await env.DB.prepare("SELECT * FROM news ORDER BY created_at DESC LIMIT 100").all();
+                const news = results.map((r: any) => ({ ...r, metadata: r.metadata ? JSON.parse(r.metadata) : null }));
                 const govNews = news.filter((n: any) => n.category === "งานราชการ" && n.status !== "expired");
                 const statsMap: any = {};
                 
@@ -1917,10 +1940,11 @@ export default {
         }
 
 
-        // /api/news/agency-stats
+        // /api/news/agency-stats (duplicate route, updated)
         if (url.pathname === "/api/news/agency-stats" && request.method === "GET") {
           try {
-            const news = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 50 });
+            const { results } = await env.DB.prepare("SELECT * FROM news ORDER BY created_at DESC LIMIT 50").all();
+            const news = results.map((r: any) => ({ ...r, metadata: r.metadata ? JSON.parse(r.metadata) : null }));
             const agencies = new Map();
             news.forEach((item: any) => {
               const agency = item.agency || (item.metadata && item.metadata.organization);
@@ -2376,7 +2400,7 @@ export default {
             const body = await request.json();
             const { plan_id, payment_method } = body as any;
             
-            const planDoc = await firestore.getDocument(`payment_plans/${plan_id}`);
+            const planDoc = await firestore.getDocument("payment_plans", plan_id);
             if (!planDoc) {
               return json({ success: false, message: "Plan not found" }, { status: 404 });
             }
@@ -2392,7 +2416,7 @@ export default {
               created_at: new Date().toISOString()
             };
 
-            await firestore.createDocument("transactions", transactionData.id, transactionData);
+            await firestore.createDocument("transactions", transactionData, transactionData.id);
 
             return json({ success: true, transaction: transactionData });
           } catch (e: any) {
@@ -2408,7 +2432,7 @@ export default {
           const id = decodeURIComponent(adminPlanMatch[1]);
           if (request.method === "PUT") {
             const body = await request.json();
-            await firestore.updateDocument("payment_plans", id, { ...body, updated_at: new Date().toISOString() });
+            await firestore.updateDocument("payment_plans", id, { ...(body as any), updated_at: new Date().toISOString() });
             return json({ success: true });
           }
           if (request.method === "DELETE") {
@@ -2527,7 +2551,7 @@ if (url.pathname === "/api/legal/policy") {
     try {
       const policy = await firestore.getDocument("system_config", "privacy_policy");
       return json({ success: true, content: policy?.content || "" });
-    } catch (e) {
+    } catch (e: any) {
       return json({ success: false, error: e.message || String(e) }, { status: 500 });
     }
   }
@@ -3170,6 +3194,45 @@ if (url.pathname === "/api/legal/policy") {
           const threads = await firestore.runQuery({ from: [{ collectionId: "threads" }], orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }], limit: 100 });
           return json({ threads, pagination: { page: 1, totalPages: 1, total: threads.length } });
         }
+        if (url.pathname === "/api/admin/migrate-news" && request.method === "POST") {
+            const auth = await requireAdmin(request, env);
+            if ("error" in auth) return auth.error;
+            
+            try {
+                // Fetch from Firestore
+                const firestoreNews = await firestore.runQuery({ from: [{ collectionId: "news" }], limit: 5000 });
+                if (!firestoreNews || firestoreNews.length === 0) {
+                    return json({ success: true, message: "No news found in Firestore to migrate." });
+                }
+
+                // Batch insert to D1
+                const stmt = env.DB.prepare(`
+                    INSERT OR IGNORE INTO news (id, title, content, category, agency, author, external_link, status, application_start, application_end, metadata, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `);
+                
+                const batch = firestoreNews.map((doc: any) => stmt.bind(
+                    doc.id || crypto.randomUUID(),
+                    doc.title || '',
+                    doc.content || '',
+                    doc.category || '',
+                    doc.agency || '',
+                    doc.author || '',
+                    doc.external_link || '',
+                    doc.status || 'active',
+                    doc.application_start || '',
+                    doc.application_end || '',
+                    doc.metadata ? JSON.stringify(doc.metadata) : null,
+                    doc.created_at || new Date().toISOString(),
+                    doc.updated_at || new Date().toISOString()
+                ));
+                
+                await env.DB.batch(batch);
+                return json({ success: true, message: `Migrated ${firestoreNews.length} news items to D1.` });
+            } catch (error: any) {
+                return json({ success: false, message: error.message }, { status: 500 });
+            }
+        }
         if (url.pathname === "/api/admin/scraper/start" && request.method === "POST") {
             mockScraperRunning = true;
             const addLog = (msg: string) => {
@@ -3233,17 +3296,8 @@ if (url.pathname === "/api/legal/policy") {
                     let skipCount = 0;
 
                     // Fetch all existing OCSC links to avoid N+1 queries
-                    const existingOCSCJobs = await firestore.runQuery({
-                        from: [{ collectionId: "news" }],
-                        where: {
-                            fieldFilter: {
-                                field: { fieldPath: "author" },
-                                op: "EQUAL",
-                                value: { stringValue: "ระบบอัตโนมัติ (OCSC)" }
-                            }
-                        }
-                    });
-                    const existingLinks = new Set(existingOCSCJobs.map((j: any) => j.external_link).filter(Boolean));
+                    const { results } = await env.DB.prepare("SELECT external_link FROM news WHERE author = 'ระบบอัตโนมัติ (OCSC)'").all();
+                    const existingLinks = new Set(results.map((j: any) => j.external_link).filter(Boolean));
 
                     const newDocs = [];
 
@@ -3255,18 +3309,17 @@ if (url.pathname === "/api/legal/policy") {
                             continue;
                         }
 
-                        // Prepare new
                         const newDoc = {
+                            id: crypto.randomUUID(),
                             title: job.position,
                             content: `รับสมัคร ${job.vacancy}`,
                             category: job.category,
                             agency: job.department,
                             author: "ระบบอัตโนมัติ (OCSC)",
-                            published_date: new Date().toISOString(),
-                            status: "published",
-                            thumbnail: null,
-                            featured: false,
                             external_link: externalLink,
+                            status: "published",
+                            application_start: job.start_date,
+                            application_end: job.end_date,
                             metadata: {
                                 ministry: job.ministry,
                                 department: job.department,
@@ -3276,9 +3329,6 @@ if (url.pathname === "/api/legal/policy") {
                                 location: job.location,
                                 vacancy_count: job.vacancy_count
                             },
-                            recruitment_type: job.recruitment_type,
-                            application_start: job.start_date,
-                            application_end: job.end_date,
                             created_at: new Date().toISOString(),
                             updated_at: new Date().toISOString()
                         };
@@ -3289,7 +3339,18 @@ if (url.pathname === "/api/legal/policy") {
                     
                     if (newDocs.length > 0) {
                         addLog(`[System] Batch inserting ${newDocs.length} new jobs...`);
-                        await firestore.batchCreateDocuments("news", newDocs);
+                        const stmt = env.DB.prepare(`
+                            INSERT INTO news (id, title, content, category, agency, author, external_link, status, application_start, application_end, metadata, created_at, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        `);
+                        
+                        const batch = newDocs.map((doc: any) => stmt.bind(
+                            doc.id, doc.title, doc.content, doc.category, doc.agency, doc.author, doc.external_link,
+                            doc.status, doc.application_start, doc.application_end, JSON.stringify(doc.metadata),
+                            doc.created_at, doc.updated_at
+                        ));
+                        
+                        await env.DB.batch(batch);
                         addedCount = newDocs.length;
                     }
                     
