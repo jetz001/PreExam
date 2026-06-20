@@ -1166,14 +1166,20 @@ export async function adminUpdateUserQuestion(db: D1Database, id: string, data: 
 }
 
 export async function adminGetDashboardStats(db: D1Database) {
-  const [totalUsersRes, premiumUsersRes, paymentsRes] = await Promise.all([
+  const [totalUsersRes, premiumUsersRes, paymentsRes, activeUsersRes, mauRes, ticketsRes] = await Promise.all([
     db.prepare("SELECT COUNT(*) as count FROM users").first<{count: number}>(),
     db.prepare("SELECT COUNT(*) as count FROM users WHERE plan_type = 'premium'").first<{count: number}>(),
-    db.prepare("SELECT amount, status, created_at FROM payments").all()
+    db.prepare("SELECT amount, status, created_at FROM payments").all(),
+    db.prepare("SELECT COUNT(*) as count FROM users WHERE last_active_at >= datetime('now', '-1 day')").first<{count: number}>(),
+    db.prepare("SELECT COUNT(*) as count FROM users WHERE last_active_at >= datetime('now', '-30 day')").first<{count: number}>(),
+    db.prepare("SELECT COUNT(*) as count FROM tickets WHERE created_at >= datetime('now', '-1 day')").first<{count: number}>()
   ]);
 
   const totalUsers = totalUsersRes?.count || 0;
   const premiumUsers = premiumUsersRes?.count || 0;
+  const activeUsers = activeUsersRes?.count || 0;
+  const mau = mauRes?.count || 0;
+  const recentReports = ticketsRes?.count || 0;
 
   let totalRevenue = 0;
   let monthlyRevenue = 0;
@@ -1225,14 +1231,13 @@ export async function adminGetDashboardStats(db: D1Database) {
           trend: Object.values(trendMap) 
       },
       conversionRate: totalUsers > 0 ? ((premiumUsers / totalUsers) * 100).toFixed(1) : 0,
-      activeUsers: Math.floor(totalUsers * 0.2) + 5,
-      commercialViability: [
-          { name: 'Jan', value: 65 }, { name: 'Feb', value: 75 }, { name: 'Mar', value: 85 }
-      ],
-      painPoints: [
-          { subject: 'Math', score: 45 }, { subject: 'Physics', score: 55 }
-      ],
-      communityHealth: { recentReports: 0, mau: totalUsers }
+      activeUsers: activeUsers,
+      commercialViability: [],
+      painPoints: [],
+      communityHealth: {
+          recentReports: recentReports,
+          mau: mau
+      }
   };
 }
 
