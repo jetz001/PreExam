@@ -1821,9 +1821,10 @@ export async function adminApprovePayment(db: D1Database, id: string, type: stri
   if (type === 'topup' || pDoc.type === 'WALLET_TOPUP') {
     await db.prepare("UPDATE users SET wallet_balance = coalesce(wallet_balance, 0) + ? WHERE id = ?").bind(Number(pDoc.amount) || 0, String(pDoc.user_id)).run();
   } else {
+    const now = new Date();
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 30);
-    await db.prepare("UPDATE users SET plan_type = 'premium', premium_expiry = ? WHERE id = ?").bind(expiry.toISOString(), String(pDoc.user_id)).run();
+    await db.prepare("UPDATE users SET plan_type = 'premium', premium_start_date = ?, premium_expiry = ? WHERE id = ?").bind(now.toISOString(), expiry.toISOString(), String(pDoc.user_id)).run();
   }
   return true;
 }
@@ -1844,6 +1845,8 @@ export async function adminUpdateUser(db: D1Database, id: string, data: Partial<
   if (data.role) { updates.push("role = ?"); values.push(data.role); }
   if (data.plan_type) { updates.push("plan_type = ?"); values.push(data.plan_type); }
   if (data.status) { updates.push("status = ?"); values.push(data.status); }
+  if (data.premium_start_date !== undefined) { updates.push("premium_start_date = ?"); values.push(data.premium_start_date); }
+  if (data.premium_expiry !== undefined) { updates.push("premium_expiry = ?"); values.push(data.premium_expiry); }
   
   if (updates.length > 0) {
     values.push(id);

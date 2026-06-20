@@ -540,8 +540,8 @@ const UserManager = () => {
                 id,
                 data: {
                     plan_type: 'premium',
-                    premium_start_date: new Date(),
-                    premium_expiry: oneMonthFromNow
+                    premium_start_date: new Date().toISOString(),
+                    premium_expiry: oneMonthFromNow.toISOString()
                 }
             });
         }
@@ -882,9 +882,17 @@ const UserManager = () => {
                                                     )}
                                                 </div>
                                             ) : user.plan_type === 'premium' ? (
-                                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center w-fit">
-                                                    <CheckCircle size={12} className="mr-1" /> Premium
-                                                </span>
+                                                <div className="flex flex-col items-start gap-1">
+                                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center w-fit">
+                                                        <CheckCircle size={12} className="mr-1" /> Premium
+                                                    </span>
+                                                    {(user.premium_start_date || user.premium_expiry) && (
+                                                        <div className="text-[10px] text-gray-500 mt-1">
+                                                            {user.premium_start_date && <div>เริ่ม: {new Date(user.premium_start_date).toLocaleDateString()}</div>}
+                                                            {user.premium_expiry && <div className="text-red-500">หมดอายุ: {new Date(user.premium_expiry).toLocaleDateString()}</div>}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ) : user.role === 'sponsor' ? (
                                                 <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-md text-xs font-bold flex items-center w-fit">
                                                     <Briefcase size={12} className="mr-1" /> Sponsor
