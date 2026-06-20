@@ -109,11 +109,15 @@ const QuestionManager = () => {
 
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this question?')) {
+            // Optimistic update: ลบออกจากหน้าจอทันที ไม่ต้องรอรีเฟรช (แก้ปัญหา Cache 1 นาที)
+            setQuestions(prev => prev.filter(q => q.id !== id));
             try {
                 await adminService.deleteQuestion(id);
-                fetchQuestions();
             } catch (error) {
+                console.error('Failed to delete:', error);
                 alert('Failed to delete question');
+                // ถ้าลบไม่สำเร็จจริงๆ ค่อยดึงข้อมูลใหม่เพื่อคืนค่าเดิม
+                fetchQuestions();
             }
         }
     };
