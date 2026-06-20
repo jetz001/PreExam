@@ -3512,11 +3512,11 @@ if (url.pathname === "/api/legal/policy") {
                 }));
 
                 const painPointsRes = await env.DB.prepare(`
-                    SELECT r.title as subject, AVG(er.score * 100.0 / NULLIF(er.total_questions, 0)) as avg_score
+                    SELECT COALESCE(r.subject, r.title) as subject, AVG(er.score * 100.0 / NULLIF(er.total_score, 0)) as avg_score
                     FROM exam_results er
-                    JOIN exam_rooms r ON er.room_id = r.id
-                    WHERE er.total_questions > 0
-                    GROUP BY r.title
+                    JOIN exam_rooms r ON er.classroom_id = r.id
+                    WHERE er.total_score > 0
+                    GROUP BY r.subject, r.title
                     ORDER BY avg_score ASC
                     LIMIT 3
                 `).all();
