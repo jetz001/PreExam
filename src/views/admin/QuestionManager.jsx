@@ -59,20 +59,44 @@ const QuestionManager = () => {
         queryFn: () => adminApi.getQuestions({ ...filters, page, limit, orderDir: sortConfig.direction })
     });
 
+    const { data: userQuestionsData, isLoading: isLoadingUserQuestions } = useQuery({
+        queryKey: ['user-questions'],
+        queryFn: () => adminApi.getAllUserQuestions(),
+    });
+
     const questions = queryData?.rows || [];
     const totalPages = queryData?.totalPages || 1;
     const totalQuestions = queryData?.total || 0;
 
+    const userQuestions = userQuestionsData?.data || [];
+
     const sortedQuestions = React.useMemo(() => {
-        if (!questions) return [];
-        let sortableItems = [...questions];
+        let currentQuestions = activeTab === 'user_questions' ? userQuestions : questions;
+        if (!currentQuestions) return [];
+        let sortableItems = [...currentQuestions];
+        
+        // Filter local if user_questions
+        if (activeTab === 'user_questions') {
+            if (filters.search) {
+                sortableItems = sortableItems.filter(q => 
+                    (q.question_text || '').toLowerCase().includes(filters.search.toLowerCase())
+                );
+            }
+            if (filters.subject) {
+                sortableItems = sortableItems.filter(q => q.subject === filters.subject);
+            }
+            if (filters.category) {
+                sortableItems = sortableItems.filter(q => q.category === filters.category || (q.catalogs && q.catalogs.includes(filters.category)));
+            }
+        }
+
         sortableItems.sort((a, b) => {
             let valA = a[sortConfig.key];
             let valB = b[sortConfig.key];
             
             if (sortConfig.key === 'id') {
-                valA = Number(valA);
-                valB = Number(valB);
+                valA = Number(valA.toString().replace('uq_', ''));
+                valB = Number(valB.toString().replace('uq_', ''));
             }
             
             if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -80,7 +104,7 @@ const QuestionManager = () => {
             return 0;
         });
         return sortableItems;
-    }, [questions, sortConfig]);
+    }, [questions, userQuestions, sortConfig, activeTab, filters]);
 
     // Reset page when filters change
     React.useEffect(() => {
@@ -110,9 +134,10 @@ const QuestionManager = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: ({ id, data }) => adminApi.updateQuestion(id, data),
+        mutationFn: ({ id, data }) => String(id).startsWith('uq_') ? adminApi.updateUserQuestion(id, data) : adminApi.updateQuestion(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries(['questions']);
+            queryClient.invalidateQueries(['user-questions']);
             toast.success('Question updated successfully!');
             handleCloseModal();
         },
@@ -120,9 +145,10 @@ const QuestionManager = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: adminApi.deleteQuestion,
+        mutationFn: (id) => String(id).startsWith('uq_') ? adminApi.deleteUserQuestion(id) : adminApi.deleteQuestion(id),
         onSuccess: () => {
             queryClient.invalidateQueries(['questions']);
+            queryClient.invalidateQueries(['user-questions']);
             toast.success('Question deleted successfully!');
         },
         onError: () => toast.error('Failed to delete question')
@@ -231,7 +257,14 @@ const QuestionManager = () => {
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center ${activeTab === 'questions' ? 'border-royal-blue-600 text-royal-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
                 >
                     <FileQuestion size={18} className="mr-2" />
-                    คลังข้อสอบ (All Questions)
+                    คลังข้อสอบหลัก (System)
+                </button>
+                <button
+                    onClick={() => setActiveTab('user_questions')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center ${activeTab === 'user_questions' ? 'border-royal-blue-600 text-royal-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                >
+                    <FileQuestion size={18} className="mr-2" />
+                    คลังข้อสอบผู้ใช้ (Users)
                 </button>
                 <button
                     onClick={() => setActiveTab('generator')}
@@ -246,31 +279,29 @@ const QuestionManager = () => {
                 <GeneratorManager />
             </div>
 
-            <div className={activeTab === 'questions' ? 'space-y-6 block' : 'hidden'}>
+            <div className={activeTab === 'questions' || activeTab === 'user_questions' ? 'space-y-6 block' : 'hidden'}>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-2xl font-bold text-slate-800">Question Bank</h2>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setIsGuideOpen(true)}
-                        className="flex items-center px-3 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                        title="Import Guide"
-                    >
-                        <HelpCircle size={20} />
-                    </button>
-                    <label className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm cursor-pointer" style={{ backgroundColor: '#16a34a' }}>
-                        <span className="mr-2">Import Excel</span>
-                        <input type="file" accept=".xlsx, .xls" className="hidden" onChange={(e) => handleFileUpload(e)} />
-                    </label>
-                    <button
-                        onClick={() => handleOpenModal()}
-                        className="flex items-center px-4 py-2 bg-royal-blue-600 text-white rounded-lg hover:bg-royal-blue-700 transition-colors shadow-sm"
-                        style={{ backgroundColor: '#2563eb' }}
-                    >
-                        <Plus size={20} className="mr-2" />
-                        Add New Question
-                    </button>
+                    <h2 className="text-xl font-bold text-slate-800">
+                        {activeTab === 'user_questions' ? 'คลังข้อสอบผู้ใช้ (User Questions)' : 'Question Bank'}
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
+                        <button className="flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium" onClick={() => setIsGuideOpen(true)}>
+                            <HelpCircle size={16} className="mr-2" />
+                            วิธีเพิ่มข้อสอบ
+                        </button>
+                        <label className="flex items-center px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer text-sm font-medium border border-emerald-200">
+                            <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleFileUpload} />
+                            <span className="mr-2">Import Excel</span>
+                        </label>
+                        <button
+                            onClick={() => handleOpenModal()}
+                            className="flex items-center px-4 py-2 bg-royal-blue-600 text-white rounded-lg hover:bg-royal-blue-700 transition-colors shadow-sm text-sm font-medium"
+                        >
+                            <Plus size={16} className="mr-2" />
+                            Add New Question
+                        </button>
+                    </div>
                 </div>
-            </div>
 
             {/* Filters */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-wrap gap-4 items-center">

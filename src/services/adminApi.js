@@ -38,6 +38,18 @@ const adminApi = {
         const response = await api.delete(`/questions/${id}`);
         return response.data;
     },
+    getAllUserQuestions: async () => {
+        const response = await api.get('/admin/user-questions');
+        return response.data;
+    },
+    updateUserQuestion: async (id, data) => {
+        const response = await api.put(`/admin/user-questions/${id}`, data);
+        return response.data;
+    },
+    deleteUserQuestion: async (id) => {
+        const response = await api.delete(`/admin/user-questions/${id}`);
+        return response.data;
+    },
 
     // Payment Verification
     getPendingPayments: async () => {
