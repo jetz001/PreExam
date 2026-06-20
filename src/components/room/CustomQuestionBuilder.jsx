@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Upload, GripVertical, CheckSquare, Square, RefreshCw, Save } from 'lucide-react';
 import examService from '../../services/examService';
 
-const CustomQuestionBuilder = ({ customQuestions, setCustomQuestions }) => {
+const CustomQuestionBuilder = ({ customQuestions = [], setCustomQuestions = () => {}, mode = 'select' }) => {
     const [view, setView] = useState('list'); // 'list' | 'import' | 'create'
     const [userBank, setUserBank] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -214,15 +214,17 @@ const CustomQuestionBuilder = ({ customQuestions, setCustomQuestions }) => {
 
             {view === 'list' && (
                 <>
-                    <div className="flex justify-between items-center mb-2 px-1">
-                        <div className="text-sm font-bold text-white/80">
-                            เลือกข้อสอบสำหรับห้องนี้: <span className="text-green-400">{customQuestions.length} ข้อ</span>
+                    {mode !== 'bank' && (
+                        <div className="flex justify-between items-center mb-2 px-1">
+                            <div className="text-sm font-bold text-white/80">
+                                เลือกข้อสอบสำหรับห้องนี้: <span className="text-green-400">{customQuestions.length} ข้อ</span>
+                            </div>
+                            <div className="flex gap-3 text-sm">
+                                <button type="button" onClick={selectAll} className="text-blue-300 hover:text-blue-200">เลือกทั้งหมด</button>
+                                <button type="button" onClick={deselectAll} className="text-white/50 hover:text-white/80">ยกเลิกทั้งหมด</button>
+                            </div>
                         </div>
-                        <div className="flex gap-3 text-sm">
-                            <button type="button" onClick={selectAll} className="text-blue-300 hover:text-blue-200">เลือกทั้งหมด</button>
-                            <button type="button" onClick={deselectAll} className="text-white/50 hover:text-white/80">ยกเลิกทั้งหมด</button>
-                        </div>
-                    </div>
+                    )}
                     
                     <div className="space-y-2 max-h-[350px] overflow-y-auto custom-scrollbar pr-2">
                         {isLoading ? (
@@ -237,12 +239,14 @@ const CustomQuestionBuilder = ({ customQuestions, setCustomQuestions }) => {
                                 return (
                                     <div 
                                         key={q.id} 
-                                        onClick={() => toggleSelection(q)}
-                                        className={`p-3 rounded-xl border flex gap-3 cursor-pointer transition-all group ${isSelected ? 'bg-green-500/10 border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'bg-black/20 border-white/10 hover:border-white/30'}`}
+                                        onClick={() => { if (mode !== 'bank') toggleSelection(q); }}
+                                        className={`p-3 rounded-xl border flex gap-3 ${mode !== 'bank' ? 'cursor-pointer' : ''} transition-all group ${isSelected && mode !== 'bank' ? 'bg-green-500/10 border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'bg-black/20 border-white/10 hover:border-white/30'}`}
                                     >
-                                        <div className="mt-1">
-                                            {isSelected ? <CheckSquare className="text-green-400" size={20} /> : <Square className="text-white/30 group-hover:text-white/50" size={20} />}
-                                        </div>
+                                        {mode !== 'bank' && (
+                                            <div className="mt-1">
+                                                {isSelected ? <CheckSquare className="text-green-400" size={20} /> : <Square className="text-white/30 group-hover:text-white/50" size={20} />}
+                                            </div>
+                                        )}
                                         <div className="flex-1">
                                             <div className="text-sm font-bold text-white/90 line-clamp-2">{q.question_text}</div>
                                             <div className="text-xs text-white/50 mt-1 flex gap-2">

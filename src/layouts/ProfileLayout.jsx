@@ -146,6 +146,7 @@ const ProfileLayout = () => {
     { to: '/profile/threads', label: 'My Threads', icon: '💬' },
     { to: '/profile/messages', label: 'Messages', icon: '📩', badge: unreadMessages > 0 ? unreadMessages : null },
     { to: '/profile/friends', label: 'Friends', icon: '👥', divider: true },
+    { to: '/profile/questions', label: 'My Questions', icon: '📁' },
     { to: '/profile/settings', label: 'Settings', icon: '⚙️' },
   ];
 

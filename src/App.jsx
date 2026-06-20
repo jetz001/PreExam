@@ -54,6 +54,7 @@ import ProfileThreads from './views/user/ProfileThreads';
 import ProfileMessages from './views/user/ProfileMessages';
 import ProfileFriends from './views/user/ProfileFriends';
 import ProfileSettings from './views/user/ProfileSettings';
+import ProfileQuestionBank from './views/user/ProfileQuestionBank';
 
 import ExamResult from './views/ExamResult';
 import PaymentSuccess from './views/PaymentSuccess';
@@ -145,6 +146,7 @@ function App() {
           <Route path="threads" element={<ProfileThreads />} />
           <Route path="messages" element={<ProfileMessages />} />
           <Route path="friends" element={<ProfileFriends />} />
+          <Route path="questions" element={<ProfileQuestionBank />} />
           <Route path="settings" element={<ProfileSettings />} />
         </Route>
 
