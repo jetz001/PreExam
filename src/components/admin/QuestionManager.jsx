@@ -190,16 +190,23 @@ const QuestionManager = () => {
                 </div>
             </div>
 
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center space-x-4">
-                <select 
-                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-gray-50 font-semibold"
-                    value={sourceFilter}
-                    onChange={(e) => setSourceFilter(e.target.value)}
+            {/* Tabs for Question Source */}
+            <div className="flex border-b border-gray-200 mb-6">
+                <button
+                    className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 focus:outline-none ${sourceFilter === 'system' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    onClick={() => setSourceFilter('system')}
                 >
-                    <option value="system">🏢 ข้อสอบระบบ (System)</option>
-                    <option value="user">👥 ข้อสอบผู้ใช้ (Users)</option>
-                </select>
+                    🏢 ข้อสอบระบบ (System)
+                </button>
+                <button
+                    className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 focus:outline-none ${sourceFilter === 'user' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    onClick={() => setSourceFilter('user')}
+                >
+                    👥 ข้อสอบผู้ใช้ (Users)
+                </button>
+            </div>
 
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center space-x-4">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                     <input
