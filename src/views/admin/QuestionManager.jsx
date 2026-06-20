@@ -389,7 +389,7 @@ const QuestionManager = () => {
                                 <tr>
                                     <td colSpan="7" className="px-6 py-8 text-center text-slate-500">Loading questions...</td>
                                 </tr>
-                            ) : questions.length === 0 ? (
+                            ) : sortedQuestions.length === 0 ? (
                                 <tr>
                                     <td colSpan="7" className="px-6 py-8 text-center text-slate-500">No questions found.</td>
                                 </tr>
