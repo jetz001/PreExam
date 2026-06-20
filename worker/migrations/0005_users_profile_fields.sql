@@ -1,7 +1,6 @@
 ALTER TABLE users ADD COLUMN public_id TEXT;
 ALTER TABLE users ADD COLUMN google_id TEXT;
 ALTER TABLE users ADD COLUMN facebook_id TEXT;
-ALTER TABLE users ADD COLUMN guest_device_id TEXT;
 ALTER TABLE users ADD COLUMN phone_number TEXT;
 ALTER TABLE users ADD COLUMN bio TEXT;
 ALTER TABLE users ADD COLUMN city TEXT;

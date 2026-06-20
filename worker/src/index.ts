@@ -104,6 +104,25 @@ import {
   updateUserQuestion,
   deleteUserQuestion,
   getUserQuestionById,
+  adminGetDashboardStats,
+  adminGetPayments,
+  adminApprovePayment,
+  adminRejectPayment,
+  adminGetUsers,
+  adminUpdateUser,
+  adminUpdateUserStatus,
+  adminUpdateUserPermissions,
+  getBusinessByOwner,
+  createBusiness,
+  updateBusiness,
+  listBusinessAds,
+  createAd,
+  updateAd,
+  deleteAd,
+  listBusinessTransactions,
+  listBookmarksByUser,
+  createBookmark,
+  deleteBookmark,
 } from "./d1";
 
 export { RealtimeDO };
@@ -1487,6 +1506,83 @@ export default {
           
           await deleteQuestion(env.DB, qIdMatch[1]);
           return json({ success: true, message: "Question deleted" });
+        }
+
+        // =======================
+        // ADMIN DASHBOARD ROUTES
+        // =======================
+
+        if (url.pathname === "/api/admin/stats" && request.method === "GET") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const stats = await adminGetDashboardStats(env.DB);
+          return json(stats);
+        }
+
+        // =======================
+        // ADMIN USER ROUTES
+        // =======================
+
+        if (url.pathname === "/api/admin/users" && request.method === "GET") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const users = await adminGetUsers(env.DB);
+          return json(users);
+        }
+
+        const adminUserIdMatch = url.pathname.match(/^\/api\/admin\/users\/([^\/]+)$/);
+        if (adminUserIdMatch && request.method === "PUT") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const reqBody = await readJson(request);
+          await adminUpdateUser(env.DB, adminUserIdMatch[1], reqBody || {});
+          return json({ success: true, message: "User updated" });
+        }
+
+        const adminUserStatusMatch = url.pathname.match(/^\/api\/admin\/users\/([^\/]+)\/status$/);
+        if (adminUserStatusMatch && request.method === "PUT") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const reqBody = await readJson(request);
+          if (reqBody?.status) await adminUpdateUserStatus(env.DB, adminUserStatusMatch[1], reqBody.status);
+          return json({ success: true, message: "User status updated" });
+        }
+
+        const adminUserPermissionsMatch = url.pathname.match(/^\/api\/admin\/users\/([^\/]+)\/permissions$/);
+        if (adminUserPermissionsMatch && request.method === "PUT") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const reqBody = await readJson(request);
+          if (reqBody?.permissions) await adminUpdateUserPermissions(env.DB, adminUserPermissionsMatch[1], reqBody.permissions);
+          return json({ success: true, message: "User permissions updated" });
+        }
+
+        // =======================
+        // ADMIN PAYMENT ROUTES
+        // =======================
+
+        if (url.pathname === "/api/admin/payments" && request.method === "GET") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const payments = await adminGetPayments(env.DB);
+          return json(payments);
+        }
+
+        const adminApprovePaymentMatch = url.pathname.match(/^\/api\/admin\/payments\/([^\/]+)\/approve$/);
+        if (adminApprovePaymentMatch && request.method === "POST") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const reqBody = await readJson(request);
+          await adminApprovePayment(env.DB, adminApprovePaymentMatch[1], reqBody?.type);
+          return json({ success: true, message: "Payment approved" });
+        }
+
+        const adminRejectPaymentMatch = url.pathname.match(/^\/api\/admin\/payments\/([^\/]+)\/reject$/);
+        if (adminRejectPaymentMatch && request.method === "POST") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          await adminRejectPayment(env.DB, adminRejectPaymentMatch[1]);
+          return json({ success: true, message: "Payment rejected" });
         }
 
         // =======================
@@ -3725,12 +3821,12 @@ if (url.pathname === "/api/legal/policy") {
           return json({ success: true, user: userDoc, examHistory, paymentHistory });
         }
 
-        const adminUserStatusMatch = url.pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)\/status$/);
-        if (adminUserStatusMatch && request.method === "PUT") {
+        const adminUserStatusMatch2 = url.pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)\/status$/);
+        if (adminUserStatusMatch2 && request.method === "PUT") {
           const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const body = await request.json() as any;
-          await updateUser(env.DB, adminUserStatusMatch[1], { status: body.status });
+          await updateUser(env.DB, adminUserStatusMatch2[1], { status: body.status });
           return json({ success: true });
         }
 
@@ -4063,6 +4159,104 @@ if (url.pathname === "/api/legal/policy") {
             return json({ success: true, count: result });
         }
 
+        // =======================
+        // BOOKMARK ROUTES
+        // =======================
+
+        if (url.pathname === "/api/bookmarks" && request.method === "GET") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          const bookmarks = await listBookmarksByUser(env.DB, auth.userId);
+          return json(bookmarks);
+        }
+
+        if (url.pathname === "/api/bookmarks" && request.method === "POST") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          const reqBody = await readJson(request);
+          const bm = await createBookmark(env.DB, { user_id: auth.userId, ...reqBody });
+          return json(bm);
+        }
+
+        const bookmarkMatch = url.pathname.match(/^\/api\/bookmarks\/([^\/]+)$/);
+        if (bookmarkMatch && request.method === "DELETE") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          await deleteBookmark(env.DB, bookmarkMatch[1]);
+          return json({ success: true });
+        }
+
+        // =======================
+        // BUSINESS & ADS ROUTES
+        // =======================
+
+        if (url.pathname === "/api/business/my-business" && request.method === "GET") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          const business = await getBusinessByOwner(env.DB, auth.userId);
+          return json(business || { success: false, message: "No business profile" }, { status: business ? 200 : 404 });
+        }
+
+        if (url.pathname === "/api/business" && request.method === "POST") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          const reqBody = await readJson(request);
+          const business = await createBusiness(env.DB, { owner_uid: auth.userId, ...reqBody });
+          return json({ success: true, business });
+        }
+
+        if (url.pathname === "/api/business" && request.method === "PUT") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          const reqBody = await readJson(request);
+          const existing = await getBusinessByOwner(env.DB, auth.userId);
+          if (!existing) return json({ success: false, message: "Business not found" }, { status: 404 });
+          await updateBusiness(env.DB, existing.id, reqBody);
+          return json({ success: true });
+        }
+
+        if (url.pathname === "/api/business/ads" && request.method === "GET") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          const existing = await getBusinessByOwner(env.DB, auth.userId);
+          if (!existing) return json([]);
+          const ads = await listBusinessAds(env.DB, existing.id);
+          return json(ads);
+        }
+
+        if (url.pathname === "/api/business/ads" && request.method === "POST") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          const existing = await getBusinessByOwner(env.DB, auth.userId);
+          if (!existing) return json({ success: false, message: "Business not found" }, { status: 404 });
+          const reqBody = await readJson(request);
+          const ad = await createAd(env.DB, existing.id, reqBody);
+          return json({ success: true, ad });
+        }
+
+        const businessAdMatch = url.pathname.match(/^\/api\/business\/ads\/([^\/]+)$/);
+        if (businessAdMatch && request.method === "PUT") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          const reqBody = await readJson(request);
+          await updateAd(env.DB, businessAdMatch[1], reqBody);
+          return json({ success: true });
+        }
+        if (businessAdMatch && request.method === "DELETE") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          await deleteAd(env.DB, businessAdMatch[1]);
+          return json({ success: true });
+        }
+
+        if (url.pathname === "/api/business/transactions" && request.method === "GET") {
+          const auth = requireAuth(request);
+          if ("error" in auth) return auth.error;
+          const existing = await getBusinessByOwner(env.DB, auth.userId);
+          if (!existing) return json([]);
+          const txs = await listBusinessTransactions(env.DB, existing.id);
+          return json(txs);
+        }
 
       } catch (err: any) {
         return json({ success: false, message: err.message }, { status: 500 });

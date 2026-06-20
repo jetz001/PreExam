@@ -43,21 +43,20 @@ const SOLO_FLOW_USE_WORKER = ['1', 'true', 'yes', 'on'].includes(String(process.
 
 const shouldProxySoloPath = (pathname = '') => {
     if (!SOLO_FLOW_USE_WORKER) return false;
-    return (
-        pathname === '/api/auth/register' ||
-        pathname === '/api/auth/login' ||
-        pathname === '/api/auth/guest' ||
-        pathname === '/api/auth/me' ||
-        pathname === '/api/questions' ||
-        pathname === '/api/questions/subjects' ||
-        pathname === '/api/questions/years' ||
-        pathname === '/api/questions/sets' ||
-        pathname === '/api/questions/categories' ||
-        pathname.startsWith('/api/questions/') ||
-        pathname.startsWith('/api/exams') ||
-        pathname.startsWith('/api/rooms') ||
-        pathname.startsWith('/api/ws')
-    );
+    
+    // List of node-specific API routes that CANNOT be proxied to the Worker
+    const nodeOnlyRoutes = [
+        '/api/scrapers',
+        '/api/exam-generator',
+        '/api/terminal'
+    ];
+    
+    if (nodeOnlyRoutes.some(route => pathname.startsWith(route))) {
+        return false;
+    }
+
+    // Proxy everything else under /api
+    return pathname.startsWith('/api');
 };
 
 const toWorkerUrl = (requestPath) => new URL(requestPath, `${WORKER_API_BASE}/`).toString();

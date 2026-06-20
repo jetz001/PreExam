@@ -36,7 +36,6 @@ ALTER TABLE tickets ADD COLUMN category TEXT;
 ALTER TABLE transactions ADD COLUMN payment_method TEXT;
 ALTER TABLE transactions ADD COLUMN type TEXT;
 
-ALTER TABLE assets ADD COLUMN updated_at TEXT;
 
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,
