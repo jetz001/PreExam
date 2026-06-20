@@ -659,12 +659,31 @@ const buildExamResultRow = (data: Record<string, any>) => {
 export async function getQuestionsByIds(db: D1Database, ids: string[]) {
   if (!ids.length) return [];
   const normalizedIds = Array.from(new Set(ids.map((id) => String(id))));
-  const placeholders = normalizedIds.map(() => "?").join(", ");
-  const { results } = await db
-    .prepare(`SELECT * FROM questions WHERE id IN (${placeholders})`)
-    .bind(...normalizedIds)
-    .all();
-  return (results || []).map(parseQuestionRow);
+  
+  const officialIds = normalizedIds.filter(id => !id.startsWith("uq_"));
+  const userIds = normalizedIds.filter(id => id.startsWith("uq_"));
+  
+  const allResults = [];
+  
+  if (officialIds.length > 0) {
+    const placeholders = officialIds.map(() => "?").join(", ");
+    const { results } = await db
+      .prepare(`SELECT * FROM questions WHERE id IN (${placeholders})`)
+      .bind(...officialIds)
+      .all();
+    allResults.push(...((results || []).map(parseQuestionRow)));
+  }
+
+  if (userIds.length > 0) {
+    const placeholders = userIds.map(() => "?").join(", ");
+    const { results } = await db
+      .prepare(`SELECT * FROM user_questions WHERE id IN (${placeholders})`)
+      .bind(...userIds)
+      .all();
+    allResults.push(...((results || []).map(parseQuestionRow)));
+  }
+
+  return allResults;
 }
 
 export async function getExamRoomById(db: D1Database, id: string) {
@@ -1006,6 +1025,92 @@ export async function updateQuestion(db: D1Database, id: string, data: Record<st
 
 export async function deleteQuestion(db: D1Database, id: string) {
   await db.prepare("DELETE FROM questions WHERE id = ?").bind(String(id)).run();
+}
+
+// User Questions Operations
+export async function listUserQuestions(db: D1Database, userId: string) {
+  const { results } = await db.prepare("SELECT * FROM user_questions WHERE user_id = ? ORDER BY datetime(created_at) DESC").bind(String(userId)).all();
+  return ((results || []) as any[]).map(parseQuestionFullRow);
+}
+
+export async function getUserQuestionById(db: D1Database, id: string, userId: string) {
+  const row = await db.prepare("SELECT * FROM user_questions WHERE id = ? AND user_id = ? LIMIT 1").bind(String(id), String(userId)).first();
+  return parseQuestionFullRow(row);
+}
+
+export async function createUserQuestion(db: D1Database, data: Record<string, any>) {
+  const row = {
+    id: String(data.id || `uq_${generateTextId()}`),
+    user_id: String(data.user_id),
+    question_text: data.question_text ?? "",
+    choices: maybeJsonStringify(data.choices ?? { A: "", B: "", C: "", D: "" }),
+    correct_answer: data.correct_answer ?? "",
+    explanation: data.explanation ?? "",
+    category: data.category ?? "",
+    subject: data.subject ?? "",
+    difficulty: Number(data.difficulty ?? 0),
+    created_at: data.created_at ?? nowIso(),
+    updated_at: data.updated_at ?? data.created_at ?? nowIso(),
+    catalogs: maybeJsonStringify(data.catalogs ?? []),
+    skill: data.skill ?? null,
+    exam_year: data.exam_year ?? null,
+    exam_set: data.exam_set ?? null,
+  };
+  await db
+    .prepare(
+      "INSERT INTO user_questions (id, user_id, question_text, choices, correct_answer, explanation, category, subject, difficulty, created_at, updated_at, catalogs, skill, exam_year, exam_set) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(
+      row.id,
+      row.user_id,
+      row.question_text,
+      row.choices,
+      row.correct_answer,
+      row.explanation,
+      row.category,
+      row.subject,
+      row.difficulty,
+      row.created_at,
+      row.updated_at,
+      row.catalogs,
+      row.skill,
+      row.exam_year,
+      row.exam_set
+    )
+    .run();
+  return getUserQuestionById(db, row.id, row.user_id);
+}
+
+export async function updateUserQuestion(db: D1Database, id: string, userId: string, data: Record<string, any>) {
+  const normalized = {
+    ...data,
+    choices: data.choices !== undefined ? maybeJsonStringify(data.choices) : undefined,
+    catalogs: data.catalogs !== undefined ? maybeJsonStringify(data.catalogs) : undefined,
+    updated_at: data.updated_at ?? nowIso(),
+  };
+  const allowed = [
+    "question_text",
+    "choices",
+    "correct_answer",
+    "explanation",
+    "category",
+    "subject",
+    "difficulty",
+    "updated_at",
+    "catalogs",
+    "skill",
+    "exam_year",
+    "exam_set",
+  ] as const;
+  const entries = Object.entries(pickExisting(normalized, allowed));
+  if (!entries.length) return getUserQuestionById(db, id, userId);
+  const sql = `UPDATE user_questions SET ${entries.map(([key]) => `${key} = ?`).join(", ")} WHERE id = ? AND user_id = ?`;
+  await db.prepare(sql).bind(...entries.map(([, value]) => value), String(id), String(userId)).run();
+  return getUserQuestionById(db, id, userId);
+}
+
+export async function deleteUserQuestion(db: D1Database, id: string, userId: string) {
+  await db.prepare("DELETE FROM user_questions WHERE id = ? AND user_id = ?").bind(String(id), String(userId)).run();
 }
 
 export async function listBookmarksByUser(db: D1Database, userId: string) {

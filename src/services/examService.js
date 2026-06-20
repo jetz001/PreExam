@@ -50,6 +50,22 @@ const examService = {
         const response = await api.get(`/exams/${id}`);
         return response.data;
     },
+
+    // User Question Bank
+    getUserQuestions: async () => {
+        const response = await api.get('/user/questions');
+        return response.data;
+    },
+
+    bulkCreateUserQuestions: async (data) => {
+        const response = await api.post('/user/questions/bulk', data);
+        return response.data;
+    },
+
+    deleteUserQuestion: async (id) => {
+        const response = await api.delete(`/user/questions/${id}`);
+        return response.data;
+    },
 };
 
 export default examService;

@@ -96,6 +96,11 @@ import {
   upsertRankingScore,
   upsertExamRoomParticipant,
   createFriendRequest,
+  listUserQuestions,
+  createUserQuestion,
+  updateUserQuestion,
+  deleteUserQuestion,
+  getUserQuestionById,
 } from "./d1";
 
 export { RealtimeDO };
@@ -1479,6 +1484,74 @@ export default {
           
           await deleteQuestion(env.DB, qIdMatch[1]);
           return json({ success: true, message: "Question deleted" });
+        }
+
+        // =======================
+        // USER QUESTIONS ROUTES
+        // =======================
+
+        const uqIdMatch = url.pathname.match(/^\/api\/user\/questions\/([^\/]+)$/);
+
+        // /api/user/questions (List)
+        if (url.pathname === "/api/user/questions" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const userQs = await listUserQuestions(env.DB, auth.userId);
+          return json({ success: true, data: userQs.map(normalizeQuestion) });
+        }
+
+        // /api/user/questions/bulk (Create Multiple)
+        if (url.pathname === "/api/user/questions/bulk" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const body = await readJson(request);
+          if (!body || !Array.isArray((body as any).questions)) return json({ success: false, message: "Invalid payload" }, { status: 400 });
+          const questions = (body as any).questions;
+          const created = [];
+          for (const q of questions) {
+            const newQ = await createUserQuestion(env.DB, { ...q, user_id: auth.userId, host_user_id: auth.userId, is_custom: 1 });
+            created.push(normalizeQuestion(newQ));
+          }
+          return json({ success: true, data: created });
+        }
+
+        // /api/user/questions (Create Single)
+        if (url.pathname === "/api/user/questions" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const body = await readJson(request);
+          if (!body) return json({ success: false, message: "Invalid payload" }, { status: 400 });
+          const newQ = await createUserQuestion(env.DB, { ...(body as any), user_id: auth.userId, host_user_id: auth.userId, is_custom: 1 });
+          return json({ success: true, data: normalizeQuestion(newQ) });
+        }
+
+        // /api/user/questions/:id (Get Single)
+        if (uqIdMatch && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const doc = await getUserQuestionById(env.DB, uqIdMatch[1], auth.userId);
+          if (!doc) return json({ success: false, message: "Not found" }, { status: 404 });
+          return json({ success: true, data: normalizeQuestion(doc) });
+        }
+
+        // /api/user/questions/:id (Update)
+        if (uqIdMatch && request.method === "PUT") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const body = await readJson(request);
+          if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
+          const updated = await updateUserQuestion(env.DB, uqIdMatch[1], auth.userId, body as any);
+          return json({ success: true, data: normalizeQuestion(updated) });
+        }
+
+        // /api/user/questions/:id (Delete)
+        if (uqIdMatch && request.method === "DELETE") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const doc = await getUserQuestionById(env.DB, uqIdMatch[1], auth.userId);
+          if (!doc) return json({ success: false, message: "Not found" }, { status: 404 });
+          await deleteUserQuestion(env.DB, uqIdMatch[1], auth.userId);
+          return json({ success: true, message: "Deleted" });
         }
 
         // /api/exams/submit
