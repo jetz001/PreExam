@@ -1113,6 +1113,48 @@ export async function deleteUserQuestion(db: D1Database, id: string, userId: str
   await db.prepare("DELETE FROM user_questions WHERE id = ? AND user_id = ?").bind(String(id), String(userId)).run();
 }
 
+export async function adminListUserQuestions(db: D1Database, limit: number = 500) {
+  const { results } = await db.prepare("SELECT * FROM user_questions ORDER BY datetime(created_at) DESC LIMIT ?").bind(limit).all();
+  return ((results || []) as any[]).map(parseQuestionFullRow);
+}
+
+export async function adminUpdateUserQuestion(db: D1Database, id: string, data: Record<string, any>) {
+  const normalized = {
+    ...data,
+    choices: data.choices !== undefined ? maybeJsonStringify(data.choices) : undefined,
+    catalogs: data.catalogs !== undefined ? maybeJsonStringify(data.catalogs) : undefined,
+    updated_at: data.updated_at ?? nowIso(),
+  };
+  const allowed = [
+    "question_text",
+    "choices",
+    "correct_answer",
+    "explanation",
+    "category",
+    "subject",
+    "difficulty",
+    "updated_at",
+    "catalogs",
+    "skill",
+    "exam_year",
+    "exam_set",
+  ] as const;
+  const entries = Object.entries(pickExisting(normalized, allowed));
+  if (!entries.length) {
+    const row = await db.prepare("SELECT * FROM user_questions WHERE id = ?").bind(String(id)).first();
+    return parseQuestionFullRow(row);
+  }
+  const sql = `UPDATE user_questions SET ${entries.map(([key]) => `${key} = ?`).join(", ")} WHERE id = ?`;
+  await db.prepare(sql).bind(...entries.map(([, value]) => value), String(id)).run();
+  
+  const row = await db.prepare("SELECT * FROM user_questions WHERE id = ?").bind(String(id)).first();
+  return parseQuestionFullRow(row);
+}
+
+export async function adminDeleteUserQuestion(db: D1Database, id: string) {
+  await db.prepare("DELETE FROM user_questions WHERE id = ?").bind(String(id)).run();
+}
+
 export async function listBookmarksByUser(db: D1Database, userId: string) {
   const { results } = await db
     .prepare("SELECT * FROM bookmarks WHERE user_id = ? ORDER BY datetime(created_at) DESC")

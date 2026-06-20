@@ -21,6 +21,21 @@ const adminService = {
         return response.data;
     },
 
+    getAllUserQuestions: async () => {
+        const response = await api.get('/admin/user-questions');
+        return response.data;
+    },
+
+    updateUserQuestion: async (id, data) => {
+        const response = await api.put(`/admin/user-questions/${id}`, data);
+        return response.data;
+    },
+
+    deleteUserQuestion: async (id) => {
+        const response = await api.delete(`/admin/user-questions/${id}`);
+        return response.data;
+    },
+
     createNews: async (data) => {
         const response = await api.post('/news', data);
         return response.data;

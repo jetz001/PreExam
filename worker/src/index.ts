@@ -26,6 +26,9 @@ import {
   deleteNews,
   deleteQuestion,
   deleteUser,
+  adminListUserQuestions,
+  adminUpdateUserQuestion,
+  adminDeleteUserQuestion,
   deleteAsset,
   deleteBookmark,
   deleteBusiness,
@@ -1484,6 +1487,48 @@ export default {
           
           await deleteQuestion(env.DB, qIdMatch[1]);
           return json({ success: true, message: "Question deleted" });
+        }
+
+        // =======================
+        // ADMIN USER QUESTIONS ROUTES
+        // =======================
+
+        const adminUqIdMatch = url.pathname.match(/^\/api\/admin\/user-questions\/([^\/]+)$/);
+
+        // /api/admin/user-questions (List)
+        if (url.pathname === "/api/admin/user-questions" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const userDoc = await getUserById(env.DB, auth.userId);
+          if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
+          
+          const userQs = await adminListUserQuestions(env.DB, 500);
+          return json({ success: true, data: userQs });
+        }
+
+        // /api/admin/user-questions/:id (Update)
+        if (adminUqIdMatch && request.method === "PUT") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const userDoc = await getUserById(env.DB, auth.userId);
+          if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
+          
+          const body: any = await readJson(request);
+          if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
+          
+          const updated = await adminUpdateUserQuestion(env.DB, adminUqIdMatch[1], body);
+          return json({ success: true, data: updated });
+        }
+
+        // /api/admin/user-questions/:id (Delete)
+        if (adminUqIdMatch && request.method === "DELETE") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          const userDoc = await getUserById(env.DB, auth.userId);
+          if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
+          
+          await adminDeleteUserQuestion(env.DB, adminUqIdMatch[1]);
+          return json({ success: true, message: "Deleted" });
         }
 
         // =======================

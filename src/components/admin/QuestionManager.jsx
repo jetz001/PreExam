@@ -11,6 +11,7 @@ const QuestionManager = () => {
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [filter, setFilter] = useState('');
+    const [sourceFilter, setSourceFilter] = useState('system'); // 'system' or 'user'
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -30,15 +31,21 @@ const QuestionManager = () => {
 
     useEffect(() => {
         fetchQuestions();
-    }, []);
+    }, [sourceFilter]);
 
     const fetchQuestions = async () => {
         setLoading(true);
         try {
-            const data = await examService.getQuestions({ limit: 100, orderBy: 'id' });
-            setQuestions(data.data);
+            if (sourceFilter === 'system') {
+                const data = await examService.getQuestions({ limit: 100, orderBy: 'id' });
+                setQuestions(data.data);
+            } else {
+                const data = await adminService.getAllUserQuestions();
+                setQuestions(data.data || []);
+            }
         } catch (error) {
             console.error('Error fetching questions:', error);
+            setQuestions([]);
         } finally {
             setLoading(false);
         }
@@ -93,13 +100,17 @@ const QuestionManager = () => {
         e.preventDefault();
         try {
             if (currentQuestion) {
-                await adminService.updateQuestion(currentQuestion.id, formData);
+                if (currentQuestion.id.startsWith('uq_')) {
+                    await adminService.updateUserQuestion(currentQuestion.id, formData);
+                } else {
+                    await adminService.updateQuestion(currentQuestion.id, formData);
+                }
                 alert('Question updated successfully');
             } else {
-                await adminService.createQuestion(formData);
+                await adminService.createQuestion(formData); // Creation still defaults to system DB
                 alert('Question created successfully');
             }
-            handleCloseModal();
+            setIsModalOpen(false);
             fetchQuestions();
         } catch (error) {
             console.error('Error saving question:', error);
@@ -109,10 +120,15 @@ const QuestionManager = () => {
 
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this question?')) {
-            // Optimistic update: ลบออกจากหน้าจอทันที ไม่ต้องรอรีเฟรช (แก้ปัญหา Cache 1 นาที)
+            // Optimistic update
             setQuestions(prev => prev.filter(q => q.id !== id));
             try {
-                await adminService.deleteQuestion(id);
+                if (String(id).startsWith('uq_')) {
+                    await adminService.deleteUserQuestion(id);
+                } else {
+                    await adminService.deleteQuestion(id);
+                }
+                fetchQuestions();
             } catch (error) {
                 console.error('Failed to delete:', error);
                 alert('Failed to delete question');
@@ -175,6 +191,15 @@ const QuestionManager = () => {
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center space-x-4">
+                <select 
+                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-gray-50 font-semibold"
+                    value={sourceFilter}
+                    onChange={(e) => setSourceFilter(e.target.value)}
+                >
+                    <option value="system">🏢 ข้อสอบระบบ (System)</option>
+                    <option value="user">👥 ข้อสอบผู้ใช้ (Users)</option>
+                </select>
+
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                     <input
