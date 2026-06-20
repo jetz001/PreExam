@@ -57,17 +57,22 @@ exports.startManualRun = async (req, res) => {
 
         console.log('Starting manual scraper run in:', SCRAPER_DIR);
 
-        // Log the trigger to Firebase database
-        const { db: firestore } = require('../config/firebase');
+        // Log the trigger to the Cloudflare Worker via internal API or simply log locally
         try {
-            await firestore.collection('scraper_logs').add({
-                event: 'manual_trigger',
-                message: 'Admin triggered scraper manually',
-                triggered_by: req.user ? req.user.id : 'unknown',
-                timestamp: new Date().toISOString()
-            });
+            console.log('Logging scraper trigger locally instead of Firebase.');
+            const workerApiBase = String(process.env.WORKER_API_BASE || '').trim().replace(/\/+$/, '');
+            if (workerApiBase) {
+                await fetch(`${workerApiBase}/api/public/log`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'SYS_SCRAPER_TRIGGER',
+                        details: { message: 'Admin triggered scraper manually', user_id: req.user ? req.user.id : 'unknown' }
+                    })
+                });
+            }
         } catch (dbError) {
-            console.error('Failed to write scraper log to Firebase:', dbError);
+            console.error('Failed to write scraper log to Worker API:', dbError);
         }
 
         // Determine the correct python command

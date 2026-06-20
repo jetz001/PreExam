@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
-const { db: firestore } = require('../config/firebase');
+const fetch = require('node-fetch');
 
-const usersRef = firestore.collection('users');
+const getWorkerApiBase = () => {
+    return String(process.env.WORKER_API_BASE || '').trim().replace(/\/+$/, '');
+};
 
 const authMiddleware = async (req, res, next) => {
     try {
@@ -10,24 +12,37 @@ const authMiddleware = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Unauthorized: No token provided' });
         }
 
-        const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
+        const workerApiBase = getWorkerApiBase();
+        if (!workerApiBase) {
+             // Fallback to decode JWT locally if worker API base isn't set
+             const token = authHeader.split(' ')[1];
+             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
+             req.user = { id: decoded.id };
+             return next();
+        }
 
-        const userDoc = await usersRef.doc(decoded.id.toString()).get();
-        if (!userDoc.exists) {
+        // Call the worker API to verify the token and get the user object
+        const response = await fetch(`${workerApiBase}/api/auth/me`, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token from worker' });
+        }
+
+        const userData = await response.json();
+        if (!userData || !userData.user) {
             return res.status(401).json({ success: false, message: 'Unauthorized: User not found' });
         }
 
-        const user = { id: userDoc.id, ...userDoc.data() };
-        req.user = user;
-
-        const now = new Date();
-        if (!user.last_active_at || (now - new Date(user.last_active_at) > 60000)) {
-            await userDoc.ref.update({ last_active_at: now.toISOString() });
-        }
-
+        req.user = userData.user;
         next();
     } catch (error) {
+        console.error('Auth Middleware Error:', error.message);
         return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token' });
     }
 };
@@ -47,22 +62,31 @@ const optionalAuthMiddleware = async (req, res, next) => {
             return next(); // No token, proceed as guest
         }
 
-        const token = authHeader.split(' ')[1];
-        if (!token) return next();
+        const workerApiBase = getWorkerApiBase();
+        if (!workerApiBase) {
+             const token = authHeader.split(' ')[1];
+             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
+             req.user = { id: decoded.id };
+             return next();
+        }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
-        const userDoc = await usersRef.doc(decoded.id.toString()).get();
+        const response = await fetch(`${workerApiBase}/api/auth/me`, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            }
+        });
 
-        if (userDoc.exists) {
-            const user = { id: userDoc.id, ...userDoc.data() };
-            console.log('OptionalAuth: User found', user.id);
-            req.user = user;
-        } else {
-            console.log('OptionalAuth: User NOT found for token');
+        if (response.ok) {
+            const userData = await response.json();
+            if (userData && userData.user) {
+                req.user = userData.user;
+            }
         }
         next();
     } catch (error) {
-        console.log('OptionalAuth: Error', error.message);
+        // Proceed as guest on invalid token
         next();
     }
 };

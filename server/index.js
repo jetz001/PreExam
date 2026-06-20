@@ -16,7 +16,7 @@ if (result.error) {
 const http = require('http');
 const { Server } = require('socket.io');
 const { WebSocketServer, WebSocket } = require('ws');
-const { db: firestore } = require('./config/firebase');
+
 
 const app = express();
 const server = http.createServer(app);
