@@ -180,8 +180,16 @@ export async function listUsers(db: D1Database, limit = 100) {
 
 export async function createUser(db: D1Database, data: Record<string, any>) {
   const timestamp = data.created_at || nowIso();
+  let finalId = data.id;
+  if (!finalId) {
+    const { max_id } = await db.prepare("SELECT MAX(CAST(SUBSTR(id, 1, 7) AS INTEGER)) as max_id FROM users WHERE length(id) >= 10 AND SUBSTR(id, 8, 1) = '-'").first() || { max_id: null };
+    const nextSeq = (max_id || 0) + 1;
+    const country = data.country || "NO";
+    finalId = String(nextSeq).padStart(7, '0') + '-' + String(country).toUpperCase();
+  }
+
   const row = {
-    id: data.id || generateTextId(),
+    id: finalId,
     email: data.email ? String(data.email).trim().toLowerCase() : null,
     password_hash: data.password_hash ?? null,
     display_name: data.display_name ?? null,

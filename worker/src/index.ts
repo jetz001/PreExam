@@ -416,6 +416,7 @@ export default {
         status: "active",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        country: (request.cf?.country as string) || "NO",
       });
 
       const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
@@ -450,6 +451,7 @@ export default {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           last_active_at: new Date().toISOString(),
+          country: (request.cf?.country as string) || "NO",
         });
       }
 
@@ -508,6 +510,7 @@ export default {
           last_active_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          country: (request.cf?.country as string) || "NO",
         });
       }
 
@@ -589,6 +592,7 @@ export default {
           guest_device_id: deviceId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          country: (request.cf?.country as string) || "NO",
         });
       }
 
