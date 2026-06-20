@@ -397,7 +397,14 @@ const QuestionManager = () => {
                                 sortedQuestions.map((q, index) => (
                                     <tr key={q.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-500">#{q.id}</td>
-                                        <td className="px-6 py-4 max-w-md truncate font-medium text-slate-800" dangerouslySetInnerHTML={{ __html: q.question_text ? q.question_text.replace(/<[^>]+>/g, '') : '' }}></td>
+                                        <td className="px-6 py-4 max-w-md truncate">
+                                            <div className="font-medium text-slate-800" dangerouslySetInnerHTML={{ __html: q.question_text ? q.question_text.replace(/<[^>]+>/g, '') : '' }}></div>
+                                            {activeTab === 'user_questions' && (
+                                                <div className="text-xs text-slate-400 mt-1 font-normal flex items-center">
+                                                    <span className="mr-1">👤 By:</span> {q.user_display_name || q.user_email || q.user_id}
+                                                </div>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 text-xs text-slate-500">{q.skill || '-'}</td>
                                         <td className="px-6 py-4">{q.subject}</td>
                                         <td className="px-6 py-4">

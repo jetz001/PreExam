@@ -1114,8 +1114,22 @@ export async function deleteUserQuestion(db: D1Database, id: string, userId: str
 }
 
 export async function adminListUserQuestions(db: D1Database, limit: number = 500) {
-  const { results } = await db.prepare("SELECT * FROM user_questions ORDER BY datetime(created_at) DESC LIMIT ?").bind(limit).all();
-  return ((results || []) as any[]).map(parseQuestionFullRow);
+  const sql = `
+    SELECT uq.*, u.display_name as user_display_name, u.email as user_email
+    FROM user_questions uq
+    LEFT JOIN users u ON uq.user_id = u.id
+    ORDER BY datetime(uq.created_at) DESC
+    LIMIT ?
+  `;
+  const { results } = await db.prepare(sql).bind(limit).all();
+  return ((results || []) as any[]).map(row => {
+    const q = parseQuestionFullRow(row);
+    if (q) {
+      q.user_display_name = row.user_display_name;
+      q.user_email = row.user_email;
+    }
+    return q;
+  });
 }
 
 export async function adminUpdateUserQuestion(db: D1Database, id: string, data: Record<string, any>) {
