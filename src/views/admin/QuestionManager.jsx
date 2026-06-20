@@ -64,14 +64,14 @@ const QuestionManager = () => {
         queryFn: () => adminApi.getAllUserQuestions(),
     });
 
-    const questions = queryData?.rows || [];
-    const totalPages = queryData?.totalPages || 1;
-    const totalQuestions = queryData?.total || 0;
+    const systemQuestions = queryData?.rows || [];
+    const systemTotalPages = queryData?.totalPages || 1;
+    const systemTotalQuestions = queryData?.total || 0;
 
     const userQuestions = userQuestionsData?.data || [];
 
-    const sortedQuestions = React.useMemo(() => {
-        let currentQuestions = activeTab === 'user_questions' ? userQuestions : questions;
+    const filteredAndSortedQuestions = React.useMemo(() => {
+        let currentQuestions = activeTab === 'user_questions' ? userQuestions : systemQuestions;
         if (!currentQuestions) return [];
         let sortableItems = [...currentQuestions];
         
@@ -103,8 +103,23 @@ const QuestionManager = () => {
             if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
+        
         return sortableItems;
-    }, [questions, userQuestions, sortConfig, activeTab, filters]);
+    }, [systemQuestions, userQuestions, sortConfig, activeTab, filters]);
+
+    const userTotalQuestions = activeTab === 'user_questions' ? filteredAndSortedQuestions.length : 0;
+    const userTotalPages = Math.max(1, Math.ceil(userTotalQuestions / limit));
+
+    const totalPages = activeTab === 'user_questions' ? userTotalPages : systemTotalPages;
+    const totalQuestions = activeTab === 'user_questions' ? userTotalQuestions : systemTotalQuestions;
+
+    const sortedQuestions = React.useMemo(() => {
+        if (activeTab === 'user_questions') {
+            const startIndex = (page - 1) * limit;
+            return filteredAndSortedQuestions.slice(startIndex, startIndex + limit);
+        }
+        return filteredAndSortedQuestions;
+    }, [filteredAndSortedQuestions, activeTab, page, limit]);
 
     // Reset page when filters change
     React.useEffect(() => {
