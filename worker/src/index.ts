@@ -1516,6 +1516,22 @@ export default {
         // ADMIN DASHBOARD ROUTES
         // =======================
 
+        if (url.pathname === "/api/admin/reports" && request.method === "GET") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const { results } = await env.DB.prepare("SELECT * FROM reported_content ORDER BY created_at DESC").all();
+          return json(results || []);
+        }
+
+        const resolveReportMatch = url.pathname.match(/^\/api\/admin\/reports\/([^/]+)\/resolve$/);
+        if (resolveReportMatch && request.method === "POST") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const reportId = resolveReportMatch[1];
+          await env.DB.prepare("UPDATE reported_content SET status = 'resolved', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(reportId).run();
+          return json({ success: true, message: "Report resolved" });
+        }
+
         if (url.pathname === "/api/admin/stats" && request.method === "GET") {
           const auth = await requireAdmin(request, env);
           if ("error" in auth) return auth.error;
@@ -3636,7 +3652,6 @@ if (url.pathname === "/api/legal/policy") {
             const { results } = await env.DB.prepare("SELECT * FROM news_sources ORDER BY name ASC").all();
             return json({ success: true, data: results || [] });
         }
-        if (url.pathname === "/api/assets") return json({ success: true, data: [] });
 
         // Admin and System Stubs / Simple Implementation
         if (url.pathname === "/api/admin/stats" && request.method === "GET") {
