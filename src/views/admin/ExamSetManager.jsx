@@ -73,6 +73,27 @@ const ExamSetManager = () => {
     }, 0);
     const difference = formData.total_questions - totalSelectedQuestions;
 
+    const getKorPorSummary = () => {
+        let mathThai = 0;
+        let law = 0;
+        let eng = 0;
+        const counts = formData.rules?.catalog_counts || {};
+        const catalogs = formData.rules?.catalogs || [];
+        catalogs.forEach(catalog => {
+            const c = parseInt(counts[catalog]) || 0;
+            const lower = catalog.toLowerCase();
+            if (/[a-z]/.test(lower) || lower.includes('english') || lower.includes('อังกฤษ')) {
+                eng += c;
+            } else if (/พ\.ร\.บ|พ\.ร\.ฎ|ป\.อาญา|รัฐธรรมนูญ|กฎหมาย|จริยธรรม|ละเมิด|ราชการ/.test(lower)) {
+                law += c;
+            } else {
+                mathThai += c;
+            }
+        });
+        return { mathThai, law, eng };
+    };
+    const korPorSummary = getKorPorSummary();
+
     const handleAutoFillKorPor63 = () => {
         const template = {
             "อนุกรม": 5, "เลขทั่วไป": 5, "ตาราง": 5, "เงื่อนไขสัญลักษณ์": 10, "เงื่อนไขภาษา": 5,
@@ -337,6 +358,25 @@ const ExamSetManager = () => {
                                         <span className="text-green-600 flex items-center">จำนวนข้อที่เลือกครบถ้วนพอดี (รวม {totalSelectedQuestions}/{formData.total_questions})</span>
                                     ) : null}
                                 </div>
+                                {formData.is_korpor_format && (
+                                    <div className="mt-4 p-3 bg-blue-50/50 border border-blue-100 rounded-lg text-sm">
+                                        <div className="font-semibold text-blue-800 mb-2">สรุปตามหมวด ก.พ. (เป้าหมาย 100 ข้อ)</div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div>
+                                                <div className="text-slate-500 text-xs">คณิตฯ + ภาษาไทย</div>
+                                                <div className={`font-medium ${korPorSummary.mathThai === 50 ? 'text-green-600' : 'text-slate-700'}`}>{korPorSummary.mathThai}/50 ข้อ</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-slate-500 text-xs">กฎหมาย</div>
+                                                <div className={`font-medium ${korPorSummary.law === 25 ? 'text-green-600' : 'text-slate-700'}`}>{korPorSummary.law}/25 ข้อ</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-slate-500 text-xs">ภาษาอังกฤษ</div>
+                                                <div className={`font-medium ${korPorSummary.eng === 25 ? 'text-green-600' : 'text-slate-700'}`}>{korPorSummary.eng}/25 ข้อ</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className="pt-4 flex justify-end space-x-3">
                                 <button
