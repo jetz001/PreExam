@@ -15,7 +15,8 @@ const ExamSetManager = () => {
         description: '',
         is_korpor_format: false,
         education_level: 'bachelor',
-        time_limit_minutes: 0
+        time_limit_minutes: 0,
+        total_questions: 100
     });
 
     const { data: setsResponse, isLoading } = useQuery({
@@ -98,7 +99,7 @@ const ExamSetManager = () => {
         setFormData(prev => ({
             ...prev,
             time_limit_minutes: 180,
-            total_questions: actualTotal,
+            total_questions: 100,
             is_korpor_format: true,
             rules: {
                 catalogs: newCatalogs,
@@ -119,8 +120,7 @@ const ExamSetManager = () => {
 
     const handleCatalogCountChange = (catalog, count) => {
         const numCount = parseInt(count) || 0;
-        const available = catalogCounts[catalog] || 0;
-        const safeCount = Math.min(numCount, available);
+        const safeCount = Math.max(0, numCount);
         setFormData(prev => ({
             ...prev,
             rules: {
@@ -147,7 +147,9 @@ const ExamSetManager = () => {
             description: set.description || '',
             is_korpor_format: Boolean(set.is_korpor_format),
             education_level: set.education_level || 'bachelor',
-            time_limit_minutes: set.time_limit_minutes || 0
+            time_limit_minutes: set.time_limit_minutes || 0,
+            total_questions: set.total_questions || 100,
+            rules: set.rules || { catalogs: [], catalog_counts: {} }
         });
         setIsEditModalOpen(true);
     };
@@ -270,6 +272,16 @@ const ExamSetManager = () => {
                                     </select>
                                 </div>
                             )}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Total Questions Goal (เป้าหมายจำนวนข้อรวม)</label>
+                                <input
+                                    type="number"
+                                    value={formData.total_questions || ''}
+                                    onChange={(e) => setFormData({ ...formData, total_questions: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    min="1"
+                                />
+                            </div>
                             <div className="border-t border-slate-200 pt-4 mt-4">
                                 <div className="flex justify-between items-center mb-2">
                                     <div className="flex items-center space-x-2">
