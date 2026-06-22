@@ -353,7 +353,7 @@ const ExamSetManager = () => {
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
                             <h3 className="text-xl font-bold text-slate-800 flex items-center">
                                 <HelpCircle size={20} className="mr-2 text-blue-600" />
-                                สัดส่วนข้อสอบ ก.พ. (อ้างอิงเกณฑ์ ก.พ. ปี 63)
+                                สัดส่วนข้อสอบ ก.พ.
                             </h3>
                             <button onClick={() => setIsNoteOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors">
                                 <X size={24} />
