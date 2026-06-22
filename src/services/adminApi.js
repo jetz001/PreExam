@@ -1,6 +1,10 @@
 import api from './api';
 
 const adminApi = {
+    getExamSets: async () => { const response = await api.get('/admin/exam-sets'); return response.data; },
+    createExamSet: async (data) => { const response = await api.post('/admin/exam-sets', data); return response.data; },
+    updateExamSet: async (id, data) => { const response = await api.put(`/admin/exam-sets/${id}`, data); return response.data; },
+    deleteExamSet: async (id) => { const response = await api.delete(`/admin/exam-sets/${id}`); return response.data; },
     // Dashboard Overview
     getDashboardStats: async () => {
         const response = await api.get('/admin/stats');

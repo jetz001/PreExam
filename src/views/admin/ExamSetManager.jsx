@@ -19,11 +19,11 @@ const ExamSetManager = () => {
 
     const { data: setsResponse, isLoading } = useQuery({
         queryKey: ['adminExamSets'],
-        queryFn: () => adminApi.request('/api/admin/exam-sets', { method: 'GET' })
+        queryFn: adminApi.getExamSets
     });
 
     const createMutation = useMutation({
-        mutationFn: (data) => adminApi.request('/api/admin/exam-sets', { method: 'POST', body: JSON.stringify(data) }),
+        mutationFn: adminApi.createExamSet,
         onSuccess: () => {
             toast.success('Exam Set created successfully!');
             setIsCreateModalOpen(false);
@@ -34,7 +34,7 @@ const ExamSetManager = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: ({ id, data }) => adminApi.request(`/api/admin/exam-sets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+        mutationFn: ({ id, data }) => adminApi.updateExamSet(id, data),
         onSuccess: () => {
             toast.success('Exam Set updated successfully!');
             setIsEditModalOpen(false);
@@ -44,7 +44,7 @@ const ExamSetManager = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id) => adminApi.request(`/api/admin/exam-sets/${id}`, { method: 'DELETE' }),
+        mutationFn: adminApi.deleteExamSet,
         onSuccess: () => {
             toast.success('Exam Set deleted successfully!');
             queryClient.invalidateQueries(['adminExamSets']);
