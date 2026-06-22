@@ -6,10 +6,10 @@ import AdaptiveLottie from '../../components/common/AdaptiveLottie';
 import { getAnimationAsset, getAnimationPreset } from '../../config/animationRegistry';
 
 const choiceCards = [
-    { key: 'A', label: 'ส่วนราชการสามารถอนุมัติเองได้ทันที', color: 'bg-[#e21b3c]', icon: Triangle },
-    { key: 'B', label: 'ต้องรายงานให้ใครทราบภายหลังการดำเนินงานก่อน', color: 'bg-[#1368ce]', icon: Diamond },
-    { key: 'C', label: 'ต้องขอความเห็นชอบจากคณะรัฐมนตรีก่อนดำเนินการ', color: 'bg-[#d89e00]', icon: Circle },
-    { key: 'D', label: 'ให้ผู้ว่าราชการจังหวัดอนุมัติแทนคณะรัฐมนตรี', color: 'bg-[#26890c]', icon: Square }
+    { key: 'A', label: 'ส่วนราชการสามารถอนุมัติเองได้ทันที', color: 'bg-[#e21b3c]', icon: () => <span className="text-white text-xl font-bold">1</span> },
+    { key: 'B', label: 'ต้องรายงานให้ใครทราบภายหลังการดำเนินงานก่อน', color: 'bg-[#1368ce]', icon: () => <span className="text-white text-xl font-bold">2</span> },
+    { key: 'C', label: 'ต้องขอความเห็นชอบจากคณะรัฐมนตรีก่อนดำเนินการ', color: 'bg-[#d89e00]', icon: () => <span className="text-white text-xl font-bold">3</span> },
+    { key: 'D', label: 'ให้ผู้ว่าราชการจังหวัดอนุมัติแทนคณะรัฐมนตรี', color: 'bg-[#26890c]', icon: () => <span className="text-white text-xl font-bold">4</span> }
 ];
 
 const POSITION_COORDS = {

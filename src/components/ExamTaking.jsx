@@ -210,13 +210,8 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
 
     // Helper shapes
     const ShapeIcon = ({ choice }) => {
-        switch (choice) {
-            case 'A': return <svg viewBox="0 0 32 32" className="w-8 h-8 fill-white"><path d="M16 4L4 26h24L16 4z"/></svg>;
-            case 'B': return <svg viewBox="0 0 32 32" className="w-8 h-8 fill-white"><path d="M16 4l12 12-12 12L4 16 16 4z"/></svg>;
-            case 'C': return <svg viewBox="0 0 32 32" className="w-8 h-8 fill-white"><circle cx="16" cy="16" r="12"/></svg>;
-            case 'D': return <svg viewBox="0 0 32 32" className="w-8 h-8 fill-white"><rect x="6" y="6" width="20" height="20" rx="3"/></svg>;
-            default: return null;
-        }
+        const numberMap = { 'A': '1', 'B': '2', 'C': '3', 'D': '4' };
+        return <span className="text-white text-3xl font-bold">{numberMap[choice] || choice}</span>;
     };
 
     return (
