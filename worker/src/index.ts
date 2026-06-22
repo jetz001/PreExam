@@ -1529,7 +1529,7 @@ export default {
         
         // /api/exam-sets
         if (url.pathname === "/api/exam-sets" && request.method === "GET") {
-          const sets = await listExamSets(db);
+          const sets = await listExamSets(env.DB);
           return json({ success: true, data: sets });
         }
         
@@ -1563,31 +1563,31 @@ if (url.pathname === "/api/admin/reports" && request.method === "GET") {
         
         // /api/admin/exam-sets
         if (url.pathname === "/api/admin/exam-sets" && request.method === "GET") {
-          const sets = await listExamSets(db);
+          const sets = await listExamSets(env.DB);
           return json({ success: true, data: sets });
         }
         if (url.pathname === "/api/admin/catalogs" && request.method === "GET") {
-          const catalogs = await getUniqueCatalogs(db);
+          const catalogs = await getUniqueCatalogs(env.DB);
           return json({ success: true, data: catalogs });
         }
         if (url.pathname === "/api/admin/catalogs/counts" && request.method === "GET") {
-          const counts = await getCatalogCounts(db);
+          const counts = await getCatalogCounts(env.DB);
           return json({ success: true, data: counts });
         }
         if (url.pathname === "/api/admin/exam-sets" && request.method === "POST") {
           const body = await request.json();
-          const result = await createExamSet(db, body);
+          const result = await createExamSet(env.DB, body);
           return json({ success: true, data: result }, { status: 201 });
         }
         if (url.pathname.startsWith("/api/admin/exam-sets/")) {
           const setId = url.pathname.split("/")[4];
           if (request.method === "PUT") {
             const body = await request.json();
-            const result = await updateExamSet(db, setId, body);
+            const result = await updateExamSet(env.DB, setId, body);
             return json({ success: true, data: result });
           }
           if (request.method === "DELETE") {
-            await deleteExamSet(db, setId);
+            await deleteExamSet(env.DB, setId);
             return json({ success: true });
           }
         }

@@ -109,10 +109,10 @@ const ExamSetManager = () => {
 
     const handleCatalogToggle = (catalog) => {
         setFormData(prev => {
-            const newCatalogs = prev.rules.catalogs?.includes(catalog)
+            const newCatalogs = prev.rules?.catalogs?.includes(catalog)
                 ? prev.rules.catalogs.filter(c => c !== catalog)
-                : [...(prev.rules.catalogs || []), catalog];
-            return { ...prev, rules: { ...prev.rules, catalogs: newCatalogs } };
+                : [...(prev.rules?.catalogs || []), catalog];
+            return { ...prev, rules: { ...(prev.rules || {}), catalogs: newCatalogs } };
         });
     };
 
@@ -123,8 +123,8 @@ const ExamSetManager = () => {
         setFormData(prev => ({
             ...prev,
             rules: {
-                ...prev.rules,
-                catalog_counts: { ...(prev.rules.catalog_counts || {}), [catalog]: safeCount }
+                ...(prev.rules || {}),
+                catalog_counts: { ...(prev.rules?.catalog_counts || {}), [catalog]: safeCount }
             }
         }));
     };
@@ -281,21 +281,21 @@ const ExamSetManager = () => {
                                     </button>
                                 </div>
                                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
-                                    {Array.from(new Set([...uniqueCatalogs, ...(formData.rules.catalogs || [])])).map(catalog => (
+                                    {Array.from(new Set([...uniqueCatalogs, ...(formData.rules?.catalogs || [])])).map(catalog => (
                                         <div key={catalog} className="flex items-center space-x-3">
                                             <input
                                                 type="checkbox"
                                                 id={`catalog-${catalog}`}
-                                                checked={formData.rules.catalogs?.includes(catalog)}
+                                                checked={formData.rules?.catalogs?.includes(catalog)}
                                                 onChange={() => handleCatalogToggle(catalog)}
                                                 className="rounded text-blue-600 focus:ring-blue-500"
                                             />
                                             <label htmlFor={`catalog-${catalog}`} className="text-sm font-medium text-slate-700 flex-1">{catalog}</label>
-                                            {formData.rules.catalogs?.includes(catalog) && (
+                                            {formData.rules?.catalogs?.includes(catalog) && (
                                                 <input
                                                     type="number"
                                                     placeholder="จำนวนข้อ"
-                                                    value={formData.rules.catalog_counts?.[catalog] || ''}
+                                                    value={formData.rules?.catalog_counts?.[catalog] || ''}
                                                     onChange={(e) => handleCatalogCountChange(catalog, e.target.value)}
                                                     className="w-24 px-2 py-1 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
                                                 />
