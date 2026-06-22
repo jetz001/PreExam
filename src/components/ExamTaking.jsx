@@ -256,6 +256,7 @@ const BackgroundScene = ({ scene, isTransitioning }) => (
                 <AdaptiveLottie
                     animationUrl={scene.animationUrl}
                     loop autoplay
+                    scale="none"
                     className="w-full h-full"
                     style={{ objectFit: 'cover' }}
                 />

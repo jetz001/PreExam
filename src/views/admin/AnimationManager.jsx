@@ -108,8 +108,8 @@ const inputStyle = {
 const selectStyle = { ...inputStyle, cursor:'pointer' };
 
 // ─── Mini Journey Preview Panel ───────────────────────────────────────────────
-const MiniJourneyPreview = ({ previewConfig, selectedAssetKey, speedText, sceneIdx }) => {
-    const scene = MINI_SCENES[sceneIdx % MINI_SCENES.length];
+const MiniJourneyPreview = ({ previewConfig, selectedAssetKey, speedText, sceneIdx, activeScenes }) => {
+    const scene = activeScenes[sceneIdx % activeScenes.length];
     const [replayKey, setReplayKey] = useState(0);
 
     useEffect(() => {
@@ -117,12 +117,16 @@ const MiniJourneyPreview = ({ previewConfig, selectedAssetKey, speedText, sceneI
     }, [selectedAssetKey, speedText]);
 
     return (
-        <div style={{ position:'relative', borderRadius:20, overflow:'hidden', aspectRatio:'16/9', minHeight:200, background: scene.bg }}>
+        <div style={{ position:'relative', borderRadius:20, overflow:'hidden', aspectRatio:'16/9', minHeight:200, background: scene.bgGradient || scene.bg }}>
             {/* Lottie background scene */}
             <AnimatePresence mode="sync">
                 <motion.div key={scene.id} initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} transition={{ duration:0.8 }} style={{ position:'absolute', inset:0 }}>
                     <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'55%', overflow:'hidden', opacity:0.6 }}>
-                        <Lottie animationData={scene.lottie} loop autoplay style={{ width:'100%', height:'100%' }} rendererSettings={{ preserveAspectRatio:'xMidYMax slice' }} />
+                        {scene.animationUrl ? (
+                            <AdaptiveLottie animationUrl={scene.animationUrl} loop autoplay scale="none" className="w-full h-full object-cover" />
+                        ) : (
+                            <Lottie animationData={scene.lottie} loop autoplay style={{ width:'100%', height:'100%', objectFit:'cover' }} rendererSettings={{ preserveAspectRatio:'xMidYMax slice' }} />
+                        )}
                     </div>
                     <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.45) 100%)' }} />
                 </motion.div>
@@ -182,6 +186,13 @@ const AnimationManager = () => {
     }, [dbAssets]);
 
     const { data: systemSettings } = useQuery({ queryKey: ['systemSettings'], queryFn: adminApi.getSystemSettings });
+
+    const activeScenes = useMemo(() => {
+        const custom = systemSettings?.settings?.journey_scenes;
+        if (custom && Array.isArray(custom) && custom.length > 0) return custom;
+        return MINI_SCENES;
+    }, [systemSettings?.settings?.journey_scenes]);
+
     const savedLegacyAnimationSettings = useMemo(() => systemSettings?.settings?.animation_settings || {}, [systemSettings?.settings?.animation_settings]);
     const savedAssetConfigs = useMemo(() => systemSettings?.settings?.animation_asset_configs || {}, [systemSettings?.settings?.animation_asset_configs]);
     const savedUsageMap = useMemo(() => {
@@ -396,7 +407,7 @@ const AnimationManager = () => {
                         </div>
                 <div style={{ display:'flex', gap:8 }}>
                     <button
-                        onClick={() => setMiniSceneIdx(i => (i + 1) % MINI_SCENES.length)}
+                        onClick={() => setMiniSceneIdx(i => (i + 1) % activeScenes.length)}
                         style={{ background:'#f1f5f9', border:'1px solid #e2e8f0', borderRadius:10, padding:'8px 14px', fontSize:'0.8rem', fontWeight:700, cursor:'pointer', color:'#475569', display:'flex', alignItems:'center', gap:6 }}
                     >
                         🌍 เปลี่ยนฉาก
@@ -582,6 +593,7 @@ const AnimationManager = () => {
                                 selectedAssetKey={selectedAssetKey}
                                 speedText={speedText}
                                 sceneIdx={miniSceneIdx}
+                                activeScenes={activeScenes}
                             />
                             <p style={{ marginTop:8, fontSize:'0.68rem', color:'#94a3b8', textAlign:'center' }}>
                                 กด "เปลี่ยนฉาก" เพื่อทดสอบบนฉากต่างๆ
@@ -639,6 +651,7 @@ const AnimationManager = () => {
                     <AnimationPreviewMockup
                         inlinePreviewState={{ presetKey: previewUsageKey, assetKey: selectedAssetKey, assetLabel: selectedAsset?.sourceFile, animationUrl: previewConfig.animationUrl, scale: scaleMode, startPosition, endPosition, durationText, speedText, delayMode, delayPercent, noteText }}
                         onCloseHandler={() => setShowPreview(false)}
+                        activeScenes={activeScenes}
                     />
                 </div>,
                 document.body

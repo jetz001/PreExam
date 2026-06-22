@@ -7,7 +7,8 @@ const SCALE_MAP = {
     badge: { width: 'min(24vw, 180px)', height: 'min(24vw, 180px)' },
     card: { width: 'min(100%, 260px)', height: 'min(60vw, 260px)' },
     half: { width: 'min(52vw, 560px)', height: 'min(52vw, 560px)' },
-    full: { width: 'min(88vw, 960px)', height: 'min(88vw, 960px)' }
+    full: { width: 'min(88vw, 960px)', height: 'min(88vw, 960px)' },
+    none: { width: '100%', height: '100%' }
 };
 
 const OFFSET_MAP = {

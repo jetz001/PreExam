@@ -211,12 +211,21 @@ const BackgroundScene = ({ scene }) => (
     >
         <div style={{ position: 'absolute', inset: 0, background: scene.bgGradient }} />
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', overflow: 'hidden', opacity: 0.5 }}>
-            <Lottie
-                animationData={scene.lottie}
-                loop autoplay
-                style={{ width: '100%', height: '100%' }}
-                rendererSettings={{ preserveAspectRatio: 'xMidYMax slice' }}
-            />
+            {scene.animationUrl ? (
+                <AdaptiveLottie
+                    animationUrl={scene.animationUrl}
+                    loop autoplay
+                    scale="none"
+                    className="w-full h-full object-cover"
+                />
+            ) : (
+                <Lottie
+                    animationData={scene.lottie}
+                    loop autoplay
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    rendererSettings={{ preserveAspectRatio: 'xMidYMax slice' }}
+                />
+            )}
         </div>
         <div style={{ position: 'absolute', inset: 0, background: scene.overlayTint }} />
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.5) 100%)' }} />
@@ -412,7 +421,7 @@ const ConfigPill = ({ previewState, previewConfig, accentColor }) => (
 );
 
 // ─── Main Component ──────────────────────────────────────────────────────────
-const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler }) => {
+const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScenes: externalActiveScenes }) => {
     const navigate  = useNavigate();
     const location  = useLocation();
 
@@ -448,7 +457,8 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler }) => {
     const [selectedChoice, setSelectedChoice] = useState(null);
     const [replayKey, setReplayKey] = useState(0);
 
-    const scene = JOURNEY_SCENES[sceneIdx % JOURNEY_SCENES.length];
+    const activeScenes = externalActiveScenes || JOURNEY_SCENES;
+    const scene = activeScenes[sceneIdx % activeScenes.length];
 
     const handleNextQuestion = useCallback(() => {
         const next = questionIdx + 1;
@@ -459,9 +469,9 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler }) => {
         if (newScene !== oldScene) {
             setIsRunning(true);
             setTimeout(() => {
-                const ns = (sceneIdx + 1) % JOURNEY_SCENES.length;
+                const ns = (sceneIdx + 1) % activeScenes.length;
                 setSceneIdx(ns);
-                setShowMilestone(JOURNEY_SCENES[ns].emoji + ' ' + JOURNEY_SCENES[ns].name);
+                setShowMilestone(activeScenes[ns].emoji + ' ' + activeScenes[ns].name);
                 setTimeout(() => setShowMilestone(null), 2200);
             }, 750);
             setTimeout(() => setIsRunning(false), 1600);
@@ -603,7 +613,7 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler }) => {
                     </div>
                     {/* Scene dots */}
                     <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                        {JOURNEY_SCENES.map((s, i) => (
+                        {activeScenes.map((s, i) => (
                             <div key={s.id} style={{ width: i === sceneIdx ? 20 : 6, height: 6, borderRadius: 99, background: i === sceneIdx ? scene.accentColor : 'rgba(255,255,255,0.22)', transition: 'all 0.4s', boxShadow: i === sceneIdx ? `0 0 8px ${scene.accentColor}` : 'none' }} />
                         ))}
                     </div>

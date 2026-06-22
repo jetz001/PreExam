@@ -268,6 +268,7 @@ const JourneySceneManager = ({ systemSettings }) => {
                                     <AdaptiveLottie
                                         animationUrl={activeScene.animationUrl}
                                         loop autoplay
+                                        scale="none"
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
