@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Save, Plus, Trash2, Upload, GripVertical, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -46,6 +46,31 @@ const JourneySceneManager = ({ systemSettings }) => {
     const [scenes, setScenes] = useState(initialScenes);
     const [selectedId, setSelectedId] = useState(scenes[0]?.id || null);
     const [uploadingId, setUploadingId] = useState(null);
+
+    const dragItem = useRef();
+    const dragOverItem = useRef();
+
+    const handleDragStart = (e, index) => {
+        dragItem.current = index;
+    };
+
+    const handleDragEnter = (e, index) => {
+        dragOverItem.current = index;
+    };
+
+    const handleDragEnd = () => {
+        if (dragItem.current == null || dragOverItem.current == null) return;
+        if (dragItem.current === dragOverItem.current) return;
+        
+        const copyListItems = [...scenes];
+        const dragItemContent = copyListItems[dragItem.current];
+        copyListItems.splice(dragItem.current, 1);
+        copyListItems.splice(dragOverItem.current, 0, dragItemContent);
+        
+        dragItem.current = null;
+        dragOverItem.current = null;
+        setScenes(copyListItems);
+    };
 
     const activeScene = useMemo(() => scenes.find(s => s.id === selectedId) || scenes[0], [scenes, selectedId]);
 
@@ -136,15 +161,21 @@ const JourneySceneManager = ({ systemSettings }) => {
                         {scenes.map((s, index) => (
                             <div 
                                 key={s.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragEnter={(e) => handleDragEnter(e, index)}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => e.preventDefault()}
                                 onClick={() => setSelectedId(s.id)}
                                 style={{ 
-                                    padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                                    padding: '10px 12px', borderRadius: 10, cursor: 'grab',
                                     background: selectedId === s.id ? '#eff6ff' : 'white',
                                     border: `1px solid ${selectedId === s.id ? '#bfdbfe' : '#e2e8f0'}`,
                                     display: 'flex', alignItems: 'center', gap: 10,
                                     transition: 'all 0.2s'
                                 }}
                             >
+                                <GripVertical size={16} color="#cbd5e1" />
                                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', width: 20 }}>{index + 1}</div>
                                 <div style={{ fontSize: '1.2rem' }}>{s.emoji}</div>
                                 <div style={{ flex: 1, fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>{s.name}</div>

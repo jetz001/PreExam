@@ -188,7 +188,8 @@ const ExamResult = ({ result, onRetry }) => {
                 ))}
 
 
-                <div className="er-card">
+                {!showIntroAnimation && (
+                    <div className="er-card">
                     <div className="mb-2 flex w-full justify-center">
                         {!inlineAnimation.disabled && (inlineAnimation.animationData || inlineAnimation.animationUrl) && (
                             <AdaptiveLottie
@@ -259,8 +260,9 @@ const ExamResult = ({ result, onRetry }) => {
                             🏠 กลับสู่แดชบอร์ด
                         </Link>
                     </div>
+                )}
 
-                    {/* Detailed Solutions (Premium sees more) */}
+                {/* Detailed Solutions (Premium sees more) */}
                     {
                         result.questions && result.answers && (
                             <div className="w-full bg-white/95 backdrop-blur-md border border-white/20 rounded-[2rem] p-6 text-gray-800 text-left shadow-2xl">
