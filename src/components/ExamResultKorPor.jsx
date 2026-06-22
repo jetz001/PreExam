@@ -47,12 +47,15 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
         
         catStr = (catStr + ' ' + (q.subject || '') + ' ' + (q.category || '')).toLowerCase();
         
-        const engKeywords = ['อังกฤษ', 'english', 'grammar', 'vocabulary', 'reading', 'conversation', 'reading comprehension'];
-        const lawKeywords = ['กฎหมาย', 'ข้าราชการ', 'พระราชบัญญัติ', 'พ.ร.บ', 'พ.ร.ฎ', 'รัฐธรรมนูญ', 'ระเบียบ', 'ละเมิด', 'ปกครอง', 'คุณธรรม', 'จริยธรรม', 'บ้านเมืองที่ดี', 'บริหารราชการ'];
+        const engKeywords = ['อังกฤษ', 'english', 'grammar', 'vocabulary', 'reading', 'conversation', 'structure', 'reading comprehension'];
+        const lawKeywords = ['กฎหมาย', 'ข้าราชการ', 'พ.ร.บ.บริหารราชการแผ่นดิน', 'พ.ร.ฎ.กิจการบ้านเมืองที่ดี', 'พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง', 'พ.ร.บ.มาตรฐานทางจริยธรรม', 'พ.ร.บ.ความรับผิดทางละเมิดฯ', 'ป.อาญา ความผิดต่อตำแหน่งหน้าที่', 'พระราชบัญญัติ', 'พ.ร.บ', 'พ.ร.ฎ', 'รัฐธรรมนูญ', 'ระเบียบ', 'ละเมิด', 'ปกครอง', 'คุณธรรม', 'จริยธรรม', 'บ้านเมืองที่ดี', 'บริหารราชการ'];
+        const analysisKeywords = ['วิเคราะห์', 'อนุกรม', 'เลขทั่วไป', 'ตาราง', 'เงื่อนไขสัญลักษณ์', 'เงื่อนไขภาษา', 'เรียงประโยค', 'สรุปความ', 'อุปมาอุปไมย'];
         
-        if (engKeywords.some(kw => catStr.includes(kw))) return 'ภาษาอังกฤษ';
-        if (lawKeywords.some(kw => catStr.includes(kw))) return 'กฎหมาย';
-        return 'วิเคราะห์'; // Default to Analysis for Thai/Math
+        if (engKeywords.some(kw => catStr.includes(kw.toLowerCase()))) return 'ภาษาอังกฤษ';
+        if (lawKeywords.some(kw => catStr.includes(kw.toLowerCase()))) return 'กฎหมาย';
+        if (analysisKeywords.some(kw => catStr.includes(kw.toLowerCase()))) return 'วิเคราะห์';
+        
+        return 'วิเคราะห์'; // Default fallback
     };
 
     qs.forEach(q => {
