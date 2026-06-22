@@ -132,6 +132,9 @@ const QuestionManager = () => {
         queryFn: adminApi.getSubjects
     });
 
+    const { data: metaSetsRes } = useQuery({ queryKey: ['examSetsMeta'], queryFn: () => adminApi.request('/api/admin/exam-sets', { method: 'GET' }) });
+    React.useEffect(() => { if (metaSetsRes?.data) setExamSetsMeta(metaSetsRes.data); }, [metaSetsRes]);
+
     const { data: categories = [] } = useQuery({
         queryKey: ['categories'],
         queryFn: adminApi.getCategories
