@@ -1939,7 +1939,10 @@ export async function deleteExamSet(db: any, id: string) {
 
 export async function listExamSets(db: any) {
   const { results } = await db.prepare('SELECT * FROM exam_sets ORDER BY created_at DESC').all();
-  return results;
+  return results.map((r: any) => ({
+    ...r,
+    rules: r.rules ? JSON.parse(r.rules) : null
+  }));
 }
 
 
