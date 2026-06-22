@@ -127,6 +127,8 @@ import {
   updateExamSet,
   deleteExamSet,
   listExamSets,
+  getUniqueCatalogs,
+  getCatalogCounts,
 } from "./d1";
 
 export { RealtimeDO };
@@ -1420,7 +1422,11 @@ export default {
           }
 
           const count = rows.length;
-          rows = rows.slice(offset, offset + limit);
+          let actualLimit = limit;
+          if (exam_set && !url.searchParams.has("limit")) {
+            actualLimit = count; // Bypass default 50 limit for exam sets
+          }
+          rows = rows.slice(offset, offset + actualLimit);
 
           return json({
             success: true,
@@ -1559,6 +1565,14 @@ if (url.pathname === "/api/admin/reports" && request.method === "GET") {
         if (url.pathname === "/api/admin/exam-sets" && request.method === "GET") {
           const sets = await listExamSets(db);
           return json({ success: true, data: sets });
+        }
+        if (url.pathname === "/api/admin/catalogs" && request.method === "GET") {
+          const catalogs = await getUniqueCatalogs(db);
+          return json({ success: true, data: catalogs });
+        }
+        if (url.pathname === "/api/admin/catalogs/counts" && request.method === "GET") {
+          const counts = await getCatalogCounts(db);
+          return json({ success: true, data: counts });
         }
         if (url.pathname === "/api/admin/exam-sets" && request.method === "POST") {
           const body = await request.json();
@@ -4399,3 +4413,5 @@ async function cleanupExpiredPremium(env: Env) {
   // Set users back to free if their premium_expiry is in the past
   await env.DB.prepare("UPDATE users SET plan_type = 'free', premium_expiry = NULL, premium_start_date = NULL WHERE plan_type = 'premium' AND premium_expiry < ?").bind(now).run();
 }
+
+

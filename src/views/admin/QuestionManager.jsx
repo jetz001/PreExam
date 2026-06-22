@@ -16,6 +16,7 @@ const QuestionManager = () => {
     const [editingQuestion, setEditingQuestion] = useState(null);
     const [activeTab, setActiveTab] = useState('questions');
     const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' });
+    const [examSetsMeta, setExamSetsMeta] = useState([]);
 
     const handleSort = (key) => {
         let direction = 'asc';

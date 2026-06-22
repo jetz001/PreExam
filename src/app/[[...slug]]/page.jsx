@@ -6,6 +6,7 @@ export function generateStaticParams() {
     { slug: [] },
     { slug: ['login'] },
     { slug: ['register'] },
+    { slug: ['exam'] },
     { slug: ['dashboard'] },
     { slug: ['profile'] },
     { slug: ['settings'] },

@@ -474,7 +474,15 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
         }
     };
 
-    const handleSubmit = () => onSubmit(answers, Math.floor((Date.now() - startTime) / 1000));
+    const handleSubmit = () => {
+        const completeAnswers = { ...answers };
+        questions.forEach(q => {
+            if (!(q.id in completeAnswers)) {
+                completeAnswers[q.id] = null;
+            }
+        });
+        onSubmit(completeAnswers, Math.floor((Date.now() - startTime) / 1000));
+    };
 
     const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 

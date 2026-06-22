@@ -1921,14 +1921,14 @@ export async function listBusinessTransactions(db: D1Database, businessId: strin
 
 export async function createExamSet(db: any, params: any) {
   const id = crypto.randomUUID();
-  await db.prepare('INSERT INTO exam_sets (id, name, description, is_korpor_format, education_level, passing_criteria, time_limit_minutes) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .bind(id, params.name, params.description || null, params.is_korpor_format ? 1 : 0, params.education_level || null, params.passing_criteria || null, params.time_limit_minutes || null).run();
+  await db.prepare('INSERT INTO exam_sets (id, name, description, is_korpor_format, education_level, passing_criteria, time_limit_minutes, total_questions, rules) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, params.name, params.description || null, params.is_korpor_format ? 1 : 0, params.education_level || null, params.passing_criteria || null, params.time_limit_minutes || null, params.total_questions || null, params.rules ? JSON.stringify(params.rules) : null).run();
   return { id, ...params };
 }
 
 export async function updateExamSet(db: any, id: string, params: any) {
-  await db.prepare('UPDATE exam_sets SET name = ?, description = ?, is_korpor_format = ?, education_level = ?, passing_criteria = ?, time_limit_minutes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-    .bind(params.name, params.description || null, params.is_korpor_format ? 1 : 0, params.education_level || null, params.passing_criteria || null, params.time_limit_minutes || null, id).run();
+  await db.prepare('UPDATE exam_sets SET name = ?, description = ?, is_korpor_format = ?, education_level = ?, passing_criteria = ?, time_limit_minutes = ?, total_questions = ?, rules = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    .bind(params.name, params.description || null, params.is_korpor_format ? 1 : 0, params.education_level || null, params.passing_criteria || null, params.time_limit_minutes || null, params.total_questions || null, params.rules ? JSON.stringify(params.rules) : null, id).run();
   return { id, ...params };
 }
 
@@ -1942,3 +1942,38 @@ export async function listExamSets(db: any) {
   return results;
 }
 
+
+export async function getUniqueCatalogs(db: any) {
+  const { results } = await db.prepare('SELECT DISTINCT catalogs FROM questions WHERE catalogs IS NOT NULL').all();
+  const set = new Set();
+  results.forEach((r: any) => {
+    try {
+      const arr = JSON.parse(r.catalogs);
+      if (Array.isArray(arr)) arr.forEach(a => set.add(a));
+    } catch (e) {}
+  });
+  return Array.from(set);
+}
+
+export async function getCatalogCounts(db: any) {
+  const { results } = await db.prepare('SELECT catalogs FROM questions WHERE catalogs IS NOT NULL').all();
+  const counts: Record<string, number> = {};
+  results.forEach((r: any) => {
+    try {
+      let arr = r.catalogs;
+      if (typeof arr === "string") {
+        try { arr = JSON.parse(arr); } catch(e) {}
+      }
+      if (Array.isArray(arr)) {
+        arr.forEach(a => {
+          const cat = String(a).trim();
+          counts[cat] = (counts[cat] || 0) + 1;
+        });
+      } else if (typeof arr === "string") {
+        const cat = String(arr).trim();
+        if (cat) counts[cat] = (counts[cat] || 0) + 1;
+      }
+    } catch (e) {}
+  });
+  return counts;
+}

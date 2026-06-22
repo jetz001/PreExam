@@ -57,13 +57,13 @@ export default function ExamConfig({ onStart }) {
         mode: 'practice',
     });
 
-    // Load advanced data lazily
+    // Load advanced data lazily or when in simulation mode
     React.useEffect(() => {
-        if (!showAdvanced) return;
+        if (!showAdvanced && mode !== 'simulation') return;
         (async () => {
             try {
                 const examService = (await import('../services/examService')).default;
-                const [subjectsRes, yearsRes, setsRes] = await Promise.all([
+                const [subjectsRes, yearsRes, setsRes, metaRes] = await Promise.all([
                     examService.getSubjects(),
                     examService.getExamYears(),
                     examService.getExamSets(),
@@ -72,11 +72,10 @@ export default function ExamConfig({ onStart }) {
                 if (subjectsRes.success)  setSubjects(subjectsRes.data);
                 if (yearsRes.success)     setYears(yearsRes.data);
                 if (setsRes.success)      setSets(setsRes.data);
-                const metaRes = await examService.getExamSetsMeta();
-                if (metaRes.success) setExamSetsMeta(metaRes.data);
+                if (metaRes.success)      setExamSetsMeta(metaRes.data);
             } catch (e) { console.error(e); }
         })();
-    }, [showAdvanced]);
+    }, [showAdvanced, mode]);
 
     React.useEffect(() => {
         if (!showAdvanced) return;
@@ -95,8 +94,18 @@ export default function ExamConfig({ onStart }) {
 
     const handleQuickStart = async () => {
         setLoading(true);
-        publicService.logActivity('BTN_START_EXAM', { mode, limit: quickAmount, type: 'quick', disable_animation: disableAnimation });
-        await onStart({ category: '', subject: '', exam_year: '', exam_set: '', limit: quickAmount, mode, disable_animation: disableAnimation });
+        if (mode === 'simulation') {
+            if (!config.exam_set) {
+                toast?.error('กรุณาเลือกชุดข้อสอบ');
+                setLoading(false);
+                return;
+            }
+            publicService.logActivity('BTN_START_EXAM', { mode, exam_set: config.exam_set, type: 'simulation', disable_animation: disableAnimation });
+            await onStart({ exam_set: config.exam_set, mode, disable_animation: disableAnimation });
+        } else {
+            publicService.logActivity('BTN_START_EXAM', { mode, limit: quickAmount, type: 'quick', disable_animation: disableAnimation });
+            await onStart({ category: '', subject: '', exam_year: '', exam_set: '', limit: quickAmount, mode, disable_animation: disableAnimation });
+        }
         setLoading(false);
     };
 
@@ -423,21 +432,45 @@ export default function ExamConfig({ onStart }) {
                         ))}
                     </div>
 
-                    {/* Question amount */}
-                    <div style={{ textAlign:'center', marginBottom:10, color:'rgba(255,255,255,0.6)', fontSize:'0.78rem', fontWeight:700, letterSpacing:1, textTransform:'uppercase' }}>
-                        จำนวนข้อ
-                    </div>
-                    <div className="ec-amounts">
-                        {QUICK_AMOUNTS.map(n => (
-                            <button
-                                key={n}
-                                className={`ec-amount-btn ${quickAmount === n ? 'active' : ''}`}
-                                onClick={() => setQuickAmount(n)}
+                    {/* Question amount or Exam Set Selector depending on mode */}
+                    {mode !== 'simulation' ? (
+                        <>
+                            <div style={{ textAlign:'center', marginBottom:10, color:'rgba(255,255,255,0.6)', fontSize:'0.78rem', fontWeight:700, letterSpacing:1, textTransform:'uppercase' }}>
+                                จำนวนข้อ
+                            </div>
+                            <div className="ec-amounts">
+                                {QUICK_AMOUNTS.map(n => (
+                                    <button
+                                        key={n}
+                                        className={`ec-amount-btn ${quickAmount === n ? 'active' : ''}`}
+                                        onClick={() => setQuickAmount(n)}
+                                    >
+                                        {n}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{ marginBottom: 24, padding: '0 16px' }}>
+                            <div style={{ textAlign:'center', marginBottom:10, color:'rgba(255,255,255,0.6)', fontSize:'0.78rem', fontWeight:700, letterSpacing:1, textTransform:'uppercase' }}>
+                                เลือกชุดข้อสอบ
+                            </div>
+                            <select 
+                                name="exam_set" 
+                                value={config.exam_set} 
+                                onChange={handleChange} 
+                                className="ec-adv-select"
+                                style={{ width: '100%', padding: '14px', borderRadius: '16px', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '1rem', fontWeight: 'bold' }}
                             >
-                                {n}
-                            </button>
-                        ))}
-                    </div>
+                                <option value="" style={{ color: '#000' }}>-- กรุณาเลือกชุดข้อสอบ --</option>
+                                {examSetsMeta.map((s,i) => (
+                                    <option key={`meta-${i}`} value={s.name} style={{ color: '#000' }}>
+                                        {s.name} {s.is_korpor_format ? '(ก.พ.)' : ''} {s.total_questions ? `(${s.total_questions} ข้อ)` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     {/* Animation toggle */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '16px', color: '#fff', fontSize: '0.9rem', fontWeight: 600 }}>
@@ -459,21 +492,23 @@ export default function ExamConfig({ onStart }) {
                     >
                         {loading
                             ? <><div className="ec-spinner"/> กำลังโหลด...</>
-                            : <>🚀 &nbsp;เริ่มสอบเลย! &nbsp;<span style={{ opacity:0.6, fontSize:'0.9rem' }}>({quickAmount} ข้อ)</span></>
+                            : <>🚀 &nbsp;เริ่มสอบเลย!{mode !== 'simulation' && <span style={{ opacity:0.6, fontSize:'0.9rem' }}> &nbsp;({quickAmount} ข้อ)</span>}</>
                         }
                     </button>
 
                     {/* Advanced toggle */}
-                    <button
-                        className="ec-adv-toggle"
-                        onClick={() => setShowAdvanced(v => !v)}
-                    >
-                        <span style={{ fontSize:'1rem' }}>{showAdvanced ? '▲' : '⚙️'}</span>
-                        {showAdvanced ? 'ซ่อนตัวกรอง' : 'ตั้งค่าเอง (ขั้นสูง)'}
-                    </button>
+                    {mode !== 'simulation' && (
+                        <button
+                            className="ec-adv-toggle"
+                            onClick={() => setShowAdvanced(v => !v)}
+                        >
+                            <span style={{ fontSize:'1rem' }}>{showAdvanced ? '▲' : '⚙️'}</span>
+                            {showAdvanced ? 'ซ่อนตัวกรอง' : 'ตั้งค่าเอง (ขั้นสูง)'}
+                        </button>
+                    )}
 
                     {/* Advanced panel */}
-                    {showAdvanced && (
+                    {showAdvanced && mode !== 'simulation' && (
                         <div className="ec-adv-panel">
                             <form onSubmit={handleAdvancedSubmit}>
                                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
