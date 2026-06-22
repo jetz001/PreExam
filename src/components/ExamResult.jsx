@@ -8,7 +8,10 @@ import AdaptiveLottie from './common/AdaptiveLottie';
 import publicService from '../services/publicService';
 import { resolveAnimationPreset } from '../config/animationRuntime';
 
-const ExamResult = ({ result, onRetry }) => {
+import examService from '../services/examService';
+import ExamResultKorPor from './ExamResultKorPor';
+
+const ExamResult = ({ result, onRetry, config }) => {
     const score = result.score || 0;
     const totalScore = result.total_score || result.total_questions || (result.questions ? result.questions.length : 1);
     const percentage = totalScore > 0 ? (score / totalScore) * 100 : 0;
@@ -19,6 +22,12 @@ const ExamResult = ({ result, onRetry }) => {
         staleTime: 60000
     });
     const runtimeAnimationSettings = publicSettingsResponse?.settings || {};
+    const { data: metaRes } = useQuery({ queryKey: ['examSetsMetaResult'], queryFn: examService.getExamSetsMeta });
+    const setsMeta = metaRes?.data || [];
+    const isKorPor = setsMeta.find(s => s.name === config?.exam_set)?.is_korpor_format;
+    
+    if (isKorPor) return <ExamResultKorPor result={result} onRetry={onRetry} config={config} />;
+
     const inlineAnimation = resolveAnimationPreset(isPassed ? 'examResultPass' : 'examResultFail', runtimeAnimationSettings);
     const introAnimation = resolveAnimationPreset('examFinish', runtimeAnimationSettings);
     const [showIntroAnimation, setShowIntroAnimation] = React.useState(true);

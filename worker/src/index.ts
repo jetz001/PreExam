@@ -123,6 +123,10 @@ import {
   listBookmarksByUser,
   createBookmark,
   deleteBookmark,
+  createExamSet,
+  updateExamSet,
+  deleteExamSet,
+  listExamSets,
 } from "./d1";
 
 export { RealtimeDO };
@@ -1516,7 +1520,14 @@ export default {
         // ADMIN DASHBOARD ROUTES
         // =======================
 
-        if (url.pathname === "/api/admin/reports" && request.method === "GET") {
+        
+        // /api/exam-sets
+        if (url.pathname === "/api/exam-sets" && request.method === "GET") {
+          const sets = await listExamSets(db);
+          return json({ success: true, data: sets });
+        }
+        
+if (url.pathname === "/api/admin/reports" && request.method === "GET") {
           const auth = await requireAdmin(request, env);
           if ("error" in auth) return auth.error;
           const { results } = await env.DB.prepare("SELECT * FROM reported_content ORDER BY created_at DESC").all();
@@ -1543,7 +1554,31 @@ export default {
         // ADMIN USER ROUTES
         // =======================
 
-        if (url.pathname === "/api/admin/users" && request.method === "GET") {
+        
+        // /api/admin/exam-sets
+        if (url.pathname === "/api/admin/exam-sets" && request.method === "GET") {
+          const sets = await listExamSets(db);
+          return json({ success: true, data: sets });
+        }
+        if (url.pathname === "/api/admin/exam-sets" && request.method === "POST") {
+          const body = await request.json();
+          const result = await createExamSet(db, body);
+          return json({ success: true, data: result }, { status: 201 });
+        }
+        if (url.pathname.startsWith("/api/admin/exam-sets/")) {
+          const setId = url.pathname.split("/")[4];
+          if (request.method === "PUT") {
+            const body = await request.json();
+            const result = await updateExamSet(db, setId, body);
+            return json({ success: true, data: result });
+          }
+          if (request.method === "DELETE") {
+            await deleteExamSet(db, setId);
+            return json({ success: true });
+          }
+        }
+        
+if (url.pathname === "/api/admin/users" && request.method === "GET") {
           const auth = await requireAdmin(request, env);
           if ("error" in auth) return auth.error;
           const users = await adminGetUsers(env.DB);

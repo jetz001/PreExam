@@ -47,6 +47,7 @@ export default function ExamConfig({ onStart }) {
     const [categories, setCategories] = useState([]);
     const [years, setYears]           = useState([]);
     const [sets, setSets]             = useState([]);
+    const [examSetsMeta, setExamSetsMeta] = useState([]);
     const [config, setConfig] = useState({
         category: '',
         subject: '',
@@ -66,10 +67,13 @@ export default function ExamConfig({ onStart }) {
                     examService.getSubjects(),
                     examService.getExamYears(),
                     examService.getExamSets(),
+                    examService.getExamSetsMeta(),
                 ]);
                 if (subjectsRes.success)  setSubjects(subjectsRes.data);
                 if (yearsRes.success)     setYears(yearsRes.data);
                 if (setsRes.success)      setSets(setsRes.data);
+                const metaRes = await examService.getExamSetsMeta();
+                if (metaRes.success) setExamSetsMeta(metaRes.data);
             } catch (e) { console.error(e); }
         })();
     }, [showAdvanced]);
@@ -512,8 +516,13 @@ export default function ExamConfig({ onStart }) {
                                         </label>
                                         <select name="exam_set" value={config.exam_set} onChange={handleChange} disabled={!isPremium} className="ec-adv-select">
                                             <option value="">ทั้งหมด</option>
-                                            {sets.map((s,i) => (
-                                                <option key={i} value={s}>
+                                            {examSetsMeta.map((s,i) => (
+                                                <option key={`meta-${i}`} value={s.name}>
+                                                    {s.name} {s.is_korpor_format ? '(ก.พ.)' : ''}
+                                                </option>
+                                            ))}
+                                            {sets.filter(s => !examSetsMeta.find(m => m.name === s)).map((s,i) => (
+                                                <option key={`old-${i}`} value={s}>
                                                     {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}
                                                 </option>
                                             ))}

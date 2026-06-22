@@ -1918,3 +1918,28 @@ export async function listBusinessTransactions(db: D1Database, businessId: strin
   return results || [];
 }
 
+
+ e x p o r t   a s y n c   f u n c t i o n   c r e a t e E x a m S e t ( d b :   a n y ,   p a r a m s :   a n y )   { 
+     c o n s t   i d   =   c r y p t o . r a n d o m U U I D ( ) ; 
+     a w a i t   d b . p r e p a r e ( ' I N S E R T   I N T O   e x a m _ s e t s   ( i d ,   n a m e ,   d e s c r i p t i o n ,   i s _ k o r p o r _ f o r m a t ,   e d u c a t i o n _ l e v e l ,   p a s s i n g _ c r i t e r i a ,   t i m e _ l i m i t _ m i n u t e s )   V A L U E S   ( ? ,   ? ,   ? ,   ? ,   ? ,   ? ,   ? ) ' ) 
+         . b i n d ( i d ,   p a r a m s . n a m e ,   p a r a m s . d e s c r i p t i o n   | |   n u l l ,   p a r a m s . i s _ k o r p o r _ f o r m a t   ?   1   :   0 ,   p a r a m s . e d u c a t i o n _ l e v e l   | |   n u l l ,   p a r a m s . p a s s i n g _ c r i t e r i a   | |   n u l l ,   p a r a m s . t i m e _ l i m i t _ m i n u t e s   | |   n u l l ) . r u n ( ) ; 
+     r e t u r n   {   i d ,   . . . p a r a m s   } ; 
+ } 
+ 
+ e x p o r t   a s y n c   f u n c t i o n   u p d a t e E x a m S e t ( d b :   a n y ,   i d :   s t r i n g ,   p a r a m s :   a n y )   { 
+     a w a i t   d b . p r e p a r e ( ' U P D A T E   e x a m _ s e t s   S E T   n a m e   =   ? ,   d e s c r i p t i o n   =   ? ,   i s _ k o r p o r _ f o r m a t   =   ? ,   e d u c a t i o n _ l e v e l   =   ? ,   p a s s i n g _ c r i t e r i a   =   ? ,   t i m e _ l i m i t _ m i n u t e s   =   ? ,   u p d a t e d _ a t   =   C U R R E N T _ T I M E S T A M P   W H E R E   i d   =   ? ' ) 
+         . b i n d ( p a r a m s . n a m e ,   p a r a m s . d e s c r i p t i o n   | |   n u l l ,   p a r a m s . i s _ k o r p o r _ f o r m a t   ?   1   :   0 ,   p a r a m s . e d u c a t i o n _ l e v e l   | |   n u l l ,   p a r a m s . p a s s i n g _ c r i t e r i a   | |   n u l l ,   p a r a m s . t i m e _ l i m i t _ m i n u t e s   | |   n u l l ,   i d ) . r u n ( ) ; 
+     r e t u r n   {   i d ,   . . . p a r a m s   } ; 
+ } 
+ 
+ e x p o r t   a s y n c   f u n c t i o n   d e l e t e E x a m S e t ( d b :   a n y ,   i d :   s t r i n g )   { 
+     a w a i t   d b . p r e p a r e ( ' D E L E T E   F R O M   e x a m _ s e t s   W H E R E   i d   =   ? ' ) . b i n d ( i d ) . r u n ( ) ; 
+     r e t u r n   {   s u c c e s s :   t r u e   } ; 
+ } 
+ 
+ e x p o r t   a s y n c   f u n c t i o n   l i s t E x a m S e t s ( d b :   a n y )   { 
+     c o n s t   {   r e s u l t s   }   =   a w a i t   d b . p r e p a r e ( ' S E L E C T   *   F R O M   e x a m _ s e t s   O R D E R   B Y   c r e a t e d _ a t   D E S C ' ) . a l l ( ) ; 
+     r e t u r n   r e s u l t s ; 
+ } 
+  
+ 

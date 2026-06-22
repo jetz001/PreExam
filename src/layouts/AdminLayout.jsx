@@ -60,6 +60,7 @@ const AdminLayout = () => {
             label: 'ระบบสอบ',
             items: [
                 { path: '/admin/questions', label: 'จัดการคลังข้อสอบ', icon: FileQuestion },
+                { path: '/admin/exam-sets', label: 'จัดชุดข้อสอบ', icon: FolderKanban },
                 { path: '/admin/rooms', label: 'จัดการห้องสอบ', icon: MonitorPlay },
                 { path: '/admin/seasons', label: 'ฤดูกาล & แร้งกิ้ง', icon: Trophy },
             ]
