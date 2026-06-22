@@ -20,6 +20,9 @@ const DetailedSolution = ({ questions, answers }) => {
                 const userAnswer = answers[qId];
                 const isCorrect = userAnswer === q.correct_answer;
 
+                const strippedText = (q.question_text || '').replace(/<[^>]+>/g, '');
+                const displayText = strippedText.length > 80 ? strippedText.substring(0, 80) + '...' : strippedText;
+
                 return (
                     <div key={qId} className={`border rounded-lg overflow-hidden ${isCorrect ? 'border-green-200' : 'border-red-200'}`}>
                         {/* Header */}
@@ -31,7 +34,7 @@ const DetailedSolution = ({ questions, answers }) => {
                                 <span className={`font-bold mr-2 ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
                                     ข้อ {index + 1}.
                                 </span>
-                                <span className="text-gray-800">{q.question_text}</span>
+                                <span className="text-gray-800">{displayText}</span>
                             </div>
                             <div className="flex items-center ml-4">
                                 {isCorrect ? <Check className="text-green-500" /> : <X className="text-red-500" />}
