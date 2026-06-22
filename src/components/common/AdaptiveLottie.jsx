@@ -272,11 +272,15 @@ const AdaptiveLottie = ({
 
     useEffect(() => {
         if (typeof window === 'undefined') return undefined;
+        let lastWidth = window.innerWidth;
         const handleResize = () => {
-            setWindowSize({
-                width: window.innerWidth,
-                height: window.innerHeight
-            });
+            if (window.innerWidth !== lastWidth) {
+                lastWidth = window.innerWidth;
+                setWindowSize({
+                    width: window.innerWidth,
+                    height: window.innerHeight
+                });
+            }
         };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
