@@ -25,6 +25,14 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
     
     // Fallback classification if catalog is missing
     const classifyQuestion = (q) => {
+        // If skill is explicitly provided from DB, use it directly to ensure perfect matching
+        if (q.skill) {
+            const skillLower = q.skill.toLowerCase();
+            if (skillLower.includes('อังกฤษ') || skillLower.includes('english')) return 'ภาษาอังกฤษ';
+            if (skillLower.includes('กฎหมาย') || skillLower.includes('ข้าราชการ')) return 'กฎหมาย';
+            if (skillLower.includes('วิเคราะห์')) return 'วิเคราะห์';
+        }
+
         let catStr = '';
         if (Array.isArray(q.catalogs) && q.catalogs.length > 0) {
             catStr = q.catalogs.join(' ');
