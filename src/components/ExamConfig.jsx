@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import HomeNavbar from './HomeNavbar';
 import publicService from '../services/publicService';
 import AdaptiveLottie from './common/AdaptiveLottie';
+import toast from 'react-hot-toast';
 
 /* ─────────────────────────────────────────────
    ExamConfig  — Kahoot-style redesign
