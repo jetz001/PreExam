@@ -260,10 +260,10 @@ const AnimationManager = () => {
         onSuccess: (data, payload) => {
             queryClient.setQueryData(['systemSettings'], (old) => ({
                 ...old,
-                settings: { ...old?.settings, animation_asset_configs: payload.animation_asset_configs, animation_usage_map: payload.animation_usage_map }
+                settings: { ...old?.settings, ...payload }
             }));
             queryClient.invalidateQueries({ queryKey: ['systemSettings'] });
-            toast.success('บันทึก animation ลง Firebase แล้ว ✅');
+            toast.success('บันทึกสำเร็จ ✅');
         },
         onError: () => toast.error('บันทึกไม่สำเร็จ'),
     });
@@ -327,6 +327,7 @@ const AnimationManager = () => {
             return acc;
         }, {});
         saveMutation.mutate({
+            ...(systemSettings?.settings || {}),
             animation_asset_configs: {
                 ...savedAssetConfigs,
                 [selectedAssetKey]: { scale: scaleMode, startPosition, endPosition, durationText, speed: resolvedSpeed, speedText, delayMode, delayPercent, noteText, animationUrl: selectedAsset?.animationUrl || '', updatedAt: new Date().toISOString() }

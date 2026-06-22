@@ -51,7 +51,7 @@ const JourneySceneManager = ({ systemSettings }) => {
 
     const saveMutation = useMutation({
         mutationFn: async (payload) => adminApi.updateSystemSettings({
-            ...systemSettings.settings,
+            ...(systemSettings?.settings || {}),
             journey_scenes: payload
         }),
         onSuccess: (data, payload) => {
