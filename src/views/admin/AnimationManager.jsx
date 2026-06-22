@@ -121,7 +121,7 @@ const MiniJourneyPreview = ({ previewConfig, selectedAssetKey, speedText, sceneI
             {/* Lottie background scene */}
             <AnimatePresence mode="sync">
                 <motion.div key={scene.id} initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} transition={{ duration:0.8 }} style={{ position:'absolute', inset:0 }}>
-                    <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'55%', overflow:'hidden', opacity:0.6 }}>
+                    <div style={{ position:'absolute', inset:0, overflow:'hidden', opacity:0.6 }}>
                         {scene.animationUrl ? (
                             <AdaptiveLottie animationUrl={scene.animationUrl} loop autoplay scale="none" className="w-full h-full object-cover" />
                         ) : (

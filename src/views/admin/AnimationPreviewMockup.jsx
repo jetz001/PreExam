@@ -210,7 +210,7 @@ const BackgroundScene = ({ scene }) => (
         style={{ position: 'absolute', inset: 0, zIndex: 0 }}
     >
         <div style={{ position: 'absolute', inset: 0, background: scene.bgGradient }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', overflow: 'hidden', opacity: 0.5 }}>
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', opacity: 0.5 }}>
             {scene.animationUrl ? (
                 <AdaptiveLottie
                     animationUrl={scene.animationUrl}

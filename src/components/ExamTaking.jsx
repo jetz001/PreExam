@@ -245,8 +245,7 @@ const BackgroundScene = ({ scene, isTransitioning }) => (
         {/* Lottie scene — bottom-anchored, full-width, covers lower 50% */}
         <div style={{
             position: 'absolute',
-            bottom: 0, left: 0, right: 0,
-            height: '55%',
+            inset: 0,
             overflow: 'hidden',
             opacity: 0.55,
             filter: isTransitioning ? 'blur(4px)' : 'blur(0px)',

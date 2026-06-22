@@ -263,7 +263,7 @@ const JourneySceneManager = ({ systemSettings }) => {
                         }}>
                             <div style={{ position: 'absolute', inset: 0, background: activeScene.bgGradient }} />
                             
-                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%', opacity: 0.5 }}>
+                            <div style={{ position: 'absolute', inset: 0, opacity: 0.5 }}>
                                 {activeScene.animationUrl ? (
                                     <AdaptiveLottie
                                         animationUrl={activeScene.animationUrl}
