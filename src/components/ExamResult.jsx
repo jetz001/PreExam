@@ -260,6 +260,7 @@ const ExamResult = ({ result, onRetry }) => {
                             🏠 กลับสู่แดชบอร์ด
                         </Link>
                     </div>
+                </div>
                 )}
 
                 {/* Detailed Solutions (Premium sees more) */}
@@ -274,7 +275,6 @@ const ExamResult = ({ result, onRetry }) => {
                         )
                     }
                 </div>
-            </div>
         </>
     );
 };
