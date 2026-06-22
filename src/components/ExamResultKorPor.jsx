@@ -27,20 +27,23 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
     const classifyQuestion = (q) => {
         let catStr = '';
         if (Array.isArray(q.catalogs) && q.catalogs.length > 0) {
-            catStr = q.catalogs[0];
+            catStr = q.catalogs.join(' ');
         } else if (typeof q.catalogs === 'string') {
             try {
                 const arr = JSON.parse(q.catalogs);
-                if (Array.isArray(arr) && arr.length > 0) catStr = arr[0];
+                if (Array.isArray(arr) && arr.length > 0) catStr = arr.join(' ');
             } catch (e) {
                 catStr = q.catalogs;
             }
         }
         
-        if (!catStr) catStr = q.subject || q.category || '';
+        catStr = (catStr + ' ' + (q.subject || '') + ' ' + (q.category || '')).toLowerCase();
         
-        if (catStr.includes('อังกฤษ') || catStr.toLowerCase().includes('english')) return 'ภาษาอังกฤษ';
-        if (catStr.includes('กฎหมาย') || catStr.includes('ข้าราชการ')) return 'กฎหมาย';
+        const engKeywords = ['อังกฤษ', 'english', 'grammar', 'vocabulary', 'reading', 'conversation', 'reading comprehension'];
+        const lawKeywords = ['กฎหมาย', 'ข้าราชการ', 'พระราชบัญญัติ', 'พ.ร.บ', 'พ.ร.ฎ', 'รัฐธรรมนูญ', 'ระเบียบ', 'ละเมิด', 'ปกครอง', 'คุณธรรม', 'จริยธรรม', 'บ้านเมืองที่ดี', 'บริหารราชการ'];
+        
+        if (engKeywords.some(kw => catStr.includes(kw))) return 'ภาษาอังกฤษ';
+        if (lawKeywords.some(kw => catStr.includes(kw))) return 'กฎหมาย';
         return 'วิเคราะห์'; // Default to Analysis for Thai/Math
     };
 
@@ -60,9 +63,12 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
     Object.keys(groups).forEach(key => {
         const g = groups[key];
         g.score = g.correct * g.scorePerQ;
-        g.maxScore = g.total * g.scorePerQ || g.maxQuestions * g.scorePerQ;
+        // Strictly use the number of actual questions fetched for this group
+        g.maxScore = g.total * g.scorePerQ;
         g.pct = g.maxScore > 0 ? (g.score / g.maxScore) * 100 : 0;
-        g.passed = g.pct >= g.passPct;
+        
+        // If there are no questions for this group, we assume they pass it so it doesn't fail the whole exam
+        g.passed = g.maxScore > 0 ? (g.pct >= g.passPct) : true;
         if (!g.passed) overallPass = false;
     });
 
