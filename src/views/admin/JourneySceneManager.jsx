@@ -46,29 +46,39 @@ const JourneySceneManager = ({ systemSettings }) => {
     const [scenes, setScenes] = useState(initialScenes);
     const [selectedId, setSelectedId] = useState(scenes[0]?.id || null);
     const [uploadingId, setUploadingId] = useState(null);
-
-    const dragItem = useRef();
-    const dragOverItem = useRef();
+    const [dragOverIndex, setDragOverIndex] = useState(null);
 
     const handleDragStart = (e, index) => {
-        dragItem.current = index;
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", index);
     };
 
-    const handleDragEnter = (e, index) => {
-        dragOverItem.current = index;
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (dragOverIndex !== index) {
+            setDragOverIndex(index);
+        }
     };
 
-    const handleDragEnd = () => {
-        if (dragItem.current == null || dragOverItem.current == null) return;
-        if (dragItem.current === dragOverItem.current) return;
+    const handleDragLeave = () => {
+        setDragOverIndex(null);
+    };
+
+    const handleDrop = (e, dropIndex) => {
+        e.preventDefault();
+        setDragOverIndex(null);
+        const dragIndexStr = e.dataTransfer.getData("text/plain");
+        if (!dragIndexStr) return;
+        
+        const dragIndex = Number(dragIndexStr);
+        if (dragIndex === dropIndex) return;
         
         const copyListItems = [...scenes];
-        const dragItemContent = copyListItems[dragItem.current];
-        copyListItems.splice(dragItem.current, 1);
-        copyListItems.splice(dragOverItem.current, 0, dragItemContent);
+        const dragItemContent = copyListItems[dragIndex];
+        copyListItems.splice(dragIndex, 1);
+        copyListItems.splice(dropIndex, 0, dragItemContent);
         
-        dragItem.current = null;
-        dragOverItem.current = null;
         setScenes(copyListItems);
     };
 
@@ -163,16 +173,17 @@ const JourneySceneManager = ({ systemSettings }) => {
                                 key={s.id}
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, index)}
-                                onDragEnter={(e) => handleDragEnter(e, index)}
-                                onDragEnd={handleDragEnd}
-                                onDragOver={(e) => e.preventDefault()}
+                                onDragOver={(e) => handleDragOver(e, index)}
+                                onDragLeave={handleDragLeave}
+                                onDrop={(e) => handleDrop(e, index)}
                                 onClick={() => setSelectedId(s.id)}
                                 style={{ 
                                     padding: '10px 12px', borderRadius: 10, cursor: 'grab',
                                     background: selectedId === s.id ? '#eff6ff' : 'white',
-                                    border: `1px solid ${selectedId === s.id ? '#bfdbfe' : '#e2e8f0'}`,
+                                    border: `2px solid ${dragOverIndex === index ? '#3b82f6' : (selectedId === s.id ? '#bfdbfe' : '#e2e8f0')}`,
                                     display: 'flex', alignItems: 'center', gap: 10,
-                                    transition: 'all 0.2s'
+                                    transition: 'all 0.2s',
+                                    opacity: dragOverIndex === index ? 0.6 : 1
                                 }}
                             >
                                 <GripVertical size={16} color="#cbd5e1" />
