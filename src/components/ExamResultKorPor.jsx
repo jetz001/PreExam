@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import DetailedSolution from './exam/DetailedSolution';
 import examService from '../services/examService';
+import { useAuth } from '../context/AuthContext';
 
 const ExamResultKorPor = ({ result, onRetry, config }) => {
+    const { user } = useAuth();
     const { data: metaRes } = useQuery({
         queryKey: ['examSetsMetaResult'],
         queryFn: examService.getExamSetsMeta
@@ -25,7 +27,7 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
     
     // Fallback classification if catalog is missing
     const classifyQuestion = (q) => {
-        // If skill is explicitly provided from DB, use it directly to ensure perfect matching
+        // ... (unchanged)
         if (q.skill) {
             const skillLower = q.skill.toLowerCase();
             if (skillLower.includes('อังกฤษ') || skillLower.includes('english')) return 'ภาษาอังกฤษ';
@@ -74,24 +76,25 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
     Object.keys(groups).forEach(key => {
         const g = groups[key];
         g.score = g.correct * g.scorePerQ;
-        // Strictly use the number of actual questions fetched for this group
-        g.maxScore = g.total * g.scorePerQ;
-        g.pct = g.maxScore > 0 ? (g.score / g.maxScore) * 100 : 0;
+        // Use fixed max score based on official standard
+        g.maxScore = g.maxQuestions * g.scorePerQ;
+        g.pct = (g.score / g.maxScore) * 100;
         
-        // If there are no questions for this group, we assume they pass it so it doesn't fail the whole exam
-        g.passed = g.maxScore > 0 ? (g.pct >= g.passPct) : true;
+        g.passed = g.pct >= g.passPct;
         if (!g.passed) overallPass = false;
     });
 
     const userAnswers = qs.reduce((acc, curr) => ({...acc, [curr.question_id || curr.id]: curr.user_answer}), {});
 
     const renderTable = () => {
+        const displayName = user?.display_name || user?.name || user?.email?.split('@')[0] || 'ผู้เข้าสอบ';
+        
         return (
             <div className="bg-white p-6 md:p-10 rounded-xl shadow-lg border border-slate-200 mt-6 max-w-3xl mx-auto">
                 <div className="text-center mb-8">
                     <h2 className="text-2xl font-bold text-slate-800 mb-6">ผลสอบ ภาค ก. (จำลอง)</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left max-w-lg mx-auto bg-slate-50 p-4 rounded-lg border border-slate-100">
-                        <div className="text-slate-600"><strong>ชื่อ-นามสกุล :</strong> ผู้เข้าสอบ</div>
+                        <div className="text-slate-600"><strong>ชื่อ-นามสกุล :</strong> {displayName}</div>
                         <div className="text-slate-600"><strong>วุฒิที่ใช้สอบ :</strong> {eduLevel === 'master' ? 'ระดับปริญญาโท' : 'ระดับปริญญาตรี'}</div>
                     </div>
                 </div>
