@@ -254,7 +254,11 @@ const AdaptiveLottie = ({
                 fetchUrl = fetchUrl.replace('export=view', 'export=download');
             }
             
-            fetch(`/api/proxy?url=${encodeURIComponent(fetchUrl)}`)
+            // Do not proxy relative URLs (e.g. /api/media/... from R2)
+            const isRelative = fetchUrl.startsWith('/');
+            const targetUrl = isRelative ? fetchUrl : `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
+            
+            fetch(targetUrl)
                 .then((res) => res.json())
                 .then((data) => {
                     if (data && !data.error) {

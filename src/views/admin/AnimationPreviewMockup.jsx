@@ -252,7 +252,7 @@ const PreviewAnimatedLayer = ({ isAnimationDisabled, motionConfig, motionDuratio
         previewState.speedText,
     ]);
 
-    if (isAnimationDisabled || !previewConfig.animationData) return (
+    if (isAnimationDisabled || (!previewConfig.animationData && !previewConfig.animationUrl)) return (
         <div style={{
             position: 'absolute', inset: 0, zIndex: 20,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
