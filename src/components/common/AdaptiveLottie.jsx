@@ -353,6 +353,28 @@ const AdaptiveLottie = ({
 
     if (!activeAnimationData || !isVisible) return null;
 
+    if (scale === 'none') {
+        return (
+            <div className={className} style={{ width: '100%', height: '100%' }}>
+                <Lottie
+                    lottieRef={lottieRef}
+                    animationData={activeAnimationData}
+                    loop={effectiveLoop}
+                    autoplay={autoplay}
+                    onComplete={() => {
+                        if (effectiveLoop) {
+                            lottieRef.current?.goToAndPlay?.(0, true);
+                            return;
+                        }
+                        onComplete?.();
+                    }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    rendererSettings={{ preserveAspectRatio: 'xMidYMax slice' }}
+                />
+            </div>
+        );
+    }
+
     const frame = (
         <div className={`relative flex flex-col items-center justify-center ${display === 'inline' ? className : ''}`}>
             {title && (
