@@ -252,13 +252,21 @@ const BackgroundScene = ({ scene, isTransitioning }) => (
             filter: isTransitioning ? 'blur(4px)' : 'blur(0px)',
             transition: 'filter 0.4s ease',
         }}>
-            <Lottie
-                animationData={scene.lottie}
-                loop
-                autoplay
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                rendererSettings={{ preserveAspectRatio: 'xMidYMax slice' }}
-            />
+            {scene.animationUrl ? (
+                <AdaptiveLottie
+                    animationUrl={scene.animationUrl}
+                    loop autoplay
+                    className="w-full h-full"
+                    style={{ objectFit: 'cover' }}
+                />
+            ) : (
+                <Lottie
+                    animationData={scene.lottie}
+                    loop autoplay
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    rendererSettings={{ preserveAspectRatio: 'xMidYMax slice' }}
+                />
+            )}
         </div>
 
         {/* Overlay tint */}
@@ -351,7 +359,13 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     });
     const runtimeAnimationSettings = publicSettingsResponse?.settings || {};
 
-    const currentScene = JOURNEY_SCENES[sceneIdx % JOURNEY_SCENES.length];
+    const activeScenes = useMemo(() => {
+        const custom = runtimeAnimationSettings?.journey_scenes;
+        if (custom && Array.isArray(custom) && custom.length > 0) return custom;
+        return JOURNEY_SCENES;
+    }, [runtimeAnimationSettings?.journey_scenes]);
+
+    const currentScene = activeScenes[sceneIdx % activeScenes.length];
 
     // Timer
     useEffect(() => {
@@ -395,14 +409,14 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
             setIsRunning(true);
             setIsTransitioning(true);
             setTimeout(() => {
-                setSceneIdx(newScene % JOURNEY_SCENES.length);
-                const arrivedAt = JOURNEY_SCENES[newScene % JOURNEY_SCENES.length];
+                setSceneIdx(newScene % activeScenes.length);
+                const arrivedAt = activeScenes[newScene % activeScenes.length];
                 setShowMilestone(arrivedAt.emoji + ' ' + arrivedAt.name);
                 setTimeout(() => setShowMilestone(null), 2500);
             }, 800); // character is mid-run when scene swaps
             setTimeout(() => setIsTransitioning(false), 1400);
         }
-    }, [currentIndex]);
+    }, [currentIndex, activeScenes]);
 
     const handleRunDone = useCallback(() => setIsRunning(false), []);
 

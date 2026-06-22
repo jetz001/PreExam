@@ -9,6 +9,7 @@ import AdaptiveLottie from '../../components/common/AdaptiveLottie';
 import { animationAssetOptions, animationCatalog, getAnimationAsset, getAnimationPreset, getAnimationSourceFile } from '../../config/animationRegistry';
 import adminApi from '../../services/adminApi';
 import AnimationPreviewMockup from './AnimationPreviewMockup';
+import JourneySceneManager from './JourneySceneManager';
 import { createPortal } from 'react-dom';
 
 // Journey scene assets for mini preview
@@ -172,6 +173,7 @@ const AnimationManager = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [miniSceneIdx, setMiniSceneIdx] = useState(0);
+    const [activeTab, setActiveTab] = useState('animations');
 
     const { data: dbAssets = [] } = useQuery({ queryKey: ['assets'], queryFn: adminApi.getAssets });
     const assets = useMemo(() => {
@@ -354,14 +356,44 @@ const AnimationManager = () => {
                 .btn-primary:active { transform:translateY(1px); filter:brightness(0.96); }
             `}</style>
 
-            {/* ── Page header ── */}
-            <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:24 }}>
-                <div>
-                    <h2 style={{ fontSize:'1.4rem', fontWeight:900, color:'#0f172a', margin:0 }}>🎬 Animation Studio</h2>
-                    <p style={{ margin:'4px 0 0', fontSize:'0.82rem', color:'#64748b' }}>
-                        เลือก asset .json → ตั้งค่าเส้นทาง/เวลา → กำหนดว่าจะใช้ที่ไหน → บันทึก
-                    </p>
-                </div>
+            {/* ── Tabs ── */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid #e2e8f0', paddingBottom: 16 }}>
+                <button
+                    onClick={() => setActiveTab('animations')}
+                    style={{
+                        background: activeTab === 'animations' ? '#eef2ff' : 'transparent',
+                        color: activeTab === 'animations' ? '#4338ca' : '#64748b',
+                        border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
+                        display: 'flex', alignItems: 'center', gap: 6
+                    }}
+                >
+                    🎬 ตัวละคร & ท่าทาง (Animations)
+                </button>
+                <button
+                    onClick={() => setActiveTab('scenes')}
+                    style={{
+                        background: activeTab === 'scenes' ? '#f0fdf4' : 'transparent',
+                        color: activeTab === 'scenes' ? '#15803d' : '#64748b',
+                        border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
+                        display: 'flex', alignItems: 'center', gap: 6
+                    }}
+                >
+                    🌄 ฉากหลังการเดินทาง (Scenes)
+                </button>
+            </div>
+
+            {activeTab === 'scenes' && <JourneySceneManager systemSettings={systemSettings} />}
+
+            {activeTab === 'animations' && (
+                <>
+                    {/* ── Page header ── */}
+                    <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:24 }}>
+                        <div>
+                            <h2 style={{ fontSize:'1.4rem', fontWeight:900, color:'#0f172a', margin:0 }}>🎬 Animation Studio</h2>
+                            <p style={{ margin:'4px 0 0', fontSize:'0.82rem', color:'#64748b' }}>
+                                เลือก asset .json → ตั้งค่าเส้นทาง/เวลา → กำหนดว่าจะใช้ที่ไหน → บันทึก
+                            </p>
+                        </div>
                 <div style={{ display:'flex', gap:8 }}>
                     <button
                         onClick={() => setMiniSceneIdx(i => (i + 1) % MINI_SCENES.length)}
@@ -611,6 +643,7 @@ const AnimationManager = () => {
                 </div>,
                 document.body
             )}
+            </>)}
         </div>
     );
 };
