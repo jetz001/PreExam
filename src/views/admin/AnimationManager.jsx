@@ -640,7 +640,7 @@ const AnimationManager = () => {
                         onMouseUp={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow='0 6px 0 #3730a3, 0 8px 24px rgba(99,102,241,0.35)'; }}
                     >
                         <Save size={16} />
-                        {saveMutation.isPending ? 'กำลังบันทึก...' : 'บันทึกลง Firebase'}
+                        {saveMutation.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
                     </button>
                 </div>
             </div>

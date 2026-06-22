@@ -163,7 +163,7 @@ const JourneySceneManager = ({ systemSettings }) => {
                         boxShadow: '0 4px 12px rgba(59,130,246,0.25)', transition: 'background 0.2s'
                     }}
                 >
-                    <Save size={18} /> {saveMutation.isPending ? 'กำลังบันทึก...' : 'บันทึกลำดับและการตั้งค่าฉาก'}
+                    <Save size={18} /> {saveMutation.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
                 </button>
             </div>
 
