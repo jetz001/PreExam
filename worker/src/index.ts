@@ -1379,8 +1379,44 @@ export default {
             allQs = await listAllQuestions(env.DB);
             if (subject && subject !== "undefined" && subject !== "null") allQs = allQs.filter((q: any) => q.subject === subject);
             if (exam_year && exam_year !== "undefined" && exam_year !== "null") allQs = allQs.filter((q: any) => String(q.exam_year) === String(exam_year));
-            if (exam_set && exam_set !== "undefined" && exam_set !== "null") allQs = allQs.filter((q: any) => String(q.exam_set) === String(exam_set));
-            setCache(cacheKey, allQs, 60 * 1000); // 1 minute cache
+            let isDynamicSet = false;
+            if (exam_set && exam_set !== "undefined" && exam_set !== "null") {
+              const examSetsMeta = await listExamSets(env.DB);
+              const dynamicSet = examSetsMeta.find((s: any) => String(s.name) === String(exam_set));
+              
+              if (dynamicSet && dynamicSet.rules) {
+                let rulesStr = dynamicSet.rules;
+                let rulesObj: any = null;
+                try {
+                  rulesObj = typeof rulesStr === 'string' ? JSON.parse(rulesStr) : rulesStr;
+                } catch (e) { }
+
+                if (rulesObj && rulesObj.catalogs && Array.isArray(rulesObj.catalogs)) {
+                  isDynamicSet = true;
+                  let dynamicQs: any[] = [];
+                  for (const catalog of rulesObj.catalogs) {
+                    const count = parseInt(rulesObj.catalog_counts?.[catalog] || "0", 10);
+                    if (count > 0) {
+                      const catStr = catalog.toLowerCase();
+                      const availableQs = allQs.filter((q: any) => {
+                        const qCat = (q.category || "").toLowerCase();
+                        const qCatalogs = Array.isArray(q.catalogs) ? q.catalogs.join(",").toLowerCase() : (q.catalogs || "").toLowerCase();
+                        return qCat === catStr || qCat.includes(catStr) || qCatalogs.includes(catStr);
+                      });
+                      
+                      const shuffled = [...availableQs].sort(() => Math.random() - 0.5);
+                      dynamicQs.push(...shuffled.slice(0, count));
+                    }
+                  }
+                  allQs = dynamicQs;
+                } else {
+                  allQs = allQs.filter((q: any) => String(q.exam_set) === String(exam_set));
+                }
+              } else {
+                allQs = allQs.filter((q: any) => String(q.exam_set) === String(exam_set));
+              }
+            }
+            setCache(cacheKey, allQs, isDynamicSet ? 1000 : 60 * 1000); // 1 sec cache for dynamic sets, 1 min for static
           }
 
           let rows: any[] = [];
