@@ -141,7 +141,8 @@ const ExamSetManager = () => {
 
     const handleCatalogCountChange = (catalog, count) => {
         const numCount = parseInt(count) || 0;
-        const safeCount = Math.max(0, numCount);
+        const available = catalogCounts[catalog] || 0;
+        const safeCount = Math.max(0, Math.min(numCount, available));
         setFormData(prev => ({
             ...prev,
             rules: {
@@ -335,7 +336,24 @@ const ExamSetManager = () => {
                                                 className="rounded text-blue-600 focus:ring-blue-500"
                                             />
                                             <label htmlFor={`catalog-${catalog}`} className="text-sm font-medium text-slate-700 flex-1">
-                                                {catalog} <span className="text-slate-500 font-normal">({catalogCounts[catalog] || 0})</span>
+                                                {catalog}{' '}
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        const count = catalogCounts[catalog] || 0;
+                                                        if (count > 0) {
+                                                            if (!formData.rules?.catalogs?.includes(catalog)) {
+                                                                handleCatalogToggle(catalog);
+                                                            }
+                                                            handleCatalogCountChange(catalog, count);
+                                                        }
+                                                    }}
+                                                    className="text-blue-500 hover:text-blue-700 font-medium hover:underline px-1 rounded transition-colors cursor-pointer"
+                                                    title={`เลือกทั้งหมด ${catalogCounts[catalog] || 0} ข้อ`}
+                                                >
+                                                    ({catalogCounts[catalog] || 0})
+                                                </button>
                                             </label>
                                             {formData.rules?.catalogs?.includes(catalog) && (
                                                 <input
@@ -344,6 +362,8 @@ const ExamSetManager = () => {
                                                     value={formData.rules?.catalog_counts?.[catalog] || ''}
                                                     onChange={(e) => handleCatalogCountChange(catalog, e.target.value)}
                                                     className="w-24 px-2 py-1 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                                                    min="1"
+                                                    max={catalogCounts[catalog] || 0}
                                                 />
                                             )}
                                         </div>
