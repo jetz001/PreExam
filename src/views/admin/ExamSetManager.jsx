@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Layers, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Layers, Plus, Edit2, Trash2, HelpCircle, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
 
@@ -8,6 +8,7 @@ const ExamSetManager = () => {
     const queryClient = useQueryClient();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isNoteOpen, setIsNoteOpen] = useState(false);
     const [editingSet, setEditingSet] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
@@ -271,7 +272,17 @@ const ExamSetManager = () => {
                             )}
                             <div className="border-t border-slate-200 pt-4 mt-4">
                                 <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-sm font-medium text-slate-700">หมวดหมู่ข้อสอบ (Catalogs)</label>
+                                    <div className="flex items-center space-x-2">
+                                        <label className="block text-sm font-medium text-slate-700">หมวดหมู่ข้อสอบ (Catalogs)</label>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setIsNoteOpen(true)}
+                                            className="flex items-center px-2 py-1 bg-slate-100 text-slate-600 rounded-md hover:bg-slate-200 transition-colors text-xs font-medium"
+                                        >
+                                            <HelpCircle size={14} className="mr-1" />
+                                            สัดส่วนข้อสอบ ก.พ.
+                                        </button>
+                                    </div>
                                     <button 
                                         type="button" 
                                         onClick={handleAutoFillKorPor63}
@@ -332,6 +343,78 @@ const ExamSetManager = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Note Modal */}
+            {isNoteOpen && (
+                <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
+                            <h3 className="text-xl font-bold text-slate-800 flex items-center">
+                                <HelpCircle size={20} className="mr-2 text-blue-600" />
+                                สัดส่วนข้อสอบ ก.พ. (อ้างอิงเกณฑ์ ก.พ. ปี 63)
+                            </h3>
+                            <button onClick={() => setIsNoteOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {/* Column 1: Math + Thai */}
+                                <div className="space-y-4">
+                                    <div className="border-b-2 border-slate-800 pb-2">
+                                        <h4 className="font-semibold text-slate-800">คณิตศาสตร์ + ภาษาไทย</h4>
+                                        <p className="text-sm text-slate-500">50 ข้อ</p>
+                                    </div>
+                                    <ul className="space-y-2 text-sm text-slate-600">
+                                        <li className="flex justify-between"><span>อนุกรม</span> <span className="font-medium text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>เลขทั่วไป</span> <span className="font-medium text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>ตาราง</span> <span className="font-medium text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>เงื่อนไขสัญลักษณ์</span> <span className="font-medium text-slate-900">10</span></li>
+                                        <li className="flex justify-between"><span>เงื่อนไขภาษา</span> <span className="font-medium text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>เรียงประโยค</span> <span className="font-medium text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>สรุปความ</span> <span className="font-medium text-slate-900">10</span></li>
+                                        <li className="flex justify-between"><span>อุปมาอุปไมย</span> <span className="font-medium text-slate-900">5</span></li>
+                                    </ul>
+                                </div>
+
+                                {/* Column 2: Law */}
+                                <div className="space-y-4">
+                                    <div className="border-b-2 border-slate-800 pb-2">
+                                        <h4 className="font-semibold text-slate-800">กฎหมาย</h4>
+                                        <p className="text-sm text-slate-500">25 ข้อ</p>
+                                    </div>
+                                    <ul className="space-y-2 text-sm text-slate-600">
+                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.บ.บริหารราชการแผ่นดิน</span> <span className="font-medium text-slate-900 shrink-0">6</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.ฎ.กิจการบ้านเมืองที่ดี</span> <span className="font-medium text-slate-900 shrink-0">6</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง</span> <span className="font-medium text-slate-900 shrink-0">6</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.บ.มาตรฐานทางจริยธรรม</span> <span className="font-medium text-slate-900 shrink-0">3</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate" title="พ.ร.บ.ความรับผิดทางละเมิดของเจ้าหน้าที่">พ.ร.บ.ความรับผิดทางละเมิดฯ</span> <span className="font-medium text-slate-900 shrink-0">2</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate" title="ประมวลกฎหมายอาญาความผิดต่อตำแหน่งหน้าที่ราชการ">ป.อาญา ความผิดต่อตำแหน่งหน้าที่</span> <span className="font-medium text-slate-900 shrink-0">2</span></li>
+                                    </ul>
+                                </div>
+
+                                {/* Column 3: English */}
+                                <div className="space-y-4">
+                                    <div className="border-b-2 border-slate-800 pb-2">
+                                        <h4 className="font-semibold text-slate-800">ภาษาอังกฤษ</h4>
+                                        <p className="text-sm text-slate-500">25 ข้อ</p>
+                                    </div>
+                                    <ul className="space-y-2 text-sm text-slate-600">
+                                        <li className="flex justify-between"><span>CONVERSATION</span> <span className="font-medium text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>VOCABULARY</span> <span className="font-medium text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>STRUCTURE</span> <span className="font-medium text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>READING</span> <span className="font-medium text-slate-900">10</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-6 border-t border-slate-100 flex justify-end">
+                            <button onClick={() => setIsNoteOpen(false)} className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                                ปิด
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
