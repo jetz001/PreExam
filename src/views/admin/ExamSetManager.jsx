@@ -301,7 +301,9 @@ const ExamSetManager = () => {
                                                 onChange={() => handleCatalogToggle(catalog)}
                                                 className="rounded text-blue-600 focus:ring-blue-500"
                                             />
-                                            <label htmlFor={`catalog-${catalog}`} className="text-sm font-medium text-slate-700 flex-1">{catalog}</label>
+                                            <label htmlFor={`catalog-${catalog}`} className="text-sm font-medium text-slate-700 flex-1">
+                                                {catalog} <span className="text-slate-500 font-normal">({catalogCounts[catalog] || 0})</span>
+                                            </label>
                                             {formData.rules?.catalogs?.includes(catalog) && (
                                                 <input
                                                     type="number"
