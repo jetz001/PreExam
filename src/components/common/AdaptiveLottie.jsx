@@ -30,14 +30,14 @@ const POSITION_COORDS = {
     right: { x: 220, y: 0 },
     up: { x: 0, y: -180 },
     down: { x: 0, y: 180 },
-    'offscreen-left': { x: -900, y: 0 },
-    'offscreen-right': { x: 900, y: 0 },
-    'offscreen-top': { x: 0, y: -560 },
-    'offscreen-bottom': { x: 0, y: 560 },
-    'fade-offscreen-left': { x: -900, y: 0 },
-    'fade-offscreen-right': { x: 900, y: 0 },
-    'fade-offscreen-top': { x: 0, y: -560 },
-    'fade-offscreen-bottom': { x: 0, y: 560 },
+    'offscreen-left': { x: -1100, y: 0 },
+    'offscreen-right': { x: 1100, y: 0 },
+    'offscreen-top': { x: 0, y: -700 },
+    'offscreen-bottom': { x: 0, y: 700 },
+    'fade-offscreen-left': { x: -1100, y: 0 },
+    'fade-offscreen-right': { x: 1100, y: 0 },
+    'fade-offscreen-top': { x: 0, y: -700 },
+    'fade-offscreen-bottom': { x: 0, y: 700 },
     'scale-up-center': { x: 0, y: 0 },
     'scale-down-center': { x: 0, y: 0 }
 };
@@ -97,12 +97,22 @@ const getVisibleHoldCoords = (positionKey, fallbackCoords, windowSize) => {
     return fallbackCoords;
 };
 
+// AAA-grade easing curves
+// springEntry: fast decelerate with slight overshoot feel
+const EASE_SPRING_IN  = [0.22, 1.4, 0.36, 1];   // cubic-bezier: fast → overshoot settle
+// momentum: accelerate mid, character has weight
+const EASE_MOMENTUM   = [0.4, 0.0, 0.2, 1];      // Material Design standard - feel of mass
+// snappyExit: tiny anticipation wind-up, then burst
+const EASE_SNAP_OUT   = [0.55, 0, 1, 0.45];      // fast out, slow lead-in
+// smooth hold transition
+const EASE_SMOOTH     = [0.4, 0, 0.6, 1];
+
 const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, windowSize) => {
     const rawStart = POSITION_COORDS[startPosition] || POSITION_COORDS.center;
     const rawEnd = POSITION_COORDS[endPosition] || POSITION_COORDS.center;
     const startCoords = getScaledCoords(rawStart, windowSize);
     const endCoords = getScaledCoords(rawEnd, windowSize);
-    
+
     const hold = parseDelayPercent(delayPercent);
     const midPoint = {
         x: (startCoords.x + endCoords.x) / 2,
@@ -114,54 +124,82 @@ const buildMotionConfig = (startPosition, endPosition, delayMode, delayPercent, 
     const isStartScaleUp = startPosition === 'scale-up-center';
     const isEndScaleDown = endPosition === 'scale-down-center';
 
+    // Determine if character is traveling horizontally (left/right offscreen)
+    const isHorizontal = (
+        String(startPosition).includes('left') ||
+        String(startPosition).includes('right') ||
+        String(endPosition).includes('left') ||
+        String(endPosition).includes('right')
+    );
+
     if (delayMode === 'start') {
         const visibleStart = getVisibleHoldCoords(startPosition, startCoords, windowSize);
-        const moveInTime = (visibleStart.x !== startCoords.x || visibleStart.y !== startCoords.y || isStartScaleUp || isStartFade) ? 0.18 : 0;
+        const hasEntry = visibleStart.x !== startCoords.x || visibleStart.y !== startCoords.y || isStartScaleUp || isStartFade;
+        const moveInTime = hasEntry ? 0.20 : 0;
+        // After hold, snappy burst exit
+        const holdEnd = Math.min(moveInTime + hold, 0.88);
         return {
             x: [startCoords.x, visibleStart.x, visibleStart.x, endCoords.x],
             y: [startCoords.y, visibleStart.y, visibleStart.y, endCoords.y],
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
-            scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
-            times: [0, moveInTime, Math.min(moveInTime + hold, 0.92), 1],
-            ease: ['easeOut', 'linear', 'easeIn']
+            scale: [
+                isStartScaleUp ? 0 : 1,
+                isStartScaleUp ? 1.08 : 1,  // slight overshoot on land
+                1,
+                isEndScaleDown ? 0 : 1
+            ],
+            times: [0, moveInTime, holdEnd, 1],
+            ease: [EASE_SPRING_IN, EASE_SMOOTH, EASE_SNAP_OUT]
         };
     }
 
     if (delayMode === 'middle') {
-        const startMoveEnd = Math.max(0.1, 0.5 - hold / 2);
-        const endMoveStart = Math.min(0.9, 0.5 + hold / 2);
+        const startMoveEnd = Math.max(0.12, 0.5 - hold / 2);
+        const endMoveStart = Math.min(0.88, 0.5 + hold / 2);
         return {
             x: [startCoords.x, midPoint.x, midPoint.x, endCoords.x],
             y: [startCoords.y, midPoint.y, midPoint.y, endCoords.y],
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
-            scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
+            scale: [
+                isStartScaleUp ? 0 : 1,
+                isStartScaleUp ? 1.06 : (isHorizontal ? 1.04 : 1), // character "pumps up" mid-travel
+                isHorizontal ? 1.04 : 1,
+                isEndScaleDown ? 0 : 1
+            ],
             times: [0, startMoveEnd, endMoveStart, 1],
-            ease: ['easeInOut', 'linear', 'easeInOut']
+            ease: [EASE_MOMENTUM, EASE_SMOOTH, EASE_SNAP_OUT]
         };
     }
 
     if (delayMode === 'end') {
         const visibleEnd = getVisibleHoldCoords(endPosition, endCoords, windowSize);
-        const moveOutTime = (visibleEnd.x !== endCoords.x || visibleEnd.y !== endCoords.y || isEndScaleDown || isEndFade) ? 0.18 : 0;
+        const hasExit = visibleEnd.x !== endCoords.x || visibleEnd.y !== endCoords.y || isEndScaleDown || isEndFade;
+        const moveOutTime = hasExit ? 0.16 : 0;
         const holdStart = Math.max(0.08, 1 - hold - moveOutTime);
-        const holdEnd = Math.min(0.96, holdStart + hold);
+        const holdEnd = Math.min(0.94, holdStart + hold);
         return {
             x: [startCoords.x, visibleEnd.x, visibleEnd.x, endCoords.x],
             y: [startCoords.y, visibleEnd.y, visibleEnd.y, endCoords.y],
             opacity: [isStartFade ? 0 : 1, 1, 1, isEndFade ? 0 : 1],
-            scale: [isStartScaleUp ? 0 : 1, 1, 1, isEndScaleDown ? 0 : 1],
+            scale: [
+                isStartScaleUp ? 0 : 1,
+                1,
+                isEndScaleDown ? 1.05 : 1, // slight squeeze before shrink
+                isEndScaleDown ? 0 : 1
+            ],
             times: [0, holdStart, holdEnd, 1],
-            ease: ['easeOut', 'linear', 'easeIn']
+            ease: [EASE_SPRING_IN, EASE_SMOOTH, EASE_SNAP_OUT]
         };
     }
 
+    // Fallback: direct travel with weight
     return {
         x: [startCoords.x, endCoords.x],
         y: [startCoords.y, endCoords.y],
         opacity: [isStartFade ? 0 : 1, isEndFade ? 0 : 1],
         scale: [isStartScaleUp ? 0 : 1, isEndScaleDown ? 0 : 1],
         times: [0, 1],
-        ease: 'easeInOut'
+        ease: EASE_MOMENTUM
     };
 };
 
@@ -356,15 +394,22 @@ const AdaptiveLottie = ({
                             x: motionConfig.x[0], 
                             y: motionConfig.y[0],
                             opacity: motionConfig.opacity ? motionConfig.opacity[0] : 1,
-                            scale: motionConfig.scale ? motionConfig.scale[0] : 1
+                            scale: motionConfig.scale ? motionConfig.scale[0] : 1,
+                            filter: 'blur(2px)'
                         }}
                         animate={{ 
                             x: motionConfig.x, 
                             y: motionConfig.y,
                             opacity: motionConfig.opacity || 1,
-                            scale: motionConfig.scale || 1
+                            scale: motionConfig.scale || 1,
+                            filter: ['blur(3px)', 'blur(0px)', 'blur(0px)', 'blur(2px)']
                         }}
-                        transition={{ duration: motionConfig.duration, ease: motionConfig.ease, times: motionConfig.times }}
+                        transition={{
+                            duration: motionConfig.duration,
+                            ease: motionConfig.ease,
+                            times: motionConfig.times,
+                            filter: { duration: motionConfig.duration, times: [0, 0.2, 0.85, 1], ease: 'linear' }
+                        }}
                         onAnimationComplete={() => {
                             if (hideAfterDuration) {
                                 setIsVisible(false);
