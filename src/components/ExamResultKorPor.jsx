@@ -45,7 +45,7 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
     };
 
     qs.forEach(q => {
-        const groupKey = classifyQuestion(q.question);
+        const groupKey = classifyQuestion(q);
         if (groups[groupKey]) {
             groups[groupKey].total++;
             groups[groupKey].questions.push(q);
@@ -82,9 +82,10 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
                 <div className="mt-6">
                     <h4 className="font-bold text-slate-700 mb-4">เฉลยคำตอบส่วนนี้</h4>
                     <div className="space-y-4">
-                        {g.questions.map((item, index) => (
-                            <DetailedSolution key={index} item={item} index={index} />
-                        ))}
+                        <DetailedSolution 
+                            questions={g.questions} 
+                            answers={g.questions.reduce((acc, curr) => ({...acc, [curr.question_id || curr.id]: curr.user_answer}), {})} 
+                        />
                     </div>
                 </div>
             </div>
