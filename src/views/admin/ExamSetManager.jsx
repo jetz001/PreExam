@@ -95,26 +95,56 @@ const ExamSetManager = () => {
     const korPorSummary = getKorPorSummary();
 
     const handleAutoFillKorPor63 = () => {
-        const template = {
-            "อนุกรม": 5, "เลขทั่วไป": 5, "ตาราง": 5, "เงื่อนไขสัญลักษณ์": 10, "เงื่อนไขภาษา": 5,
-            "เรียงประโยค": 5, "สรุปความ": 10, "อุปมาอุปไมย": 5, "พ.ร.บ.บริหารราชการแผ่นดิน": 6,
-            "พ.ร.ฎ.กิจการบ้านเมืองที่ดี": 6, "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง": 6, "พ.ร.บ.มาตรฐานทางจริยธรรม": 3,
-            "พ.ร.บ.ความรับผิดทางละเมิดฯ": 2, "ป.อาญา ความผิดต่อตำแหน่งหน้าที่": 2,
-            "CONVERSATION": 5, "VOCABULARY": 5, "STRUCTURE": 5, "READING": 10
-        };
+        const templateConfigs = [
+            { name: "อนุกรม", keywords: ["อนุกรม"], target: 5 },
+            { name: "เลขทั่วไป", keywords: ["เลขทั่วไป", "คณิต", "สมการ", "ระยะทาง", "ความเร็ว", "พื้นที่", "ปริมาตร", "กำไร", "ขาดทุน", "ร้อยละ", "เปอร์เซ็นต์", "ห.ร.ม.", "ค.ร.น."], target: 5 },
+            { name: "ตาราง", keywords: ["ตาราง", "ข้อมูล"], target: 5 },
+            { name: "เงื่อนไขสัญลักษณ์", keywords: ["เงื่อนไขสัญลักษณ์", "สัญลักษณ์"], target: 10 },
+            { name: "เงื่อนไขภาษา", keywords: ["เงื่อนไขภาษา"], target: 5 },
+            { name: "เรียงประโยค", keywords: ["เรียงประโยค", "เรียงลำดับ"], target: 5 },
+            { name: "สรุปความ", keywords: ["สรุปความ", "จับใจความ", "อนุมาน", "สอดคล้อง"], target: 10 },
+            { name: "อุปมาอุปไมย", keywords: ["อุปมาอุปไมย", "อุปมา"], target: 5 },
+            { name: "พ.ร.บ.บริหารราชการแผ่นดิน", keywords: ["บริหารราชการแผ่นดิน"], target: 6 },
+            { name: "พ.ร.ฎ.กิจการบ้านเมืองที่ดี", keywords: ["บ้านเมืองที่ดี"], target: 6 },
+            { name: "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง", keywords: ["ทางปกครอง", "วิธีปฏิบัติราชการ"], target: 6 },
+            { name: "พ.ร.บ.มาตรฐานทางจริยธรรม", keywords: ["จริยธรรม"], target: 3 },
+            { name: "พ.ร.บ.ความรับผิดทางละเมิดฯ", keywords: ["ละเมิด"], target: 2 },
+            { name: "ป.อาญา ความผิดต่อตำแหน่งหน้าที่", keywords: ["อาญา", "ตำแหน่งหน้าที่"], target: 2 },
+            { name: "CONVERSATION", keywords: ["conversation"], target: 5 },
+            { name: "VOCABULARY", keywords: ["vocabulary", "vocab"], target: 5 },
+            { name: "STRUCTURE", keywords: ["structure", "grammar", "speech"], target: 5 },
+            { name: "READING", keywords: ["reading", "comprehension"], target: 10 }
+        ];
 
         const newCounts = {};
         let actualTotal = 0;
         let newCatalogs = [];
+        const usedCatalogs = new Set();
 
-        Object.entries(template).forEach(([cat, targetCount]) => {
-            const available = catalogCounts[cat] || 0;
-            const actualCount = Math.min(targetCount, available);
-            if (actualCount > 0) {
-                newCounts[cat] = actualCount;
-                actualTotal += actualCount;
-                newCatalogs.push(cat);
-            }
+        templateConfigs.forEach(config => {
+            let remainingTarget = config.target;
+            
+            // Find all DB catalogs that match any keyword for this config
+            const matchedCatalogs = Object.keys(catalogCounts).filter(cat => {
+                if (usedCatalogs.has(cat)) return false;
+                const catLower = cat.toLowerCase();
+                return config.keywords.some(kw => catLower.includes(kw.toLowerCase()));
+            });
+
+            // For each matched catalog, pull as many questions as we need
+            matchedCatalogs.forEach(cat => {
+                if (remainingTarget <= 0) return;
+                
+                const available = catalogCounts[cat] || 0;
+                if (available > 0) {
+                    const take = Math.min(remainingTarget, available);
+                    newCounts[cat] = take;
+                    actualTotal += take;
+                    remainingTarget -= take;
+                    newCatalogs.push(cat);
+                    usedCatalogs.add(cat);
+                }
+            });
         });
 
         setFormData(prev => ({
