@@ -310,7 +310,7 @@ const QuestionManager = () => {
                         </label>
                         <button
                             onClick={() => handleOpenModal()}
-                            className="flex items-center px-4 py-2 bg-royal-blue-600 text-white rounded-lg hover:bg-royal-blue-700 transition-colors shadow-sm text-sm font-medium"
+                            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm font-medium"
                         >
                             <Plus size={16} className="mr-2" />
                             Add New Question
@@ -340,8 +340,7 @@ const QuestionManager = () => {
                     </div>
                     <button
                         onClick={handleSearchCheck}
-                        className="px-4 py-2 bg-royal-blue-600 text-white rounded-lg text-sm hover:bg-royal-blue-700 transition-colors"
-                        style={{ backgroundColor: '#2563eb' }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
                     >
                         Search
                     </button>
