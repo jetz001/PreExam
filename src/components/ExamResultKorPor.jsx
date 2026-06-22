@@ -85,67 +85,116 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
 
     const userAnswers = qs.reduce((acc, curr) => ({...acc, [curr.question_id || curr.id]: curr.user_answer}), {});
 
-    const renderGroup = (key) => {
-        const g = groups[key];
-        
+    const renderTable = () => {
         return (
-            <div key={key} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
-                <div className="flex flex-col md:flex-row justify-between md:items-center border-b border-slate-100 pb-4 mb-4">
-                    <div>
-                        <h3 className="text-lg font-bold text-slate-800">{g.title}</h3>
-                        <p className="text-sm text-slate-500">เกณฑ์ผ่าน {g.passPct}%</p>
+            <div className="bg-white p-6 md:p-10 rounded-xl shadow-lg border border-slate-200 mt-6 max-w-3xl mx-auto">
+                <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-6">ผลสอบ ภาค ก. (จำลอง)</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left max-w-lg mx-auto bg-slate-50 p-4 rounded-lg border border-slate-100">
+                        <div className="text-slate-600"><strong>ชื่อ-นามสกุล :</strong> ผู้เข้าสอบ</div>
+                        <div className="text-slate-600"><strong>วุฒิที่ใช้สอบ :</strong> {eduLevel === 'master' ? 'ระดับปริญญาโท' : 'ระดับปริญญาตรี'}</div>
                     </div>
-                    <div className="mt-4 md:mt-0 text-right">
-                        <div className="text-3xl font-black text-blue-600">{g.score} / {g.maxScore}</div>
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${g.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {g.passed ? '✅ ผ่านเกณฑ์' : '❌ ไม่ผ่านเกณฑ์'}
-                        </span>
-                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-slate-300">
+                        <thead>
+                            <tr className="bg-slate-50">
+                                <th className="border border-slate-300 py-4 px-4 text-center font-bold text-slate-700 w-3/5">วิชาที่สอบ</th>
+                                <th className="border border-slate-300 py-4 px-4 text-center font-bold text-slate-700 w-1/5">คะแนน<br/>เต็ม</th>
+                                <th className="border border-slate-300 py-4 px-4 text-center font-bold text-slate-700 w-1/5">คะแนน<br/>ที่ได้</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {/* วิชาที่ 1 */}
+                            <tr>
+                                <td className="border border-slate-300 py-4 px-6 align-top">
+                                    <div className="font-bold text-slate-800 mb-2">1. {groups['วิเคราะห์'].title}</div>
+                                    <div className="text-red-600 font-semibold text-sm">
+                                        เกณฑ์การสอบผ่านต้องได้คะแนนไม่ต่ำกว่าร้อยละ {groups['วิเคราะห์'].passPct} ({Math.ceil(groups['วิเคราะห์'].maxScore * groups['วิเคราะห์'].passPct / 100)} คะแนนขึ้นไป)
+                                    </div>
+                                </td>
+                                <td className="border border-slate-300 py-4 px-4 text-center align-middle font-bold text-slate-800">
+                                    {(groups['วิเคราะห์'].maxScore).toFixed(2)}
+                                </td>
+                                <td className="border border-slate-300 py-4 px-4 text-center align-middle font-bold text-slate-800">
+                                    {(groups['วิเคราะห์'].score).toFixed(2)}
+                                </td>
+                            </tr>
+                            
+                            {/* วิชาที่ 2 */}
+                            <tr>
+                                <td className="border border-slate-300 py-4 px-6 align-top">
+                                    <div className="font-bold text-slate-800 mb-2">2. {groups['ภาษาอังกฤษ'].title}</div>
+                                    <div className="text-red-600 font-semibold text-sm">
+                                        เกณฑ์การสอบผ่านต้องได้คะแนนไม่ต่ำกว่าร้อยละ {groups['ภาษาอังกฤษ'].passPct} ({Math.ceil(groups['ภาษาอังกฤษ'].maxScore * groups['ภาษาอังกฤษ'].passPct / 100)} คะแนนขึ้นไป)
+                                    </div>
+                                </td>
+                                <td className="border border-slate-300 py-4 px-4 text-center align-middle font-bold text-slate-800">
+                                    {(groups['ภาษาอังกฤษ'].maxScore).toFixed(2)}
+                                </td>
+                                <td className="border border-slate-300 py-4 px-4 text-center align-middle font-bold text-slate-800">
+                                    {(groups['ภาษาอังกฤษ'].score).toFixed(2)}
+                                </td>
+                            </tr>
+
+                            {/* วิชาที่ 3 */}
+                            <tr>
+                                <td className="border border-slate-300 py-4 px-6 align-top">
+                                    <div className="font-bold text-slate-800 mb-2">3. {groups['กฎหมาย'].title}</div>
+                                    <div className="text-red-600 font-semibold text-sm">
+                                        เกณฑ์การสอบผ่านต้องได้คะแนนไม่ต่ำกว่าร้อยละ {groups['กฎหมาย'].passPct} ({Math.ceil(groups['กฎหมาย'].maxScore * groups['กฎหมาย'].passPct / 100)} คะแนนขึ้นไป)
+                                    </div>
+                                </td>
+                                <td className="border border-slate-300 py-4 px-4 text-center align-middle font-bold text-slate-800">
+                                    {(groups['กฎหมาย'].maxScore).toFixed(2)}
+                                </td>
+                                <td className="border border-slate-300 py-4 px-4 text-center align-middle font-bold text-slate-800">
+                                    {(groups['กฎหมาย'].score).toFixed(2)}
+                                </td>
+                            </tr>
+
+                            {/* สรุปผล */}
+                            <tr>
+                                <td colSpan="3" className="border border-slate-300 py-6 px-4 bg-slate-50">
+                                    <div className="text-center">
+                                        <div className="font-bold text-slate-800 mb-4 text-lg">ผลการทดสอบเพื่อวัดความรู้ความสามารถทั่วไป</div>
+                                        <div className={`text-4xl font-black ${overallPass ? 'text-green-600' : 'text-red-600'}`}>
+                                            {overallPass ? 'ผ่าน' : 'ไม่ผ่าน'}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="mt-8 flex justify-center space-x-4">
+                    <button onClick={onRetry} className="px-6 py-3 bg-white text-slate-700 font-bold rounded-xl shadow-sm border border-slate-300 hover:bg-slate-50 transition-colors">
+                        ทำข้อสอบอีกครั้ง
+                    </button>
+                    <Link to="/" className="px-6 py-3 bg-blue-700 text-white font-bold rounded-xl shadow hover:bg-blue-800 transition-colors">
+                        กลับหน้าแรก
+                    </Link>
                 </div>
             </div>
         );
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-4 md:p-6">
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-2xl shadow-xl overflow-hidden mb-8">
-                <div className="p-8 text-center text-white">
-                    <h1 className="text-3xl font-black mb-2">ผลสอบ ภาค ก. (จำลอง)</h1>
-                    <p className="text-blue-100 mb-6">ชุดข้อสอบ: {config?.exam_set || 'ไม่ระบุ'} • ระดับ: {eduLevel === 'master' ? 'ปริญญาโท' : 'ปวช./ปวส./ปริญญาตรี'}</p>
-                    
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 inline-block">
-                        <div className="text-5xl mb-2">{overallPass ? '🎉' : '💪'}</div>
-                        <h2 className="text-2xl font-bold">{overallPass ? 'คุณสอบผ่านเกณฑ์!' : 'พยายามใหม่อีกนิด!'}</h2>
-                        <p className="text-sm opacity-80 mt-2">ต้องผ่านเกณฑ์คะแนนทุกวิชาตามที่ ก.พ. กำหนด</p>
-                    </div>
-                    
-                    <div className="mt-8 flex justify-center space-x-4">
-                        <button onClick={onRetry} className="px-6 py-3 bg-white text-blue-700 font-bold rounded-xl shadow hover:bg-slate-50 transition-colors">
-                            ทำข้อสอบอีกครั้ง
-                        </button>
-                        <Link to="/" className="px-6 py-3 bg-blue-800 text-white font-bold rounded-xl shadow hover:bg-blue-900 transition-colors border border-blue-500">
-                            กลับหน้าแรก
-                        </Link>
-                    </div>
-                </div>
-            </div>
-
-            <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center">
-                <span className="w-2 h-8 bg-blue-500 rounded-full mr-3"></span>
-                สรุปคะแนนรายวิชา
-            </h2>
-
-            {renderGroup('วิเคราะห์')}
-            {renderGroup('ภาษาอังกฤษ')}
-            {renderGroup('กฎหมาย')}
+        <div className="max-w-4xl mx-auto p-4 md:p-6 pb-20">
+            {renderTable()}
             
-            <div className="mt-12">
-                <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center">
-                    <span className="w-2 h-8 bg-blue-500 rounded-full mr-3"></span>
-                    เฉลยคำตอบทั้งหมด
-                </h2>
-                <DetailedSolution questions={qs} answers={userAnswers} />
-            </div>
+            {/* เฉลยคำตอบทั้งหมดถูกซ่อนไว้สำหรับโหมดจำลองสนามสอบ หรือถ้าต้องการแสดงให้ใส่เงื่อนไข config.mode !== 'simulation' */}
+            {config?.mode !== 'simulation' && (
+                <div className="mt-12 opacity-50 pointer-events-none hidden">
+                    <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center">
+                        <span className="w-2 h-8 bg-blue-500 rounded-full mr-3"></span>
+                        เฉลยคำตอบทั้งหมด (ซ่อนในโหมดจำลอง)
+                    </h2>
+                    <DetailedSolution questions={qs} answers={userAnswers} />
+                </div>
+            )}
         </div>
     );
 };
