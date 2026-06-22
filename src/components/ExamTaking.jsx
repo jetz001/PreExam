@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, Flag, ChevronLeft, ChevronRight, AlertTriangle, Bookmark, Type, MapPin } from 'lucide-react';
+import { Clock, Flag, ChevronLeft, ChevronRight, AlertTriangle, Bookmark, Type, MapPin, Grid, X } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { useNavigate } from 'react-router-dom';
 import Lottie from 'lottie-react';
@@ -347,6 +347,7 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     const [isTransitioning, setIsTransitioning] = useState(false); // scene fade
     const [sceneIdx, setSceneIdx] = useState(0);
     const [showMilestone, setShowMilestone] = useState(null); // null | scene name
+    const [showGridModal, setShowGridModal] = useState(false);
 
     const { isPremium } = useUserRole();
     const answerAdvanceTimeoutRef = useRef(null);
@@ -829,18 +830,33 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                         <ChevronLeft size={24} />
                     </button>
 
-                    {/* Scene dots */}
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        {JOURNEY_SCENES.map((s, i) => (
-                            <div key={s.id} style={{
-                                width: i === sceneIdx ? 22 : 7,
-                                height: 7,
-                                borderRadius: 99,
-                                background: i === sceneIdx ? currentScene.accentColor : 'rgba(255,255,255,0.25)',
-                                transition: 'all 0.4s ease',
-                                boxShadow: i === sceneIdx ? `0 0 8px ${currentScene.accentColor}` : 'none',
-                            }} />
-                        ))}
+                    {/* Scene dots and Navigation Grid */}
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                        <div style={{ display: 'none', sm: 'flex', gap: 6, alignItems: 'center' }}>
+                            {JOURNEY_SCENES.map((s, i) => (
+                                <div key={s.id} className="hidden sm:block" style={{
+                                    width: i === sceneIdx ? 22 : 7,
+                                    height: 7,
+                                    borderRadius: 99,
+                                    background: i === sceneIdx ? currentScene.accentColor : 'rgba(255,255,255,0.25)',
+                                    transition: 'all 0.4s ease',
+                                    boxShadow: i === sceneIdx ? `0 0 8px ${currentScene.accentColor}` : 'none',
+                                }} />
+                            ))}
+                        </div>
+                        
+                        <button
+                            onClick={() => setShowGridModal(true)}
+                            style={{
+                                width: 40, height: 40,
+                                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
+                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'white', cursor: 'pointer', transition: 'all 0.2s',
+                            }}
+                            title="เลือกข้อสอบ"
+                        >
+                            <Grid size={18} />
+                        </button>
                     </div>
 
                     <button
@@ -919,6 +935,71 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                             animate={{ scale: 1 }}
                             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 16, boxShadow: `0 0 60px ${currentScene.accentColor}66` }}
                         />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* Quick Navigation Modal */}
+            <AnimatePresence>
+                {showGridModal && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        style={{
+                            position: 'fixed', inset: 0, zIndex: 99999,
+                            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+                            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+                            padding: '20px',
+                        }}
+                        onClick={() => setShowGridModal(false)}
+                    >
+                        <div
+                            onClick={e => e.stopPropagation()}
+                            style={{
+                                width: '100%', maxWidth: 600, maxHeight: '80vh',
+                                background: '#1e293b', borderRadius: '1.5rem',
+                                padding: '24px', overflowY: 'auto',
+                                boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+                                display: 'flex', flexDirection: 'column', gap: 16
+                            }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>ข้ามไปข้อที่...</h3>
+                                <button onClick={() => setShowGridModal(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: 16, marginBottom: 8, fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', justifyContent: 'center' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, background: '#10b981', borderRadius: 4 }} /> ทำแล้ว</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }} /> ยังไม่ทำ</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, background: '#f59e0b', borderRadius: '50%' }} /> ปักหมุด</span>
+                            </div>
+
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+                                {questions.map((q, idx) => {
+                                    const isAns = !!answers[q.id];
+                                    const isCur = idx === currentIndex;
+                                    const isFlag = !!flagged[q.id];
+                                    return (
+                                        <button
+                                            key={q.id}
+                                            onClick={() => { navigateToQuestion(idx); setShowGridModal(false); }}
+                                            style={{
+                                                width: 42, height: 42, borderRadius: 10,
+                                                fontWeight: 800, fontSize: '1rem',
+                                                border: isCur ? '2px solid white' : 'none',
+                                                background: isCur ? '#3b82f6' : isAns ? '#10b981' : 'rgba(255,255,255,0.1)',
+                                                color: 'white', cursor: 'pointer',
+                                                position: 'relative',
+                                                boxShadow: isCur ? '0 0 12px rgba(59,130,246,0.6)' : 'none',
+                                            }}
+                                        >
+                                            {idx + 1}
+                                            {isFlag && <div style={{ position: 'absolute', top: -4, right: -4, background: '#f59e0b', width: 12, height: 12, borderRadius: '50%', border: '2px solid #1e293b' }} />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
