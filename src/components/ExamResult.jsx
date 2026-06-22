@@ -26,8 +26,6 @@ const ExamResult = ({ result, onRetry, config }) => {
     const setsMeta = metaRes?.data || [];
     const isKorPor = setsMeta.find(s => s.name === config?.exam_set)?.is_korpor_format;
     
-    if (isKorPor) return <ExamResultKorPor result={result} onRetry={onRetry} config={config} />;
-
     const inlineAnimation = resolveAnimationPreset(isPassed ? 'examResultPass' : 'examResultFail', runtimeAnimationSettings);
     const introAnimation = resolveAnimationPreset('examFinish', runtimeAnimationSettings);
     const [showIntroAnimation, setShowIntroAnimation] = React.useState(true);
@@ -39,6 +37,8 @@ const ExamResult = ({ result, onRetry, config }) => {
         const timer = setTimeout(() => setShowIntroAnimation(false), introDurationMs);
         return () => clearTimeout(timer);
     }, [introAnimation.durationText, isPassed, result?.id]);
+
+    if (isKorPor) return <ExamResultKorPor result={result} onRetry={onRetry} config={config} />;
 
     return (
         <>
