@@ -87,14 +87,14 @@ const ExamSetManager = () => {
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center">
-                        <Layers className="w-8 h-8 mr-3 text-royal-blue-600" />
+                        <Layers className="w-8 h-8 mr-3 text-blue-600" />
                         Exam Set Manager
                     </h1>
                     <p className="text-slate-500 mt-2">Manage exam sets, Kor Por formatting, and grouped questions.</p>
                 </div>
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="px-4 py-2 bg-royal-blue-600 text-white rounded-lg hover:bg-royal-blue-700 transition-colors shadow-sm text-sm font-medium flex items-center"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm font-medium flex items-center"
                 >
                     <Plus size={16} className="mr-2" />
                     Create Set
@@ -131,7 +131,7 @@ const ExamSetManager = () => {
                                     </td>
                                     <td className="p-4 text-slate-500 text-sm">{set.education_level || '-'}</td>
                                     <td className="p-4 text-right">
-                                        <button onClick={() => openEditModal(set)} className="p-2 text-royal-blue-600 hover:bg-royal-blue-50 rounded-lg mr-2">
+                                        <button onClick={() => openEditModal(set)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg mr-2">
                                             <Edit2 size={16} />
                                         </button>
                                         <button onClick={() => handleDelete(set.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
@@ -160,7 +160,7 @@ const ExamSetManager = () => {
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 />
                             </div>
                             <div>
@@ -168,7 +168,7 @@ const ExamSetManager = () => {
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 />
                             </div>
                             <div className="flex items-center space-x-2">
@@ -177,7 +177,7 @@ const ExamSetManager = () => {
                                     id="is_korpor"
                                     checked={formData.is_korpor_format}
                                     onChange={(e) => setFormData({ ...formData, is_korpor_format: e.target.checked })}
-                                    className="rounded text-royal-blue-600 focus:ring-royal-blue-500"
+                                    className="rounded text-blue-600 focus:ring-blue-500"
                                 />
                                 <label htmlFor="is_korpor" className="text-sm font-medium text-slate-700">Enable Kor Por Result Format</label>
                             </div>
@@ -187,7 +187,7 @@ const ExamSetManager = () => {
                                     <select
                                         value={formData.education_level}
                                         onChange={(e) => setFormData({ ...formData, education_level: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-royal-blue-500 outline-none"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     >
                                         <option value="bachelor">ปวช./ปวส./ปริญญาตรี (60%)</option>
                                         <option value="master">ปริญญาโท (65%)</option>
@@ -207,7 +207,7 @@ const ExamSetManager = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-royal-blue-600 text-white rounded-lg hover:bg-royal-blue-700 transition-colors"
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                 >
                                     {isEditModalOpen ? 'Save Changes' : 'Create'}
                                 </button>

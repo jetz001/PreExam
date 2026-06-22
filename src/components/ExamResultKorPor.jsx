@@ -72,7 +72,7 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
                         <p className="text-sm text-slate-500">เกณฑ์ผ่าน {g.passPct}%</p>
                     </div>
                     <div className="mt-4 md:mt-0 text-right">
-                        <div className="text-3xl font-black text-royal-blue-600">{score} / {maxScore}</div>
+                        <div className="text-3xl font-black text-blue-600">{score} / {maxScore}</div>
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                             {passed ? '✅ ผ่านเกณฑ์' : '❌ ไม่ผ่านเกณฑ์'}
                         </span>
@@ -93,10 +93,10 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
 
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-6">
-            <div className="bg-gradient-to-br from-royal-blue-600 to-indigo-800 rounded-2xl shadow-xl overflow-hidden mb-8">
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-2xl shadow-xl overflow-hidden mb-8">
                 <div className="p-8 text-center text-white">
                     <h1 className="text-3xl font-black mb-2">ผลสอบ ภาค ก. (จำลอง)</h1>
-                    <p className="text-royal-blue-100 mb-6">ชุดข้อสอบ: {config?.exam_set || 'ไม่ระบุ'} • ระดับ: {eduLevel === 'master' ? 'ปริญญาโท' : 'ปวช./ปวส./ปริญญาตรี'}</p>
+                    <p className="text-blue-100 mb-6">ชุดข้อสอบ: {config?.exam_set || 'ไม่ระบุ'} • ระดับ: {eduLevel === 'master' ? 'ปริญญาโท' : 'ปวช./ปวส./ปริญญาตรี'}</p>
                     
                     <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 inline-block">
                         <div className="text-5xl mb-2">{overallPass ? '🎉' : '💪'}</div>
@@ -105,10 +105,10 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
                     </div>
                     
                     <div className="mt-8 flex justify-center space-x-4">
-                        <button onClick={onRetry} className="px-6 py-3 bg-white text-royal-blue-700 font-bold rounded-xl shadow hover:bg-slate-50 transition-colors">
+                        <button onClick={onRetry} className="px-6 py-3 bg-white text-blue-700 font-bold rounded-xl shadow hover:bg-slate-50 transition-colors">
                             ทำข้อสอบอีกครั้ง
                         </button>
-                        <Link to="/" className="px-6 py-3 bg-royal-blue-800 text-white font-bold rounded-xl shadow hover:bg-royal-blue-900 transition-colors border border-royal-blue-500">
+                        <Link to="/" className="px-6 py-3 bg-blue-800 text-white font-bold rounded-xl shadow hover:bg-blue-900 transition-colors border border-blue-500">
                             กลับหน้าแรก
                         </Link>
                     </div>
@@ -116,7 +116,7 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
             </div>
 
             <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center">
-                <span className="w-2 h-8 bg-royal-blue-500 rounded-full mr-3"></span>
+                <span className="w-2 h-8 bg-blue-500 rounded-full mr-3"></span>
                 สรุปคะแนนรายวิชา
             </h2>
 
