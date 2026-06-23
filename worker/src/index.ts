@@ -446,6 +446,11 @@ export default {
 
     // /api/auth/guest
     if (url.pathname === "/api/auth/guest" && request.method === "POST") {
+      const userAgent = request.headers.get("user-agent") || "";
+      if (/bot|crawler|spider|crawling|lighthouse/i.test(userAgent)) {
+        return json({ success: false, message: "Bots not allowed" }, { status: 403 });
+      }
+
       const body = (await readJson(request)) as any;
       if (!body || !body.deviceId) return json({ success: false, message: "invalid_body" }, { status: 400 });
 

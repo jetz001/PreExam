@@ -598,10 +598,14 @@ export default function Lobby() {
                   </div>
                 )}
                 {frameUrl && (
-                  <div className="absolute inset-0 z-20 pointer-events-none" style={{
-                    border: '10px solid transparent',
-                    borderImage: `url(${frameUrl}) 30% stretch`
-                  }} />
+                  frameUrl.endsWith('.json') ? (
+                    <LottieViewer url={frameUrl} className="absolute inset-0 w-full h-full z-20 pointer-events-none" />
+                  ) : (
+                    <div className="absolute inset-0 z-20 pointer-events-none" style={{
+                      border: '10px solid transparent',
+                      borderImage: `url(${frameUrl}) 30% stretch`
+                    }} />
+                  )
                 )}
                 <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'rgba(0,0,0,0.5)' : theme.header, backdropFilter: bgUrl ? 'blur(4px)' : 'none' }}>
                   <div className="lb-room-count">

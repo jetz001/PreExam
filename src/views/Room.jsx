@@ -341,16 +341,7 @@ const Room = () => {
                 )}
             </div>
             
-            {room.theme?.frame_id && (
-                (() => {
-                    const frameUrl = room.theme.frame_url || getAssetUrl(room.theme.frame_id, 'frame') || customAssets.find(a => a.id === room.theme.frame_id)?.url;
-                    if (!frameUrl) return null;
-                    if (frameUrl.endsWith('.json')) {
-                        return <LottieViewer url={frameUrl} className="fixed inset-0 w-full h-full z-50 pointer-events-none" />;
-                    }
-                    return <div className="fixed inset-0 z-50 pointer-events-none" style={{ border: '20px solid transparent', borderImage: `url(${frameUrl}) 30% stretch` }} />;
-                })()
-            )}
+
 
             <div className="container mx-auto px-4 py-8 flex flex-col h-full relative z-10">
                 {/* Room Header */}
