@@ -1727,6 +1727,7 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
         if (url.pathname === "/api/admin/arcade" && request.method === "POST") {
           const auth = await requireAdmin(request, env);
           if ("error" in auth) return auth.error;
+          const reqBody = await readJson(request);
           const game = await adminCreateArcadeGame(env.DB, reqBody || {});
           return json({ success: true, game });
         }
@@ -1735,6 +1736,7 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
         if (adminArcadeIdMatch && request.method === "PUT") {
           const auth = await requireAdmin(request, env);
           if ("error" in auth) return auth.error;
+          const reqBody = await readJson(request);
           await adminUpdateArcadeGame(env.DB, adminArcadeIdMatch[1], reqBody || {});
           return json({ success: true });
         }
