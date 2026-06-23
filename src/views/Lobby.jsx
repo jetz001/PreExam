@@ -599,16 +599,21 @@ export default function Lobby() {
                 </div>
 
                 {frameUrl && (
-                  frameUrl.endsWith('.json') ? (
-                    <LottieViewer url={frameUrl} className="absolute z-30 pointer-events-none" style={{ top: '-8px', left: '-8px', width: 'calc(100% + 16px)', height: 'calc(100% + 16px)' }} preserveAspectRatio="none" />
-                  ) : (
-                    <div className="absolute z-30 pointer-events-none" style={{
-                      top: '-10px', left: '-10px', width: 'calc(100% + 20px)', height: 'calc(100% + 20px)',
-                      border: '10px solid transparent',
-                      borderImage: `url(${frameUrl}) 30% stretch`,
-                      borderRadius: '30px'
-                    }} />
-                  )
+                  <div className="absolute inset-0 z-30 pointer-events-none" style={{ borderRadius: '20px', overflow: 'hidden' }}>
+                    {frameUrl.endsWith('.json') ? (
+                      <LottieViewer 
+                        url={frameUrl} 
+                        className="w-full h-full" 
+                        preserveAspectRatio="none" 
+                        style={{ filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}
+                      />
+                    ) : (
+                      <div className="w-full h-full" style={{
+                        border: '10px solid transparent',
+                        borderImage: `url(${frameUrl}) 30% stretch`
+                      }} />
+                    )}
+                  </div>
                 )}
 
                 <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'rgba(0,0,0,0.5)' : theme.header, backdropFilter: bgUrl ? 'blur(4px)' : 'none', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
