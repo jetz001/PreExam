@@ -621,7 +621,7 @@ export default function Lobby() {
                   )}
                 </div>
 
-                <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'rgba(0,0,0,0.5)' : theme.header, backdropFilter: bgUrl ? 'blur(4px)' : 'none', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
+                <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'transparent' : theme.header, borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
                   <div className="lb-room-count relative z-30">
                     <Users size={14} strokeWidth={3}/> {room.participant_count}
                   </div>
@@ -629,7 +629,16 @@ export default function Lobby() {
                     {room.mode === 'tutor' ? '🎓 ติวเตอร์' : '🎮 แข่งขัน'}
                   </div>
                   <div className="lb-room-icon relative z-30">{theme.icon}</div>
-                  <h3 className="relative z-30" style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '4px', textShadow: bgUrl ? '0 2px 4px rgba(0,0,0,0.8)' : 'none' }}>{room.name}</h3>
+                  <h3 className="relative z-30" style={{ 
+                    fontSize: '1.1rem', 
+                    fontWeight: 900, 
+                    marginBottom: '4px', 
+                    textShadow: bgUrl ? '0 2px 4px rgba(0,0,0,0.8)' : 'none',
+                    background: bgUrl ? 'rgba(0,0,0,0.5)' : 'none',
+                    padding: bgUrl ? '4px 16px' : '0',
+                    borderRadius: '12px',
+                    backdropFilter: bgUrl ? 'blur(4px)' : 'none'
+                  }}>{room.name}</h3>
                 </div>
                 
                 <div className="lb-room-body relative z-20" style={{ borderBottomLeftRadius: '20px', borderBottomRightRadius: '20px' }}>
