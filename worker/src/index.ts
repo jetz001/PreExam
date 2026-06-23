@@ -392,7 +392,7 @@ export default {
             : `uploads/${Date.now()}-${crypto.randomUUID()}.${extension}`;
 
         await env.BUCKET.put(key, await file.arrayBuffer(), {
-          httpMetadata: { contentType: file.type }
+          httpMetadata: { contentType: file.type || 'application/octet-stream' }
         });
 
         return json({ success: true, url: `/api/media/${encodeURIComponent(key)}` }, { status: 201 });
