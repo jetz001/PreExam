@@ -1,5 +1,21 @@
 const { db: firestore, admin } = require('../config/firebase');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+const fs = require('fs');
 
+const D1_DB_PATH = path.resolve(__dirname, '../../worker/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/db.sqlite');
+
+const getD1Connection = () => {
+    return new Promise((resolve, reject) => {
+        if (!fs.existsSync(D1_DB_PATH)) {
+            return resolve(null);
+        }
+        const db = new sqlite3.Database(D1_DB_PATH, (err) => {
+            if (err) reject(err);
+            else resolve(db);
+        });
+    });
+};
 const usersRef = firestore.collection('users');
 const paymentsRef = firestore.collection('payments');
 const businessesRef = firestore.collection('businesses');
@@ -60,6 +76,51 @@ exports.getDashboardStats = async (req, res) => {
                 }
             }
         });
+
+        // Also fetch transactions from local D1 SQLite if it exists
+        const db = await getD1Connection();
+        if (db) {
+            const transactions = await new Promise((resolve) => {
+                db.all("SELECT amount, status, created_at FROM transactions", (err, rows) => resolve(rows || []));
+            });
+            db.close();
+
+            for (const tx of transactions) {
+                const amount = Number(tx.amount) || 0;
+                const status = (tx.status || 'unknown').toLowerCase();
+                const created_at = new Date(tx.created_at);
+                
+                if (status === 'pending') {
+                    pendingRevenue += amount;
+                } else if (status === 'approved' || status === 'completed' || status === 'success') {
+                    // Calculate Stripe fee
+                    let fee = 0;
+                    if (amount < 100) {
+                        fee = amount * 0.0165;
+                    } else {
+                        fee = (amount * 0.0365) + 10;
+                    }
+                    const vat = fee * 0.07;
+                    const totalFee = fee + vat;
+                    let netAmount = amount - totalFee;
+                    if (netAmount < 0) netAmount = 0;
+
+                    totalRevenue += netAmount;
+                    
+                    if (created_at.getFullYear() === currentYear) {
+                        yearlyRevenue += netAmount;
+                        if (created_at.getMonth() === currentMonth) {
+                            monthlyRevenue += netAmount;
+                        }
+                    }
+                    
+                    const key = `${created_at.getFullYear()}-${created_at.getMonth()}`;
+                    if (trendMap[key]) {
+                        trendMap[key].value += netAmount;
+                    }
+                }
+            }
+        }
 
         // Fetch recent reports (last 24 hours)
         const yesterday = new Date(now.getTime() - (24 * 60 * 60 * 1000)).toISOString();
@@ -146,12 +207,39 @@ exports.getPayments = async (req, res) => {
                 amount: data.amount,
                 status: (data.status || 'unknown').toLowerCase(),
                 slip_url: data.metadata?.slip_url || data.receipt_url || null,
+                is_stripe: false,
                 created_at: data.created_at,
                 user_display_name: userDoc.exists ? userDoc.data().display_name : 'Unknown',
                 user_email: userDoc.exists ? userDoc.data().email : 'Unknown'
             };
         }));
-        res.json(items);
+
+        const db = await getD1Connection();
+        let stripeItems = [];
+        if (db) {
+            const transactions = await new Promise((resolve) => {
+                db.all("SELECT id, user_id, amount, status, created_at, type, receipt_url as slip_url FROM transactions", (err, rows) => resolve(rows || []));
+            });
+            db.close();
+
+            stripeItems = await Promise.all(transactions.map(async tx => {
+                const userDoc = await usersRef.doc(String(tx.user_id)).get();
+                return {
+                    id: tx.id,
+                    type: tx.type === 'PLAN_PURCHASE' ? 'subscription' : (tx.type || 'subscription'),
+                    amount: tx.amount,
+                    status: (tx.status || 'unknown').toLowerCase(),
+                    slip_url: tx.slip_url || null,
+                    is_stripe: true,
+                    created_at: tx.created_at,
+                    user_display_name: userDoc.exists ? userDoc.data().display_name : 'Unknown',
+                    user_email: userDoc.exists ? userDoc.data().email : 'Unknown'
+                };
+            }));
+        }
+
+        const allItems = [...items, ...stripeItems].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        res.json(allItems);
     } catch (error) {
         console.error('Error fetching payments:', error);
         res.status(500).json({ message: 'Error fetching payments' });

@@ -1629,11 +1629,10 @@ export async function createAsset(db: D1Database, data: Record<string, any>) {
     url: data.url ?? "",
     is_premium: Number(Boolean(data.is_premium)),
     created_at: data.created_at ?? nowIso(),
-    updated_at: data.updated_at ?? data.created_at ?? nowIso(),
   };
   await db
-    .prepare("INSERT INTO assets (id, name, type, url, is_premium, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
-    .bind(row.id, row.name, row.type, row.url, row.is_premium, row.created_at, row.updated_at)
+    .prepare("INSERT INTO assets (id, name, type, url, is_premium, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+    .bind(row.id, row.name, row.type, row.url, row.is_premium, row.created_at)
     .run();
   return row;
 }
@@ -1648,15 +1647,15 @@ export async function updateAsset(db: D1Database, id: string, data: Record<strin
 
   const row = {
     ...currentAsset,
-    name: data.name !== undefined ? data.name : currentAsset.name,
-    type: data.type !== undefined ? data.type : currentAsset.type,
+    name: data.name ?? currentAsset.name,
+    type: data.type ?? currentAsset.type,
+    url: data.url ?? currentAsset.url,
     is_premium: data.is_premium !== undefined ? Number(Boolean(data.is_premium)) : currentAsset.is_premium,
-    updated_at: nowIso(),
   };
 
   await db
-    .prepare("UPDATE assets SET name = ?, type = ?, is_premium = ?, updated_at = ? WHERE id = ?")
-    .bind(row.name, row.type, row.is_premium, row.updated_at, String(id))
+    .prepare("UPDATE assets SET name = ?, type = ?, url = ?, is_premium = ? WHERE id = ?")
+    .bind(row.name, row.type, row.url, row.is_premium, id)
     .run();
     
   return row;

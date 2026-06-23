@@ -28,6 +28,8 @@ const decodeHtml = (html) => {
     return decoded;
 };
 
+let globalAssetsCache = null;
+
 const emptyAnswerCounts = { A: 0, B: 0, C: 0, D: 0 };
 
 const parseRoomSettings = (room) => {
@@ -58,9 +60,26 @@ const Room = () => {
     const [activeTab, setActiveTab] = useState('participants');
     const [userAnswers, setUserAnswers] = useState({});
     const [chatMessages, setChatMessages] = useState([]);
+    const [customAssets, setCustomAssets] = useState(globalAssetsCache || []);
     const [showNicknameModal, setShowNicknameModal] = useState(false);
     const [nicknameInput, setNicknameInput] = useState('');
     const examRef = useRef(null);
+
+    const messagesEndRef = useRef(null);
+
+    useEffect(() => {
+        if (!globalAssetsCache) {
+            fetch('/api/assets')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        globalAssetsCache = data.data;
+                        setCustomAssets(data.data);
+                    }
+                })
+                .catch(err => console.error('Failed to load custom assets', err));
+        }
+    }, []);
 
     const applyRoomState = (roomData, user) => {
         if (!roomData || !user) return;
@@ -304,8 +323,9 @@ const Room = () => {
             <div className="room-wrapper" style={room.theme?.background_id ? { background: '#1a1a2e' } : {}}>
                 {room.theme?.background_id ? (
                     (() => {
-                        const bgUrl = getAssetUrl(room.theme.background_id, 'background');
-                        if (bgUrl && bgUrl.endsWith('.json')) {
+                        const bgUrl = room.theme.background_url || getAssetUrl(room.theme.background_id, 'background') || customAssets.find(a => a.id === room.theme.background_id)?.url;
+                        if (!bgUrl) return null;
+                        if (bgUrl.endsWith('.json')) {
                             return <LottieViewer url={bgUrl} className="absolute inset-0 w-full h-full opacity-60 z-0 object-cover" />;
                         }
                         return <img src={bgUrl} alt="room bg" className="absolute inset-0 w-full h-full object-cover opacity-60 z-0" />;
@@ -323,8 +343,9 @@ const Room = () => {
             
             {room.theme?.frame_id && (
                 (() => {
-                    const frameUrl = getAssetUrl(room.theme.frame_id, 'frame');
-                    if (frameUrl && frameUrl.endsWith('.json')) {
+                    const frameUrl = room.theme.frame_url || getAssetUrl(room.theme.frame_id, 'frame') || customAssets.find(a => a.id === room.theme.frame_id)?.url;
+                    if (!frameUrl) return null;
+                    if (frameUrl.endsWith('.json')) {
                         return <LottieViewer url={frameUrl} className="fixed inset-0 w-full h-full z-50 pointer-events-none" />;
                     }
                     return <div className="fixed inset-0 z-50 pointer-events-none border-[16px] md:border-[24px]" style={{ borderImage: `url(${frameUrl}) 30 round` }}></div>;

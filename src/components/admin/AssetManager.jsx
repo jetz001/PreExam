@@ -15,7 +15,9 @@ const AssetManager = () => {
     });
     const [selectedFile, setSelectedFile] = useState(null);
     const [editingAsset, setEditingAsset] = useState(null);
-    const [editFormData, setEditFormData] = useState({});
+    const [editFormData, setEditFormData] = useState({ name: '', type: 'background', is_premium: false });
+    const [editFile, setEditFile] = useState(null);
+    const [activeTab, setActiveTab] = useState('all');
 
     const openEditModal = (asset) => {
         setEditingAsset(asset);
@@ -24,6 +26,7 @@ const AssetManager = () => {
             type: asset.type,
             is_premium: asset.is_premium
         });
+        setEditFile(null);
     };
 
     const { data: assets = [], isLoading } = useQuery({
@@ -66,13 +69,42 @@ const AssetManager = () => {
         onError: () => toast.error('Failed to update asset')
     });
 
-    const handleUpdate = (e) => {
+    const handleUpdate = async (e) => {
         e.preventDefault();
         if (!editFormData.name.trim()) {
             toast.error('Asset name is required.');
             return;
         }
-        updateAssetMutation.mutate({ id: editingAsset.id, data: editFormData });
+
+        let payload = { ...editFormData };
+
+        if (editFile) {
+            try {
+                const data = new FormData();
+                data.append('file', editFile);
+                const uploadRes = await fetch('https://preexam.online/api/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                    body: data
+                });
+                const uploadData = await uploadRes.json();
+                if (!uploadData.success) {
+                    throw new Error(uploadData.error || 'Failed to upload');
+                }
+                payload.url = uploadData.url;
+            } catch (error) {
+                toast.error('Failed to upload new file: ' + error.message);
+                return;
+            }
+        }
+
+        updateAssetMutation.mutate({ id: editingAsset.id, data: payload });
+    };
+
+    const handleEditFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setEditFile(e.target.files[0]);
+        }
     };
 
     const handleFileChange = (e) => {
@@ -182,14 +214,33 @@ const AssetManager = () => {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between bg-slate-50 gap-4">
                     <h3 className="font-bold text-slate-700 flex items-center">
                         <ImageIcon className="mr-2 text-slate-500" size={18} />
                         Asset Library
                     </h3>
-                    <span className="bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-bold">
-                        {assets.filter(a => ['background', 'frame'].includes(a.type)).length} Total
-                    </span>
+                    
+                    {/* Tabs for filtering */}
+                    <div className="flex bg-slate-200 p-1 rounded-lg">
+                        <button
+                            onClick={() => setActiveTab('all')}
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'all' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            All ({assets.filter(a => ['background', 'frame'].includes(a.type)).length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('background')}
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'background' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Backgrounds
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('frame')}
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'frame' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Frames
+                        </button>
+                    </div>
                 </div>
                 
                 <div className="p-4">
@@ -203,9 +254,12 @@ const AssetManager = () => {
                             No assets uploaded yet.
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {assets.filter(a => ['background', 'frame'].includes(a.type)).map((asset) => (
-                                <div key={asset.id} className="border border-slate-200 rounded-xl overflow-hidden group relative bg-slate-50">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {assets
+                                .filter(a => ['background', 'frame'].includes(a.type))
+                                .filter(a => activeTab === 'all' || a.type === activeTab)
+                                .map((asset) => (
+                                <div key={asset.id} className="border border-slate-200 rounded-xl overflow-hidden group hover:border-royal-blue-300 transition-colors bg-white flex flex-col">
                                     <div className="aspect-square bg-slate-200 relative flex items-center justify-center overflow-hidden">
                                         {asset.url?.endsWith('.json') ? (
                                             <LottieViewer url={asset.url} className="w-full h-full object-contain p-2" />
@@ -282,6 +336,16 @@ const AssetManager = () => {
                                     <option value="background">Background</option>
                                     <option value="frame">Frame/Foreground</option>
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">New File (Optional)</label>
+                                <input
+                                    type="file"
+                                    accept="image/*,application/json"
+                                    onChange={handleEditFileChange}
+                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-royal-blue-500"
+                                />
+                                <p className="text-xs text-slate-400 mt-1">Leave empty to keep the current file.</p>
                             </div>
                             <div className="flex items-center pt-2">
                                 <input

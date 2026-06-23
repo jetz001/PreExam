@@ -562,8 +562,8 @@ export default function Lobby() {
         <div className="lb-rooms-grid">
           {filteredRooms.map((room, i) => {
             const theme = getCardTheme(i);
-            const bgUrl = room.theme?.background_id ? getAssetUrl(room.theme.background_id, 'background') : null;
-            const frameUrl = room.theme?.frame_id ? getAssetUrl(room.theme.frame_id, 'frame') : null;
+            const bgUrl = room.theme?.background_url || (room.theme?.background_id ? getAssetUrl(room.theme.background_id, 'background') : null);
+            const frameUrl = room.theme?.frame_url || (room.theme?.frame_id ? getAssetUrl(room.theme.frame_id, 'frame') : null);
             
             return (
               <div key={room.id} className="lb-room-card relative overflow-hidden" style={{ background: bgUrl ? '#1a1a2e' : theme.bg }}>
