@@ -1182,7 +1182,7 @@ export async function adminGetDashboardStats(db: D1Database) {
   const [totalUsersRes, premiumUsersRes, paymentsRes, activeUsersRes, mauRes, ticketsRes, questionsRes, usersTrendRes, examsTrendRes] = await Promise.all([
     db.prepare("SELECT COUNT(*) as count FROM users").first<{count: number}>(),
     db.prepare("SELECT COUNT(*) as count FROM users WHERE plan_type = 'premium'").first<{count: number}>(),
-    db.prepare("SELECT amount, status, created_at FROM payments").all(),
+    db.prepare("SELECT amount, status, created_at FROM transactions").all(),
     db.prepare("SELECT COUNT(*) as count FROM users WHERE last_active_at >= ?").bind(todayStartISO).first<{count: number}>(),
     db.prepare("SELECT COUNT(*) as count FROM users WHERE last_active_at >= datetime('now', '-30 day')").first<{count: number}>(),
     db.prepare("SELECT COUNT(*) as count FROM tickets WHERE created_at >= datetime('now', '-1 day')").first<{count: number}>(),
@@ -1262,18 +1262,31 @@ export async function adminGetDashboardStats(db: D1Database) {
       if (status === 'pending') {
           pendingRevenue += amount;
       } else if (status === 'approved' || status === 'completed' || status === 'success') {
-          totalRevenue += amount;
+          // Calculate Stripe fee
+          // Assuming PromptPay (1.65% + 7% VAT) for amounts < 100 THB, otherwise Card (3.65% + 10 THB + 7% VAT)
+          let fee = 0;
+          if (amount < 100) {
+              fee = amount * 0.0165;
+          } else {
+              fee = (amount * 0.0365) + 10;
+          }
+          let vat = fee * 0.07;
+          let totalFee = fee + vat;
+          let netAmount = amount - totalFee;
+          if (netAmount < 0) netAmount = 0;
+
+          totalRevenue += netAmount;
           
           if (created_at.getFullYear() === currentYear) {
-              yearlyRevenue += amount;
+              yearlyRevenue += netAmount;
               if (created_at.getMonth() === currentMonth) {
-                  monthlyRevenue += amount;
+                  monthlyRevenue += netAmount;
               }
           }
           
           const key = `${created_at.getFullYear()}-${created_at.getMonth()}`;
           if (trendMap[key]) {
-              trendMap[key].value += amount;
+              trendMap[key].value += netAmount;
           }
       }
   }
