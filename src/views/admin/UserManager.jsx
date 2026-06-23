@@ -547,6 +547,20 @@ const UserManager = () => {
         }
     };
 
+    const handleRevokePremium = (id) => {
+        if (window.confirm('Are you sure you want to remove Premium status from this user?')) {
+            updateUserMutation.mutate({
+                id,
+                data: {
+                    plan_type: 'free',
+                    premium_start_date: null,
+                    premium_expiry: null
+                }
+            });
+        }
+    };
+
+
     const handleStatusChange = (id, currentStatus) => {
         const newStatus = currentStatus === 'banned' ? 'active' : 'banned';
         const action = newStatus === 'banned' ? 'Ban' : 'Activate';
@@ -978,13 +992,22 @@ const UserManager = () => {
                                                     </button>
                                                 </>
                                             )}
-                                            {user.role !== 'admin' && user.plan_type !== 'premium' && user.role !== 'sponsor' && (
-                                                <button
-                                                    onClick={() => handleUpgrade(user.id)}
-                                                    className="text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded transition-colors text-xs font-medium border border-indigo-200"
-                                                >
-                                                    Upgrade to Premium
-                                                </button>
+                                            {user.role !== 'admin' && user.role !== 'sponsor' && (
+                                                user.plan_type !== 'premium' ? (
+                                                    <button
+                                                        onClick={() => handleUpgrade(user.id)}
+                                                        className="text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded transition-colors text-xs font-medium border border-indigo-200"
+                                                    >
+                                                        มอบพรีเมียม
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleRevokePremium(user.id)}
+                                                        className="text-yellow-600 hover:bg-yellow-50 px-3 py-1.5 rounded transition-colors text-xs font-medium border border-yellow-200 flex items-center inline-flex"
+                                                    >
+                                                        <CheckCircle size={12} className="mr-1" /> ปลดพรีเมียม
+                                                    </button>
+                                                )
                                             )}
 
                                             <button
