@@ -32,7 +32,12 @@ export function generateStaticParams() {
     { slug: ['admin', 'exam-sets'] },
     { slug: ['admin', 'animations'] },
     { slug: ['admin', 'animations', 'preview'] },
+    { slug: ['admin', 'support'] },
+    { slug: ['admin', 'backups'] },
     { slug: ['room'] },
+    { slug: ['lobby'] },
+    { slug: ['premium-upgrade'] },
+    { slug: ['safety'] },
     { slug: ['forgot-password'] },
     { slug: ['reset-password'] },
     { slug: ['business'] },
@@ -58,7 +63,9 @@ export function generateStaticParams() {
     { slug: ['pricing'] },
     { slug: ['contact'] },
     { slug: ['policy'] },
-    { slug: ['faq'] }
+    { slug: ['faq'] },
+    { slug: ['payment', 'success'] },
+    { slug: ['payment', 'cancel'] }
   ];
 }
 

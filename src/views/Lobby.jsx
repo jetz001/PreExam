@@ -4,6 +4,7 @@ import roomService from '../services/roomService';
 import authService from '../services/authService';
 import userService from '../services/userService';
 import api from '../services/api';
+import { getAssetUrl } from '../utils/assets';
 import { Search, Play, Users, Lock, ChevronRight, Plus } from 'lucide-react';
 import CreateRoomModal from '../components/room/CreateRoomModal';
 
@@ -560,9 +561,20 @@ export default function Lobby() {
         <div className="lb-rooms-grid">
           {filteredRooms.map((room, i) => {
             const theme = getCardTheme(i);
+            const bgUrl = room.theme?.background_id ? getAssetUrl(room.theme.background_id, 'background') : null;
+            const frameUrl = room.theme?.frame_id ? getAssetUrl(room.theme.frame_id, 'frame') : null;
+            
             return (
-              <div key={room.id} className="lb-room-card" style={{ background: theme.bg }}>
-                <div className="lb-room-header" style={{ background: theme.header }}>
+              <div key={room.id} className="lb-room-card relative overflow-hidden" style={{ background: bgUrl ? '#1a1a2e' : theme.bg }}>
+                {bgUrl && (
+                  <div className="absolute inset-0 z-0">
+                    <img src={bgUrl} alt="room bg" className="w-full h-full object-cover opacity-60" />
+                  </div>
+                )}
+                {frameUrl && (
+                  <div className="absolute inset-0 z-10 border-[8px] pointer-events-none" style={{ borderImage: `url(${frameUrl}) 30 round` }}></div>
+                )}
+                <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'rgba(0,0,0,0.5)' : theme.header, backdropFilter: bgUrl ? 'blur(4px)' : 'none' }}>
                   <div className="lb-room-count">
                     <Users size={14} strokeWidth={3}/> {room.participant_count}
                   </div>
@@ -570,13 +582,13 @@ export default function Lobby() {
                     {room.mode === 'tutor' ? '🎓 ติวเตอร์' : '🎮 แข่งขัน'}
                   </div>
                   <div className="lb-room-icon">{theme.icon}</div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '4px' }}>{room.name}</h3>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '4px', textShadow: bgUrl ? '0 2px 4px rgba(0,0,0,0.8)' : 'none' }}>{room.name}</h3>
                 </div>
                 
-                <div className="lb-room-body">
+                <div className="lb-room-body relative z-20">
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{room.subject}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#666', fontWeight: 700, marginTop: '2px' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, textShadow: bgUrl ? '0 1px 3px rgba(0,0,0,0.8)' : 'none' }}>{room.subject}</div>
+                    <div style={{ fontSize: '0.75rem', color: bgUrl ? '#ccc' : '#666', fontWeight: 700, marginTop: '2px', position: 'relative', zIndex: 10 }}>
                       By {room.host_name || room.Host?.display_name || 'Unknown'}
                     </div>
                     {room.password && <Lock size={12} className="text-gray-400 mt-1" />}

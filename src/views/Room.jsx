@@ -11,6 +11,7 @@ import TutorDashboard from '../components/TutorDashboard';
 import { Users, Play, LogOut } from 'lucide-react';
 import AdSlot from '../components/ads/AdSlot';
 import DOMPurify from 'dompurify';
+import { getAssetUrl } from '../utils/assets';
 
 const decodeHtml = (html) => {
     const txt = document.createElement("textarea");
@@ -298,14 +299,24 @@ const Room = () => {
                 .float-anim { animation: float 6s ease-in-out infinite; }
             `}</style>
             
-            {/* Playful Floating Shapes behind */}
-            <div className="room-wrapper">
-                <div className="absolute top-10 right-20 text-8xl opacity-50 float-anim" style={{ animationDelay: '0s' }}>☁️</div>
-                <div className="absolute bottom-10 left-10 text-8xl opacity-50 float-anim" style={{ animationDelay: '1s' }}>🚀</div>
-                <div className="absolute top-1/2 right-10 text-6xl opacity-40 float-anim" style={{ animationDelay: '2s' }}>🎮</div>
-                <div className="absolute top-32 left-32 text-6xl opacity-50 float-anim" style={{ animationDelay: '3s' }}>⭐</div>
-                <div className="absolute bottom-32 right-1/3 text-7xl opacity-40 float-anim" style={{ animationDelay: '1.5s' }}>🎯</div>
+            {/* Playful Floating Shapes or Custom Background */}
+            <div className="room-wrapper" style={room.theme?.background_id ? { background: '#1a1a2e' } : {}}>
+                {room.theme?.background_id ? (
+                    <img src={getAssetUrl(room.theme.background_id, 'background')} alt="room bg" className="absolute inset-0 w-full h-full object-cover opacity-60 z-0" />
+                ) : (
+                    <>
+                        <div className="absolute top-10 right-20 text-8xl opacity-50 float-anim" style={{ animationDelay: '0s' }}>☁️</div>
+                        <div className="absolute bottom-10 left-10 text-8xl opacity-50 float-anim" style={{ animationDelay: '1s' }}>🚀</div>
+                        <div className="absolute top-1/2 right-10 text-6xl opacity-40 float-anim" style={{ animationDelay: '2s' }}>🎮</div>
+                        <div className="absolute top-32 left-32 text-6xl opacity-50 float-anim" style={{ animationDelay: '3s' }}>⭐</div>
+                        <div className="absolute bottom-32 right-1/3 text-7xl opacity-40 float-anim" style={{ animationDelay: '1.5s' }}>🎯</div>
+                    </>
+                )}
             </div>
+            
+            {room.theme?.frame_id && (
+                <div className="fixed inset-0 z-50 pointer-events-none border-[16px] md:border-[24px]" style={{ borderImage: `url(${getAssetUrl(room.theme.frame_id, 'frame')}) 30 round` }}></div>
+            )}
 
             <div className="container mx-auto px-4 py-8 flex flex-col h-full relative z-10">
                 {/* Room Header */}
