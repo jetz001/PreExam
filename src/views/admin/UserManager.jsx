@@ -870,38 +870,45 @@ const UserManager = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            {user.role === 'admin' ? (
-                                                <div className="flex flex-col items-start gap-1">
-                                                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-bold flex items-center w-fit">
-                                                        <Shield size={12} className="mr-1" /> Admin
-                                                    </span>
-                                                    {user.admin_permissions && user.admin_permissions.length > 0 && (
-                                                        <span className="text-[10px] text-gray-400">
-                                                            {user.admin_permissions.length} Permissions
+                                            <div className="flex flex-col items-start gap-2">
+                                                <div className="flex flex-wrap items-center gap-1">
+                                                    {user.role === 'admin' && (
+                                                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-bold flex items-center w-fit">
+                                                            <Shield size={12} className="mr-1" /> Admin
+                                                        </span>
+                                                    )}
+                                                    {user.role === 'sponsor' && (
+                                                        <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-md text-xs font-bold flex items-center w-fit">
+                                                            <Briefcase size={12} className="mr-1" /> Sponsor
+                                                        </span>
+                                                    )}
+                                                    {(!user.role || user.role === 'user') && user.plan_type !== 'premium' && (
+                                                        <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium flex items-center w-fit border border-slate-200">
+                                                            <User size={12} className="mr-1" /> สมาชิกทั่วไป
+                                                        </span>
+                                                    )}
+                                                    
+                                                    {(user.role === 'admin' || (user.plan_type === 'premium' && (!user.premium_expiry || new Date(user.premium_expiry) > new Date()))) && (
+                                                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center w-fit">
+                                                            <CheckCircle size={12} className="mr-1" /> Premium
                                                         </span>
                                                     )}
                                                 </div>
-                                            ) : user.plan_type === 'premium' ? (
-                                                <div className="flex flex-col items-start gap-1">
-                                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center w-fit">
-                                                        <CheckCircle size={12} className="mr-1" /> Premium
+
+                                                {/* Details under badges */}
+                                                {user.role === 'admin' && user.admin_permissions && user.admin_permissions.length > 0 && (
+                                                    <span className="text-[10px] text-gray-400 mt-1">
+                                                        {user.admin_permissions.length} Permissions
                                                     </span>
-                                                    {(user.premium_start_date || user.premium_expiry) && (
-                                                        <div className="text-[10px] text-gray-500 mt-1">
-                                                            {user.premium_start_date && <div>เริ่ม: {new Date(user.premium_start_date).toLocaleDateString()}</div>}
-                                                            {user.premium_expiry && <div className="text-red-500">หมดอายุ: {new Date(user.premium_expiry).toLocaleDateString()}</div>}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ) : user.role === 'sponsor' ? (
-                                                <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-md text-xs font-bold flex items-center w-fit">
-                                                    <Briefcase size={12} className="mr-1" /> Sponsor
-                                                </span>
-                                            ) : (
-                                                <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-xs flex items-center w-fit">
-                                                    Free User
-                                                </span>
-                                            )}
+                                                )}
+                                                
+                                                {user.plan_type === 'premium' && (user.premium_start_date || user.premium_expiry) && (
+                                                    <div className="text-[10px] text-gray-500 mt-1">
+                                                        {user.premium_start_date && <div>เริ่ม: {new Date(user.premium_start_date).toLocaleDateString()}</div>}
+                                                        {user.premium_expiry && <div className="text-red-500">หมดอายุ: {new Date(user.premium_expiry).toLocaleDateString()}</div>}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-500">
                                             <button
