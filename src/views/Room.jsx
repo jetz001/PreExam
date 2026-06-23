@@ -348,7 +348,7 @@ const Room = () => {
                     if (frameUrl.endsWith('.json')) {
                         return <LottieViewer url={frameUrl} className="fixed inset-0 w-full h-full z-50 pointer-events-none" />;
                     }
-                    return <div className="fixed inset-0 z-50 pointer-events-none border-[16px] md:border-[24px]" style={{ borderImage: `url(${frameUrl}) 30 round` }}></div>;
+                    return <img src={frameUrl} alt="frame" className="fixed inset-0 w-full h-full z-50 pointer-events-none" style={{ objectFit: 'fill' }} />;
                 })()
             )}
 

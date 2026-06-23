@@ -581,7 +581,12 @@ export default function Lobby() {
                     {frameUrl.endsWith('.json') ? (
                         <LottieViewer url={frameUrl} className="w-full h-full" />
                     ) : (
-                        <div className="absolute inset-0 border-[8px]" style={{ borderImage: `url(${frameUrl}) 30 round` }}></div>
+                        <img
+                            src={frameUrl}
+                            alt="frame"
+                            className="absolute inset-0 w-full h-full"
+                            style={{ objectFit: 'fill' }}
+                        />
                     )}
                   </div>
                 )}

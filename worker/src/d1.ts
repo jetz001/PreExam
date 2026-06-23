@@ -1253,8 +1253,19 @@ export async function adminGetDashboardStats(db: D1Database) {
       };
   });
 
-  const payments = (paymentsRes.results || []) as any[];
-  for (const data of payments) {
+  // Stripe transactions (from transactions table)
+  const stripeTransactions = (paymentsRes.results || []) as any[];
+
+  // Manual payments (PromptPay/slip - from payments table)
+  let manualPaymentsResults: any[] = [];
+  try {
+    const mpRes = await db.prepare("SELECT amount, status, created_at, 'manual' as source FROM payments").all();
+    manualPaymentsResults = (mpRes.results || []) as any[];
+  } catch(e) {
+    // payments table may not exist in some envs
+  }
+
+  for (const data of stripeTransactions) {
       const amount = Number(data.amount) || 0;
       const status = (data.status || 'unknown').toLowerCase();
       const created_at = new Date(data.created_at);
@@ -1262,32 +1273,36 @@ export async function adminGetDashboardStats(db: D1Database) {
       if (status === 'pending') {
           pendingRevenue += amount;
       } else if (status === 'approved' || status === 'completed' || status === 'success') {
-          // Calculate Stripe fee
-          // Assuming PromptPay (1.65% + 7% VAT) for amounts < 100 THB, otherwise Card (3.65% + 10 THB + 7% VAT)
-          let fee = 0;
-          if (amount < 100) {
-              fee = amount * 0.0165;
-          } else {
-              fee = (amount * 0.0365) + 10;
-          }
-          let vat = fee * 0.07;
-          let totalFee = fee + vat;
-          let netAmount = amount - totalFee;
-          if (netAmount < 0) netAmount = 0;
+          // Stripe fee: PromptPay 1.65% + 7% VAT for <100 THB, Card 3.65% + 10 THB + 7% VAT
+          let fee = amount < 100 ? amount * 0.0165 : (amount * 0.0365) + 10;
+          let netAmount = Math.max(0, amount - (fee * 1.07));
 
           totalRevenue += netAmount;
-          
           if (created_at.getFullYear() === currentYear) {
               yearlyRevenue += netAmount;
-              if (created_at.getMonth() === currentMonth) {
-                  monthlyRevenue += netAmount;
-              }
+              if (created_at.getMonth() === currentMonth) monthlyRevenue += netAmount;
           }
-          
           const key = `${created_at.getFullYear()}-${created_at.getMonth()}`;
-          if (trendMap[key]) {
-              trendMap[key].value += netAmount;
+          if (trendMap[key]) trendMap[key].value += netAmount;
+      }
+  }
+
+  for (const data of manualPaymentsResults) {
+      const amount = Number(data.amount) || 0;
+      const status = (data.status || 'unknown').toLowerCase();
+      const created_at = new Date(data.created_at);
+      
+      if (status === 'pending') {
+          pendingRevenue += amount;
+      } else if (status === 'approved' || status === 'completed' || status === 'success') {
+          // Manual payments: no Stripe fee, count full amount as revenue
+          totalRevenue += amount;
+          if (created_at.getFullYear() === currentYear) {
+              yearlyRevenue += amount;
+              if (created_at.getMonth() === currentMonth) monthlyRevenue += amount;
           }
+          const key = `${created_at.getFullYear()}-${created_at.getMonth()}`;
+          if (trendMap[key]) trendMap[key].value += amount;
       }
   }
 
