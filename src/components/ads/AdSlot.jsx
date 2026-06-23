@@ -3,8 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import adsApi from '../../services/adsApi';
 import { ExternalLink } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
+import useUserRole from '../../hooks/useUserRole';
 
 const AdSlot = ({ placement, className = "" }) => {
+    const { isPremium } = useUserRole();
+
     // Viewability Logic
     const { ref, inView } = useInView({
         threshold: 0.5, // 50% visible
@@ -35,6 +38,7 @@ const AdSlot = ({ placement, className = "" }) => {
         },
         refetchOnWindowFocus: false,
         staleTime: 1000 * 60 * 5, // Cache for a bit
+        enabled: !isPremium
     });
 
     // Fetch Config for House Ad details (Moved from conditional block)
@@ -42,12 +46,12 @@ const AdSlot = ({ placement, className = "" }) => {
         queryKey: ['adsConfig'],
         queryFn: adsApi.getAdsConfig,
         staleTime: 1000 * 60 * 60, // 1 hour
-        enabled: (!!isError || !ad) && fallbackType !== 'google' // Only fetch if fallback needed and not generic google
+        enabled: !isPremium && (!!isError || !ad) && fallbackType !== 'google' // Only fetch if fallback needed and not generic google
     });
 
     // Viewability Timer
     useEffect(() => {
-        if (inView && ad && !viewRecorded) {
+        if (inView && ad && !viewRecorded && !isPremium) {
             timerRef.current = setTimeout(() => {
                 // Trigger 'Burn' API
                 adsApi.recordView(ad.id, apiPlacement).catch(err => console.error("Failed to record view", err));
@@ -63,7 +67,12 @@ const AdSlot = ({ placement, className = "" }) => {
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
         };
-    }, [inView, ad, viewRecorded, apiPlacement]);
+    }, [inView, ad, viewRecorded, apiPlacement, isPremium]);
+
+    // Early return if premium
+    if (isPremium) {
+        return null;
+    }
 
     if (isLoading) return <div className={`animate-pulse bg-gray-100 rounded-lg h-32 ${className}`}></div>;
 
