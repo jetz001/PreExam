@@ -630,6 +630,7 @@ export default function Lobby() {
                   </div>
                   <div className="lb-room-icon relative z-30">{theme.icon}</div>
                   <h3 className="relative z-30" style={{ 
+                    display: 'inline-block',
                     fontSize: '1.1rem', 
                     fontWeight: 900, 
                     marginBottom: '4px', 
