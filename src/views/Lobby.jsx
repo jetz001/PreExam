@@ -598,27 +598,26 @@ export default function Lobby() {
                   )}
                 </div>
 
-                {frameUrl && (
-                  frameUrl.endsWith('.json') ? (
-                    <LottieViewer url={frameUrl} className="absolute z-20 pointer-events-none" style={{ top: '-15px', left: '-15px', width: 'calc(100% + 30px)', height: 'calc(100% + 30px)' }} preserveAspectRatio="none" />
-                  ) : (
-                    <div className="absolute inset-0 z-20 pointer-events-none" style={{
-                      border: '10px solid transparent',
-                      borderImage: `url(${frameUrl}) 30% stretch`,
-                      borderRadius: '20px'
-                    }} />
-                  )
-                )}
-                
                 <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'rgba(0,0,0,0.5)' : theme.header, backdropFilter: bgUrl ? 'blur(4px)' : 'none', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
-                  <div className="lb-room-count">
+                  {frameUrl && (
+                    frameUrl.endsWith('.json') ? (
+                      <LottieViewer url={frameUrl} className="absolute z-20 pointer-events-none" style={{ top: '-12px', left: '-12px', right: '-12px', bottom: '-12px', width: 'calc(100% + 24px)', height: 'calc(100% + 24px)' }} preserveAspectRatio="none" />
+                    ) : (
+                      <div className="absolute inset-0 z-20 pointer-events-none" style={{
+                        border: '10px solid transparent',
+                        borderImage: `url(${frameUrl}) 30% stretch`,
+                        borderTopLeftRadius: '20px', borderTopRightRadius: '20px'
+                      }} />
+                    )
+                  )}
+                  <div className="lb-room-count relative z-30">
                     <Users size={14} strokeWidth={3}/> {room.participant_count}
                   </div>
-                  <div className={`lb-room-mode ${room.mode === 'tutor' ? 'tutor' : 'exam'}`}>
+                  <div className={`lb-room-mode ${room.mode === 'tutor' ? 'tutor' : 'exam'} relative z-30`}>
                     {room.mode === 'tutor' ? '🎓 ติวเตอร์' : '🎮 แข่งขัน'}
                   </div>
-                  <div className="lb-room-icon">{theme.icon}</div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '4px', textShadow: bgUrl ? '0 2px 4px rgba(0,0,0,0.8)' : 'none' }}>{room.name}</h3>
+                  <div className="lb-room-icon relative z-30">{theme.icon}</div>
+                  <h3 className="relative z-30" style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '4px', textShadow: bgUrl ? '0 2px 4px rgba(0,0,0,0.8)' : 'none' }}>{room.name}</h3>
                 </div>
                 
                 <div className="lb-room-body relative z-20" style={{ borderBottomLeftRadius: '20px', borderBottomRightRadius: '20px' }}>
