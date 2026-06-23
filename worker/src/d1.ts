@@ -2067,3 +2067,51 @@ export async function getCatalogCounts(db: any) {
   });
   return counts;
 }
+
+// ARCADE
+export async function adminGetArcadeGames(db: D1Database) {
+  const { results } = await db.prepare("SELECT * FROM arcade_games ORDER BY order_index ASC").all();
+  return results;
+}
+
+export async function adminCreateArcadeGame(db: D1Database, data: any) {
+  const id = crypto.randomUUID();
+  const title = data.title || "";
+  const description = data.description || "";
+  const thumbnail_url = data.thumbnail_url || "";
+  const game_url = data.game_url || "";
+  const internal_component = data.internal_component || "";
+  const mode = data.mode || "both";
+  const is_active = data.is_active !== undefined ? (data.is_active ? 1 : 0) : 1;
+  const order_index = data.order_index || 0;
+
+  await db.prepare(
+    "INSERT INTO arcade_games (id, title, description, thumbnail_url, game_url, internal_component, mode, is_active, order_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(id, title, description, thumbnail_url, game_url, internal_component, mode, is_active, order_index).run();
+
+  return { id, title, description, thumbnail_url, game_url, internal_component, mode, is_active, order_index };
+}
+
+export async function adminUpdateArcadeGame(db: D1Database, id: string, data: any) {
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (data.title !== undefined) { updates.push("title = ?"); values.push(data.title); }
+  if (data.description !== undefined) { updates.push("description = ?"); values.push(data.description); }
+  if (data.thumbnail_url !== undefined) { updates.push("thumbnail_url = ?"); values.push(data.thumbnail_url); }
+  if (data.game_url !== undefined) { updates.push("game_url = ?"); values.push(data.game_url); }
+  if (data.internal_component !== undefined) { updates.push("internal_component = ?"); values.push(data.internal_component); }
+  if (data.mode !== undefined) { updates.push("mode = ?"); values.push(data.mode); }
+  if (data.is_active !== undefined) { updates.push("is_active = ?"); values.push(data.is_active ? 1 : 0); }
+  if (data.order_index !== undefined) { updates.push("order_index = ?"); values.push(data.order_index); }
+
+  if (updates.length > 0) {
+    updates.push("updated_at = CURRENT_TIMESTAMP");
+    values.push(id);
+    await db.prepare(`UPDATE arcade_games SET ${updates.join(", ")} WHERE id = ?`).bind(...values).run();
+  }
+}
+
+export async function adminDeleteArcadeGame(db: D1Database, id: string) {
+  await db.prepare("DELETE FROM arcade_games WHERE id = ?").bind(id).run();
+}

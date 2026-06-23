@@ -129,6 +129,10 @@ import {
   listExamSets,
   getUniqueCatalogs,
   getCatalogCounts,
+  adminGetArcadeGames,
+  adminCreateArcadeGame,
+  adminUpdateArcadeGame,
+  adminDeleteArcadeGame,
 } from "./d1";
 
 export { RealtimeDO };
@@ -1707,6 +1711,38 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           if ("error" in auth) return auth.error;
           await adminRejectPayment(env.DB, adminRejectPaymentMatch[1]);
           return json({ success: true, message: "Payment rejected" });
+        }
+
+        // =======================
+        // ADMIN ARCADE ROUTES
+        // =======================
+        if (url.pathname === "/api/admin/arcade" && request.method === "GET") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const games = await adminGetArcadeGames(env.DB);
+          return json(games);
+        }
+
+        if (url.pathname === "/api/admin/arcade" && request.method === "POST") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          const game = await adminCreateArcadeGame(env.DB, reqBody || {});
+          return json({ success: true, game });
+        }
+
+        const adminArcadeIdMatch = url.pathname.match(/^\/api\/admin\/arcade\/([^\/]+)$/);
+        if (adminArcadeIdMatch && request.method === "PUT") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          await adminUpdateArcadeGame(env.DB, adminArcadeIdMatch[1], reqBody || {});
+          return json({ success: true });
+        }
+
+        if (adminArcadeIdMatch && request.method === "DELETE") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+          await adminDeleteArcadeGame(env.DB, adminArcadeIdMatch[1]);
+          return json({ success: true });
         }
 
         // =======================
