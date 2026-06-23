@@ -586,26 +586,16 @@ export default function Lobby() {
               || null;
             
             return (
-              <div key={room.id} className="lb-room-card relative" style={{ background: bgUrl ? '#1a1a2e' : theme.bg, borderRadius: '20px' }}>
-                {/* Background overlay with overflow hidden */}
-                <div className="absolute inset-0 z-0 pointer-events-none" style={{ borderRadius: '20px', overflow: 'hidden' }}>
-                  {bgUrl && (
-                    bgUrl.endsWith('.json') ? (
-                        <LottieViewer url={bgUrl} className="w-full h-full object-cover opacity-60" />
-                    ) : (
-                        <img src={bgUrl} alt="room bg" className="w-full h-full object-cover opacity-60" />
-                    )
-                  )}
-                </div>
-
+              <div key={room.id} className="lb-room-card relative" style={{ borderRadius: '20px' }}>
+                {/* Frame behind the card, scaled up to overflow */}
                 {frameUrl && (
-                  <div className="absolute inset-0 z-30 pointer-events-none" style={{ borderRadius: '20px', overflow: 'hidden' }}>
+                  <div className="absolute z-0 pointer-events-none" style={{ top: '-15px', left: '-15px', width: 'calc(100% + 30px)', height: 'calc(100% + 30px)', borderRadius: '35px', overflow: 'hidden' }}>
                     {frameUrl.endsWith('.json') ? (
                       <LottieViewer 
                         url={frameUrl} 
                         className="w-full h-full" 
                         preserveAspectRatio="none" 
-                        style={{ filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}
+                        style={{ filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.3))' }}
                       />
                     ) : (
                       <div className="w-full h-full" style={{
@@ -615,6 +605,20 @@ export default function Lobby() {
                     )}
                   </div>
                 )}
+
+                {/* Solid Background to hide the inner part of the frame */}
+                <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: bgUrl ? '#1a1a2e' : theme.bg, borderRadius: '20px', boxShadow: frameUrl ? '0 0 0 2px rgba(0,0,0,0.5)' : 'none' }}></div>
+
+                {/* Background image overlay */}
+                <div className="absolute inset-0 z-10 pointer-events-none" style={{ borderRadius: '20px', overflow: 'hidden' }}>
+                  {bgUrl && (
+                    bgUrl.endsWith('.json') ? (
+                        <LottieViewer url={bgUrl} className="w-full h-full object-cover opacity-60" />
+                    ) : (
+                        <img src={bgUrl} alt="room bg" className="w-full h-full object-cover opacity-60" />
+                    )
+                  )}
+                </div>
 
                 <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'rgba(0,0,0,0.5)' : theme.header, backdropFilter: bgUrl ? 'blur(4px)' : 'none', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
                   <div className="lb-room-count relative z-30">
