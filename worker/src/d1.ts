@@ -1210,7 +1210,6 @@ export async function adminGetDashboardStats(db: D1Database) {
   let yearlyRevenue = 0;
   let pendingRevenue = 0;
 
-  const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
