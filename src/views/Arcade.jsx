@@ -16,6 +16,43 @@ export default function Arcade() {
     const [games, setGames] = useState([]);
     const [loading, setLoading] = useState(false);
     const [playingGame, setPlayingGame] = useState(null);
+    const [leaderboardGame, setLeaderboardGame] = useState(null);
+    const [leaderboardData, setLeaderboardData] = useState([]);
+    const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+
+    useEffect(() => {
+        const handleMessage = async (event) => {
+            if (event.data && event.data.type === 'GAME_OVER' && event.data.score !== undefined) {
+                if (playingGame) {
+                    try {
+                        await api.post('/arcade/score', {
+                            game_id: playingGame.id,
+                            score: event.data.score
+                        });
+                    } catch (err) {
+                        console.error('Failed to save score:', err);
+                    }
+                }
+            }
+        };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [playingGame]);
+
+    const fetchLeaderboard = async (game) => {
+        setLeaderboardGame(game);
+        setLoadingLeaderboard(true);
+        try {
+            const res = await api.get(`/arcade/${game.id}/leaderboard`);
+            if (res.data.success) {
+                setLeaderboardData(res.data.data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch leaderboard:', err);
+        } finally {
+            setLoadingLeaderboard(false);
+        }
+    };
 
     useEffect(() => {
         if (mode) {
@@ -134,12 +171,20 @@ export default function Arcade() {
                             <div className="p-6 flex flex-col flex-grow">
                                 <h3 className="text-2xl font-black text-gray-800 mb-2">{game.title}</h3>
                                 <p className="text-gray-600 mb-6 flex-grow">{game.description}</p>
-                                <button 
-                                    onClick={() => setPlayingGame(game)}
-                                    className="w-full text-center py-3 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-lg shadow-indigo-500/30 transition-all"
-                                >
-                                    เล่นเกมนี้ &rarr;
-                                </button>
+                                <div className="flex gap-2 w-full mt-auto">
+                                    <button 
+                                        onClick={() => fetchLeaderboard(game)}
+                                        className="flex-1 text-center py-3 rounded-xl text-[#1e1b4b] font-bold text-lg bg-yellow-400 hover:bg-yellow-500 shadow-lg shadow-yellow-500/30 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        🏆 จัดอันดับ
+                                    </button>
+                                    <button 
+                                        onClick={() => setPlayingGame(game)}
+                                        className="flex-1 text-center py-3 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        ▶️ เล่นเกมนี้
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -176,6 +221,46 @@ export default function Arcade() {
 
     return (
         <>
+            {/* Leaderboard Modal */}
+            {leaderboardGame && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-[#1e1b4b] border-2 border-indigo-500 rounded-3xl w-full max-w-lg shadow-[0_0_40px_rgba(99,102,241,0.4)] overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-indigo-500/30 flex justify-between items-center bg-indigo-900/40">
+                            <div>
+                                <h3 className="text-2xl font-black text-white flex items-center gap-2">🏆 Leaderboard</h3>
+                                <p className="text-indigo-200 text-sm mt-1">{leaderboardGame.title}</p>
+                            </div>
+                            <button onClick={() => setLeaderboardGame(null)} className="text-white/50 hover:text-white bg-white/5 hover:bg-white/10 rounded-full w-10 h-10 flex items-center justify-center transition-all">✕</button>
+                        </div>
+                        <div className="p-6 overflow-y-auto flex-1">
+                            {loadingLeaderboard ? (
+                                <div className="text-center py-10 text-white font-bold">กำลังโหลดข้อมูล...</div>
+                            ) : leaderboardData.length === 0 ? (
+                                <div className="text-center py-10 text-white/50">ยังไม่มีใครทำคะแนนได้ในเกมนี้ มาเป็นคนแรกกันเถอะ!</div>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {leaderboardData.map((entry, idx) => (
+                                        <div key={idx} className={`flex items-center gap-4 p-4 rounded-2xl ${idx === 0 ? 'bg-yellow-500/20 border border-yellow-500/50' : idx === 1 ? 'bg-gray-300/10 border border-gray-300/30' : idx === 2 ? 'bg-orange-600/20 border border-orange-500/30' : 'bg-white/5'} transition-all hover:bg-white/10`}>
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg ${idx === 0 ? 'bg-yellow-500 text-[#1e1b4b]' : idx === 1 ? 'bg-gray-300 text-[#1e1b4b]' : idx === 2 ? 'bg-orange-500 text-white' : 'bg-white/10 text-white'}`}>
+                                                {idx + 1}
+                                            </div>
+                                            <img src={entry.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + entry.display_name} alt="avatar" className="w-12 h-12 rounded-full bg-white/10 object-cover" />
+                                            <div className="flex-1">
+                                                <div className="font-bold text-white text-lg">{entry.display_name || 'Anonymous'}</div>
+                                                <div className="text-white/50 text-sm">{new Date(entry.created_at).toLocaleDateString('th-TH')}</div>
+                                            </div>
+                                            <div className="font-black text-2xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">
+                                                {entry.score.toLocaleString()}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
 

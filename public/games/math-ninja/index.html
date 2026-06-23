@@ -298,6 +298,7 @@
             gameOverModal.style.display = 'flex';
             container.style.borderColor = '#ef4444';
             answerInput.blur();
+            window.parent.postMessage({ type: 'GAME_OVER', score: score }, '*');
         }
 
         function startGame() {

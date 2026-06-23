@@ -199,7 +199,11 @@
                 matches++;
                 document.getElementById('matches').textContent = matches;
                 if (matches === 8) {
-                    setTimeout(() => alert('🎉 ยินดีด้วย! คุณชนะแล้ว! ใช้เวลาจับคู่ไป ' + moves + ' ครั้ง'), 500);
+                    const finalScore = Math.max(10, 1000 - (moves * 15));
+                    setTimeout(() => {
+                        alert('🎉 ยินดีด้วย! คุณชนะแล้ว! ใช้เวลาจับคู่ไป ' + moves + ' ครั้ง ได้คะแนน ' + finalScore);
+                        window.parent.postMessage({ type: 'GAME_OVER', score: finalScore }, '*');
+                    }, 500);
                 }
             } else {
                 unflipCards();

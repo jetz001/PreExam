@@ -2457,6 +2457,47 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           return json({ success: true, data: games });
         }
 
+        // /api/arcade/score (POST)
+        if (url.pathname === "/api/arcade/score" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+
+          const body = await readJson(request) as any;
+          if (!body || !body.game_id || typeof body.score !== "number") {
+            return json({ success: false, message: "Invalid parameters" }, { status: 400 });
+          }
+
+          const existingScore = await env.DB.prepare("SELECT score FROM arcade_scores WHERE user_id = ? AND game_id = ?")
+            .bind(auth.userId, body.game_id).first<{ score: number }>();
+          
+          if (!existingScore) {
+             const newId = globalThis.crypto.randomUUID();
+             await env.DB.prepare("INSERT INTO arcade_scores (id, user_id, game_id, score, created_at) VALUES (?, ?, ?, ?, ?)")
+                .bind(newId, auth.userId, body.game_id, body.score, new Date().toISOString())
+                .run();
+          } else if (body.score > existingScore.score) {
+             await env.DB.prepare("UPDATE arcade_scores SET score = ?, created_at = ? WHERE user_id = ? AND game_id = ?")
+                .bind(body.score, new Date().toISOString(), auth.userId, body.game_id)
+                .run();
+          }
+          return json({ success: true, message: "Score saved" });
+        }
+
+        // /api/arcade/:game_id/leaderboard (GET)
+        const leaderboardMatch = url.pathname.match(/^\/api\/arcade\/([a-zA-Z0-9_-]+)\/leaderboard$/);
+        if (leaderboardMatch && request.method === "GET") {
+          const gameId = leaderboardMatch[1];
+          const { results } = await env.DB.prepare(`
+             SELECT s.score, s.created_at, u.display_name, u.avatar 
+             FROM arcade_scores s 
+             JOIN users u ON s.user_id = u.id 
+             WHERE s.game_id = ? 
+             ORDER BY s.score DESC 
+             LIMIT 10
+          `).bind(gameId).all();
+          return json({ success: true, data: results });
+        }
+
         // /api/news
         if (url.pathname === "/api/news" && request.method === "GET") {
           try {

@@ -214,6 +214,7 @@
             }
             finalScoreElement.textContent = score;
             gameOverModal.style.display = "block";
+            window.parent.postMessage({ type: 'GAME_OVER', score: score }, '*');
         }
 
         function resetGame() {
