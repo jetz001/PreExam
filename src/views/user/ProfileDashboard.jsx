@@ -4,9 +4,11 @@ import examService from '../../services/examService';
 import api from '../../services/api';
 import ExpGuideModal from '../../components/ExpGuideModal';
 import toast from 'react-hot-toast';
+import useUserRole from '../../hooks/useUserRole';
 
 const ProfileDashboard = () => {
   const { user, stats, xpInfo } = useOutletContext();
+  const { isPremium } = useUserRole();
   const [recentHistory, setRecentHistory] = useState([]);
   const [isExpGuideOpen, setIsExpGuideOpen] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -91,7 +93,10 @@ const ProfileDashboard = () => {
           </div>
         </div>
         <div className="profile-info">
-          <h1>{displayName}</h1>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {displayName}
+            {isPremium && <span style={{ fontSize: '0.45em', background: 'linear-gradient(135deg, #FFD700 0%, #FDB931 100%)', color: '#000', padding: '4px 12px', borderRadius: '12px', fontWeight: '800', letterSpacing: '1px', textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(255, 215, 0, 0.4)', alignSelf: 'center', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>✨ PREMIUM</span>}
+          </h1>
           <div className="handle">@{(user?.public_id || 'player').substring(0, 8)} · เข้าร่วมแล้ว {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'เพิ่งเข้าร่วม'}</div>
           <div className="profile-chips">
             <span className="chip yellow">🏆 Champion</span>
