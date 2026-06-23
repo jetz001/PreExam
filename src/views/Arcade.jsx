@@ -118,11 +118,11 @@ export default function Arcade() {
                                 {game.thumbnail_url ? (
                                     game.thumbnail_url.includes('.lottie') ? (
                                         <div className="w-full h-full flex items-center justify-center bg-[#1a1740]">
-                                            <DotLottieReact src={game.thumbnail_url} loop autoplay />
+                                            <DotLottieReact src={game.thumbnail_url} loop autoplay style={{ width: '100%', height: '100%' }} />
                                         </div>
                                     ) : game.thumbnail_url.includes('.json') || game.thumbnail_url.includes('lottie') ? (
                                         <div className="w-full h-full flex items-center justify-center bg-[#1a1740]">
-                                            <AdaptiveLottie animationUrl={game.thumbnail_url} scale="card" loop={true} autoplay={true} />
+                                            <AdaptiveLottie animationUrl={game.thumbnail_url} scale="none" loop={true} autoplay={true} />
                                         </div>
                                     ) : (
                                         <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" />
