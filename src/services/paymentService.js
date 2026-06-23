@@ -31,7 +31,7 @@ const paymentService = {
     },
 
     getMyTransactions: async () => {
-        const response = await api.get('/payments/transactions');
+        const response = await api.get('/payments/history');
         return response.data;
     },
 
