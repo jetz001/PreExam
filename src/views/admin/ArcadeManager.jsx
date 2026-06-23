@@ -17,6 +17,34 @@ export default function ArcadeManager() {
         order_index: 0
     });
     const [isEdit, setIsEdit] = useState(false);
+    const [uploadingCover, setUploadingCover] = useState(false);
+
+    const handleUploadCover = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploadingCover(true);
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const ext = file.name.split('.').pop();
+        const filename = `arcade_thumb_${currentData.id || Date.now()}.${ext}`;
+        formData.append('exactName', filename);
+
+        try {
+            const res = await api.post('/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            // Append timestamp to bust cache if replacing
+            setCurrentData({ ...currentData, thumbnail_url: `${res.data.url}?t=${Date.now()}` });
+            toast.success('อัปโหลดรูปลง R2 สำเร็จ');
+        } catch (err) {
+            toast.error('อัปโหลดล้มเหลว');
+        } finally {
+            setUploadingCover(false);
+            e.target.value = ''; // Reset input
+        }
+    };
 
     useEffect(() => {
         fetchGames();
@@ -167,8 +195,14 @@ export default function ArcadeManager() {
                                     <textarea value={currentData.description} onChange={e => setCurrentData({...currentData, description: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" rows="2"></textarea>
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700">URL รูปปก (Thumbnail)</label>
-                                    <input type="text" value={currentData.thumbnail_url} onChange={e => setCurrentData({...currentData, thumbnail_url: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="https://..." />
+                                    <label className="block text-sm font-medium text-gray-700">URL รูปปก (Thumbnail) หรือ อัปโหลดลง R2</label>
+                                    <div className="mt-1 flex items-center space-x-2">
+                                        <input type="text" value={currentData.thumbnail_url} onChange={e => setCurrentData({...currentData, thumbnail_url: e.target.value})} className="block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="https://..." />
+                                        <label className="cursor-pointer bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition whitespace-nowrap">
+                                            {uploadingCover ? 'กำลังอัปโหลด...' : 'อัปโหลดปก'}
+                                            <input type="file" accept="image/*,.json,.lottie" className="hidden" onChange={handleUploadCover} disabled={uploadingCover} />
+                                        </label>
+                                    </div>
                                 </div>
                                 
                                 <div className="col-span-2 border-t pt-4 mt-2">
