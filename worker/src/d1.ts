@@ -1174,11 +1174,16 @@ export async function adminUpdateUserQuestion(db: D1Database, id: string, data: 
 }
 
 export async function adminGetDashboardStats(db: D1Database) {
+  const now = new Date();
+  const bkkTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  bkkTime.setUTCHours(0, 0, 0, 0);
+  const todayStartISO = new Date(bkkTime.getTime() - 7 * 60 * 60 * 1000).toISOString();
+
   const [totalUsersRes, premiumUsersRes, paymentsRes, activeUsersRes, mauRes, ticketsRes, questionsRes, usersTrendRes, examsTrendRes] = await Promise.all([
     db.prepare("SELECT COUNT(*) as count FROM users").first<{count: number}>(),
     db.prepare("SELECT COUNT(*) as count FROM users WHERE plan_type = 'premium'").first<{count: number}>(),
     db.prepare("SELECT amount, status, created_at FROM payments").all(),
-    db.prepare("SELECT COUNT(*) as count FROM users WHERE last_active_at >= datetime('now', '-1 day')").first<{count: number}>(),
+    db.prepare("SELECT COUNT(*) as count FROM users WHERE last_active_at >= ?").bind(todayStartISO).first<{count: number}>(),
     db.prepare("SELECT COUNT(*) as count FROM users WHERE last_active_at >= datetime('now', '-30 day')").first<{count: number}>(),
     db.prepare("SELECT COUNT(*) as count FROM tickets WHERE created_at >= datetime('now', '-1 day')").first<{count: number}>(),
     db.prepare("SELECT subject, AVG(difficulty) as avg_diff FROM questions WHERE subject IS NOT NULL AND subject != '' GROUP BY subject ORDER BY avg_diff DESC LIMIT 5").all(),
