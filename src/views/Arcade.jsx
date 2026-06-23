@@ -14,6 +14,7 @@ export default function Arcade() {
     
     const [games, setGames] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [playingGame, setPlayingGame] = useState(null);
 
     useEffect(() => {
         if (mode) {
@@ -122,14 +123,12 @@ export default function Arcade() {
                             <div className="p-6 flex flex-col flex-grow">
                                 <h3 className="text-2xl font-black text-gray-800 mb-2">{game.title}</h3>
                                 <p className="text-gray-600 mb-6 flex-grow">{game.description}</p>
-                                <a 
-                                    href={game.game_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <button 
+                                    onClick={() => setPlayingGame(game)}
                                     className="w-full text-center py-3 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-lg shadow-indigo-500/30 transition-all"
                                 >
                                     เล่นเกมนี้ &rarr;
-                                </a>
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -137,6 +136,32 @@ export default function Arcade() {
             )}
         </div>
     );
+    if (playingGame) {
+        return (
+            <div className="fixed inset-0 z-50 bg-[#1e1b4b] flex flex-col">
+                <div className="bg-[#1e1b4b]/80 backdrop-blur-md text-white px-6 py-4 flex items-center justify-between border-b border-white/10 shadow-lg relative z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-xl shadow-lg">🎮</div>
+                        <div>
+                            <h2 className="font-black text-xl leading-tight">{playingGame.title}</h2>
+                            <p className="text-white/60 text-sm font-semibold">{playingGame.mode === 'solo' ? 'โหมดเล่นคนเดียว' : 'โหมดเล่นหลายคน'}</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => setPlayingGame(null)}
+                        className="bg-white/10 hover:bg-red-500/90 text-white px-6 py-2.5 rounded-full font-bold transition-all flex items-center gap-2 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)]"
+                    >
+                        <span>&times;</span> ออกจากเกม
+                    </button>
+                </div>
+                <iframe 
+                    src={playingGame.game_url} 
+                    className="w-full flex-grow border-none"
+                    title={playingGame.title}
+                />
+            </div>
+        );
+    }
 
     return (
         <>
