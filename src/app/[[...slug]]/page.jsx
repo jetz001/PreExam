@@ -1,7 +1,5 @@
 import ClientAppWrapper from './ClientAppWrapper';
 
-// Required for 'output: export' with dynamic routes
-export const dynamicParams = true;
 export function generateStaticParams() {
   return [
     { slug: [] },
