@@ -20,9 +20,27 @@ const adminApi = {
         return response.data.data;
     },
     createAsset: async (formData) => {
-        const response = await api.post('/assets', formData, {
+        // 1. Upload the file to R2 via /upload endpoint
+        const fileData = new FormData();
+        fileData.append('file', formData.get('image'));
+        
+        const uploadRes = await api.post('/upload', fileData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
+        
+        if (!uploadRes.data.success) {
+            throw new Error('Failed to upload file to R2');
+        }
+
+        // 2. Save the metadata to /assets endpoint
+        const payload = {
+            name: formData.get('name'),
+            type: formData.get('type'),
+            is_premium: formData.get('is_premium') === 'true',
+            url: uploadRes.data.url
+        };
+
+        const response = await api.post('/assets', payload);
         return response.data;
     },
     deleteAsset: async (id) => {

@@ -127,7 +127,7 @@ const AssetManager = () => {
                         <label className="flex items-center cursor-pointer">
                             <input 
                                 type="checkbox" 
-                                className="mr-2 w-4 h-4 text-royal-blue-600 rounded"
+                                className="mr-2 w-4 h-4 text-blue-600 rounded"
                                 checked={formData.is_premium}
                                 onChange={(e) => setFormData({...formData, is_premium: e.target.checked})}
                                 disabled={isUploading}
@@ -142,7 +142,7 @@ const AssetManager = () => {
                         <button 
                             type="submit" 
                             disabled={isUploading}
-                            className="w-full bg-royal-blue-600 hover:bg-royal-blue-700 text-white font-bold py-2.5 rounded-lg flex justify-center items-center transition-colors disabled:opacity-70"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg flex justify-center items-center transition-colors disabled:opacity-70"
                         >
                             {isUploading ? <Loader2 size={18} className="animate-spin" /> : 'Upload'}
                         </button>
