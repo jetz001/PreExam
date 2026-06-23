@@ -32,9 +32,7 @@ export default function ArcadeManager() {
         formData.append('exactName', filename);
 
         try {
-            const res = await api.post('/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const res = await api.post('/upload', formData);
             // Append timestamp to bust cache if replacing
             setCurrentData({ ...currentData, thumbnail_url: `${res.data.url}?t=${Date.now()}` });
             toast.success('อัปโหลดรูปลง R2 สำเร็จ');
