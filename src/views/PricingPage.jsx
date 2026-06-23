@@ -223,11 +223,21 @@ const PricingPage = () => {
                                 <p className="text-gray-400 text-md font-black mb-8 uppercase tracking-widest">One-time payment</p>
 
                                 <ul className="space-y-4 mb-8 flex-1 font-bold text-gray-700 text-lg">
-                                    {(plan.features || []).map((feature, i) => (
-                                        <li key={i} className="flex items-center">
-                                            <Check size={28} strokeWidth={3} className={`${theme.text} mr-3`} /> {feature}
-                                        </li>
-                                    ))}
+                                    {(plan.features || []).map((feature, i) => {
+                                        const PREDEFINED_FEATURES = {
+                                            no_ads: "ปลอดโฆษณา (No Ads)",
+                                            custom_lobby_bg: "เปลี่ยนพื้นหลังล๊อบบี้ (Custom Lobby Background)",
+                                            custom_card_bg: "เปลี่ยนพื้นหลังการ์ดห้อง (Custom Room Card Background)",
+                                            create_rooms: "สร้างห้องได้ (Create Rooms)",
+                                            unlock_exam_filters: "ปลดล๊อคฟิลเตอร์ปีและชุดข้อสอบ (Unlock Exam Filters)"
+                                        };
+                                        const label = PREDEFINED_FEATURES[feature] || feature;
+                                        return (
+                                            <li key={i} className="flex items-center text-left">
+                                                <Check size={28} strokeWidth={3} className={`min-w-[28px] ${theme.text} mr-3`} /> {label}
+                                            </li>
+                                        );
+                                    })}
                                     {(!plan.features || plan.features.length === 0) && (
                                         <li className="flex items-center text-gray-500 italic">No features listed</li>
                                     )}
