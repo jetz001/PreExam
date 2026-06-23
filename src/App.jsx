@@ -5,6 +5,7 @@ import Login from './views/Login';
 import Register from './views/Register';
 import Dashboard from './views/Dashboard';
 import Exam from './views/Exam';
+import Arcade from './views/Arcade';
 // import Admin from './views/Admin'; // Replaced by detailed admin routes
 import AdminLayout from './layouts/AdminLayout';
 import DashboardOverview from './views/admin/DashboardOverview';
@@ -137,6 +138,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/exam" element={<Exam />} />
         <Route path="/exam/result/:id" element={<ExamResult />} />
+        <Route path="/arcade" element={<Arcade />} />
 
         {/* Gamified Profile / Dashboard */}
         <Route path="/profile" element={<ProfileLayout />}>

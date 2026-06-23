@@ -28,11 +28,9 @@ function useConfetti() {
 }
 
 const Home = () => {
-  const [ready, setReady] = useState(false);
   const [soloHover, setSoloHover] = useState(false);
   const [groupHover, setGroupHover] = useState(false);
   const [arcadeHover, setArcadeHover] = useState(false);
-  const [showArcadeModal, setShowArcadeModal] = useState(false);
   const dots = useConfetti();
 
   useEffect(() => {
@@ -363,10 +361,10 @@ const Home = () => {
             </Link>
 
             {/* ── Arcade ── */}
-            <div
+            <Link
               id="btn-arcade"
+              to="/arcade"
               className="btn-arcade"
-              onClick={() => setShowArcadeModal(true)}
               onMouseEnter={() => setArcadeHover(true)}
               onMouseLeave={() => setArcadeHover(false)}
               style={{
@@ -424,72 +422,13 @@ const Home = () => {
                   ▶
                 </div>
               </div>
-            </div>
+            </Link>
 
           </div>{/* /buttons */}
 
         </div>
 
       </div>
-
-      {/* Arcade Modal */}
-      {showArcadeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease' }}>
-          <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl relative" style={{ animation: 'btnSlide 0.3s cubic-bezier(.34,1.6,.64,1)' }}>
-            <button 
-              onClick={() => setShowArcadeModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors font-bold text-xl z-10"
-            >
-              ×
-            </button>
-            <div className="text-center mb-8">
-              <div className="text-5xl mb-4">🕹️</div>
-              <h2 className="text-3xl font-black text-gray-800">เลือกโหมดอาเขต</h2>
-              <p className="text-gray-500 font-bold mt-2 text-lg">มินิเกมสนุกๆ รอคุณอยู่!</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Link 
-                to="/arcade?mode=solo"
-                className="group flex flex-col items-center justify-center p-8 rounded-3xl text-white relative"
-                style={{ 
-                  background: '#10b981', // Emerald green
-                  border: '4px solid white',
-                  boxShadow: '0 8px 0 #059669, 0 15px 20px rgba(0,0,0,0.2)',
-                  textDecoration: 'none',
-                  transition: 'all 0.1s'
-                }}
-                onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(8px)'; e.currentTarget.style.boxShadow = '0 0px 0 #059669, 0 5px 10px rgba(0,0,0,0.2)'; }}
-                onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #059669, 0 15px 20px rgba(0,0,0,0.2)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #059669, 0 15px 20px rgba(0,0,0,0.2)'; }}
-              >
-                <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">👤</div>
-                <div className="font-black text-2xl mb-2">เล่นคนเดียว</div>
-                <div className="text-white/90 text-base font-bold text-center">ตะลุยเดี่ยว ฝึกสกิล</div>
-              </Link>
-
-              <Link 
-                to="/arcade?mode=multi"
-                className="group flex flex-col items-center justify-center p-8 rounded-3xl text-white relative"
-                style={{ 
-                  background: '#f59e0b', // Amber orange
-                  border: '4px solid white',
-                  boxShadow: '0 8px 0 #d97706, 0 15px 20px rgba(0,0,0,0.2)',
-                  textDecoration: 'none',
-                  transition: 'all 0.1s'
-                }}
-                onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(8px)'; e.currentTarget.style.boxShadow = '0 0px 0 #d97706, 0 5px 10px rgba(0,0,0,0.2)'; }}
-                onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #d97706, 0 15px 20px rgba(0,0,0,0.2)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #d97706, 0 15px 20px rgba(0,0,0,0.2)'; }}
-              >
-                <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">👥</div>
-                <div className="font-black text-2xl mb-2">เล่นหลายคน</div>
-                <div className="text-white/90 text-base font-bold text-center">แข่งกับเพื่อน สนุกกว่า!</div>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
