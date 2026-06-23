@@ -336,7 +336,8 @@ export default function Lobby() {
         .lb-rooms-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
+          gap: 40px;
+          padding: 20px 10px;
         }
 
         .lb-room-card {
