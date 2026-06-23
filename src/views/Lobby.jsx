@@ -598,18 +598,20 @@ export default function Lobby() {
                   )}
                 </div>
 
+                {frameUrl && (
+                  frameUrl.endsWith('.json') ? (
+                    <LottieViewer url={frameUrl} className="absolute z-30 pointer-events-none" style={{ top: '-8px', left: '-8px', width: 'calc(100% + 16px)', height: 'calc(100% + 16px)' }} preserveAspectRatio="none" />
+                  ) : (
+                    <div className="absolute z-30 pointer-events-none" style={{
+                      top: '-10px', left: '-10px', width: 'calc(100% + 20px)', height: 'calc(100% + 20px)',
+                      border: '10px solid transparent',
+                      borderImage: `url(${frameUrl}) 30% stretch`,
+                      borderRadius: '30px'
+                    }} />
+                  )
+                )}
+
                 <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'rgba(0,0,0,0.5)' : theme.header, backdropFilter: bgUrl ? 'blur(4px)' : 'none', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
-                  {frameUrl && (
-                    frameUrl.endsWith('.json') ? (
-                      <LottieViewer url={frameUrl} className="absolute z-20 pointer-events-none" style={{ top: '-12px', left: '-12px', right: '-12px', bottom: '-12px', width: 'calc(100% + 24px)', height: 'calc(100% + 24px)' }} preserveAspectRatio="none" />
-                    ) : (
-                      <div className="absolute inset-0 z-20 pointer-events-none" style={{
-                        border: '10px solid transparent',
-                        borderImage: `url(${frameUrl}) 30% stretch`,
-                        borderTopLeftRadius: '20px', borderTopRightRadius: '20px'
-                      }} />
-                    )
-                  )}
                   <div className="lb-room-count relative z-30">
                     <Users size={14} strokeWidth={3}/> {room.participant_count}
                   </div>
