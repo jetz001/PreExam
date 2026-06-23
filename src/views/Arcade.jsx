@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import HomeNavbar from '../components/HomeNavbar';
+import api from '../services/api';
 
 /* ─────────────────────────────────────────────
    Arcade Selection Page - Dedicated Route
@@ -8,6 +9,134 @@ import HomeNavbar from '../components/HomeNavbar';
 
 export default function Arcade() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const mode = searchParams.get('mode');
+    
+    const [games, setGames] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (mode) {
+            fetchGames(mode);
+        }
+    }, [mode]);
+
+    const fetchGames = async (gameMode) => {
+        setLoading(true);
+        try {
+            const res = await api.get(`/arcade?mode=${gameMode}`);
+            if (res.data.success) {
+                setGames(res.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch arcade games:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const renderLobby = () => (
+        <div className="ec-card">
+            {/* Title */}
+            <div className="ec-title">🕹️ เลือกโหมดอาเขต</div>
+            <div className="ec-sub">Arcade Mode — มินิเกมสนุกๆ รอคุณอยู่!</div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Link 
+                    to="/arcade?mode=solo"
+                    className="group flex flex-col items-center justify-center p-8 rounded-3xl text-white relative"
+                    style={{ 
+                    background: '#10b981', // Emerald green
+                    border: '4px solid white',
+                    boxShadow: '0 8px 0 #059669, 0 15px 20px rgba(0,0,0,0.2)',
+                    textDecoration: 'none',
+                    transition: 'all 0.1s'
+                    }}
+                    onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(8px)'; e.currentTarget.style.boxShadow = '0 0px 0 #059669, 0 5px 10px rgba(0,0,0,0.2)'; }}
+                    onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #059669, 0 15px 20px rgba(0,0,0,0.2)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #059669, 0 15px 20px rgba(0,0,0,0.2)'; }}
+                >
+                    <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">👤</div>
+                    <div className="font-black text-2xl mb-2 text-center">เล่นคนเดียว</div>
+                    <div className="text-white/90 text-base font-bold text-center">ตะลุยเดี่ยว ฝึกสกิล</div>
+                </Link>
+
+                <Link 
+                    to="/arcade?mode=multi"
+                    className="group flex flex-col items-center justify-center p-8 rounded-3xl text-white relative"
+                    style={{ 
+                    background: '#f59e0b', // Amber orange
+                    border: '4px solid white',
+                    boxShadow: '0 8px 0 #d97706, 0 15px 20px rgba(0,0,0,0.2)',
+                    textDecoration: 'none',
+                    transition: 'all 0.1s'
+                    }}
+                    onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(8px)'; e.currentTarget.style.boxShadow = '0 0px 0 #d97706, 0 5px 10px rgba(0,0,0,0.2)'; }}
+                    onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #d97706, 0 15px 20px rgba(0,0,0,0.2)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #d97706, 0 15px 20px rgba(0,0,0,0.2)'; }}
+                >
+                    <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">👥</div>
+                    <div className="font-black text-2xl mb-2 text-center">เล่นหลายคน</div>
+                    <div className="text-white/90 text-base font-bold text-center">แข่งกับเพื่อน สนุกกว่า!</div>
+                </Link>
+            </div>
+        </div>
+    );
+
+    const renderGameList = () => (
+        <div className="w-full max-w-5xl mx-auto z-10 p-4" style={{ animation: 'ecSlideUp 0.5s ease both' }}>
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h2 className="text-4xl font-black text-white drop-shadow-md">
+                        {mode === 'solo' ? '👤 โหมดเล่นคนเดียว' : '👥 โหมดเล่นหลายคน'}
+                    </h2>
+                    <p className="text-white/80 mt-2 font-bold text-lg">เลือกเกมที่คุณต้องการเล่นได้เลย</p>
+                </div>
+                <button 
+                    onClick={() => navigate('/arcade')}
+                    className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-full font-bold backdrop-blur-sm transition-all"
+                >
+                    &larr; กลับไปเลือกโหมด
+                </button>
+            </div>
+
+            {loading ? (
+                <div className="text-center py-20 text-white text-xl font-bold">กำลังโหลดมินิเกม...</div>
+            ) : games.length === 0 ? (
+                <div className="text-center py-20 bg-black/20 rounded-3xl backdrop-blur-sm">
+                    <div className="text-6xl mb-4">🎮</div>
+                    <h3 className="text-2xl font-bold text-white mb-2">ยังไม่มีเกมในโหมดนี้</h3>
+                    <p className="text-white/70">กำลังอัปเดตมินิเกมใหม่ๆ เร็วๆ นี้ รอติดตามได้เลย!</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {games.map(game => (
+                        <div key={game.id} className="bg-white rounded-3xl overflow-hidden shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col">
+                            <div className="h-48 w-full bg-gray-200 relative">
+                                {game.thumbnail_url ? (
+                                    <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="flex items-center justify-center w-full h-full text-4xl">🎮</div>
+                                )}
+                            </div>
+                            <div className="p-6 flex flex-col flex-grow">
+                                <h3 className="text-2xl font-black text-gray-800 mb-2">{game.title}</h3>
+                                <p className="text-gray-600 mb-6 flex-grow">{game.description}</p>
+                                <a 
+                                    href={game.game_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full text-center py-3 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-lg shadow-indigo-500/30 transition-all"
+                                >
+                                    เล่นเกมนี้ &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 
     return (
         <>
@@ -102,52 +231,8 @@ export default function Arcade() {
                     }}/>
                 ))}
 
-                <div className="ec-card">
-                    {/* Title */}
-                    <div className="ec-title">🕹️ เลือกโหมดอาเขต</div>
-                    <div className="ec-sub">Arcade Mode — มินิเกมสนุกๆ รอคุณอยู่!</div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Link 
-                            to="/arcade?mode=solo"
-                            className="group flex flex-col items-center justify-center p-8 rounded-3xl text-white relative"
-                            style={{ 
-                            background: '#10b981', // Emerald green
-                            border: '4px solid white',
-                            boxShadow: '0 8px 0 #059669, 0 15px 20px rgba(0,0,0,0.2)',
-                            textDecoration: 'none',
-                            transition: 'all 0.1s'
-                            }}
-                            onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(8px)'; e.currentTarget.style.boxShadow = '0 0px 0 #059669, 0 5px 10px rgba(0,0,0,0.2)'; }}
-                            onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #059669, 0 15px 20px rgba(0,0,0,0.2)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #059669, 0 15px 20px rgba(0,0,0,0.2)'; }}
-                        >
-                            <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">👤</div>
-                            <div className="font-black text-2xl mb-2 text-center">เล่นคนเดียว</div>
-                            <div className="text-white/90 text-base font-bold text-center">ตะลุยเดี่ยว ฝึกสกิล</div>
-                        </Link>
-
-                        <Link 
-                            to="/arcade?mode=multi"
-                            className="group flex flex-col items-center justify-center p-8 rounded-3xl text-white relative"
-                            style={{ 
-                            background: '#f59e0b', // Amber orange
-                            border: '4px solid white',
-                            boxShadow: '0 8px 0 #d97706, 0 15px 20px rgba(0,0,0,0.2)',
-                            textDecoration: 'none',
-                            transition: 'all 0.1s'
-                            }}
-                            onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(8px)'; e.currentTarget.style.boxShadow = '0 0px 0 #d97706, 0 5px 10px rgba(0,0,0,0.2)'; }}
-                            onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #d97706, 0 15px 20px rgba(0,0,0,0.2)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0 8px 0 #d97706, 0 15px 20px rgba(0,0,0,0.2)'; }}
-                        >
-                            <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">👥</div>
-                            <div className="font-black text-2xl mb-2 text-center">เล่นหลายคน</div>
-                            <div className="text-white/90 text-base font-bold text-center">แข่งกับเพื่อน สนุกกว่า!</div>
-                        </Link>
-                    </div>
-
-                </div>
+                {mode ? renderGameList() : renderLobby()}
+                
             </div>
         </>
     );

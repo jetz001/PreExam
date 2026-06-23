@@ -2069,6 +2069,18 @@ export async function getCatalogCounts(db: any) {
 }
 
 // ARCADE
+export async function getArcadeGames(db: D1Database, mode?: string) {
+  let query = "SELECT id, title, description, thumbnail_url, game_url, internal_component, mode FROM arcade_games WHERE is_active = 1";
+  const params: any[] = [];
+  if (mode) {
+    query += " AND (mode = ? OR mode = 'both')";
+    params.push(mode);
+  }
+  query += " ORDER BY order_index ASC";
+  const { results } = await db.prepare(query).bind(...params).all();
+  return results;
+}
+
 export async function adminGetArcadeGames(db: D1Database) {
   const { results } = await db.prepare("SELECT * FROM arcade_games ORDER BY order_index ASC").all();
   return results;

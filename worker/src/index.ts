@@ -129,6 +129,7 @@ import {
   listExamSets,
   getUniqueCatalogs,
   getCatalogCounts,
+  getArcadeGames,
   adminGetArcadeGames,
   adminCreateArcadeGame,
   adminUpdateArcadeGame,
@@ -2442,6 +2443,13 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           await updateComment(env.DB, commentId, { likes: currentLikes + 1 });
           
           return json({ success: true, likes: currentLikes + 1 });
+        }
+
+        // /api/arcade
+        if (url.pathname === "/api/arcade" && request.method === "GET") {
+          const mode = url.searchParams.get("mode") || undefined;
+          const games = await getArcadeGames(env.DB, mode);
+          return json({ success: true, data: games });
         }
 
         // /api/news
