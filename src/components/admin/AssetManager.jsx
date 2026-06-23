@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Image as ImageIcon, Trash2, Plus, Star, Film, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Trash2, Edit2, X, Plus, Star, Film, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
 import LottieViewer from '../room/LottieViewer';
@@ -14,6 +14,17 @@ const AssetManager = () => {
         is_premium: false
     });
     const [selectedFile, setSelectedFile] = useState(null);
+    const [editingAsset, setEditingAsset] = useState(null);
+    const [editFormData, setEditFormData] = useState({});
+
+    const openEditModal = (asset) => {
+        setEditingAsset(asset);
+        setEditFormData({
+            name: asset.name,
+            type: asset.type,
+            is_premium: asset.is_premium
+        });
+    };
 
     const { data: assets = [], isLoading } = useQuery({
         queryKey: ['adminAssets'],
@@ -44,6 +55,25 @@ const AssetManager = () => {
         },
         onError: () => toast.error('Failed to delete asset')
     });
+
+    const updateAssetMutation = useMutation({
+        mutationFn: ({ id, data }) => adminApi.updateAsset(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['adminAssets']);
+            toast.success('Asset updated successfully');
+            setEditingAsset(null);
+        },
+        onError: () => toast.error('Failed to update asset')
+    });
+
+    const handleUpdate = (e) => {
+        e.preventDefault();
+        if (!editFormData.name.trim()) {
+            toast.error('Asset name is required.');
+            return;
+        }
+        updateAssetMutation.mutate({ id: editingAsset.id, data: editFormData });
+    };
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) {
@@ -183,7 +213,14 @@ const AssetManager = () => {
                                             <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
                                         )}
                                         
-                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <button 
+                                                onClick={() => openEditModal(asset)}
+                                                className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transform scale-0 group-hover:scale-100 transition-transform"
+                                                title="Edit Asset"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
                                             <button 
                                                 onClick={() => handleDelete(asset.id)}
                                                 className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transform scale-0 group-hover:scale-100 transition-transform"
@@ -210,6 +247,75 @@ const AssetManager = () => {
                     )}
                 </div>
             </div>
+
+            {/* Edit Asset Modal */}
+            {editingAsset && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50">
+                            <h3 className="font-bold text-slate-800 flex items-center">
+                                <Edit2 size={18} className="mr-2 text-royal-blue-600" />
+                                Edit Asset
+                            </h3>
+                            <button onClick={() => setEditingAsset(null)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdate} className="p-4 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Asset Name</label>
+                                <input
+                                    type="text"
+                                    value={editFormData.name}
+                                    onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-royal-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Asset Type</label>
+                                <select
+                                    value={editFormData.type}
+                                    onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}
+                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-royal-blue-500"
+                                >
+                                    <option value="background">Background</option>
+                                    <option value="frame">Frame/Foreground</option>
+                                </select>
+                            </div>
+                            <div className="flex items-center pt-2">
+                                <input
+                                    type="checkbox"
+                                    id="edit_is_premium"
+                                    checked={editFormData.is_premium}
+                                    onChange={(e) => setEditFormData({...editFormData, is_premium: e.target.checked})}
+                                    className="w-4 h-4 text-royal-blue-600 border-slate-300 rounded focus:ring-royal-blue-500"
+                                />
+                                <label htmlFor="edit_is_premium" className="ml-2 text-sm text-slate-700 flex items-center">
+                                    Premium Asset <Star size={14} className="ml-1 text-amber-500 fill-amber-500" />
+                                </label>
+                            </div>
+                            <div className="flex justify-end pt-4 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingAsset(null)}
+                                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={updateAssetMutation.isLoading}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 flex items-center"
+                                >
+                                    {updateAssetMutation.isLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

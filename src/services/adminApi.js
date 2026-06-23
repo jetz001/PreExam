@@ -43,6 +43,10 @@ const adminApi = {
         const response = await api.post('/assets', payload);
         return response.data;
     },
+    updateAsset: async (id, data) => {
+        const response = await api.put(`/assets/${id}`, data);
+        return response.data;
+    },
     deleteAsset: async (id) => {
         const response = await api.delete(`/assets/${id}`);
         return response.data;

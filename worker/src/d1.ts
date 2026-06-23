@@ -1642,6 +1642,26 @@ export async function deleteAsset(db: D1Database, id: string) {
   await db.prepare("DELETE FROM assets WHERE id = ?").bind(String(id)).run();
 }
 
+export async function updateAsset(db: D1Database, id: string, data: Record<string, any>) {
+  const currentAsset = await db.prepare("SELECT * FROM assets WHERE id = ?").bind(String(id)).first();
+  if (!currentAsset) throw new Error("Asset not found");
+
+  const row = {
+    ...currentAsset,
+    name: data.name !== undefined ? data.name : currentAsset.name,
+    type: data.type !== undefined ? data.type : currentAsset.type,
+    is_premium: data.is_premium !== undefined ? Number(Boolean(data.is_premium)) : currentAsset.is_premium,
+    updated_at: nowIso(),
+  };
+
+  await db
+    .prepare("UPDATE assets SET name = ?, type = ?, is_premium = ?, updated_at = ? WHERE id = ?")
+    .bind(row.name, row.type, row.is_premium, row.updated_at, String(id))
+    .run();
+    
+  return row;
+}
+
 export async function getSystemConfig(db: D1Database, id: string) {
   const row = await db.prepare("SELECT value FROM system_config WHERE id = ? LIMIT 1").bind(String(id)).first() as any;
   return row?.value ? parseStructuredValue<any>(row.value, {}) : null;

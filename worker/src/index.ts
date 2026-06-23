@@ -3280,6 +3280,13 @@ if (assetMatch) {
     await deleteAsset(env.DB, id);
     return json({ success: true });
   }
+  if (request.method === "PUT") {
+    const auth = await requireAuthUserId(request, env);
+    if ("error" in auth) return auth.error;
+    const body = await request.json() as any;
+    const assetData = await updateAsset(env.DB, id, body);
+    return json({ success: true, data: assetData });
+  }
 } else if (url.pathname === "/api/assets") {
   if (request.method === "GET") {
     try {
