@@ -26,10 +26,10 @@ const PaymentManager = () => {
     // Filtering Logic
     const getFilteredData = () => {
         let data = [];
-        if (activeTab === 'pending') {
-            data = pendingPayments;
+        if (activeTab === 'all_history') {
+            data = history;
         } else if (activeTab === 'premium_history') {
-            data = history.filter(p => p.type === 'subscription');
+            data = history.filter(p => p.type === 'subscription' || p.type === 'PLAN_PURCHASE');
         } else if (activeTab === 'ads_history') {
             data = history.filter(p => p.type === 'topup');
         }
@@ -92,7 +92,7 @@ const PaymentManager = () => {
                         }`}
                 >
                     <Crown size={18} />
-                    ประวัติ Premium ({history.filter(p => p.type === 'subscription').length})
+                    ประวัติ Premium ({history.filter(p => p.type === 'subscription' || p.type === 'PLAN_PURCHASE').length})
                 </button>
                 <button
                     onClick={() => setActiveTab('ads_history')}
@@ -103,12 +103,12 @@ const PaymentManager = () => {
                     ประวัติ เติมเงิน Ads ({history.filter(p => p.type === 'topup').length})
                 </button>
                 <button
-                    onClick={() => setActiveTab('pending')}
-                    className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${activeTab === 'pending' ? 'bg-green-100 text-green-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50'
+                    onClick={() => setActiveTab('all_history')}
+                    className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${activeTab === 'all_history' ? 'bg-green-100 text-green-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50'
                         }`}
                 >
                     <Clock size={18} />
-                    รอตรวจสอบ Slip ({pendingPayments.length})
+                    ประวัติการชำระเงิน ({history.length})
                 </button>
                 <button
                     onClick={() => setActiveTab('plans')}
@@ -150,9 +150,6 @@ const PaymentManager = () => {
                                 <th className="px-6 py-4 font-semibold">ช่องทาง/หลักฐาน</th>
                                 <th className="px-6 py-4 font-semibold">วัน/เวลา</th>
                                 <th className="px-6 py-4 font-semibold">สถานะ</th>
-                                {activeTab === 'pending' && (
-                                    <th className="px-6 py-4 font-semibold text-right">ดำเนินการ</th>
-                                )}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
