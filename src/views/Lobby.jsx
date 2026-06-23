@@ -341,7 +341,6 @@ export default function Lobby() {
 
         .lb-room-card {
           border-radius: 20px;
-          overflow: hidden;
           position: relative;
           color: white;
           box-shadow: 0 8px 20px rgba(0,0,0,0.3);
@@ -587,27 +586,31 @@ export default function Lobby() {
               || null;
             
             return (
-              <div key={room.id} className="lb-room-card relative overflow-hidden" style={{ background: bgUrl ? '#1a1a2e' : theme.bg }}>
-                {bgUrl && (
-                  <div className="absolute inset-0 z-0 pointer-events-none">
-                    {bgUrl.endsWith('.json') ? (
+              <div key={room.id} className="lb-room-card relative" style={{ background: bgUrl ? '#1a1a2e' : theme.bg, borderRadius: '20px' }}>
+                {/* Background overlay with overflow hidden */}
+                <div className="absolute inset-0 z-0 pointer-events-none" style={{ borderRadius: '20px', overflow: 'hidden' }}>
+                  {bgUrl && (
+                    bgUrl.endsWith('.json') ? (
                         <LottieViewer url={bgUrl} className="w-full h-full object-cover opacity-60" />
                     ) : (
                         <img src={bgUrl} alt="room bg" className="w-full h-full object-cover opacity-60" />
-                    )}
-                  </div>
-                )}
+                    )
+                  )}
+                </div>
+
                 {frameUrl && (
                   frameUrl.endsWith('.json') ? (
-                    <LottieViewer url={frameUrl} className="absolute inset-0 w-full h-full z-20 pointer-events-none" preserveAspectRatio="none" />
+                    <LottieViewer url={frameUrl} className="absolute z-20 pointer-events-none" style={{ top: '-15px', left: '-15px', width: 'calc(100% + 30px)', height: 'calc(100% + 30px)' }} preserveAspectRatio="none" />
                   ) : (
                     <div className="absolute inset-0 z-20 pointer-events-none" style={{
                       border: '10px solid transparent',
-                      borderImage: `url(${frameUrl}) 30% stretch`
+                      borderImage: `url(${frameUrl}) 30% stretch`,
+                      borderRadius: '20px'
                     }} />
                   )
                 )}
-                <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'rgba(0,0,0,0.5)' : theme.header, backdropFilter: bgUrl ? 'blur(4px)' : 'none' }}>
+                
+                <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'rgba(0,0,0,0.5)' : theme.header, backdropFilter: bgUrl ? 'blur(4px)' : 'none', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
                   <div className="lb-room-count">
                     <Users size={14} strokeWidth={3}/> {room.participant_count}
                   </div>
@@ -618,7 +621,7 @@ export default function Lobby() {
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '4px', textShadow: bgUrl ? '0 2px 4px rgba(0,0,0,0.8)' : 'none' }}>{room.name}</h3>
                 </div>
                 
-                <div className="lb-room-body relative z-20">
+                <div className="lb-room-body relative z-20" style={{ borderBottomLeftRadius: '20px', borderBottomRightRadius: '20px' }}>
                   <div>
                     <div style={{ fontSize: '0.9rem', fontWeight: 800, textShadow: bgUrl ? '0 1px 3px rgba(0,0,0,0.8)' : 'none' }}>{room.subject}</div>
                     <div style={{ fontSize: '0.75rem', color: bgUrl ? '#ccc' : '#666', fontWeight: 700, marginTop: '2px', position: 'relative', zIndex: 10 }}>
