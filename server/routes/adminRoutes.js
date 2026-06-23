@@ -69,4 +69,11 @@ router.get('/generator/status', generatorControlController.getStatus);
 router.post('/generator/schedule', generatorControlController.updateSchedule);
 router.post('/generator/start', generatorControlController.startGenerator);
 
+// Arcade Management
+const arcadeAdminController = require('../controllers/arcadeAdminController');
+router.get('/arcade', arcadeAdminController.getAllGames);
+router.post('/arcade', arcadeAdminController.createGame);
+router.put('/arcade/:id', arcadeAdminController.updateGame);
+router.delete('/arcade/:id', arcadeAdminController.deleteGame);
+
 module.exports = router;

@@ -28,6 +28,7 @@ function useConfetti() {
 }
 
 const Home = () => {
+  const [ready, setReady] = useState(false);
   const [soloHover, setSoloHover] = useState(false);
   const [groupHover, setGroupHover] = useState(false);
   const [arcadeHover, setArcadeHover] = useState(false);

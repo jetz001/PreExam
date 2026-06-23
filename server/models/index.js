@@ -57,6 +57,9 @@ db.SponsorTransaction = require('./SponsorTransaction')(sequelize, DataTypes);
 db.SystemSetting = require('./SystemSetting')(sequelize, DataTypes);
 db.SystemLog = require('./SystemLog')(sequelize, DataTypes);
 
+// Arcade
+db.ArcadeGame = require('./ArcadeGame')(sequelize, DataTypes);
+
 // Learning Center (Business/Marketplace)
 db.Business = require('./Business')(sequelize, DataTypes);
 db.BusinessPost = require('./BusinessPost')(sequelize, DataTypes);

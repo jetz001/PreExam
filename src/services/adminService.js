@@ -50,6 +50,24 @@ const adminService = {
         const response = await api.post('/admin/generator/start');
         return response.data;
     },
+
+    // Arcade
+    getArcadeGames: async () => {
+        const response = await api.get('/admin/arcade');
+        return response.data;
+    },
+    createArcadeGame: async (data) => {
+        const response = await api.post('/admin/arcade', data);
+        return response.data;
+    },
+    updateArcadeGame: async (id, data) => {
+        const response = await api.put(`/admin/arcade/${id}`, data);
+        return response.data;
+    },
+    deleteArcadeGame: async (id) => {
+        const response = await api.delete(`/admin/arcade/${id}`);
+        return response.data;
+    },
 };
 
 export default adminService;
