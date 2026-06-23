@@ -9,6 +9,8 @@ import LottieViewer from '../components/room/LottieViewer';
 import { Search, Play, Users, Lock, ChevronRight, Plus } from 'lucide-react';
 import CreateRoomModal from '../components/room/CreateRoomModal';
 
+let globalLobbyAssetsCache = null;
+
 export default function Lobby() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,12 +29,25 @@ export default function Lobby() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [pendingRoomCode, setPendingRoomCode] = useState(null);
+  const [customAssets, setCustomAssets] = useState(globalLobbyAssetsCache || []);
   
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchRooms(1);
     loadUserData();
+    // Load custom assets for frame/background resolution
+    if (!globalLobbyAssetsCache) {
+      fetch('/api/assets')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data) {
+            globalLobbyAssetsCache = data.data;
+            setCustomAssets(data.data);
+          }
+        })
+        .catch(err => console.error('Failed to load lobby assets', err));
+    }
   }, []);
 
   const loadUserData = async () => {
@@ -562,8 +577,14 @@ export default function Lobby() {
         <div className="lb-rooms-grid">
           {filteredRooms.map((room, i) => {
             const theme = getCardTheme(i);
-            const bgUrl = room.theme?.background_url || (room.theme?.background_id ? getAssetUrl(room.theme.background_id, 'background') : null);
-            const frameUrl = room.theme?.frame_url || (room.theme?.frame_id ? getAssetUrl(room.theme.frame_id, 'frame') : null);
+            const bgUrl = room.theme?.background_url 
+              || (room.theme?.background_id ? getAssetUrl(room.theme.background_id, 'background') : null)
+              || customAssets.find(a => a.id === room.theme?.background_id)?.url
+              || null;
+            const frameUrl = room.theme?.frame_url 
+              || (room.theme?.frame_id ? getAssetUrl(room.theme.frame_id, 'frame') : null)
+              || customAssets.find(a => a.id === room.theme?.frame_id)?.url
+              || null;
             
             return (
               <div key={room.id} className="lb-room-card relative overflow-hidden" style={{ background: bgUrl ? '#1a1a2e' : theme.bg }}>
