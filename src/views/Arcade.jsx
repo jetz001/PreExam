@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import HomeNavbar from '../components/HomeNavbar';
 import api from '../services/api';
 import AdaptiveLottie from '../components/common/AdaptiveLottie';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 /* ─────────────────────────────────────────────
    Arcade Selection Page - Dedicated Route
 ───────────────────────────────────────────── */
@@ -115,7 +116,11 @@ export default function Arcade() {
                         <div key={game.id} className="bg-white rounded-3xl overflow-hidden shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col">
                             <div className="h-48 w-full bg-gray-200 relative">
                                 {game.thumbnail_url ? (
-                                    game.thumbnail_url.includes('.json') || game.thumbnail_url.includes('lottie') ? (
+                                    game.thumbnail_url.includes('.lottie') ? (
+                                        <div className="w-full h-full flex items-center justify-center bg-[#1a1740]">
+                                            <DotLottieReact src={game.thumbnail_url} loop autoplay />
+                                        </div>
+                                    ) : game.thumbnail_url.includes('.json') || game.thumbnail_url.includes('lottie') ? (
                                         <div className="w-full h-full flex items-center justify-center bg-[#1a1740]">
                                             <AdaptiveLottie animationUrl={game.thumbnail_url} scale="card" loop={true} autoplay={true} />
                                         </div>
