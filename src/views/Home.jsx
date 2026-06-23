@@ -31,6 +31,8 @@ const Home = () => {
   const [ready, setReady] = useState(false);
   const [soloHover, setSoloHover] = useState(false);
   const [groupHover, setGroupHover] = useState(false);
+  const [arcadeHover, setArcadeHover] = useState(false);
+  const [showArcadeModal, setShowArcadeModal] = useState(false);
   const dots = useConfetti();
 
   useEffect(() => {
@@ -107,12 +109,24 @@ const Home = () => {
         }
         .btn-group:active { transform: scale(0.97) !important; }
 
+        .btn-arcade {
+          animation: btnSlide 0.55s 0.95s both;
+          transition: transform 0.18s cubic-bezier(.34,1.6,.64,1), box-shadow 0.18s ease;
+          cursor: pointer;
+        }
+        .btn-arcade:hover {
+          transform: translateY(-6px) scale(1.03) !important;
+          box-shadow: 0 24px 64px rgba(255,204,0,0.55) !important;
+        }
+        .btn-arcade:active { transform: scale(0.97) !important; }
+
         .emoji-icon {
           display:inline-block;
           transition: transform 0.2s;
         }
         .btn-solo:hover  .emoji-icon { animation: wiggle 0.4s ease; }
         .btn-group:hover .emoji-icon { animation: wiggle 0.4s ease; }
+        .btn-arcade:hover .emoji-icon { animation: wiggle 0.4s ease; }
       `}</style>
 
       {/* ROOT */}
@@ -348,11 +362,126 @@ const Home = () => {
               </div>
             </Link>
 
+            {/* ── Arcade ── */}
+            <div
+              id="btn-arcade"
+              className="btn-arcade"
+              onClick={() => setShowArcadeModal(true)}
+              onMouseEnter={() => setArcadeHover(true)}
+              onMouseLeave={() => setArcadeHover(false)}
+              style={{
+                display:'flex', alignItems:'stretch',
+                borderRadius:18,
+                overflow:'hidden',
+                textDecoration:'none',
+                boxShadow:'0 10px 40px rgba(255,204,0,0.38)',
+                border:'3px solid rgba(255,255,255,0.15)',
+              }}
+            >
+              {/* color tab */}
+              <div style={{
+                width:10, flexShrink:0,
+                background:'linear-gradient(180deg,#ffcc00,#ff8800)',
+              }}/>
+              {/* body */}
+              <div style={{
+                flex:1,
+                background: arcadeHover
+                  ? 'linear-gradient(135deg,#ffdd33 0%,#ffaa00 100%)'
+                  : 'linear-gradient(135deg,#ffcc00 0%,#ff8800 100%)',
+                padding:'22px 24px',
+                display:'flex', alignItems:'center', justifyContent:'space-between',
+                transition:'background 0.2s',
+              }}>
+                <div style={{ display:'flex', alignItems:'center', gap:18 }}>
+                  <div style={{
+                    width:58, height:58, borderRadius:16,
+                    background:'rgba(255,255,255,0.18)',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:32, flexShrink:0,
+                    boxShadow:'inset 0 1px 0 rgba(255,255,255,0.3)',
+                  }}>
+                    <span className="emoji-icon">🕹️</span>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:'1.5rem', fontWeight:900, color:'#fff', lineHeight:1.1,
+                      fontFamily:"'Nunito','Sarabun',sans-serif" }}>
+                      อาเขต
+                    </div>
+                    <div style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.75)', marginTop:4, fontWeight:600 }}>
+                      Arcade · มินิเกมสุดสนุก
+                    </div>
+                  </div>
+                </div>
+                <div style={{
+                  width:36, height:36, borderRadius:12,
+                  background:'rgba(255,255,255,0.2)',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:'1.2rem', color:'#fff', fontWeight:900,
+                  transform: arcadeHover ? 'translateX(4px)' : 'translateX(0)',
+                  transition:'transform 0.2s cubic-bezier(.34,1.6,.64,1)',
+                }}>
+                  ▶
+                </div>
+              </div>
+            </div>
+
           </div>{/* /buttons */}
 
         </div>
 
       </div>
+
+      {/* Arcade Modal */}
+      {showArcadeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease' }}>
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative" style={{ animation: 'btnSlide 0.3s cubic-bezier(.34,1.6,.64,1)' }}>
+            <button 
+              onClick={() => setShowArcadeModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors font-bold text-xl"
+            >
+              ×
+            </button>
+            <div className="text-center mb-8">
+              <div className="text-5xl mb-4">🕹️</div>
+              <h2 className="text-2xl font-black text-gray-800">เลือกโหมดอาเขต</h2>
+              <p className="text-gray-500 font-bold mt-1">มินิเกมสนุกๆ รอคุณอยู่!</p>
+            </div>
+            
+            <div className="flex flex-col gap-4">
+              <Link 
+                to="/arcade?mode=solo"
+                className="flex items-center p-4 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:shadow-lg hover:scale-[1.02] transition-all"
+                style={{ textDecoration: 'none' }}
+              >
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl mr-4 flex-shrink-0">
+                  👤
+                </div>
+                <div className="flex-1">
+                  <div className="font-black text-lg">เล่นคนเดียว</div>
+                  <div className="text-white/80 text-sm font-bold">ตะลุยเดี่ยว ฝึกสกิล</div>
+                </div>
+                <div className="font-black text-xl">▶</div>
+              </Link>
+
+              <Link 
+                to="/arcade?mode=multi"
+                className="flex items-center p-4 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg hover:scale-[1.02] transition-all"
+                style={{ textDecoration: 'none' }}
+              >
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl mr-4 flex-shrink-0">
+                  👥
+                </div>
+                <div className="flex-1">
+                  <div className="font-black text-lg">เล่นหลายคน</div>
+                  <div className="text-white/80 text-sm font-bold">แข่งกับเพื่อน สนุกกว่า!</div>
+                </div>
+                <div className="font-black text-xl">▶</div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
