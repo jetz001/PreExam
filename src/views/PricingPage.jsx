@@ -38,24 +38,21 @@ const PricingPage = () => {
         }
     };
 
-    const handleSelectPlan = (plan) => {
-        setSelectedPlan(plan);
-        createTransaction(plan.id);
-    };
-
-    const createTransaction = async (planId) => {
+    const handleSelectPlan = async (plan) => {
         try {
-            const res = await api.post('/payments/checkout', {
-                plan_id: planId,
-                payment_method: 'transfer_slip'
+            setLoading(true); // show loading while redirecting
+            const session = await paymentService.createCheckoutSession({
+                packageId: plan.id,
+                amount: plan.price,
+                type: 'PLAN_PURCHASE',
+                planId: plan.id,
+                metadata: { planId: plan.id }
             });
-
-            if (res.data.success) {
-                setTransaction(res.data.transaction);
-            }
-        } catch (error) {
-            console.error('Checkout error:', error);
-            alert('Failed to start transaction. Please try again.');
+            if (session.url) window.location.href = session.url;
+        } catch (err) {
+            console.error(err);
+            alert('Stripe Error: ' + err.message);
+            setLoading(false);
         }
     };
 
@@ -64,103 +61,6 @@ const PricingPage = () => {
             <div className="text-4xl font-black text-gray-700 animate-pulse uppercase tracking-widest">Loading...</div>
         </div>
     );
-
-    // Payment Flow Step 2: Show Bank Details & Upload
-    if (transaction) {
-        return (
-            <div className="min-h-screen bg-[#f2f2f2] kahoot-bg flex flex-col relative overflow-hidden">
-                {/* Background Shapes */}
-                <div className="shape shape-triangle" style={{ top: '10%', left: '10%' }}></div>
-                <div className="shape shape-circle" style={{ top: '20%', right: '15%' }}></div>
-                <div className="shape shape-square" style={{ bottom: '15%', left: '20%' }}></div>
-                <div className="shape shape-diamond" style={{ bottom: '25%', right: '10%' }}></div>
-
-                <div className="flex-1 container mx-auto px-4 pt-28 pb-8 max-w-2xl z-10 relative">
-                    <div className="bg-white rounded-3xl shadow-2xl p-8 border-b-8 border-gray-300">
-                        <h2 className="text-4xl font-black text-center mb-6 text-gray-800 uppercase tracking-wide">Checkout</h2>
-
-                        <div className="bg-[#e5f2ff] p-6 rounded-2xl mb-8 border-4 border-[#b3d9ff]">
-                            <h3 className="font-black text-2xl mb-4 text-[#0066cc] uppercase">Bank Transfer</h3>
-                            <div className="space-y-3 text-lg text-gray-700 font-bold">
-                                <div className="flex justify-between items-center">
-                                    <span>Bank:</span>
-                                    <span className="bg-[#26890c] text-white px-3 py-1 rounded-lg shadow-sm">K-Bank</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span>Account Name:</span>
-                                    <span>PreExam Co., Ltd.</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span>Account Number:</span>
-                                    <span className="text-2xl font-black tracking-wider text-gray-800">123-4-56789-0</span>
-                                </div>
-                                <div className="flex justify-between items-center pt-4 border-t-4 border-[#b3d9ff] mt-2">
-                                    <span>Amount to Pay:</span>
-                                    <span className="font-black text-4xl text-[#e21b3c]">{transaction.amount} THB</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="text-center space-y-4">
-                            <p className="text-gray-500 font-bold mb-4 text-lg">Please transfer the exact amount and upload your slip.</p>
-                            <button
-                                onClick={() => setShowUploadModal(true)}
-                                className="bg-[#26890c] text-white w-full py-4 rounded-xl font-black text-xl btn-kahoot border-b-4 border-[#1a5c08] hover:bg-[#2eaa10] transition-colors"
-                            >
-                                UPLOAD SLIP
-                            </button>
-
-                            <div className="relative flex py-6 items-center">
-                                <div className="flex-grow border-t-4 border-gray-200 rounded"></div>
-                                <span className="flex-shrink-0 mx-4 text-gray-400 font-black">OR</span>
-                                <div className="flex-grow border-t-4 border-gray-200 rounded"></div>
-                            </div>
-
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        const session = await paymentService.createCheckoutSession({
-                                            packageId: selectedPlan.id, // Using plan ID as package ID
-                                            amount: selectedPlan.price,
-                                            type: 'PLAN_PURCHASE', // Assuming this is handled in backend logic or we map it
-                                            planId: selectedPlan.id,
-                                            metadata: { planId: selectedPlan.id }
-                                        });
-                                        if (session.url) window.location.href = session.url;
-                                    } catch (err) {
-                                        console.error(err);
-                                        alert('Stripe Error: ' + err.message);
-                                    }
-                                }}
-                                className="bg-[#46178f] text-white w-full py-4 rounded-xl font-black text-xl btn-kahoot border-b-4 border-[#331166] hover:bg-[#5c1ecc] transition-colors"
-                            >
-                                PAY WITH CARD / PROMPTPAY QR
-                            </button>
-                            
-                            <div className="pt-6">
-                                <button
-                                    onClick={() => { setTransaction(null); setSelectedPlan(null); }}
-                                    className="text-gray-400 hover:text-gray-600 font-black uppercase tracking-wider transition-colors"
-                                >
-                                    Cancel / Go Back
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <SlipUploadModal
-                    isOpen={showUploadModal}
-                    onClose={() => setShowUploadModal(false)}
-                    transactionId={transaction.id}
-                    onSuccess={() => {
-                        alert('Slip uploaded! Waiting for admin verification.');
-                        navigate('/dashboard'); // Or profile
-                    }}
-                />
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-[#f2f2f2] kahoot-bg flex flex-col relative overflow-hidden font-sans">
