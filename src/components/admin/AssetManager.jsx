@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Image as ImageIcon, Trash2, Plus, Star, Film, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
+import LottieViewer from '../room/LottieViewer';
 
 const AssetManager = () => {
     const queryClient = useQueryClient();
@@ -177,10 +178,7 @@ const AssetManager = () => {
                                 <div key={asset.id} className="border border-slate-200 rounded-xl overflow-hidden group relative bg-slate-50">
                                     <div className="aspect-square bg-slate-200 relative flex items-center justify-center overflow-hidden">
                                         {asset.url?.endsWith('.json') ? (
-                                            <div className="flex flex-col items-center justify-center text-slate-500">
-                                                <Film size={32} className="mb-2 opacity-50" />
-                                                <span className="text-xs font-bold">LOTTIE</span>
-                                            </div>
+                                            <LottieViewer url={asset.url} className="w-full h-full object-contain p-2" />
                                         ) : (
                                             <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
                                         )}
