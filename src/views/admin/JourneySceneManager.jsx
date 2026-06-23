@@ -44,6 +44,7 @@ const JourneySceneManager = ({ systemSettings }) => {
     }, [systemSettings]);
 
     const [scenes, setScenes] = useState(initialScenes);
+    const [questionsPerScene, setQuestionsPerScene] = useState(systemSettings?.settings?.questions_per_scene || 5);
     const [selectedId, setSelectedId] = useState(scenes[0]?.id || null);
     const [uploadingId, setUploadingId] = useState(null);
     const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -87,12 +88,13 @@ const JourneySceneManager = ({ systemSettings }) => {
     const saveMutation = useMutation({
         mutationFn: async (payload) => adminApi.updateSystemSettings({
             ...(systemSettings?.settings || {}),
-            journey_scenes: payload
+            journey_scenes: payload.scenes,
+            questions_per_scene: payload.questionsPerScene
         }),
         onSuccess: (data, payload) => {
             queryClient.setQueryData(['systemSettings'], (old) => ({
                 ...old,
-                settings: { ...old?.settings, journey_scenes: payload }
+                settings: { ...old?.settings, journey_scenes: payload.scenes, questions_per_scene: payload.questionsPerScene }
             }));
             queryClient.invalidateQueries({ queryKey: ['systemSettings'] });
             toast.success('บันทึกการตั้งค่าฉากหลังเรียบร้อย ✅');
@@ -149,7 +151,7 @@ const JourneySceneManager = ({ systemSettings }) => {
     };
 
     const handleSave = () => {
-        saveMutation.mutate(scenes);
+        saveMutation.mutate({ scenes, questionsPerScene });
     };
 
     return (
@@ -165,6 +167,18 @@ const JourneySceneManager = ({ systemSettings }) => {
                         >
                             <Plus size={14} /> เพิ่มฉาก
                         </button>
+                    </div>
+
+                    <div style={{ marginBottom: 16 }}>
+                        <Field label="จำนวนข้อต่อฉาก">
+                            <input 
+                                type="number" 
+                                value={questionsPerScene} 
+                                onChange={e => setQuestionsPerScene(parseInt(e.target.value) || 1)}
+                                style={inputStyle}
+                                min="1"
+                            />
+                        </Field>
                     </div>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

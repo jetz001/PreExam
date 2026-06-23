@@ -65,9 +65,7 @@ const JOURNEY_SCENES = [
     },
 ];
 
-// How many questions per scene
-const QUESTIONS_PER_SCENE = 3;
-
+// How many questions per scene (dynamically calculated later)
 const EXAM_CSS = `
     /* ─── Scene crossfade ─── */
     @keyframes scene-fade-in {
@@ -334,7 +332,10 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState({});
     const [flagged, setFlagged] = useState({});
-    const [timeLeft, setTimeLeft] = useState(questions.length * 60);
+    
+    // Timer calculation
+    const totalTimeSeconds = config?.time_limit_minutes ? config.time_limit_minutes * 60 : questions.length * 60;
+    const [timeLeft, setTimeLeft] = useState(totalTimeSeconds);
     const [startTime] = useState(Date.now());
     const [showReportModal, setShowReportModal] = useState(false);
     const [fontSizeScale, setFontSizeScale] = useState(1);
@@ -399,8 +400,9 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
 
     // Navigate to next question — trigger journey if crossing scene boundary
     const navigateToQuestion = useCallback((newIndex) => {
-        const oldScene = Math.floor(currentIndex / QUESTIONS_PER_SCENE);
-        const newScene = Math.floor(newIndex / QUESTIONS_PER_SCENE);
+        const questionsPerScene = runtimeAnimationSettings?.questions_per_scene || 5;
+        const oldScene = Math.floor(currentIndex / questionsPerScene);
+        const newScene = Math.floor(newIndex / questionsPerScene);
 
         setCurrentIndex(newIndex);
         setQuestionKey(k => k + 1);
@@ -889,7 +891,7 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
             {/* Floating tools */}
             {showFontMenu && <FontResizer onResize={setFontSizeScale} currentSize={fontSizeScale} />}
             <PermissionGate requiredTier="premium" type="hide"><AmbiencePlayer /></PermissionGate>
-            <PacingAlert timeUsed={(questions.length * 60) - timeLeft} totalTime={questions.length * 60} />
+            <PacingAlert timeUsed={totalTimeSeconds - timeLeft} totalTime={totalTimeSeconds} />
             {showReportModal && <ReportModal questionId={currentQuestion.id} onClose={() => setShowReportModal(false)} />}
 
             {/* Lottie overlay animation (existing system) */}

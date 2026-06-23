@@ -73,7 +73,12 @@ export default function ExamConfig({ onStart }) {
                 if (subjectsRes.success)  setSubjects(subjectsRes.data);
                 if (yearsRes.success)     setYears(yearsRes.data);
                 if (setsRes.success)      setSets(setsRes.data);
-                if (metaRes.success)      setExamSetsMeta(metaRes.data);
+                if (metaRes.success) {
+                    setExamSetsMeta(metaRes.data);
+                    if (mode === 'simulation' && metaRes.data.length > 0 && !config.exam_set) {
+                        setConfig(p => ({ ...p, exam_set: metaRes.data[0].name }));
+                    }
+                }
             } catch (e) { console.error(e); }
         })();
     }, [showAdvanced, mode]);
@@ -101,8 +106,9 @@ export default function ExamConfig({ onStart }) {
                 setLoading(false);
                 return;
             }
+            const selectedSet = examSetsMeta.find(s => s.name === config.exam_set);
             publicService.logActivity('BTN_START_EXAM', { mode, exam_set: config.exam_set, type: 'simulation', disable_animation: disableAnimation });
-            await onStart({ exam_set: config.exam_set, mode, disable_animation: disableAnimation });
+            await onStart({ exam_set: config.exam_set, mode, time_limit_minutes: selectedSet?.time_limit_minutes, disable_animation: disableAnimation });
         } else {
             publicService.logActivity('BTN_START_EXAM', { mode, limit: quickAmount, type: 'quick', disable_animation: disableAnimation });
             await onStart({ category: '', subject: '', exam_year: '', exam_set: '', limit: quickAmount, mode, disable_animation: disableAnimation });
@@ -112,8 +118,9 @@ export default function ExamConfig({ onStart }) {
 
     const handleAdvancedSubmit = (e) => {
         e.preventDefault();
+        const selectedSet = examSetsMeta.find(s => s.name === config.exam_set);
         publicService.logActivity('BTN_START_EXAM_ADVANCED', { ...config, mode, disable_animation: disableAnimation });
-        onStart({ ...config, mode, disable_animation: disableAnimation });
+        onStart({ ...config, mode, time_limit_minutes: selectedSet?.time_limit_minutes, disable_animation: disableAnimation });
     };
 
     const handleChange = (e) =>

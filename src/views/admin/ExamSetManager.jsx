@@ -334,6 +334,16 @@ const ExamSetManager = () => {
                                     min="1"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Time Limit (เวลาเป็นนาที, 0 = ค่าเริ่มต้น 1 นาที/ข้อ)</label>
+                                <input
+                                    type="number"
+                                    value={formData.time_limit_minutes || 0}
+                                    onChange={(e) => setFormData({ ...formData, time_limit_minutes: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    min="0"
+                                />
+                            </div>
                             <div className="border-t border-slate-200 pt-4 mt-4">
                                 <div className="flex justify-between items-center mb-2">
                                     <div className="flex items-center space-x-2">

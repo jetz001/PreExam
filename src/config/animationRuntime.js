@@ -14,11 +14,13 @@ export const resolveAnimationPreset = (presetKey, animationSettings = {}) => {
     if (hasAssetCentricConfig) {
         const assetPool = Array.isArray(usageMap[presetKey]) ? usageMap[presetKey].filter(Boolean) : [];
 
-        // No asset assigned yet → fall back to base registry preset (don't disable)
+        // No asset assigned yet → disabled completely
         if (assetPool.length === 0) {
             return {
                 ...basePreset,
-                disabled: !basePreset.animationData,
+                disabled: true,
+                animationData: null,
+                animationUrl: null
             };
         }
 
