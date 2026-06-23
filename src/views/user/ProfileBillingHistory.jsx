@@ -82,6 +82,13 @@ const ProfileBillingHistory = () => {
                                     <div style={{ fontSize: '11px', color: statusColor, marginTop: '2px', fontWeight: 'bold' }}>
                                         {statusText}
                                     </div>
+                                    {item.receipt_url && (
+                                        <div style={{ marginTop: '8px' }}>
+                                            <a href={item.receipt_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', color: '#e0e0e0', textDecoration: 'none', display: 'inline-block' }}>
+                                                📄 View Receipt
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
