@@ -1,65 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Match - Arcade</title>
+    <title>Memory Match (จับคู่ความจำ)</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap');
         
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
+        * {
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: 'Nunito', sans-serif;
-            background: linear-gradient(135deg, #1e3a8a, #4c1d95);
-            color: white;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            background: linear-gradient(135deg, #1e1b4b, #4338ca);
+            color: white;
             overflow: hidden;
         }
 
         h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            font-weight: 600;
         }
 
         .stats {
             display: flex;
-            gap: 20px;
+            gap: 30px;
             margin-bottom: 20px;
             font-size: 1.2rem;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             padding: 10px 20px;
             border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
         }
 
-        .grid {
+        .board {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 15px;
             perspective: 1000px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .card {
             width: 80px;
             height: 80px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 15px;
-            cursor: pointer;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .card:active {
-            transform: scale(0.95);
+            transition: transform 0.5s;
+            cursor: pointer;
         }
 
         .card.flipped {
@@ -75,162 +76,154 @@
             align-items: center;
             justify-content: center;
             font-size: 2.5rem;
-            border-radius: 13px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
         .card-front {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(45deg, #8b5cf6, #ec4899);
+            color: transparent;
             transform: rotateY(180deg);
+            text-shadow: 0 0 0 white;
         }
 
         .card-back {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            font-size: 2rem;
+            background: linear-gradient(45deg, #3b82f6, #2dd4bf);
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .card-back::after {
+            content: '?';
+            font-size: 2.5rem;
             color: rgba(255,255,255,0.8);
+            font-weight: bold;
         }
 
-        .win-screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s;
-            z-index: 100;
-        }
-
-        .win-screen.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .btn {
-            margin-top: 20px;
+        button {
+            margin-top: 30px;
             padding: 12px 30px;
             font-size: 1.2rem;
-            font-weight: bold;
-            background: #10b981;
+            font-weight: 600;
+            background: #ec4899;
             color: white;
             border: none;
             border-radius: 30px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-            transition: transform 0.2s;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
         }
 
-        .btn:hover { transform: translateY(-3px); }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.6);
+            background: #db2777;
+        }
 
         @media (max-width: 500px) {
-            .grid { gap: 10px; }
-            .card { width: 65px; height: 65px; font-size: 2rem; }
+            .card { width: 60px; height: 60px; }
+            .card-face { font-size: 2rem; }
+            .board { gap: 10px; }
         }
     </style>
 </head>
 <body>
 
-    <h1>🧠 Memory Match</h1>
+    <h1>🧠 เกมจับคู่ความจำ</h1>
     <div class="stats">
-        <div>Moves: <span id="moves">0</span></div>
-        <div>Matches: <span id="matches">0</span>/8</div>
+        <div>จำนวนครั้ง: <span id="moves">0</span></div>
+        <div>จับคู่สำเร็จ: <span id="matches">0</span> / 8</div>
     </div>
 
-    <div class="grid" id="grid"></div>
+    <div class="board" id="board"></div>
 
-    <div class="win-screen" id="winScreen">
-        <h1 style="font-size: 4rem; color: #fbbf24;">🎉 You Win!</h1>
-        <p style="font-size: 1.5rem; margin-bottom: 20px;">Completed in <span id="finalMoves">0</span> moves!</p>
-        <button class="btn" onclick="initGame()">Play Again</button>
-    </div>
+    <button onclick="initGame()">เริ่มเกมใหม่</button>
 
     <script>
-        const emojis = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼'];
-        let cards = [...emojis, ...emojis];
-        let flippedCards = [];
+        const emojis = ['🚀', '🎸', '🎮', '🍕', '🏆', '👽', '💎', '🌈'];
+        let cards = [];
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
         let moves = 0;
         let matches = 0;
-        let isLocked = false;
-
-        const grid = document.getElementById('grid');
-        const movesEl = document.getElementById('moves');
-        const matchesEl = document.getElementById('matches');
-        const winScreen = document.getElementById('winScreen');
-        const finalMovesEl = document.getElementById('finalMoves');
-
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
 
         function initGame() {
-            grid.innerHTML = '';
+            const board = document.getElementById('board');
+            board.innerHTML = '';
             moves = 0;
             matches = 0;
-            movesEl.innerText = moves;
-            matchesEl.innerText = matches;
-            flippedCards = [];
-            isLocked = false;
-            winScreen.classList.remove('active');
+            document.getElementById('moves').textContent = moves;
+            document.getElementById('matches').textContent = matches;
             
-            shuffle(cards);
+            cards = [...emojis, ...emojis]
+                .sort(() => Math.random() - 0.5);
 
             cards.forEach((emoji, index) => {
-                const card = document.createElement('div');
-                card.classList.add('card');
-                card.dataset.emoji = emoji;
-                
-                card.innerHTML = `
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.emoji = emoji;
+
+                cardElement.innerHTML = `
                     <div class="card-face card-front">${emoji}</div>
-                    <div class="card-face card-back">?</div>
+                    <div class="card-face card-back"></div>
                 `;
-                
-                card.addEventListener('click', () => flipCard(card));
-                grid.appendChild(card);
+
+                cardElement.addEventListener('click', flipCard);
+                board.appendChild(cardElement);
             });
         }
 
-        function flipCard(card) {
-            if (isLocked || card.classList.contains('flipped')) return;
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
 
-            card.classList.add('flipped');
-            flippedCards.push(card);
+            this.classList.add('flipped');
 
-            if (flippedCards.length === 2) {
-                moves++;
-                movesEl.innerText = moves;
-                checkMatch();
+            if (!hasFlippedCard) {
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            moves++;
+            document.getElementById('moves').textContent = moves;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.emoji === secondCard.dataset.emoji;
+
+            if (isMatch) {
+                disableCards();
+                matches++;
+                document.getElementById('matches').textContent = matches;
+                if (matches === 8) {
+                    setTimeout(() => alert('🎉 ยินดีด้วย! คุณชนะแล้ว! ใช้เวลาจับคู่ไป ' + moves + ' ครั้ง'), 500);
+                }
+            } else {
+                unflipCards();
             }
         }
 
-        function checkMatch() {
-            isLocked = true;
-            const [card1, card2] = flippedCards;
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            resetBoard();
+        }
 
-            if (card1.dataset.emoji === card2.dataset.emoji) {
-                matches++;
-                matchesEl.innerText = matches;
-                flippedCards = [];
-                isLocked = false;
+        function unflipCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                resetBoard();
+            }, 1000);
+        }
 
-                if (matches === 8) {
-                    setTimeout(() => {
-                        finalMovesEl.innerText = moves;
-                        winScreen.classList.add('active');
-                    }, 500);
-                }
-            } else {
-                setTimeout(() => {
-                    card1.classList.remove('flipped');
-                    card2.classList.remove('flipped');
-                    flippedCards = [];
-                    isLocked = false;
-                }, 1000);
-            }
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
         }
 
         initGame();
