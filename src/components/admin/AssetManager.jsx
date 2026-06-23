@@ -157,7 +157,7 @@ const AssetManager = () => {
                         Asset Library
                     </h3>
                     <span className="bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-bold">
-                        {assets.length} Total
+                        {assets.filter(a => ['background', 'frame'].includes(a.type)).length} Total
                     </span>
                 </div>
                 
@@ -167,13 +167,13 @@ const AssetManager = () => {
                             <Loader2 size={32} className="animate-spin text-royal-blue-500 mb-2" />
                             Loading assets...
                         </div>
-                    ) : assets.length === 0 ? (
+                    ) : assets.filter(a => ['background', 'frame'].includes(a.type)).length === 0 ? (
                         <div className="text-center py-8 text-slate-500">
                             No assets uploaded yet.
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {assets.map((asset) => (
+                            {assets.filter(a => ['background', 'frame'].includes(a.type)).map((asset) => (
                                 <div key={asset.id} className="border border-slate-200 rounded-xl overflow-hidden group relative bg-slate-50">
                                     <div className="aspect-square bg-slate-200 relative flex items-center justify-center overflow-hidden">
                                         {asset.url?.endsWith('.json') ? (
