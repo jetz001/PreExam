@@ -287,7 +287,7 @@ export default {
     const url = new URL(request.url);
 
     
-        if (url.pathname === "/api/webhooks/stripe" && request.method === "POST") {
+        if ((url.pathname === "/api/webhooks/stripe" || url.pathname === "/api/payments/webhook") && request.method === "POST") {
           if (!env.STRIPE_SECRET_KEY || !env.STRIPE_WEBHOOK_SECRET) {
              return new Response("Webhook error: Stripe secrets not configured", { status: 400 });
           }
@@ -3128,7 +3128,12 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
             // Calculate duration
             const durationDays = planDoc.duration_days || 30; // Default to 30 if missing
 
+            // Fetch user for email autofill
+            const userDoc: any = await getUserById(env.DB, auth.userId);
+            const userEmail = userDoc?.email || `user_${auth.userId}@preexam.online`;
+
             const session = await stripe.checkout.sessions.create({
+              customer_email: userEmail,
               payment_method_types: ['promptpay'],
               line_items: [
                 {
@@ -3172,6 +3177,17 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           } catch (e: any) {
             console.error("Stripe error:", e);
             return json({ success: false, message: e.message }, { status: 500 });
+          }
+        }
+
+        if (url.pathname === "/api/payments/history" && request.method === "GET") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          try {
+             const history = await listPayments(env.DB, auth.userId, 50);
+             return json({ success: true, history });
+          } catch (e: any) {
+             return json({ success: false, message: e.message }, { status: 500 });
           }
         }
 

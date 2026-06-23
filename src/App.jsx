@@ -56,6 +56,7 @@ import ProfileMessages from './views/user/ProfileMessages';
 import ProfileFriends from './views/user/ProfileFriends';
 import ProfileSettings from './views/user/ProfileSettings';
 import ProfileQuestionBank from './views/user/ProfileQuestionBank';
+import ProfileBillingHistory from './views/user/ProfileBillingHistory';
 
 import ExamResult from './views/ExamResult';
 import PaymentSuccess from './views/PaymentSuccess';
@@ -143,6 +144,7 @@ function App() {
           <Route path="dashboard" element={<ProfileDashboard />} />
           <Route path="history-overview" element={<ProfileHistoryOverview />} />
           <Route path="history" element={<ProfileHistory />} />
+          <Route path="billing-history" element={<ProfileBillingHistory />} />
           <Route path="bookmarks" element={<ProfileBookmarks />} />
           <Route path="threads" element={<ProfileThreads />} />
           <Route path="messages" element={<ProfileMessages />} />

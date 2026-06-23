@@ -138,10 +138,11 @@ const ProfileLayout = () => {
     }
   };
 
-  const navItems = [
+    const navItems = [
     { to: '/profile/dashboard', label: 'Dashboard', icon: '🎮' },
     { to: '/profile/history-overview', label: 'History Overview', icon: '📊' },
     { to: '/profile/history', label: 'History', icon: '🕐' },
+    { to: '/profile/billing-history', label: 'Billing History', icon: '💳' },
     { to: '/profile/bookmarks', label: 'Bookmarks', icon: '🔖' },
     { to: '/profile/threads', label: 'My Threads', icon: '💬' },
     { to: '/profile/messages', label: 'Messages', icon: '📩', badge: unreadMessages > 0 ? unreadMessages : null },
