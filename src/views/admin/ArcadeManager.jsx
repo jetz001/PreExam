@@ -172,16 +172,17 @@ export default function ArcadeManager() {
                                 </div>
                                 
                                 <div className="col-span-2 border-t pt-4 mt-2">
-                                    <p className="text-xs text-gray-500 mb-2 font-bold">เลือกวิธีแสดงผลเกม (เลือกอย่างใดอย่างหนึ่ง)</p>
+                                    <p className="text-xs text-gray-500 mb-2 font-bold">วิธีเชื่อมต่อตัวเกม (เลือกอย่างใดอย่างหนึ่ง)</p>
                                 </div>
 
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700">1. ลิงก์สำหรับฝัง (Iframe URL) - ดึงจากเว็บอื่น</label>
-                                    <input type="text" value={currentData.game_url} onChange={e => setCurrentData({...currentData, game_url: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="https://wordwall.net/embed/..." />
+                                    <label className="block text-sm font-medium text-gray-700">1. ลิงก์ไฟล์เกม Open Source (ที่อัปโหลดไว้ในเซิร์ฟเวอร์เรา)</label>
+                                    <input type="text" value={currentData.game_url} onChange={e => setCurrentData({...currentData, game_url: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="เช่น /games/memory-match/index.html" />
+                                    <p className="text-xs text-gray-400 mt-1">ใช้สำหรับเกม HTML5 Open source ที่นำมาวางในโฟลเดอร์ public/games/</p>
                                 </div>
                                 <div className="col-span-2 text-center text-xs text-gray-400 font-bold">-- หรือ --</div>
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700">2. ชื่อ React Component (ถ้าสร้างเองในเว็บ)</label>
+                                    <label className="block text-sm font-medium text-gray-700">2. ชื่อ React Component (ถ้าสร้างเกมเป็นระบบฝังในเว็บเลย)</label>
                                     <input type="text" value={currentData.internal_component} onChange={e => setCurrentData({...currentData, internal_component: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="เช่น WordMatchGame" />
                                 </div>
 
