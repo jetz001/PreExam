@@ -33,13 +33,14 @@ export default function ArcadeManager() {
 
         try {
             const res = await api.post('/upload', formData, {
-                headers: { 'Content-Type': undefined } // undefined allows the browser to set the correct multipart boundary
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
             // Append timestamp to bust cache if replacing
             setCurrentData({ ...currentData, thumbnail_url: `${res.data.url}?t=${Date.now()}` });
             toast.success('อัปโหลดรูปลง R2 สำเร็จ');
         } catch (err) {
-            toast.error('อัปโหลดล้มเหลว');
+            console.error('Upload Error:', err);
+            toast.error(`อัปโหลดล้มเหลว: ${err.response?.data?.error || err.message}`);
         } finally {
             setUploadingCover(false);
             e.target.value = ''; // Reset input
