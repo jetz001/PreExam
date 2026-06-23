@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 import publicService from '../services/publicService';
 import { Building2 } from 'lucide-react';
+import useUserRole from '../hooks/useUserRole';
 
 /* ──────────────────────────────────────────────────────
    HomeNavbar  — Kahoot-style overlay navbar for Home page
@@ -34,6 +35,7 @@ export default function HomeNavbar() {
   const [menuOpen,    setMenuOpen]    = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [user,        setUser]        = useState(null);
+  const { isPremium } = useUserRole();
   const menuRef    = useRef(null);
   const profileRef = useRef(null);
   const navigate   = useNavigate();
@@ -250,11 +252,23 @@ export default function HomeNavbar() {
                 className="hn-avatar-btn"
                 onClick={() => setProfileOpen(v => !v)}
                 aria-label="โปรไฟล์"
+                style={{ position: 'relative' }}
               >
                 {avatar
                   ? <img src={avatar} alt={displayName} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                   : <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=b6e3f4,c0aede,d1d4f9`} alt={displayName} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 }
+                {isPremium && (
+                  <div style={{
+                    position: 'absolute', bottom: '-4px', right: '-4px',
+                    background: 'linear-gradient(135deg, #FFD700 0%, #FDB931 100%)',
+                    borderRadius: '50%', width: '16px', height: '16px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.5)', border: '1px solid #fff', zIndex: 10
+                  }}>
+                    <span style={{ fontSize: '10px' }}>👑</span>
+                  </div>
+                )}
               </button>
 
               {profileOpen && (
