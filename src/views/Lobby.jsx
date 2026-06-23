@@ -599,7 +599,7 @@ export default function Lobby() {
                 )}
                 {frameUrl && (
                   frameUrl.endsWith('.json') ? (
-                    <LottieViewer url={frameUrl} className="absolute inset-0 w-full h-full z-20 pointer-events-none" />
+                    <LottieViewer url={frameUrl} className="absolute inset-0 w-full h-full z-20 pointer-events-none" preserveAspectRatio="none" />
                   ) : (
                     <div className="absolute inset-0 z-20 pointer-events-none" style={{
                       border: '10px solid transparent',

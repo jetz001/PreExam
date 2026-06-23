@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Lottie from 'lottie-react';
 
-const LottieViewer = ({ url, className, style }) => {
+const LottieViewer = ({ url, className, style, preserveAspectRatio }) => {
     const [animationData, setAnimationData] = useState(null);
 
     useEffect(() => {
@@ -20,6 +20,9 @@ const LottieViewer = ({ url, className, style }) => {
             loop={true} 
             className={className} 
             style={style} 
+            rendererSettings={{
+                preserveAspectRatio: preserveAspectRatio || 'xMidYMid meet'
+            }}
         />
     );
 };
