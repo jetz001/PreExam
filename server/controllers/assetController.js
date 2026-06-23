@@ -1,4 +1,5 @@
 const { db: firestore } = require('../config/firebase');
+const { uploadFileToR2, deleteFileFromR2 } = require('../services/r2Service');
 const assetsRef = firestore.collection('room_assets');
 
 exports.getAssets = async (req, res) => {
@@ -26,9 +27,8 @@ exports.createAsset = async (req, res) => {
         let url = req.body.url;
 
         if (req.file) {
-            // Construct relative URL from uploaded file
-            // Storing relative path allows the frontend to construct the full URL based on its network location
-            url = `/uploads/${req.file.filename}`;
+            // Upload to Cloudflare R2
+            url = await uploadFileToR2(req.file.buffer, req.file.originalname, req.file.mimetype);
         }
 
         const newAssetRef = assetsRef.doc();
@@ -52,7 +52,17 @@ exports.createAsset = async (req, res) => {
 exports.deleteAsset = async (req, res) => {
     try {
         const { id } = req.params;
-        await assetsRef.doc(String(id)).delete();
+        const assetDoc = await assetsRef.doc(String(id)).get();
+        
+        if (assetDoc.exists) {
+            const assetData = assetDoc.data();
+            if (assetData.url) {
+                // Delete from R2 if it's an R2 URL
+                await deleteFileFromR2(assetData.url);
+            }
+            await assetsRef.doc(String(id)).delete();
+        }
+        
         res.json({ success: true, message: 'Asset deleted' });
     } catch (error) {
         console.error('Delete Asset Error:', error);

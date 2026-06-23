@@ -304,7 +304,7 @@ export default {
           let event;
           try {
             const bodyText = await request.text();
-            event = stripe.webhooks.constructEvent(bodyText, signature, env.STRIPE_WEBHOOK_SECRET);
+            event = await stripe.webhooks.constructEventAsync(bodyText, signature, env.STRIPE_WEBHOOK_SECRET);
           } catch (err: any) {
             console.error(`Webhook signature verification failed: ${err.message}`);
             return new Response(`Webhook Error: ${err.message}`, { status: 400 });
@@ -313,6 +313,20 @@ export default {
           if (event.type === 'checkout.session.completed') {
             const session = event.data.object as any;
             const metadata = session.metadata;
+
+            let receiptUrl = null;
+            try {
+               if (session.payment_intent) {
+                 const pi = await stripe.paymentIntents.retrieve(session.payment_intent as string);
+                 if (pi.latest_charge) {
+                   const charge = await stripe.charges.retrieve(pi.latest_charge as string);
+                   receiptUrl = charge.receipt_url;
+                 }
+               }
+            } catch (err) {
+               console.error("Error fetching receipt_url:", err);
+            }
+
             if (metadata && metadata.userId) {
               const { userId, type, durationDays } = metadata;
               const days = parseInt(durationDays || '30', 10);
@@ -326,8 +340,8 @@ export default {
               }
               
               // Update transaction
-              await env.DB.prepare("UPDATE transactions SET status = 'approved', updated_at = ? WHERE session_id = ?")
-                .bind(new Date().toISOString(), session.id).run();
+              await env.DB.prepare("UPDATE transactions SET status = 'approved', updated_at = ?, receipt_url = ? WHERE session_id = ?")
+                .bind(new Date().toISOString(), receiptUrl, session.id).run();
             }
           }
           return new Response(JSON.stringify({ received: true }), { status: 200, headers: { "Content-Type": "application/json" } });

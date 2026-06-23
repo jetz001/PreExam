@@ -5,6 +5,7 @@ import authService from '../services/authService';
 import userService from '../services/userService';
 import api from '../services/api';
 import { getAssetUrl } from '../utils/assets';
+import LottieViewer from '../components/room/LottieViewer';
 import { Search, Play, Users, Lock, ChevronRight, Plus } from 'lucide-react';
 import CreateRoomModal from '../components/room/CreateRoomModal';
 
@@ -567,12 +568,22 @@ export default function Lobby() {
             return (
               <div key={room.id} className="lb-room-card relative overflow-hidden" style={{ background: bgUrl ? '#1a1a2e' : theme.bg }}>
                 {bgUrl && (
-                  <div className="absolute inset-0 z-0">
-                    <img src={bgUrl} alt="room bg" className="w-full h-full object-cover opacity-60" />
+                  <div className="absolute inset-0 z-0 pointer-events-none">
+                    {bgUrl.endsWith('.json') ? (
+                        <LottieViewer url={bgUrl} className="w-full h-full object-cover opacity-60" />
+                    ) : (
+                        <img src={bgUrl} alt="room bg" className="w-full h-full object-cover opacity-60" />
+                    )}
                   </div>
                 )}
                 {frameUrl && (
-                  <div className="absolute inset-0 z-10 border-[8px] pointer-events-none" style={{ borderImage: `url(${frameUrl}) 30 round` }}></div>
+                  <div className="absolute inset-0 z-10 pointer-events-none">
+                    {frameUrl.endsWith('.json') ? (
+                        <LottieViewer url={frameUrl} className="w-full h-full" />
+                    ) : (
+                        <div className="absolute inset-0 border-[8px]" style={{ borderImage: `url(${frameUrl}) 30 round` }}></div>
+                    )}
+                  </div>
                 )}
                 <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'rgba(0,0,0,0.5)' : theme.header, backdropFilter: bgUrl ? 'blur(4px)' : 'none' }}>
                   <div className="lb-room-count">

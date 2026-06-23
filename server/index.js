@@ -216,6 +216,7 @@ app.use(['/api/reports', '/reports'], reportRoutes);
 app.use(['/api/friends', '/friends'], friendRoutes);
 app.use(['/api/rooms', '/rooms'], roomRoutes);
 app.use(['/api/assets', '/assets'], assetRoutes);
+app.use(['/api/upload', '/upload'], require('./routes/uploadRoutes'));
 app.use(['/api/bookmarks', '/bookmarks'], require('./routes/bookmarkRoutes'));
 app.use(['/api/community', '/community'], require('./routes/communityRoutes'));
 app.use(['/api/groups', '/groups'], require('./routes/studyGroupRoutes'));

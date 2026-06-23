@@ -1805,23 +1805,59 @@ export async function rejectPayment(db: D1Database, id: string, reason: string) 
 }
 
 export async function adminGetPayments(db: D1Database) {
-  const sql = `
-    SELECT p.*, u.display_name as user_display_name, u.email as user_email
+  const sqlTransactions = `
+    SELECT t.id, t.user_id, t.amount, t.status, t.created_at, t.type, t.receipt_url as slip_url, 1 as is_stripe,
+           u.display_name as user_display_name, u.email as user_email
+    FROM transactions t
+    LEFT JOIN users u ON t.user_id = u.id
+  `;
+  const sqlPayments = `
+    SELECT p.id, p.user_id, p.amount, p.status, p.created_at, p.metadata, 0 as is_stripe,
+           u.display_name as user_display_name, u.email as user_email
     FROM payments p
     LEFT JOIN users u ON p.user_id = u.id
-    ORDER BY datetime(p.created_at) DESC
   `;
-  const { results } = await db.prepare(sql).all();
-  return (results || []).map((row: any) => ({
-    id: row.id,
-    type: row.type === 'PLAN_PURCHASE' ? 'subscription' : 'topup',
-    amount: row.amount,
-    status: (row.status || 'unknown').toLowerCase(),
-    slip_url: row.metadata ? (parseMaybeJson(row.metadata)?.slip_url || row.receipt_url || null) : null,
-    created_at: row.created_at,
-    user_display_name: row.user_display_name || 'Unknown',
-    user_email: row.user_email || 'Unknown'
+  const { results: tResults } = await db.prepare(sqlTransactions).all();
+  const { results: pResults } = await db.prepare(sqlPayments).all();
+  
+  const mappedP = (pResults || []).map((row: any) => {
+      let type = 'subscription';
+      let slip_url = null;
+      if (row.metadata) {
+          try {
+              const meta = JSON.parse(row.metadata);
+              type = meta.type === 'topup' ? 'topup' : 'subscription';
+              slip_url = meta.slip_url || null;
+          } catch(e){}
+      }
+      return {
+          id: row.id,
+          type,
+          amount: row.amount,
+          status: (row.status || 'unknown').toLowerCase(),
+          slip_url,
+          is_stripe: false,
+          created_at: row.created_at,
+          user_display_name: row.user_display_name || 'Unknown',
+          user_email: row.user_email || 'Unknown'
+      };
+  });
+
+  const mappedT = (tResults || []).map((row: any) => ({
+      id: row.id,
+      type: row.type === 'PLAN_PURCHASE' ? 'subscription' : row.type,
+      amount: row.amount,
+      status: (row.status || 'unknown').toLowerCase(),
+      slip_url: row.slip_url || null,
+      is_stripe: true,
+      created_at: row.created_at,
+      user_display_name: row.user_display_name || 'Unknown',
+      user_email: row.user_email || 'Unknown'
   }));
+
+  const combined = [...mappedT, ...mappedP];
+  combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return combined;
 }
 
 export async function adminApprovePayment(db: D1Database, id: string, type: string) {

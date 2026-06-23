@@ -3,6 +3,8 @@ import { Lock, ArrowRight, ArrowLeft, Gamepad2, GraduationCap, Sparkles, Wand2 }
 import useUserRole from '../../hooks/useUserRole';
 import api from '../../services/api';
 import CustomQuestionBuilder from './CustomQuestionBuilder';
+import LottieViewer from './LottieViewer';
+import { STATIC_BACKGROUNDS, STATIC_FRAMES } from '../../utils/assets';
 
 const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
     const { isPremium } = useUserRole();
@@ -88,20 +90,11 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
             
             // Static Premium Assets
             if (bgs.length === 0) {
-                bgs = [
-                    { id: 'static-bg-1', type: 'background', name: 'Lo-Fi Study Room', url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=500&q=80', is_premium: true },
-                    { id: 'static-bg-2', type: 'background', name: 'Cozy Cafe', url: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&q=80', is_premium: true },
-                    { id: 'static-bg-3', type: 'background', name: 'Cyberpunk City', url: 'https://images.unsplash.com/photo-1515630278258-407f66498911?w=500&q=80', is_premium: true },
-                    { id: 'static-bg-4', type: 'background', name: 'Nature Forest', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=500&q=80', is_premium: true }
-                ];
+                bgs = STATIC_BACKGROUNDS;
             }
             
             if (frms.length === 0) {
-                frms = [
-                    { id: 'static-frm-1', type: 'frame', name: 'Gold Vintage', url: 'https://img.freepik.com/free-vector/golden-frame-transparent-background_1048-11111.jpg?w=500', is_premium: true },
-                    { id: 'static-frm-2', type: 'frame', name: 'Neon Cyber', url: 'https://img.freepik.com/free-vector/neon-frame-transparent-background-vector_53876-167232.jpg?w=500', is_premium: true },
-                    { id: 'static-frm-3', type: 'frame', name: 'Wooden Classic', url: 'https://img.freepik.com/free-vector/wood-frame-transparent-background_1048-11114.jpg?w=500', is_premium: true }
-                ];
+                frms = STATIC_FRAMES;
             }
 
             setAssets({ backgrounds: bgs, frames: frms });
@@ -357,7 +350,11 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                                         <div onClick={() => setFormData(prev => ({ ...prev, theme: { ...prev.theme, background_id: null } }))} className={`flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer flex items-center justify-center bg-white/10 font-bold text-white/70 transition-all ${!formData.theme?.background_id ? 'border-white scale-105 shadow-[0_4px_10px_rgba(255,255,255,0.3)]' : 'border-transparent hover:bg-white/20'}`}>ไม่มี</div>
                                         {assets.backgrounds.map(bg => (
                                             <div key={bg.id} onClick={() => { if (!isPremium) { alert('Premium Feature'); return; } setFormData(prev => ({ ...prev, theme: { ...prev.theme, background_id: bg.id } })); }} className={`relative flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer overflow-hidden group transition-all ${formData.theme?.background_id === bg.id ? 'border-white scale-105 shadow-[0_4px_10px_rgba(255,255,255,0.3)]' : 'border-transparent hover:opacity-80'}`}>
-                                                <img src={bg.url} alt={bg.name} className="w-full h-full object-cover" />
+                                                {bg.url.endsWith('.json') ? (
+                                                    <LottieViewer url={bg.url} className="w-full h-full object-cover bg-[#1a1a2e]" />
+                                                ) : (
+                                                    <img src={bg.url} alt={bg.name} className="w-full h-full object-cover" />
+                                                )}
                                                 {!isPremium && <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center"><Lock className="text-white w-6 h-6" /></div>}
                                             </div>
                                         ))}
@@ -369,7 +366,13 @@ const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                                         <div onClick={() => setFormData(prev => ({ ...prev, theme: { ...prev.theme, frame_id: null } }))} className={`flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer flex items-center justify-center bg-white/10 font-bold text-white/70 transition-all ${!formData.theme?.frame_id ? 'border-white scale-105 shadow-[0_4px_10px_rgba(255,255,255,0.3)]' : 'border-transparent hover:bg-white/20'}`}>ไม่มี</div>
                                         {assets.frames.map(frm => (
                                             <div key={frm.id} onClick={() => { if (!isPremium) { alert('Premium Feature'); return; } setFormData(prev => ({ ...prev, theme: { ...prev.theme, frame_id: frm.id } })); }} className={`relative flex-shrink-0 w-20 h-20 border-4 rounded-2xl cursor-pointer overflow-hidden p-2 transition-all bg-white/10 ${formData.theme?.frame_id === frm.id ? 'border-white scale-105 shadow-[0_4px_10px_rgba(255,255,255,0.3)]' : 'border-transparent hover:bg-white/20'}`}>
-                                                <div className="absolute inset-0 border-[6px]" style={{ borderImage: `url(${frm.url}) 30 round` }}></div>
+                                                {frm.url.endsWith('.json') ? (
+                                                    <div className="absolute inset-0 z-0 pointer-events-none opacity-80 scale-150">
+                                                        <LottieViewer url={frm.url} className="w-full h-full" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="absolute inset-0 border-[6px] z-0 pointer-events-none" style={{ borderImage: `url(${frm.url}) 30 round` }}></div>
+                                                )}
                                                 {!isPremium && <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10"><Lock className="text-white w-6 h-6" /></div>}
                                             </div>
                                         ))}

@@ -12,6 +12,7 @@ import { Users, Play, LogOut } from 'lucide-react';
 import AdSlot from '../components/ads/AdSlot';
 import DOMPurify from 'dompurify';
 import { getAssetUrl } from '../utils/assets';
+import LottieViewer from '../components/room/LottieViewer';
 
 const decodeHtml = (html) => {
     const txt = document.createElement("textarea");
@@ -302,7 +303,13 @@ const Room = () => {
             {/* Playful Floating Shapes or Custom Background */}
             <div className="room-wrapper" style={room.theme?.background_id ? { background: '#1a1a2e' } : {}}>
                 {room.theme?.background_id ? (
-                    <img src={getAssetUrl(room.theme.background_id, 'background')} alt="room bg" className="absolute inset-0 w-full h-full object-cover opacity-60 z-0" />
+                    (() => {
+                        const bgUrl = getAssetUrl(room.theme.background_id, 'background');
+                        if (bgUrl && bgUrl.endsWith('.json')) {
+                            return <LottieViewer url={bgUrl} className="absolute inset-0 w-full h-full opacity-60 z-0 object-cover" />;
+                        }
+                        return <img src={bgUrl} alt="room bg" className="absolute inset-0 w-full h-full object-cover opacity-60 z-0" />;
+                    })()
                 ) : (
                     <>
                         <div className="absolute top-10 right-20 text-8xl opacity-50 float-anim" style={{ animationDelay: '0s' }}>☁️</div>
@@ -315,7 +322,13 @@ const Room = () => {
             </div>
             
             {room.theme?.frame_id && (
-                <div className="fixed inset-0 z-50 pointer-events-none border-[16px] md:border-[24px]" style={{ borderImage: `url(${getAssetUrl(room.theme.frame_id, 'frame')}) 30 round` }}></div>
+                (() => {
+                    const frameUrl = getAssetUrl(room.theme.frame_id, 'frame');
+                    if (frameUrl && frameUrl.endsWith('.json')) {
+                        return <LottieViewer url={frameUrl} className="fixed inset-0 w-full h-full z-50 pointer-events-none" />;
+                    }
+                    return <div className="fixed inset-0 z-50 pointer-events-none border-[16px] md:border-[24px]" style={{ borderImage: `url(${frameUrl}) 30 round` }}></div>;
+                })()
             )}
 
             <div className="container mx-auto px-4 py-8 flex flex-col h-full relative z-10">

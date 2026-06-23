@@ -13,6 +13,23 @@ const adminApi = {
         return response.data;
     },
 
+    // Room Assets
+    getAssets: async (type) => {
+        const url = type ? `/assets?type=${type}` : '/assets';
+        const response = await api.get(url);
+        return response.data.data;
+    },
+    createAsset: async (formData) => {
+        const response = await api.post('/assets', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
+    },
+    deleteAsset: async (id) => {
+        const response = await api.delete(`/assets/${id}`);
+        return response.data;
+    },
+
     // Question Manager
     getQuestions: async (filters) => {
         const response = await api.get('/questions', { params: { orderBy: 'id', ...filters } });
