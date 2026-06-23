@@ -25,6 +25,7 @@ import ContactPage from './views/support/ContactPage';
 import TicketDetail from './views/support/TicketDetail';
 import SupportTicketManager from './views/admin/SupportTicketManager';
 import BackupManager from './views/admin/BackupManager'; // New Import
+import ArcadeManager from './views/admin/ArcadeManager';
 import ScraperManager from './views/admin/ScraperManager';
 import GeneratorManager from './views/admin/GeneratorManager';
 import SeasonManager from './views/admin/SeasonManager';
@@ -181,6 +182,7 @@ function App() {
             <Route path="animations/preview" element={<AnimationPreviewMockup />} />
             <Route path="support" element={<SupportTicketManager />} />
             <Route path="backups" element={<BackupManager />} />
+            <Route path="arcade" element={<ArcadeManager />} />
           </Route>
           <Route path="/premium-upgrade" element={<PremiumUpgrade />} />
           <Route path="/pricing" element={<PricingPage />} />

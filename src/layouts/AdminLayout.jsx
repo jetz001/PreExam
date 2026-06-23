@@ -67,8 +67,9 @@ const AdminLayout = () => {
         },
         {
             id: 'motion',
-            label: 'แอนิเมชันและเอฟเฟกต์',
+            label: 'เกม แอนิเมชัน และเอฟเฟกต์',
             items: [
+                { path: '/admin/arcade', label: 'จัดการอาเขต (Arcade)', icon: Sparkles },
                 { path: '/admin/animations', label: 'Animation Studio', icon: Sparkles },
             ]
         },
