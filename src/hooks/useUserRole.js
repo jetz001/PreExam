@@ -12,8 +12,8 @@ const useUserRole = () => {
         };
     }
 
-    const isPremium = user.plan_type === 'premium' &&
-        (!user.premium_expiry || new Date(user.premium_expiry) > new Date());
+    const isPremium = user.role === 'admin' || (user.plan_type === 'premium' &&
+        (!user.premium_expiry || new Date(user.premium_expiry) > new Date()));
 
     return {
         isGuest: false,

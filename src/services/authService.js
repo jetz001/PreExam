@@ -79,6 +79,19 @@ const authService = {
         localStorage.removeItem('user');
     },
 
+    fetchCurrentUser: async () => {
+        try {
+            const response = await api.get('/auth/me');
+            if (response.data && response.data.user) {
+                localStorage.setItem('user', JSON.stringify(response.data.user));
+                return response.data.user;
+            }
+        } catch (error) {
+            console.error("Failed to fetch current user", error);
+        }
+        return null;
+    },
+
     getCurrentUser: () => {
         return JSON.parse(localStorage.getItem('user'));
     },

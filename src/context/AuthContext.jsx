@@ -12,7 +12,12 @@ export const AuthProvider = ({ children }) => {
             try {
                 let currentUser = authService.getCurrentUser();
 
-                if (!currentUser) {
+                if (currentUser && authService.getToken()) {
+                    // Refresh the user data from the server in the background
+                    authService.fetchCurrentUser().then(freshUser => {
+                        if (freshUser) setUser(freshUser);
+                    });
+                } else if (!currentUser) {
                     try {
                         const guestConfig = await authService.guestLogin();
                         currentUser = guestConfig.user;
