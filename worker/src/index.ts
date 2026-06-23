@@ -1720,7 +1720,7 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           const auth = await requireAdmin(request, env);
           if ("error" in auth) return auth.error;
           const games = await adminGetArcadeGames(env.DB);
-          return json(games);
+          return json({ success: true, data: games });
         }
 
         if (url.pathname === "/api/admin/arcade" && request.method === "POST") {
