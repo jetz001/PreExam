@@ -5,9 +5,11 @@ import authService from '../services/authService';
 import userService from '../services/userService';
 import chatApi from '../services/chatApi';
 import notificationApi from '../services/notificationApi';
+import useUserRole from '../hooks/useUserRole';
 
 const ProfileLayout = () => {
   const navigate = useNavigate();
+  const { isPremium } = useUserRole();
   const [xpWidth, setXpWidth] = useState(0);
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
@@ -254,8 +256,19 @@ const ProfileLayout = () => {
               )}
             </div>
 
-            <div className="avatar-btn" onClick={() => navigate('/profile/settings')}>
+            <div className="avatar-btn" onClick={() => navigate('/profile/settings')} style={{ position: 'relative' }}>
               {user?.avatar ? <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : '🦊'}
+              {isPremium && (
+                <div style={{
+                  position: 'absolute', bottom: '-4px', right: '-4px',
+                  background: 'linear-gradient(135deg, #FFD700 0%, #FDB931 100%)',
+                  borderRadius: '50%', width: '16px', height: '16px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.5)', border: '1px solid #fff'
+                }}>
+                  <span style={{ fontSize: '10px' }}>👑</span>
+                </div>
+              )}
             </div>
             <button 
               className="notif-btn" 
