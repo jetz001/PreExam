@@ -147,29 +147,6 @@ export default function Arcade() {
                         </Link>
                     </div>
 
-                    <div style={{ marginTop:40, textAlign:'center' }}>
-                        <button 
-                            onClick={() => navigate('/')}
-                            style={{
-                                background: 'rgba(255,255,255,0.1)',
-                                border: '2px solid rgba(255,255,255,0.2)',
-                                color: '#fff',
-                                padding: '10px 24px',
-                                borderRadius: '100px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                            }}
-                        >
-                            กลับหน้าหลัก
-                        </button>
-                    </div>
                 </div>
             </div>
         </>
