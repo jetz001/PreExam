@@ -3294,7 +3294,10 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
 
             // Fetch user for email autofill
             const userDoc: any = await getUserById(env.DB, auth.userId);
-            const userEmail = userDoc?.email || `user_${auth.userId}@preexam.online`;
+            let userEmail = userDoc?.email;
+            if (!userEmail || !userEmail.includes('@') || !userEmail.includes('.')) {
+                userEmail = `user_${auth.userId}@preexam.online`;
+            }
 
             const session = await stripe.checkout.sessions.create({
               customer_email: userEmail,
