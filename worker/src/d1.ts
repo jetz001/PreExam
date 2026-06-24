@@ -1775,6 +1775,7 @@ export async function createTicket(db: D1Database, data: Record<string, any>) {
     ticket_id: data.ticket_id ?? data.id ?? null,
     description: data.description ?? null,
     category: data.category ?? null,
+    attachment_url: data.attachment_url ?? null,
   };
   await db
     .prepare("INSERT INTO tickets (id, user_id, subject, status, created_at, updated_at, ticket_id, description, category, attachment_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
