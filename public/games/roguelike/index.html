@@ -19,7 +19,22 @@
     button { background: #e74c3c; color: #fff; border: none; padding: 15px 40px; font-size: 1.2rem; font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.2s; font-family: 'Segoe UI', sans-serif; }
     button:hover { background: #c0392b; }
     .keyboard-hint { margin-top: 20px; color: #888; font-family: 'Segoe UI', sans-serif; }
+    
+    #mobile-controls { display: none; width: 100%; justify-content: center; align-items: center; padding: 10px; margin-top: 5px; user-select: none; pointer-events: auto; }
+    .d-pad { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .d-pad-row { display: flex; gap: 5px; }
+    #mobile-controls button { width: 55px; height: 55px; border-radius: 10px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); color: white; font-weight: bold; font-size: 16px; touch-action: none; font-family: 'Courier New', Courier, monospace; padding: 0; margin: 0; }
+    #mobile-controls button:active { background: rgba(255,255,255,0.3) !important; transform: scale(0.95); }
+    @media (max-width: 640px) {
+      #gameContainer { width: 100vw; height: 100vh; justify-content: center; }
+      #stats, #logBox { width: 95vw; }
+      #gameCanvas { width: 95vw; height: auto; object-fit: contain; }
+      #mobile-controls { display: flex; }
+      .keyboard-hint { display: none; }
+    }
   </style>
+
+<style>/* global-responsive-fix */ canvas, #gameContainer { max-width: 100vw !important; max-height: 100vh !important; object-fit: contain !important; } body { overflow: hidden !important; touch-action: none; }</style>
 </head>
 <body>
 
@@ -32,6 +47,17 @@
   </div>
   <canvas id="gameCanvas" width="640" height="480"></canvas>
   <div id="logBox"></div>
+  
+  <div id="mobile-controls">
+    <div class="d-pad">
+      <button id="btn-w">W</button>
+      <div class="d-pad-row">
+        <button id="btn-a">A</button>
+        <button id="btn-s">S</button>
+        <button id="btn-d">D</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="overlay">
@@ -312,7 +338,19 @@ function gameOver() {
   window.parent?.postMessage({ type: 'GAME_OVER', score: score }, '*');
 }
 
-startBtn.addEventListener('click', () => {
+const bindMove = (id, dx, dy) => {
+  const el = document.getElementById(id);
+  if(!el) return;
+  const handler = (e) => { e.preventDefault(); if(gameState==='playing') playerMove(dx, dy); };
+  el.addEventListener('touchstart', handler);
+  el.addEventListener('mousedown', handler);
+};
+bindMove('btn-w', 0, -1);
+bindMove('btn-a', -1, 0);
+bindMove('btn-s', 0, 1);
+bindMove('btn-d', 1, 0);
+
+function initGame() {
   player = null;
   floor = 1;
   score = 0;
