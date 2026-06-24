@@ -16,10 +16,6 @@ const PricingPage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    // Prevent non-admins from viewing the pricing page for now
-    if (!user || user.role !== 'admin') {
-        return <Navigate to="/" replace />;
-    }
 
     useEffect(() => {
         fetchPlans();

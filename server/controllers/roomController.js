@@ -1,4 +1,5 @@
 const { db: firestore } = require('../config/firebase');
+const { canCreateRooms, isPremiumUser } = require('../utils/userAccess');
 
 const roomsRef = firestore.collection('exam_rooms');
 const usersRef = firestore.collection('users');
@@ -9,8 +10,11 @@ exports.createRoom = async (req, res) => {
         const { name, mode, subject, category, max_participants, question_count, time_limit, password, custom_questions, tutor_submode } = req.body;
         const userId = req.user.id.toString();
 
-        if (req.user.email && req.user.email.startsWith('guest_')) {
-            return res.status(403).json({ success: false, message: 'Guests cannot create rooms.' });
+        if (!canCreateRooms(req.user)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'กรุณาสมัครสมาชิกเพื่อสร้างห้อง'
+            });
         }
 
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -32,7 +36,7 @@ exports.createRoom = async (req, res) => {
         }
 
         let theme = req.body.theme || null;
-        if (theme && req.user.plan_type !== 'premium') theme = null;
+        if (theme && !isPremiumUser(req.user)) theme = null;
 
         const newRoomRef = roomsRef.doc();
         const roomData = {

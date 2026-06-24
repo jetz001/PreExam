@@ -5,6 +5,7 @@ import authService from '../services/authService';
 import userService from '../services/userService';
 import api from '../services/api';
 import { getAssetUrl } from '../utils/assets';
+import { canCreateRooms } from '../utils/userAccess';
 import LottieViewer from '../components/room/LottieViewer';
 import { Search, Play, Users, Lock, ChevronRight, Plus } from 'lucide-react';
 import CreateRoomModal from '../components/room/CreateRoomModal';
@@ -94,6 +95,15 @@ export default function Lobby() {
       console.error('Error creating room:', error);
       alert(error.response?.data?.message || 'Failed to create room');
     }
+  };
+
+  const handleOpenCreateRoom = () => {
+    if (!canCreateRooms(user)) {
+      alert('กรุณาสมัครสมาชิกเพื่อสร้างห้อง');
+      return;
+    }
+
+    setShowCreateModal(true);
   };
 
   const handleJoinRoom = async (code, password = null) => {
@@ -509,13 +519,7 @@ export default function Lobby() {
           
           <button 
             className="btn-create-room"
-            onClick={() => {
-              if (user?.email?.startsWith('guest_')) {
-                alert('Guests cannot create rooms. Please register to create a room.');
-                return;
-              }
-              setShowCreateModal(true);
-            }}
+            onClick={handleOpenCreateRoom}
           >
             <Plus size={20} strokeWidth={3}/> Create Room
           </button>
@@ -671,13 +675,7 @@ export default function Lobby() {
               <button 
                 className="btn-create-room"
                 style={{ margin: '0 auto', fontSize: '1.1rem', padding: '14px 32px' }}
-                onClick={() => {
-                  if (user?.email?.startsWith('guest_')) {
-                    alert('Guests cannot create rooms. Please register to create a room.');
-                    return;
-                  }
-                  setShowCreateModal(true);
-                }}
+                onClick={handleOpenCreateRoom}
               >
                 <Plus size={24} strokeWidth={3}/> Create a Room Now 🚀
               </button>

@@ -221,8 +221,53 @@ const sanitizeUser = (row: any) => {
     avatar: row.avatar || null,
     role: row.role,
     plan_type: row.plan_type,
+    premium_expiry: row.premium_expiry || null,
     status: row.status,
+    guest_device_id: row.guest_device_id || null,
   };
+};
+
+const isGuestUser = (user: any) => {
+  if (!user) return true;
+  if (user.guest_device_id) return true;
+
+  const email = typeof user.email === "string" ? user.email.toLowerCase() : "";
+  return email.startsWith("guest_");
+};
+
+const isPremiumUser = (user: any) => {
+  if (!user) return false;
+  if (user.role === "admin") return true;
+  if (user.plan_type !== "premium") return false;
+
+  if (!user.premium_expiry) return true;
+
+  const expiryDate = new Date(user.premium_expiry);
+  if (Number.isNaN(expiryDate.getTime())) return true;
+
+  return expiryDate > new Date();
+};
+
+const getUserFeatures = (user: any) => {
+  const featureSources = [
+    user?.features,
+    user?.plan_features,
+    user?.package_features,
+    user?.payment_plan_features,
+  ];
+
+  return featureSources.find(Array.isArray) || [];
+};
+
+const hasPackageFeature = (user: any, featureKey: string) => {
+  return getUserFeatures(user).includes(featureKey);
+};
+
+const canCreateRooms = (user: any) => {
+  if (!user) return false;
+  if (!isGuestUser(user)) return true;
+
+  return isPremiumUser(user) || hasPackageFeature(user, "create_rooms");
 };
 
 const normalizeQuestion = (q: any) => {
@@ -705,6 +750,15 @@ export default {
       const auth = await requireAuthUserId(request, env);
       if ("error" in auth) return auth.error;
 
+      const currentUser = await getUserById(env.DB, auth.userId);
+      if (!currentUser) return json({ success: false, message: "Unauthorized" }, { status: 401 });
+      if (!canCreateRooms(currentUser)) {
+        return json(
+          { success: false, message: "กรุณาสมัครสมาชิกเพื่อสร้างห้อง" },
+          { status: 403 }
+        );
+      }
+
       const body = await readJson(request);
       if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
 
@@ -721,6 +775,7 @@ export default {
       const timeLimit = Math.max(5, Math.min(60, Number((body as any).time_limit || 60)));
       const password = (body as any).password ? String((body as any).password) : null;
       const customQuestions = (body as any).custom_questions;
+      const theme = isPremiumUser(currentUser) ? (body as any).theme || null : null;
 
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const settings = JSON.stringify({ time_limit: timeLimit });
@@ -781,7 +836,7 @@ export default {
         password,
         question_ids: selectedIds,
         custom_questions: customQuestionsPayload,
-        theme: (body as any).theme || null,
+        theme,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });

@@ -1,25 +1,18 @@
 import { useAuth } from '../context/AuthContext';
+import { canCreateRooms, isGuestUser, isPremiumUser } from '../utils/userAccess';
 
 const useUserRole = () => {
     const { user } = useAuth();
 
-    if (!user) {
-        return {
-            isGuest: true,
-            isMember: false,
-            isPremium: false,
-            role: 'guest'
-        };
-    }
-
-    const isPremium = user.role === 'admin' || (user.plan_type === 'premium' &&
-        (!user.premium_expiry || new Date(user.premium_expiry) > new Date()));
+    const isGuest = isGuestUser(user);
+    const isPremium = isPremiumUser(user);
 
     return {
-        isGuest: false,
-        isMember: true,
+        isGuest,
+        isMember: !!user && !isGuest,
         isPremium,
-        role: isPremium ? 'premium' : 'member',
+        canCreateRooms: canCreateRooms(user),
+        role: !user ? 'guest' : isPremium ? 'premium' : isGuest ? 'guest' : 'member',
         user
     };
 };
