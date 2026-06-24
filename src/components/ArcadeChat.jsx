@@ -35,7 +35,7 @@ export default function ArcadeChat() {
         
         const client = createRoomRealtimeClient({
             baseUrl,
-            path: '/api/ws',
+            path: '/ws',
             token,
             userId
         });
