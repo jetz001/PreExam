@@ -100,7 +100,7 @@ export default function ArcadeChat() {
         return (
             <button 
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-2xl hover:bg-indigo-700 transition-all z-50 flex items-center justify-center group"
+                className="fixed bottom-6 left-6 bg-indigo-600 text-white p-4 rounded-full shadow-2xl hover:bg-indigo-700 transition-all z-[9999] flex items-center justify-center group"
             >
                 <div className="text-2xl">💬</div>
                 {unread > 0 && (
@@ -116,7 +116,7 @@ export default function ArcadeChat() {
     }
 
     return (
-        <div className="fixed bottom-6 right-6 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden z-50 h-[500px] max-h-[80vh]">
+        <div className="fixed bottom-6 left-6 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden z-[9999] h-[500px] max-h-[80vh]">
             {/* Header */}
             <div className="bg-[#1e1b4b] text-white p-4 flex items-center justify-between shadow-md">
                 <div className="flex items-center gap-2">
