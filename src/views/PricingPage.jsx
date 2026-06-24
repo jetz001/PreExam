@@ -47,7 +47,8 @@ const PricingPage = () => {
             if (session.url) window.location.href = session.url;
         } catch (err) {
             console.error(err);
-            alert('Stripe Error: ' + err.message);
+            const errorMsg = err.response?.data?.message || err.message;
+            alert('Stripe Error: ' + errorMsg);
             setLoading(false);
         }
     };
