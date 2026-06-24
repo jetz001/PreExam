@@ -124,7 +124,7 @@ export default function ArcadeChat() {
                     <div>
                         <h3 className="font-black text-lg leading-none">Arcade Chat</h3>
                         <p className="text-xs text-indigo-300 mt-1 flex items-center gap-1">
-                            <span className={\`w-2 h-2 rounded-full \${isConnected ? 'bg-green-400' : 'bg-red-500'}\`}></span>
+                            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-500'}`}></span>
                             {isConnected ? 'เชื่อมต่อแล้ว' : 'กำลังเชื่อมต่อ...'}
                         </p>
                     </div>
@@ -147,9 +147,9 @@ export default function ArcadeChat() {
                     messages.map((msg, idx) => {
                         const isMe = currentUser?.id ? msg.senderId === currentUser.id : msg.senderName === (currentUser?.display_name || 'Guest');
                         return (
-                            <div key={idx} className={\`flex flex-col \${isMe ? 'items-end' : 'items-start'}\`}>
+                            <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                                 {!isMe && <span className="text-xs text-gray-500 mb-1 ml-1 font-bold">{msg.senderName}</span>}
-                                <div className={\`px-4 py-2 rounded-2xl max-w-[85%] break-words \${isMe ? 'bg-indigo-600 text-white rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-800 shadow-sm rounded-tl-sm'}\`}>
+                                <div className={`px-4 py-2 rounded-2xl max-w-[85%] break-words ${isMe ? 'bg-indigo-600 text-white rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-800 shadow-sm rounded-tl-sm'}`}>
                                     {msg.text}
                                 </div>
                                 <span className="text-[10px] text-gray-400 mt-1">
