@@ -4,6 +4,7 @@ import HomeNavbar from '../components/HomeNavbar';
 import api from '../services/api';
 import AdaptiveLottie from '../components/common/AdaptiveLottie';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import ArcadeChat from '../components/ArcadeChat';
 /* ─────────────────────────────────────────────
    Arcade Selection Page - Dedicated Route
 ───────────────────────────────────────────── */
@@ -354,6 +355,7 @@ export default function Arcade() {
 
                 {mode ? renderGameList() : renderLobby()}
                 
+                <ArcadeChat />
             </div>
         </>
     );
