@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { User, Shield, Ban, CheckCircle, Briefcase, GraduationCap, Lock, X, Smartphone, Globe, FileText, Activity, Mail, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
+import { isPremiumUser } from '../../utils/userAccess';
 
 const isGuest = (user) => {
     return (user.email && user.email.startsWith('guest_') && user.email.includes('@preexam.com')) ||
@@ -896,13 +897,13 @@ const UserManager = () => {
                                                             <Briefcase size={12} className="mr-1" /> Sponsor
                                                         </span>
                                                     )}
-                                                    {(!user.role || user.role === 'user') && (user.plan_type !== 'premium' || (user.plan_type === 'premium' && user.premium_expiry && new Date(user.premium_expiry) < new Date())) && (
+                                                    {(!user.role || user.role === 'user') && !isPremiumUser(user) && (
                                                         <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium flex items-center w-fit border border-slate-200">
                                                             <User size={12} className="mr-1" /> สมาชิกทั่วไป
                                                         </span>
                                                     )}
                                                     
-                                                    {(user.role === 'admin' || (user.plan_type === 'premium' && (!user.premium_expiry || new Date(user.premium_expiry) > new Date()))) && (
+                                                    {(user.role === 'admin' || isPremiumUser(user)) && (
                                                         <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center w-fit">
                                                             <CheckCircle size={12} className="mr-1" /> Premium
                                                         </span>
@@ -999,7 +1000,7 @@ const UserManager = () => {
                                                 </>
                                             )}
                                             {user.role !== 'admin' && user.role !== 'sponsor' && (
-                                                user.plan_type !== 'premium' ? (
+                                                !isPremiumUser(user) ? (
                                                     <button
                                                         onClick={() => handleUpgrade(user.id)}
                                                         className="text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded transition-colors text-xs font-medium border border-indigo-200"
