@@ -896,7 +896,7 @@ const UserManager = () => {
                                                             <Briefcase size={12} className="mr-1" /> Sponsor
                                                         </span>
                                                     )}
-                                                    {(!user.role || user.role === 'user') && user.plan_type !== 'premium' && (
+                                                    {(!user.role || user.role === 'user') && (user.plan_type !== 'premium' || (user.plan_type === 'premium' && user.premium_expiry && new Date(user.premium_expiry) < new Date())) && (
                                                         <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium flex items-center w-fit border border-slate-200">
                                                             <User size={12} className="mr-1" /> สมาชิกทั่วไป
                                                         </span>
@@ -919,7 +919,13 @@ const UserManager = () => {
                                                 {user.plan_type === 'premium' && (user.premium_start_date || user.premium_expiry) && (
                                                     <div className="text-[10px] text-gray-500 mt-1">
                                                         {user.premium_start_date && <div>เริ่ม: {new Date(user.premium_start_date).toLocaleDateString()}</div>}
-                                                        {user.premium_expiry && <div className="text-red-500">หมดอายุ: {new Date(user.premium_expiry).toLocaleDateString()}</div>}
+                                                        {user.premium_expiry && (
+                                                            new Date(user.premium_expiry) > new Date() ? (
+                                                                <div className="text-gray-500">วันหมดอายุ: {new Date(user.premium_expiry).toLocaleDateString()}</div>
+                                                            ) : (
+                                                                <div className="text-red-500 font-semibold">หมดอายุแล้ว: {new Date(user.premium_expiry).toLocaleDateString()}</div>
+                                                            )
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
