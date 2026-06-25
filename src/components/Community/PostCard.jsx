@@ -12,12 +12,13 @@ import { useAuth } from '../../context/AuthContext';
 import RichText from './RichText';
 import FriendButton from './FriendButton';
 import toast from 'react-hot-toast';
+import { isPremiumUser } from '../../utils/userAccess';
 
 const BACKGROUND_STYLES = {
     'c1': 'bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500',
-    'c2': 'bg-gradient-to-br from-red-500 via-orange-500 to-yellow-500',
-    'c3': 'bg-gradient-to-br from-blue-400 via-cyan-500 to-teal-400',
-    'c4': 'bg-gradient-to-br from-green-400 to-emerald-600',
+    'c2': 'bg-gradient-to-br from-orange-400 to-rose-400',
+    'c3': 'bg-gradient-to-br from-emerald-400 to-cyan-500',
+    'c4': 'bg-gradient-to-br from-blue-500 to-indigo-600',
     'c5': 'bg-gradient-to-br from-slate-900 to-slate-700'
 };
 
@@ -191,7 +192,7 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
             {/* Header */}
             <div className="p-4 flex justify-between items-start">
                 <div className="flex items-center space-x-3">
-                    <div className={`relative ${thread.User?.plan_type === 'premium' ? 'p-0.5 rounded-full bg-gradient-to-tr from-yellow-400 via-orange-300 to-yellow-600' : ''}`}>
+                    <div className={`relative ${isPremiumUser(thread.User) ? 'p-0.5 rounded-full bg-gradient-to-tr from-yellow-400 via-orange-300 to-yellow-600' : ''}`}>
                         <img
                             src={getImageUrl(thread.User?.avatar)}
                             alt="Avatar"
@@ -201,7 +202,7 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
                                 e.target.src = `https://ui-avatars.com/api/?name=${thread.User?.display_name || 'User'}&background=random`;
                             }}
                         />
-                        {thread.User?.plan_type === 'premium' && (
+                        {isPremiumUser(thread.User) && (
                             <div className="absolute -bottom-1 -right-1 bg-yellow-400 text-white text-[10px] px-1 rounded-full font-bold shadow-sm">PRO</div>
                         )}
                     </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import useUserRole from '../hooks/useUserRole';
 import HomeNavbar from './HomeNavbar';
 import publicService from '../services/publicService';
 import AdaptiveLottie from './common/AdaptiveLottie';
@@ -34,8 +34,7 @@ const MODE_OPTIONS = [
 const QUICK_AMOUNTS = [10, 20, 30, 50];
 
 export default function ExamConfig({ onStart }) {
-    const { user } = useAuth();
-    const isPremium = user?.plan_type === 'subscription' || user?.role === 'admin';
+    const { user, isPremium } = useUserRole();
 
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [mode, setMode] = useState('practice');

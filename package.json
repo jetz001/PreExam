@@ -12,7 +12,7 @@
     "@anthropic-ai/sdk": "^0.98.0",
     "@aws-sdk/client-s3": "^3.1075.0",
     "@google/genai": "^2.6.0",
-    "@lottiefiles/dotlottie-react": "^0.19.4",
+    "@lottiefiles/dotlottie-react": "^0.19.5",
     "@react-oauth/google": "^0.13.5",
     "@tanstack/react-query": "^5.100.11",
     "axios": "^1.16.1",

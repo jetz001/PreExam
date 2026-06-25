@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Camera, Calendar, Flame, Timer, Edit, Crown, Check, X, AlertCircle, Mail } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import userService from '../../services/userService';
+import { isPremiumUser } from '../../utils/userAccess';
 import toast from 'react-hot-toast';
 
 const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
@@ -210,7 +211,7 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
                     </div>
                 </div>
 
-                {isOwnProfile && user.plan_type === 'premium' && (
+                {isOwnProfile && isPremiumUser(user) && (
                     <div className="mt-6 w-full bg-[#46178f]/5 dark:bg-[#46178f]/20 p-4 rounded-2xl border-2 border-[#46178f]/20 text-center relative overflow-hidden">
                         <div className="absolute -right-4 -top-4 text-[#ebbf00] opacity-20"><Crown size={64} /></div>
                         <p className="text-sm font-bold text-[#46178f] dark:text-purple-300 uppercase tracking-widest relative z-10">Premium Active</p>

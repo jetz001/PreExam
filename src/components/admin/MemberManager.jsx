@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { isPremiumUser } from '../../utils/userAccess';
 import { Edit, Trash2, Shield, ShieldOff, UserCheck, UserX, CreditCard, Wallet } from 'lucide-react';
 
 const MemberManager = () => {
@@ -75,8 +76,8 @@ const MemberManager = () => {
                                     <div className="text-xs text-gray-500">{user.ip_address || ''}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.plan_type === 'premium' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                        {user.plan_type}
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isPremiumUser(user) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                        {isPremiumUser(user) ? 'premium' : user.plan_type === 'premium' ? 'expired' : user.plan_type}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">

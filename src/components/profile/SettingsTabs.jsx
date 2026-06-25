@@ -5,6 +5,7 @@ import paymentService from '../../services/paymentService';
 import { User, Lock, Bell, Palette, CreditCard, Trash2, Crown, RefreshCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { isPremiumUser } from '../../utils/userAccess';
 
 const SettingsTabs = () => {
     const { user, updateUser } = useAuth();
@@ -224,19 +225,19 @@ const SettingsTabs = () => {
                             <div className="relative z-10">
                                 <div className="flex items-center gap-3 mb-2">
                                     <Crown className="text-yellow-400" size={28} />
-                                    <h2 className="text-2xl font-bold uppercase">{user.plan_type || 'FREE'} PLAN</h2>
+                                    <h2 className="text-2xl font-bold uppercase">{isPremiumUser(user) ? 'PREMIUM' : user.plan_type === 'premium' ? 'EXPIRED' : user.plan_type || 'FREE'} PLAN</h2>
                                 </div>
-                                {user.plan_type === 'premium' ? (
+                                {isPremiumUser(user) ? (
                                     <p className="opacity-90">Valid until: {new Date(user.premium_expiry).toLocaleDateString()}</p>
                                 ) : (
-                                    <p className="opacity-90">อัปเกรดเพื่อปลดล็อกขีดความสามารถสูงสุด</p>
+                                    <p className="opacity-90">{user.plan_type === 'premium' ? 'หมดอายุแล้ว กรุณาต่ออายุ' : 'อัปเกรดเพื่อปลดล็อกขีดความสามารถสูงสุด'}</p>
                                 )}
 
                                 <button
                                     onClick={() => navigate('/premium-upgrade')}
                                     className="mt-6 px-6 py-2 bg-white text-indigo-700 rounded-lg font-bold hover:bg-gray-100 transition shadow-md flex items-center gap-2"
                                 >
-                                    {user.plan_type === 'premium' ? 'ต่ออายุ Premium' : 'อัปเกรดทันที'} <RefreshCcw size={16} />
+                                    {isPremiumUser(user) || user.plan_type === 'premium' ? 'ต่ออายุ Premium' : 'อัปเกรดทันที'} <RefreshCcw size={16} />
                                 </button>
                             </div>
                             <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform translate-x-8"></div>

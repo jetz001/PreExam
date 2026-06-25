@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import FriendList from '../components/Community/FriendList';
 import FriendRequests from '../components/Community/FriendRequests';
 import UserSearch from '../components/Community/UserSearch';
+import { isPremiumUser } from '../utils/userAccess';
 
 const Dashboard = () => {
     const [user, setUser] = useState(null);
@@ -100,9 +101,9 @@ const Dashboard = () => {
                             สถานะสมาชิก
                         </dt>
                         <dd className="mt-1 text-3xl font-semibold text-primary">
-                            {user.plan_type === 'premium' ? 'Premium' : 'Free'}
+                            {isPremiumUser(user) ? 'Premium' : 'Free'}
                         </dd>
-                        {user.plan_type === 'free' && (
+                        {!isPremiumUser(user) && (
                             <button
                                 onClick={() => navigate('/premium-upgrade')}
                                 className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
