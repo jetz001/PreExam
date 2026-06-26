@@ -218,10 +218,10 @@ const parseDurationMs = (input, fallback = 900) => {
 
 // ─── Choice colors ──────────────────────────────────────────────────────────
 const CHOICE_CFG = {
-    A: { bg: '#e21b3c', shadow: '#b3152d', num: '1' },
-    B: { bg: '#1368ce', shadow: '#0e4e9c', num: '2' },
-    C: { bg: '#d89e00', shadow: '#a87b00', num: '3' },
-    D: { bg: '#26890c', shadow: '#1a5e08', num: '4' },
+    A: { bg: '#e21b3c', shadow: '#b3152d', num: 'ก' },
+    B: { bg: '#1368ce', shadow: '#0e4e9c', num: 'ข' },
+    C: { bg: '#d89e00', shadow: '#a87b00', num: 'ค' },
+    D: { bg: '#26890c', shadow: '#1a5e08', num: 'ง' },
 };
 
 // ─── BackgroundScene ─────────────────────────────────────────────────────────

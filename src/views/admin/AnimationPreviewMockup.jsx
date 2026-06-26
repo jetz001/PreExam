@@ -193,10 +193,10 @@ const buildPreviewMotionConfig = (startPosition, endPosition, startCoords, endCo
 
 // ─── Mock choice data ────────────────────────────────────────────────────────
 const MOCK_CHOICES = [
-    { key: 'A', label: 'ส่วนราชการสามารถอนุมัติเองได้ทันที', bg: '#e21b3c', shadow: '#b3152d', num: '1' },
-    { key: 'B', label: 'ต้องรายงานให้ผู้บังคับบัญชาทราบภายหลัง', bg: '#1368ce', shadow: '#0e4e9c', num: '2' },
-    { key: 'C', label: 'ต้องขอความเห็นชอบจากคณะรัฐมนตรีก่อน', bg: '#d89e00', shadow: '#a87b00', num: '3' },
-    { key: 'D', label: 'ให้ผู้ว่าราชการจังหวัดอนุมัติแทนคณะรัฐมนตรี', bg: '#26890c', shadow: '#1a5e08', num: '4' },
+    { key: 'A', label: 'ส่วนราชการสามารถอนุมัติเองได้ทันที', bg: '#e21b3c', shadow: '#b3152d', num: 'ก' },
+    { key: 'B', label: 'ต้องรายงานให้ผู้บังคับบัญชาทราบภายหลัง', bg: '#1368ce', shadow: '#0e4e9c', num: 'ข' },
+    { key: 'C', label: 'ต้องขอความเห็นชอบจากคณะรัฐมนตรีก่อน', bg: '#d89e00', shadow: '#a87b00', num: 'ค' },
+    { key: 'D', label: 'ให้ผู้ว่าราชการจังหวัดอนุมัติแทนคณะรัฐมนตรี', bg: '#26890c', shadow: '#1a5e08', num: 'ง' },
 ];
 
 // ─── BackgroundScene (identical to ExamTaking) ───────────────────────────────
