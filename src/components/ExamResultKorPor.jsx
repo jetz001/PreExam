@@ -92,7 +92,7 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
         return (
             <div className="bg-white p-6 md:p-10 rounded-xl shadow-lg border border-slate-200 mt-6 max-w-3xl mx-auto">
                 <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6">ผลสอบ ภาค ก. (จำลอง)</h2>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-6">ผลสอบ ภาค ก. {config?.mode === 'simulation' ? '(จำลอง)' : '(ฝึกฝน)'}</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left max-w-lg mx-auto bg-slate-50 p-4 rounded-lg border border-slate-100">
                         <div className="text-slate-600"><strong>ชื่อ-นามสกุล :</strong> {displayName}</div>
                         <div className="text-slate-600"><strong>วุฒิที่ใช้สอบ :</strong> {eduLevel === 'master' ? 'ระดับปริญญาโท' : 'ระดับปริญญาตรี'}</div>
@@ -188,12 +188,12 @@ const ExamResultKorPor = ({ result, onRetry, config }) => {
         <div className="max-w-4xl mx-auto p-4 md:p-6 pb-20">
             {renderTable()}
             
-            {/* เฉลยคำตอบทั้งหมดถูกซ่อนไว้สำหรับโหมดจำลองสนามสอบ หรือถ้าต้องการแสดงให้ใส่เงื่อนไข config.mode !== 'simulation' */}
+            {/* เฉลยคำตอบทั้งหมดจะแสดงในโหมดฝึกฝน */}
             {config?.mode !== 'simulation' && (
-                <div className="mt-12 opacity-50 pointer-events-none hidden">
+                <div className="mt-12">
                     <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center">
                         <span className="w-2 h-8 bg-blue-500 rounded-full mr-3"></span>
-                        เฉลยคำตอบทั้งหมด (ซ่อนในโหมดจำลอง)
+                        เฉลยคำตอบทั้งหมด
                     </h2>
                     <DetailedSolution questions={qs} answers={userAnswers} />
                 </div>
