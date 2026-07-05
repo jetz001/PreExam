@@ -1412,16 +1412,28 @@ export default {
             let qs = await listAllQuestions(env.DB);
             if (subject && subject !== "undefined" && subject !== "null") qs = qs.filter((q: any) => q.subject === subject);
             const allTags = new Set<string>();
+            const categoryMap: Record<string, string> = {
+              "พ.ร.ฎ.กิจการบ้านเมืองที่ดี": "พ.ร.ฎ.การบริหารกิจการบ้านเมืองที่ดี",
+              "พ.ร.บ.ความรับผิดทางละเมิดของเจ้าหน้าที่ พ.ศ. 2539": "พ.ร.บ.ความรับผิดทางละเมิดของเจ้าหน้าที่",
+              "พ.ร.บ.บริหารราชการแผ่นดิน": "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน",
+              "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน พ.ศ. 2534": "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน",
+              "มาตรฐานจริยธรรม": "พ.ร.บ.มาตรฐานทางจริยธรรม"
+            };
+
+            const processTag = (tag: string) => {
+              const t = tag.trim();
+              if (t) {
+                allTags.add(categoryMap[t] || t);
+              }
+            };
+
             for (const q of qs) {
               if (q.category) {
-                q.category.split(",").forEach((tag: string) => {
-                  const t = tag.trim();
-                  if (t) allTags.add(t);
-                });
+                q.category.split(",").forEach(processTag);
               }
               if (q.catalogs && Array.isArray(q.catalogs)) {
                 q.catalogs.forEach((tag: string) => {
-                  if (tag) allTags.add(tag.trim());
+                  if (tag) processTag(tag);
                 });
               }
             }
@@ -1511,10 +1523,26 @@ export default {
               if (!qText.includes(searchStr)) match = false;
             }
             if (match && category && category !== "undefined" && category !== "null") {
-              const catStr = category.toLowerCase();
+              const catMapReversed: Record<string, string[]> = {
+                "พ.ร.ฎ.การบริหารกิจการบ้านเมืองที่ดี": ["พ.ร.ฎ.การบริหารกิจการบ้านเมืองที่ดี", "พ.ร.ฎ.กิจการบ้านเมืองที่ดี"],
+                "พ.ร.บ.ความรับผิดทางละเมิดของเจ้าหน้าที่": ["พ.ร.บ.ความรับผิดทางละเมิดของเจ้าหน้าที่", "พ.ร.บ.ความรับผิดทางละเมิดของเจ้าหน้าที่ พ.ศ. 2539"],
+                "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน": ["พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน", "พ.ร.บ.บริหารราชการแผ่นดิน", "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน พ.ศ. 2534"],
+                "พ.ร.บ.มาตรฐานทางจริยธรรม": ["พ.ร.บ.มาตรฐานทางจริยธรรม", "มาตรฐานจริยธรรม"]
+              };
+              const searchCats = catMapReversed[category] || [category];
+
               const qCat = (data.category || "").toLowerCase();
               const qCatalogs = Array.isArray(data.catalogs) ? data.catalogs.join(",").toLowerCase() : (data.catalogs || "").toLowerCase();
-              if (!qCat.includes(catStr) && !qCatalogs.includes(catStr)) match = false;
+              
+              let foundCatMatch = false;
+              for (const c of searchCats) {
+                const catStr = c.toLowerCase();
+                if (qCat.includes(catStr) || qCatalogs.includes(catStr)) {
+                  foundCatMatch = true;
+                  break;
+                }
+              }
+              if (!foundCatMatch) match = false;
             }
             if (match) rows.push(normalizeQuestion(data));
           }
