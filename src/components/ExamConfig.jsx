@@ -565,7 +565,7 @@ export default function ExamConfig({ onStart }) {
                                             ))}
                                             {sets.filter(s => !examSetsMeta.find(m => m.name === s)).map((s,i) => (
                                                 <option key={`old-${i}`} value={s}>
-                                                    {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam') ? 'ข้อสอบจริง' : s}
+                                                    {s.trim() === 'Mock Exam' ? 'แนวข้อสอบ' : (s.trim() === 'Real Exam' || s.trim() === 'Past Exam' || s.trim() === 'ข้อสอบจริง') ? 'ข้อสอบจริง' : s}
                                                 </option>
                                             ))}
                                         </select>

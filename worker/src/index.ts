@@ -270,34 +270,136 @@ const canCreateRooms = (user: any) => {
   return isPremiumUser(user) || hasPackageFeature(user, "create_rooms");
 };
 
+const win1252ToByte: Record<number, number> = {
+  0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, 0x2020: 0x86,
+  0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A, 0x2039: 0x8B, 0x0152: 0x8C,
+  0x017D: 0x8E, 0x2018: 0x91, 0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95,
+  0x2013: 0x96, 0x2014: 0x97, 0x02DC: 0x98, 0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B,
+  0x0153: 0x9C, 0x017E: 0x9E, 0x0178: 0x9F
+};
+
+const fixMojibake = (str: any): string => {
+  if (!str || typeof str !== 'string') return str || "";
+  if (!str.includes('เธ') && !str.includes('เน')) return str;
+  
+  try {
+    const bytes: number[] = [];
+    for (let i = 0; i < str.length; i++) {
+      const code = str.charCodeAt(i);
+      if (win1252ToByte[code] !== undefined) {
+        bytes.push(win1252ToByte[code]);
+      } else if (code === 0x0E40) { // เ -> 0xE0
+        bytes.push(0xE0);
+      } else if (code === 0x0E18) { // ธ -> 0xB8
+        bytes.push(0xB8);
+      } else if (code === 0x0E19) { // น -> 0xB9
+        bytes.push(0xB9);
+      } else if (code >= 0x0E00 && code <= 0x0E5B) {
+        bytes.push((code - 0x0E00) + 0xA0);
+      } else if (code <= 0xFF) {
+        bytes.push(code);
+      } else {
+        bytes.push(code & 0xFF);
+      }
+    }
+    return Buffer.from(bytes).toString('utf8');
+  } catch {
+    return str;
+  }
+};
+
+const cleanWatermarks = (str: any): string => {
+  if (!str || typeof str !== 'string') return str || "";
+  let cleaned = str;
+  cleaned = cleaned.replace(/GO![\s\S]*?อนุญาต/gi, '');
+  cleaned = cleaned.replace(/สงวนลิขสิทธิ์ตามกฎหมาย[\s\S]*?อนุญาต/gi, '');
+  cleaned = cleaned.replace(/--\s*\d+\s*of\s*\d+\s*--/gi, '');
+  cleaned = cleaned.replace(/--\s*\d+\s*--/gi, '');
+  return cleaned.trim();
+};
+
 const normalizeQuestion = (q: any) => {
   if (!q) return q;
+  const rawQText = cleanWatermarks(fixMojibake(q.question_text));
+  const rawChoices = fixMojibake(q.choices);
+
   const parsedChoices =
-    typeof q.choices === "string"
+    typeof rawChoices === "string"
       ? (() => {
           try {
-            return JSON.parse(q.choices);
+            return JSON.parse(rawChoices);
           } catch {
             return null;
           }
         })()
-      : q.choices && typeof q.choices === "object"
-        ? q.choices
+      : rawChoices && typeof rawChoices === "object"
+        ? rawChoices
         : null;
+
+  let choicesObj: Record<string, string> = { A: "", B: "", C: "", D: "" };
+  if (Array.isArray(parsedChoices)) {
+    const keys = ["A", "B", "C", "D"];
+    parsedChoices.forEach((item: string, idx: number) => {
+      if (idx < 4 && typeof item === "string") {
+        const cleaned = cleanWatermarks(fixMojibake(item.replace(/^[1-4ก-งA-D][.)]\s*/, "").trim()));
+        choicesObj[keys[idx]] = cleaned;
+      }
+    });
+  } else if (parsedChoices && typeof parsedChoices === "object") {
+    choicesObj = {
+      A: cleanWatermarks(fixMojibake(parsedChoices.A)),
+      B: cleanWatermarks(fixMojibake(parsedChoices.B)),
+      C: cleanWatermarks(fixMojibake(parsedChoices.C)),
+      D: cleanWatermarks(fixMojibake(parsedChoices.D)),
+    };
+  }
+
+  let choiceA = cleanWatermarks(fixMojibake((q.choice_a && String(q.choice_a).trim()) ? q.choice_a : (choicesObj.A || "")));
+  let choiceB = cleanWatermarks(fixMojibake((q.choice_b && String(q.choice_b).trim()) ? q.choice_b : (choicesObj.B || "")));
+  let choiceC = cleanWatermarks(fixMojibake((q.choice_c && String(q.choice_c).trim()) ? q.choice_c : (choicesObj.C || "")));
+  let choiceD = cleanWatermarks(fixMojibake((q.choice_d && String(q.choice_d).trim()) ? q.choice_d : (choicesObj.D || "")));
+
+  // If all choices are empty (e.g. numeric 1-4 choices or empty extraction), default to "1", "2", "3", "4"
+  if (!choiceA && !choiceB && !choiceC && !choiceD) {
+    choiceA = "1";
+    choiceB = "2";
+    choiceC = "3";
+    choiceD = "4";
+  }
+
+  choicesObj.A = choiceA;
+  choicesObj.B = choiceB;
+  choicesObj.C = choiceC;
+  choicesObj.D = choiceD;
 
   const normalized = {
     ...q,
-    choice_a: q.choice_a ?? parsedChoices?.A ?? "",
-    choice_b: q.choice_b ?? parsedChoices?.B ?? "",
-    choice_c: q.choice_c ?? parsedChoices?.C ?? "",
-    choice_d: q.choice_d ?? parsedChoices?.D ?? "",
-    choices: parsedChoices ?? q.choices ?? { A: "", B: "", C: "", D: "" },
+    question_text: rawQText,
+    explanation: fixMojibake(q.explanation),
+    category: fixMojibake(q.category),
+    choice_a: choiceA,
+    choice_b: choiceB,
+    choice_c: choiceC,
+    choice_d: choiceD,
+    choices: choicesObj,
   };
 
   const ans = String(normalized.correct_answer || "").trim();
   const lowerAns = ans.toLowerCase();
   if (lowerAns === "a" || lowerAns === "b" || lowerAns === "c" || lowerAns === "d") {
     return { ...normalized, correct_answer: ans.toUpperCase() };
+  }
+
+  // Map Thai letters ก/ข/ค/ง -> A/B/C/D
+  const thaiToLatin: Record<string, string> = { "ก": "A", "ข": "B", "ค": "C", "ง": "D" };
+  if (thaiToLatin[ans]) {
+    return { ...normalized, correct_answer: thaiToLatin[ans] };
+  }
+
+  // Map numeric 1/2/3/4 -> A/B/C/D
+  const numToLatin: Record<string, string> = { "1": "A", "2": "B", "3": "C", "4": "D" };
+  if (numToLatin[ans]) {
+    return { ...normalized, correct_answer: numToLatin[ans] };
   }
   
   let mapped = ans;
@@ -308,6 +410,7 @@ const normalizeQuestion = (q: any) => {
   
   return { ...normalized, correct_answer: mapped.toUpperCase() };
 };
+
 
 const parseRoomSettings = (room: any) => {
   const raw = room?.settings;
@@ -3084,23 +3187,49 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           try {
             const results = await listExamResultsByUser(env.DB, auth.userId);
             
-            const subjectStats: Record<string, { score: number, full: number }> = {};
+            const skillStats: Record<string, { score: number, full: number }> = {
+              "ความสามารถทั่วไป": { score: 0, full: 0 },
+              "ภาษาอังกฤษ": { score: 0, full: 0 },
+              "กฎหมาย": { score: 0, full: 0 }
+            };
             
             results.forEach((r: any) => {
               try {
-                if (r.subject_scores && typeof r.subject_scores === 'object') {
-                  Object.keys(r.subject_scores).forEach(subj => {
-                    if (!subjectStats[subj]) subjectStats[subj] = { score: 0, full: 0 };
-                    subjectStats[subj].score += Number(r.subject_scores[subj]) || 0;
-                  });
+                let sScores = r.skill_scores;
+                if (typeof sScores === 'string') {
+                  try { sScores = JSON.parse(sScores); } catch (e) {}
                 }
                 
-                if (r.questions && Array.isArray(r.questions)) {
+                if (sScores && typeof sScores === 'object') {
+                  Object.keys(sScores).forEach(sk => {
+                    if (!skillStats[sk]) skillStats[sk] = { score: 0, full: 0 };
+                    const item = sScores[sk];
+                    if (typeof item === 'object' && item !== null) {
+                      skillStats[sk].score += Number(item.score) || 0;
+                      skillStats[sk].full += Number(item.total) || 0;
+                    } else {
+                      skillStats[sk].score += Number(item) || 0;
+                      skillStats[sk].full += 1;
+                    }
+                  });
+                } else if (r.subject_scores && typeof r.subject_scores === 'object') {
+                  Object.keys(r.subject_scores).forEach(subj => {
+                    if (!skillStats[subj]) skillStats[subj] = { score: 0, full: 0 };
+                    const item = r.subject_scores[subj];
+                    if (typeof item === 'object' && item !== null) {
+                      skillStats[subj].score += Number(item.score) || 0;
+                      skillStats[subj].full += Number(item.total) || 0;
+                    } else {
+                      skillStats[subj].score += Number(item) || 0;
+                      skillStats[subj].full += 1;
+                    }
+                  });
+                } else if (r.questions && Array.isArray(r.questions)) {
                   r.questions.forEach((q: any) => {
-                     if (q && typeof q === 'object' && q.subject) {
-                       if (!subjectStats[q.subject]) subjectStats[q.subject] = { score: 0, full: 0 };
-                       subjectStats[q.subject].full += 1;
-                     }
+                    const sk = q.skill || q.category || q.subject || "ความสามารถทั่วไป";
+                    if (!skillStats[sk]) skillStats[sk] = { score: 0, full: 0 };
+                    skillStats[sk].full += 1;
+                    if (q.is_correct) skillStats[sk].score += 1;
                   });
                 }
               } catch (innerError) {
@@ -3108,15 +3237,15 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
               }
             });
             
-            const radarData = Object.keys(subjectStats).map(subj => {
-               const stat = subjectStats[subj];
-               const fullMark = Math.max(stat.full, 1);
-               const percentage = Math.round((stat.score / fullMark) * 100);
-               return {
-                 subject: subj,
-                 score: percentage,
-                 fullMark: 100
-               };
+            const radarData = Object.keys(skillStats).map(sk => {
+              const stat = skillStats[sk];
+              const fullMark = Math.max(stat.full, 1);
+              const percentage = stat.full > 0 ? Math.round((stat.score / fullMark) * 100) : 0;
+              return {
+                subject: sk,
+                score: percentage,
+                fullMark: 100
+              };
             });
 
             return json({ success: true, data: radarData });

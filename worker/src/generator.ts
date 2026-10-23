@@ -148,12 +148,23 @@ Ensure the response is ONLY a valid JSON array, do not wrap it in markdown code 
             q.created_at = new Date().toISOString();
             q.updated_at = q.created_at;
             q.catalogs = typeof q.catalogs === "string" ? (() => { try { return JSON.parse(q.catalogs); } catch { return [q.catalogs]; } })() : (q.catalogs || []);
-            q.choices = {
-              A: q.choice_a || "",
-              B: q.choice_b || "",
-              C: q.choice_c || "",
-              D: q.choice_d || "",
-            };
+            
+            // Format choices as standard 4-element array
+            q.choices = [
+              q.choice_a || "",
+              q.choice_b || "",
+              q.choice_c || "",
+              q.choice_d || "",
+            ];
+
+            // Normalize correct_answer from a/b/c/d to 1/2/3/4 standard
+            const letterToNum: Record<string, string> = { "a": "1", "b": "2", "c": "3", "d": "4" };
+            if (q.correct_answer && letterToNum[String(q.correct_answer).toLowerCase()]) {
+              q.correct_answer = letterToNum[String(q.correct_answer).toLowerCase()];
+            }
+            
+            if (!q.subject) q.subject = "กพ ภาค ก";
+            if (!q.exam_set || q.exam_set === "Mock Exam") q.exam_set = "Mock Exam 1";
             
             await createQuestion(env.DB, q);
             successCount++;

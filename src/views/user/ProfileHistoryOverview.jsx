@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import userService from '../../services/userService';
 import { BarChart, Bar, ResponsiveContainer, XAxis, Tooltip, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 
 const ProfileHistoryOverview = () => {
     const { stats } = useOutletContext();
+    const navigate = useNavigate();
     const [animateGraph, setAnimateGraph] = useState(false);
     const [heatmapData, setHeatmapData] = useState([]);
     const [radarStats, setRadarStats] = useState(null);
@@ -121,6 +122,14 @@ const ProfileHistoryOverview = () => {
                                     Not enough data
                                 </div>
                             )}
+                        </div>
+                        <div style={{ marginTop: '16px' }}>
+                            <button 
+                                onClick={() => navigate('/exam')}
+                                style={{ padding: '8px 20px', fontSize: '13px', borderRadius: '12px', background: 'var(--k-teal)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                            >
+                                🎯 ไปทำข้อสอบฝึกฝน
+                            </button>
                         </div>
                     </div>
                 </div>

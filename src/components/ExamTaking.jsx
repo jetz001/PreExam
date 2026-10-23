@@ -703,58 +703,70 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                 </div>
 
                 {/* Choice buttons */}
-                <div style={{ maxWidth: 900, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: 14 }}>
-                    {['A', 'B', 'C', 'D'].map((choice, idx) => {
-                        const cfg = CHOICE_CFG[choice];
-                        const selected = answers[currentQuestion.id] === choice;
-                        const ripple = ripples[choice];
-                        return (
-                            <motion.button
-                                key={choice}
-                                className={`journey-btn${selected ? ' selected' : ''}`}
-                                onClick={(e) => handleAnswer(choice, e)}
-                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                transition={{ delay: idx * 0.07, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-                                style={{
-                                    background: cfg.bg,
-                                    borderRadius: '0.9rem',
-                                    border: 'none',
-                                    padding: '18px 22px',
-                                    display: 'flex', alignItems: 'center', gap: 14,
-                                    cursor: 'pointer',
-                                    boxShadow: selected
-                                        ? `0 0 0 3px white, 0 0 0 6px rgba(255,255,255,0.25), 0 7px 0 ${cfg.shadow}`
-                                        : `0 7px 0 ${cfg.shadow}`,
-                                    transition: 'box-shadow 0.1s',
-                                    textAlign: 'left', width: '100%',
-                                }}
-                            >
-                                {ripple && <span key={ripple.id} className="choice-ripple" style={{ left: ripple.x, top: ripple.y }} />}
-                                <span className="choice-badge">{cfg.num}</span>
-                                <span style={{
-                                    fontWeight: 800,
-                                    color: 'white',
-                                    fontSize: `${1.0 * fontSizeScale}rem`,
-                                    lineHeight: 1.4,
-                                    textShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                                    flexGrow: 1,
-                                }}>
-                                    {currentQuestion[`choice_${choice.toLowerCase()}`]}
-                                </span>
-                                {selected && (
-                                    <span style={{
-                                        flexShrink: 0, width: 26, height: 26,
-                                        background: 'rgba(255,255,255,0.28)',
-                                        borderRadius: '50%',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: '0.9rem',
-                                    }}>✓</span>
-                                )}
-                            </motion.button>
-                        );
-                    })}
-                </div>
+                {(() => {
+                    const allChoices = ['A', 'B', 'C', 'D'];
+                    const getRealText = (c, i) => currentQuestion[`choice_${c.toLowerCase()}`] || currentQuestion.choices?.[c] || (Array.isArray(currentQuestion.choices) ? currentQuestion.choices[i] : '');
+                    const hasAnyRealText = allChoices.some((c, i) => String(getRealText(c, i) || '').trim().length > 0);
+                    const choicesToRender = allChoices.filter((c, i) => !hasAnyRealText || String(getRealText(c, i) || '').trim().length > 0);
+
+                    return (
+                        <div style={{ maxWidth: 900, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: 14 }}>
+                            {choicesToRender.map((choice, idx) => {
+                                const cfg = CHOICE_CFG[choice];
+                                const selected = answers[currentQuestion.id] === choice;
+                                const ripple = ripples[choice];
+                                const originalIdx = allChoices.indexOf(choice);
+                                const choiceText = getRealText(choice, originalIdx) || `${originalIdx + 1}`;
+
+                                return (
+                                    <motion.button
+                                        key={choice}
+                                        className={`journey-btn${selected ? ' selected' : ''}`}
+                                        onClick={(e) => handleAnswer(choice, e)}
+                                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{ delay: idx * 0.07, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+                                        style={{
+                                            background: cfg.bg,
+                                            borderRadius: '0.9rem',
+                                            border: 'none',
+                                            padding: '18px 22px',
+                                            display: 'flex', alignItems: 'center', gap: 14,
+                                            cursor: 'pointer',
+                                            boxShadow: selected
+                                                ? `0 0 0 3px white, 0 0 0 6px rgba(255,255,255,0.25), 0 7px 0 ${cfg.shadow}`
+                                                : `0 7px 0 ${cfg.shadow}`,
+                                            transition: 'box-shadow 0.1s',
+                                            textAlign: 'left', width: '100%',
+                                        }}
+                                    >
+                                        {ripple && <span key={ripple.id} className="choice-ripple" style={{ left: ripple.x, top: ripple.y }} />}
+                                        <span className="choice-badge">{cfg.num}</span>
+                                        <span style={{
+                                            fontWeight: 800,
+                                            color: 'white',
+                                            fontSize: `${1.0 * fontSizeScale}rem`,
+                                            lineHeight: 1.4,
+                                            textShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                                            flexGrow: 1,
+                                        }}>
+                                            {choiceText}
+                                        </span>
+                                        {selected && (
+                                            <span style={{
+                                                flexShrink: 0, width: 26, height: 26,
+                                                background: 'rgba(255,255,255,0.28)',
+                                                borderRadius: '50%',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '0.9rem',
+                                            }}>✓</span>
+                                        )}
+                                    </motion.button>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
 
                 {/* Explanation (practice mode) */}
                 <AnimatePresence>
