@@ -5,6 +5,60 @@ sys.path.insert(0, r'D:\DEV\PreExam')
 from pipeline_core import clean_page_artifacts, find_pdf, evaluate_condition_answer, clean_thai
 from test_older_years import split_exam_sections
 
+def is_header_line(line):
+    s = line.strip()
+    if not s: return False
+    if re.search(r"^\s*(?:ข้อสอบ\s*(?:ภาค\s*[ก-ฮ]\s*)?ก\.?พ\.?|แบบทดสอบ|วิชา)", s):
+        return True
+    if re.search(r"^\s*-\s*Exam", s):
+        return True
+    if re.match(r"^(?:วิชา)?(?:ความสามารถในการคิดวิเคราะห์|ภาษาอังกฤษ|ความรู้และลักษณะการเป็นข้าราชการที่ดี)\s*$", s):
+        return True
+    if re.search(r"GO!\s*ราชการ\s*สงวนลิขสิทธิ์", s):
+        return True
+    return False
+
+def is_context_start_line(line):
+    s = line.strip()
+    if not s: return False
+    if re.search(r"^(?:จากเงื่อนไข|จากข้อมูลในตาราง|จากตาราง|หลักในการทำคำตอบ|คำชี้แจง|Directions|Situation|Conversation|จงอ่านบทความ|อ่านบทความ|จากบทความต่อไปนี้)", s, re.I):
+        return True
+    if re.search(r"(?:ตอบคำถามข้อ|ข้อ)\s*\d+\s*[-–]\s*\d+", s):
+        return True
+    return False
+
+def parse_sadam_section(lines, start_idx):
+    questions = {}
+    i = start_idx
+    while i < len(lines):
+        line = lines[i].strip()
+        m = re.match(r'^(\d+)\s*$', line)
+        if m:
+            q_num = int(m.group(1))
+            tokens = []
+            j = i + 1
+            while j < len(lines):
+                next_l = lines[j].strip()
+                if not next_l or is_header_line(next_l):
+                    j += 1
+                    continue
+                if re.match(r'^\d+[\.\)]', next_l) or (re.match(r'^\d+\s*$', next_l) and len(tokens) >= 2):
+                    break
+                tokens.append(next_l)
+                j += 1
+            
+            col_a = tokens[0] if len(tokens) > 0 else "-"
+            col_b = tokens[1] if len(tokens) > 1 else "-"
+            col_c = ' '.join(tokens[2:]) if len(tokens) > 2 else "-"
+            
+            q_text = f"คำชี้แจง: ให้เปรียบเทียบค่าระหว่าง สดมภ์ ก, สดมภ์ ข และ สดมภ์ ค\n\nสดมภ์ ก: {col_a}\nสดมภ์ ข: {col_b}\nสดมภ์ ค (เงื่อนไข): {col_c}"
+            questions[q_num] = q_text
+            i = j
+        else:
+            i += 1
+            
+    return questions
+
 def determine_catalogs(cat, q_text, exp_text):
     text = (q_text + " " + exp_text).lower()
     
@@ -35,7 +89,9 @@ def determine_catalogs(cat, q_text, exp_text):
             return json.dumps(["กฎหมายข้าราชการที่ดี"], ensure_ascii=False)
             
     else: # ความสามารถในการคิดวิเคราะห์
-        if "::" in text or "อุปมาอุปไมย" in text:
+        if "สดมภ์" in text:
+            return json.dumps(["คณิตศาสตร์ทั่วไป", "สดมภ์"], ensure_ascii=False)
+        elif "::" in text or "อุปมาอุปไมย" in text:
             return json.dumps(["อุปมาอุปไมย"], ensure_ascii=False)
         elif "ข้อสรุปที่ 1" in text or "ข้อสรุปที่ 2" in text or "<" in text or ">" in text or "≤" in text or "≥" in text:
             if any(w in text for w in ["ฝ่ายการตลาด", "คน", "บ้าน", "นาย", "เพื่อน", "ทำงาน", "แพทย์", "โรงพยาบาล", "ห้อง"]):
@@ -55,44 +111,6 @@ def determine_catalogs(cat, q_text, exp_text):
         else:
             return json.dumps(["คณิตศาสตร์ทั่วไป"], ensure_ascii=False)
 
-def parse_sols_comprehensive(sec_sol_text):
-    lines = sec_sol_text.split('\n')
-    current_s = None
-    current_lines = []
-    sols = {}
-    
-    for l in lines:
-        stripped = l.strip()
-        m = re.match(r'^(\d+)[\.\)]\s*(.*)', stripped)
-        if m:
-            num = int(m.group(1))
-            is_next = False
-            if current_s is None:
-                if num in [1, 2, 3]: is_next = True
-            else:
-                # Normal sequential step or jump
-                if num > current_s and (num == current_s + 1 or num <= current_s + 4):
-                    is_next = True
-                elif num > current_s and any(w in stripped for w in ['ตอบ', 'ข้อสรุปที่', 'แผนภาพ', 'กรณี', 'สามารถ', 'จากโจทย์', 'คำแปล', '1)', '2)', '3)', '4)']):
-                    is_next = True
-                elif num < current_s and current_s in [48, 49] and num in [40, 50]:
-                    # Typo in source where 50 is typed as 40
-                    num = 50
-                    is_next = True
-                    
-            if is_next:
-                if current_s is not None:
-                    sols[current_s] = '\n'.join(current_lines).strip()
-                current_s = num
-                current_lines = [l]
-            else:
-                if current_s is not None: current_lines.append(l)
-        else:
-            if current_s is not None: current_lines.append(l)
-    if current_s is not None:
-        sols[current_s] = '\n'.join(current_lines).strip()
-    return sols
-
 def parse_questions_comprehensive(sec_text):
     lines = sec_text.split('\n')
     raw_q_blocks = {}
@@ -101,33 +119,57 @@ def parse_questions_comprehensive(sec_text):
     
     current_q = None
     current_lines = []
-    choices_seen = 0
     in_gap = False
+    choices_seen = 0
     
-    for l in lines:
+    i = 0
+    while i < len(lines):
+        l = lines[i]
         stripped = l.strip()
-        m = re.match(r'^(\d+)[\.\)](?!\d)\s*(.*)', stripped)
         
-        is_context_start = False
-        if choices_seen >= 4 or current_q is None:
-            if re.search(r'(?:จงอ่าน|อ่านบทความ|จากบทความ|จากเงื่อนไข|จากข้อมูลในตาราง|จากตาราง|คำชี้แจง|Directions|Read the following|Situation|Conversation)', stripped, re.I):
-                is_context_start = True
-            elif re.search(r'____\(\d+\)____|\.\s*\.\s*\(\d+\)\s*\.\s*\.', stripped):
-                is_context_start = True
-            elif re.match(r'^[A-Z][a-zA-Z\s]{1,15}\s*:', stripped):
-                is_context_start = True
-                
-        if is_context_start:
+        if is_header_line(stripped):
+            i += 1
+            continue
+            
+        # Check for สดมภ์ table section
+        if "สดมภ์ ก" in stripped and "สดมภ์ ข" in stripped:
+            if current_q is not None:
+                raw_q_blocks[current_q] = '\n'.join(current_lines).strip()
+                current_q = None
+                current_lines = []
+                choices_seen = 0
+            
+            sadam_qs = parse_sadam_section(lines, i)
+            for sq_num, sq_text in sadam_qs.items():
+                raw_q_blocks[sq_num] = sq_text
+            
+            j = i + 1
+            while j < len(lines):
+                if re.match(r'^\d+[\.\)](?!\d)\s*', lines[j].strip()):
+                    break
+                j += 1
+            i = j
+            continue
+            
+        if is_context_start_line(stripped):
+            if current_q is not None:
+                raw_q_blocks[current_q] = '\n'.join(current_lines).strip()
+                current_q = None
+                current_lines = []
+                choices_seen = 0
             in_gap = True
             
+        m = re.match(r'^(\d+)[\.\)](?!\d)\s*(.*)', stripped)
+        
         if in_gap and not m:
             gap_lines.append(l)
+            i += 1
             continue
             
         if m:
             num = int(m.group(1))
             
-            # Handle typo where 50 was typed as 40 in 2566 Paper
+            # Typo correction: 50 typed as 40
             if current_q == 49 and num == 40:
                 num = 50
                 
@@ -135,8 +177,7 @@ def parse_questions_comprehensive(sec_text):
             is_choice = False
             
             if current_q is None:
-                if num in [1, 2]:
-                    is_new_q = True
+                is_new_q = True
             elif current_q in [1, 2, 3, 4]:
                 if choices_seen == 0:
                     if num == 1:
@@ -189,6 +230,7 @@ def parse_questions_comprehensive(sec_text):
                 current_lines.append(l)
             else:
                 gap_lines.append(l)
+        i += 1
                 
     if current_q is not None:
         raw_q_blocks[current_q] = '\n'.join(current_lines).strip()

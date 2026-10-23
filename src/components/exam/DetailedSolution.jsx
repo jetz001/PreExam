@@ -63,7 +63,7 @@ const DetailedSolution = ({ questions, answers }) => {
                                 <PermissionGate requiredTier="premium" type="lock">
                                     <div className="mt-4">
                                         <h4 className="font-bold text-gray-900 mb-2">คำอธิบายละเอียด</h4>
-                                        <p className="text-gray-600 leading-relaxed">
+                                        <p className="text-gray-600 leading-relaxed whitespace-pre-line">
                                             {q.explanation || 'ไม่มีคำอธิบายสำหรับข้อนี้'}
                                         </p>
                                         {/* Example of Deep Dive content for premium */}

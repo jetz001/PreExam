@@ -440,7 +440,7 @@ const Room = () => {
                                                     <div key={q.id} className={`p-5 rounded-2xl border-2 backdrop-blur-sm ${isQuestionCorrect ? 'border-green-400/50 bg-green-900/30' : 'border-red-400/50 bg-red-900/30'}`}>
                                                         <div className="font-bold mb-4 text-white text-lg">
                                                             <span className="mr-2 px-2 py-1 bg-white/20 rounded-lg">{index + 1}</span>
-                                                            <div className="inline" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(q.question_text)) }} />
+                                                            <div className="whitespace-pre-line mt-1" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(q.question_text)) }} />
                                                         </div>
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                                                             {['a', 'b', 'c', 'd'].map((opt) => {
@@ -469,7 +469,7 @@ const Room = () => {
                                                             })}
                                                         </div>
                                                         {q.explanation && (
-                                                            <div className="mt-4 text-sm text-white/90 bg-white/10 p-4 rounded-xl border border-white/20 backdrop-blur-sm">
+                                                            <div className="mt-4 text-sm text-white/90 bg-white/10 p-4 rounded-xl border border-white/20 backdrop-blur-sm whitespace-pre-line">
                                                                 <strong className="text-yellow-300 text-base block mb-1">💡 Explanation:</strong> {q.explanation}
                                                             </div>
                                                         )}

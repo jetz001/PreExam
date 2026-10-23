@@ -680,6 +680,7 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                                 fontSize: `${1.25 * fontSizeScale}rem`,
                                 lineHeight: 1.65, marginTop: '1.2rem',
                                 textShadow: '0 2px 12px rgba(0,0,0,0.5)',
+                                whiteSpace: 'pre-line',
                             }}
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }}
                         />
@@ -807,7 +808,7 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                                         {currentQuestion.explanation && (
                                             <>
                                                 <br /><br />
-                                                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.explanation)) }} />
+                                                <div style={{ whiteSpace: 'pre-line' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.explanation)) }} />
                                             </>
                                         )}
                                     </div>

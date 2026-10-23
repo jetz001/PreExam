@@ -80,7 +80,7 @@ const TutorView = ({ questions, socket, roomId, isHost, currentQuestionIndex, pa
             <div className="flex-1 flex flex-col items-center justify-center p-8 z-10 w-full max-w-6xl mx-auto">
                 <div className="bg-white px-8 py-10 w-full rounded-2xl shadow-lg border-b-8 border-gray-300 mb-8 text-left">
                     <h2 className="text-3xl font-black text-gray-800 leading-relaxed">
-                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text || '')) }} />
+                        <div className="whitespace-pre-line" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text || '')) }} />
                     </h2>
                 </div>
 
@@ -120,7 +120,7 @@ const TutorView = ({ questions, socket, roomId, isHost, currentQuestionIndex, pa
                 {isAnswerRevealed && currentQuestion.explanation && (
                     <div className="w-full mt-6 bg-blue-100 border-4 border-blue-400 p-6 rounded-2xl text-blue-900 font-bold animate-in fade-in slide-in-from-bottom-4">
                         <h4 className="text-xl mb-2 flex items-center gap-2">💡 คำอธิบาย (Explanation)</h4>
-                        <p className="text-lg">{currentQuestion.explanation}</p>
+                        <p className="text-lg whitespace-pre-line">{currentQuestion.explanation}</p>
                     </div>
                 )}
             </div>

@@ -212,7 +212,7 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
                     </div>
 
                     <h3 className="text-white font-black text-2xl md:text-4xl text-left leading-relaxed mt-4 mb-4 drop-shadow-md" style={{ fontSize: `${1.4 * fontSizeScale}rem` }}>
-                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }} />
+                        <div className="whitespace-pre-line" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }} />
                         <span className="block text-sm text-white/50 font-normal mt-2">
                             #{currentQuestion.id}
                         </span>

@@ -42,7 +42,7 @@ const QuestionDetailModal = ({ questionId, onClose }) => {
                     ) : question ? (
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{question.question_text}</h4>
+                                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2 whitespace-pre-line">{question.question_text}</h4>
                                 {question.question_image && (
                                     <img src={question.question_image} alt="Question" className="rounded-lg max-h-64 object-contain mb-4 bg-gray-50" />
                                 )}
@@ -82,7 +82,7 @@ const QuestionDetailModal = ({ questionId, onClose }) => {
                             {question.explanation && (
                                 <div className="bg-yellow-50 dark:bg-yellow-900/10 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
                                     <h5 className="font-bold text-yellow-800 dark:text-yellow-400 mb-1">Explanation</h5>
-                                    <p className="text-gray-700 dark:text-gray-300">{question.explanation}</p>
+                                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{question.explanation}</p>
                                 </div>
                             )}
                         </div>
