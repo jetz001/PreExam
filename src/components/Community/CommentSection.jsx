@@ -4,7 +4,7 @@ import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
-import { Heart, Reply, Send, Store } from 'lucide-react';
+import { Heart, Reply, Send, Store, MessageSquare, X } from 'lucide-react';
 import authService from '../../services/authService';
 import RichText from './RichText';
 
@@ -12,12 +12,10 @@ const CommentItem = ({ comment, onReply, depth = 0 }) => {
     const [likes, setLikes] = useState(comment.likes || 0);
     const [isLiked, setIsLiked] = useState(false);
 
-    // Limit depth to prevent UI breaking, though backend supports infinite. 
-    // Usually flatten or indent up to 3-4 levels.
     const isTooDeep = depth > 3;
 
     const getImageUrl = (path) => {
-        if (!path) return `https://ui-avatars.com/api/?name=User&background=random`;
+        if (!path) return `https://ui-avatars.com/api/?name=User&background=4f46e5&color=fff`;
         if (path.startsWith('http')) return path;
         return `${path.startsWith('/') ? '' : '/'}${path}`;
     };
@@ -25,13 +23,15 @@ const CommentItem = ({ comment, onReply, depth = 0 }) => {
     const likeMutation = useMutation({
         mutationFn: async () => {
             const token = localStorage.getItem('token');
-            return axios.post(`/api/community/comments/${comment.id}/like`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            return axios.post(
+                `/api/community/comments/${comment.id}/like`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
         },
         onSuccess: (data) => {
             setLikes(data.data.likes);
-        }
+        },
     });
 
     const handleLike = () => {
@@ -39,46 +39,68 @@ const CommentItem = ({ comment, onReply, depth = 0 }) => {
         likeMutation.mutate();
     };
 
+    const authorName = comment.User?.display_name || 'ผู้ใช้งาน';
+    const hasValidDate = comment.created_at && !isNaN(new Date(comment.created_at).getTime());
+
     return (
-        <div className={`flex flex-col space-y-2 ${depth > 0 ? 'ml-8 border-l-2 border-white/20 pl-2' : ''} mt-3`}>
-            <div className="flex space-x-2">
+        <div className={`flex flex-col space-y-2 ${depth > 0 ? 'ml-3 sm:ml-7 border-l-2 border-white/15 pl-3' : ''} mt-3`}>
+            <div className="flex gap-2.5">
                 <img
                     src={getImageUrl(comment.User?.avatar)}
-                    alt="Avatar"
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
+                    alt={authorName}
+                    className="w-8 h-8 rounded-full object-cover border border-white/30 flex-shrink-0"
+                    onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=4f46e5&color=fff`;
+                    }}
                 />
-                <div className="flex-1 bg-white/10 border border-white/20 rounded-2xl px-4 py-2 shadow-sm">
-                    <div className="font-bold text-sm text-white flex items-center gap-1">
-                        {comment.User?.display_name}
+                <div className="flex-1 min-w-0 bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl px-4 py-2.5 shadow-sm">
+                    <div className="font-bold text-sm text-white flex items-center gap-1.5 flex-wrap">
+                        <span className="truncate">{authorName}</span>
                         {comment.User?.MyBusiness && (
-                            <Link to={`/learning-center/profile/${comment.User.MyBusiness.id}`} title="Visit Store">
-                                <Store size={12} className="text-[#ffcc00] cursor-pointer hover:scale-110 transition-transform" />
+                            <Link
+                                to={`/learning-center/profile/${comment.User.MyBusiness.id}`}
+                                title="เยี่ยมชมสถาบัน"
+                                aria-label="เยี่ยมชมสถาบัน"
+                                className="text-[#fde047] hover:scale-110 transition-transform"
+                            >
+                                <Store size={13} />
                             </Link>
                         )}
                     </div>
-                    <div className="text-white/90 text-sm whitespace-pre-wrap">
+                    <div className="text-white/90 text-sm whitespace-pre-wrap break-words mt-0.5 leading-relaxed">
                         <RichText content={comment.content} />
                     </div>
                 </div>
             </div>
 
-            <div className="flex items-center space-x-4 ml-10 text-xs text-white/60">
-                <span>{formatDistanceToNow(new Date(comment.created_at), { locale: th })}</span>
+            <div className="flex items-center gap-4 ml-10 text-xs text-white/70">
+                <span>{hasValidDate ? formatDistanceToNow(new Date(comment.created_at), { locale: th, addSuffix: true }) : 'เมื่อสักครู่'}</span>
                 <button
+                    type="button"
                     onClick={handleLike}
-                    className={`font-bold hover:text-white transition-colors flex items-center space-x-1 ${isLiked ? 'text-pink-400' : ''}`}
+                    className={`font-bold hover:text-white transition-colors inline-flex items-center gap-1 rounded px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00] ${
+                        isLiked ? 'text-rose-300' : ''
+                    }`}
                 >
+                    <Heart size={12} className={isLiked ? 'fill-current' : ''} />
                     <span>ถูกใจ {likes > 0 && `(${likes})`}</span>
                 </button>
                 {!isTooDeep && (
-                    <button onClick={() => onReply(comment)} className="font-bold hover:text-white transition-colors">ตอบกลับ</button>
+                    <button
+                        type="button"
+                        onClick={() => onReply(comment)}
+                        className="font-bold hover:text-white transition-colors inline-flex items-center gap-1 rounded px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00]"
+                    >
+                        <Reply size={12} />
+                        <span>ตอบกลับ</span>
+                    </button>
                 )}
             </div>
 
-            {/* Recursive Replies */}
             {comment.Replies && comment.Replies.length > 0 && (
-                <div className="mt-2">
-                    {comment.Replies.map(reply => (
+                <div className="mt-1">
+                    {comment.Replies.map((reply) => (
                         <CommentItem key={reply.id} comment={reply} onReply={onReply} depth={depth + 1} />
                     ))}
                 </div>
@@ -92,47 +114,15 @@ const CommentSection = ({ threadId }) => {
     const [newComment, setNewComment] = useState('');
     const queryClient = useQueryClient();
 
-    const { data: comments = [], isLoading } = useQuery({
-        queryKey: ['comments', threadId],
-        queryFn: async () => {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`/api/community/comments/${threadId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            // Need to structure flat list to nested tree
-            return buildCommentTree(res.data);
-        }
-    });
-
-    const mutation = useMutation({
-        mutationFn: async (content) => {
-            const token = localStorage.getItem('token');
-            return axios.post('/api/community/comments', {
-                thread_id: threadId,
-                content,
-                parent_id: replyTo ? replyTo.id : null
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-        },
-        onSuccess: () => {
-            setNewComment('');
-            setReplyTo(null);
-            queryClient.invalidateQueries(['comments', threadId]);
-            queryClient.invalidateQueries(['threads']); // Update comment count in feed
-        }
-    });
-
     const buildCommentTree = (flatComments) => {
         const map = {};
         const roots = [];
 
-        // Use Map for O(1) access
-        flatComments.forEach((c, i) => {
-            map[c.id] = { ...c, Replies: [] }; // Initialize with Replies array
+        flatComments.forEach((c) => {
+            map[c.id] = { ...c, Replies: [] };
         });
 
-        flatComments.forEach(c => {
+        flatComments.forEach((c) => {
             if (c.parent_id !== null && map[c.parent_id]) {
                 map[c.parent_id].Replies.push(map[c.id]);
             } else {
@@ -143,6 +133,38 @@ const CommentSection = ({ threadId }) => {
         return roots;
     };
 
+    const { data: comments = [], isLoading } = useQuery({
+        queryKey: ['comments', threadId],
+        queryFn: async () => {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`/api/community/comments/${threadId}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+            return buildCommentTree(res.data || []);
+        },
+    });
+
+    const mutation = useMutation({
+        mutationFn: async (content) => {
+            const token = localStorage.getItem('token');
+            return axios.post(
+                '/api/community/comments',
+                {
+                    thread_id: threadId,
+                    content,
+                    parent_id: replyTo ? replyTo.id : null,
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        },
+        onSuccess: () => {
+            setNewComment('');
+            setReplyTo(null);
+            queryClient.invalidateQueries(['comments', threadId]);
+            queryClient.invalidateQueries(['threads']);
+        },
+    });
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!newComment.trim()) return;
@@ -150,7 +172,7 @@ const CommentSection = ({ threadId }) => {
     };
 
     const getImageUrl = (path) => {
-        if (!path) return `https://ui-avatars.com/api/?name=User&background=random`;
+        if (!path) return `https://ui-avatars.com/api/?name=User&background=4f46e5&color=fff`;
         if (path.startsWith('http')) return path;
         return `${path.startsWith('/') ? '' : '/'}${path}`;
     };
@@ -158,41 +180,69 @@ const CommentSection = ({ threadId }) => {
     const currentUser = authService.getCurrentUser();
 
     return (
-        <div className="mt-4 pt-4 border-t border-white/20">
-            <h3 className="text-lg font-bold mb-4 text-white">ความคิดเห็น ({comments.length})</h3>
+        <div className="mt-4 pt-4 border-t border-white/15">
+            <h3 className="text-base sm:text-lg font-bold mb-3 text-white flex items-center gap-2">
+                <MessageSquare size={18} className="text-[#fde047]" />
+                <span>ความคิดเห็น ({comments.length})</span>
+            </h3>
 
-            {isLoading ? <div className="text-center py-4 text-white/60">กำลังโหลด...</div> : (
-                <div className="space-y-4 mb-20">
-                    {comments.map(comment => (
+            {isLoading ? (
+                <div className="text-center py-6 text-white/70 text-sm">กำลังโหลดความคิดเห็น...</div>
+            ) : (
+                <div className="space-y-3 mb-16">
+                    {comments.map((comment) => (
                         <CommentItem key={comment.id} comment={comment} onReply={setReplyTo} />
                     ))}
-                    {comments.length === 0 && <p className="text-white/50 text-center py-4">ยังไม่มีความคิดเห็น เป็นคนแรกเลย!</p>}
+                    {comments.length === 0 && (
+                        <p className="text-white/70 text-center py-6 text-sm bg-white/5 rounded-2xl border border-white/10">
+                            ยังไม่มีความคิดเห็น เป็นคนแรกที่ร่วมพูดคุยเลย!
+                        </p>
+                    )}
                 </div>
             )}
 
-            {/* Input Fixed at Bottom or inline? Inline is better for modal */}
-            <div className="sticky bottom-0 pt-2 pb-4 border-t border-white/20 mt-4 backdrop-blur-md" style={{ background: 'var(--c-bg, #46178f)' }}>
+            <div className="sticky bottom-0 pt-3 pb-2 border-t border-white/15 mt-4 backdrop-blur-xl bg-[#270c56]/90 rounded-t-2xl px-1">
                 {replyTo && (
-                    <div className="flex justify-between bg-white/10 border border-white/20 p-2 rounded-lg mb-2 text-sm text-white">
-                        <span>ตอบกลับ: <strong>{replyTo.User?.display_name}</strong></span>
-                        <button onClick={() => setReplyTo(null)} className="text-[#ffcc00] hover:text-white font-bold transition-colors">ยกเลิก</button>
+                    <div className="flex justify-between items-center bg-white/10 border border-white/20 px-3 py-2 rounded-xl mb-2 text-xs sm:text-sm text-white">
+                        <span>
+                            ตอบกลับ: <strong>{replyTo.User?.display_name || 'ผู้ใช้งาน'}</strong>
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setReplyTo(null)}
+                            aria-label="ยกเลิกการตอบกลับ"
+                            className="text-[#fde047] hover:text-white font-bold inline-flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00] rounded"
+                        >
+                            <X size={14} />
+                            <span>ยกเลิก</span>
+                        </button>
                     </div>
                 )}
-                <form onSubmit={handleSubmit} className="flex space-x-2">
+                <form onSubmit={handleSubmit} className="flex items-start gap-2.5">
                     <img
                         src={getImageUrl(currentUser?.avatar)}
-                        alt="My Avatar"
-                        className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
+                        alt="รูปโปรไฟล์ของฉัน"
+                        className="w-9 h-9 rounded-full object-cover border border-white/30 flex-shrink-0 mt-1"
                     />
-                    <div className="flex-1 relative">
+                    <div className="flex-1 relative min-w-0">
                         <textarea
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            placeholder={replyTo ? `ตอบกลับคุณ ${replyTo.User?.display_name}...` : "แสดงความคิดเห็น..."}
-                            className="w-full bg-white/10 text-white placeholder-white/50 border border-white/20 rounded-2xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-[#ffcc00] focus:bg-white/20 transition-colors resize-none min-h-[48px] overflow-hidden"
+                            placeholder={
+                                replyTo
+                                    ? `ตอบกลับคุณ ${replyTo.User?.display_name || 'ผู้ใช้งาน'}...`
+                                    : 'แสดงความคิดเห็น...'
+                            }
+                            rows={1}
+                            className="w-full bg-white/10 text-white placeholder-white/60 border border-white/20 rounded-2xl pl-4 pr-12 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffcc00] focus:bg-white/15 transition-colors resize-none min-h-[44px]"
                         />
-                        <button type="submit" disabled={mutation.isPending} className="absolute right-2 top-2 p-2 bg-[#ffcc00] text-[#46178f] rounded-full hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-transform transform hover:scale-110 active:scale-95 shadow-[0_3px_0_#e6b800] active:shadow-none active:translate-y-1">
-                            <Send size={16} />
+                        <button
+                            type="submit"
+                            disabled={mutation.isPending || !newComment.trim()}
+                            aria-label="ส่งความคิดเห็น"
+                            className="absolute right-2 top-1.5 p-2 bg-gradient-to-r from-[#fde047] to-[#f59e0b] text-[#1a0533] rounded-xl hover:brightness-105 disabled:opacity-45 disabled:cursor-not-allowed transition-transform hover:scale-105 active:scale-95 shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        >
+                            <Send size={15} />
                         </button>
                     </div>
                 </form>

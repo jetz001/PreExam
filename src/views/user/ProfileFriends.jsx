@@ -1,126 +1,198 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Users, User, Check, X, MessageSquare, UserPlus } from 'lucide-react';
 import friendService from '../../services/friendService';
 
 const ProfileFriends = () => {
-    const navigate = useNavigate();
-    const [friends, setFriends] = useState([]);
-    const [pending, setPending] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [friends, setFriends] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchFriendsData = async () => {
-            try {
-                const [friendsRes, pendingRes] = await Promise.all([
-                    friendService.getFriends(),
-                    friendService.getPendingRequests()
-                ]);
-                setFriends(friendsRes?.data || friendsRes || []);
-                setPending(pendingRes?.data || pendingRes || []);
-            } catch (err) {
-                console.error('Error fetching friends:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchFriendsData();
-    }, []);
-
-    const handleAccept = async (id) => {
-        try {
-            await friendService.acceptRequest(id);
-            const acceptedUser = pending.find(req => req.id === id);
-            if (acceptedUser) {
-                setFriends(prev => [...prev, acceptedUser]);
-            }
-            setPending(prev => prev.filter(req => req.id !== id));
-        } catch (err) {
-            console.error('Error accepting friend:', err);
-        }
+  useEffect(() => {
+    const fetchFriendsData = async () => {
+      try {
+        const [friendsRes, pendingRes] = await Promise.all([
+          friendService.getFriends(),
+          friendService.getPendingRequests(),
+        ]);
+        setFriends(friendsRes?.data || friendsRes || []);
+        setPending(pendingRes?.data || pendingRes || []);
+      } catch (err) {
+        console.error('Error fetching friends:', err);
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchFriendsData();
+  }, []);
 
-    const handleRemove = async (id) => {
-        try {
-            await friendService.removeFriend(id);
-            setFriends(prev => prev.filter(f => f.id !== id));
-            setPending(prev => prev.filter(req => req.id !== id));
-        } catch (err) {
-            console.error('Error removing friend:', err);
-        }
-    };
+  const handleAccept = async (id) => {
+    try {
+      await friendService.acceptRequest(id);
+      const acceptedUser = pending.find((req) => req.id === id);
+      if (acceptedUser) {
+        setFriends((prev) => [...prev, acceptedUser]);
+      }
+      setPending((prev) => prev.filter((req) => req.id !== id));
+    } catch (err) {
+      console.error('Error accepting friend:', err);
+    }
+  };
 
-    return (
-        <div id="sec-friends">
-            <div className="section-title" style={{ marginBottom: '20px', fontSize: '22px' }}><div className="dot"></div>👥 Friends</div>
-            
-            {loading ? (
-                <div style={{ color: 'var(--text-muted)' }}>Loading friends...</div>
-            ) : (
-                <div className="grid-2" style={{ animation: 'fadeSlideIn 0.4s both' }}>
-                    <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '18px', padding: '20px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 800, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--k-yellow)' }}></span>
-                            เพื่อนของคุณ ({friends.length})
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {friends.length > 0 ? friends.map((friend, i) => (
-                                <div key={friend.id || i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', borderRadius: '10px', transition: 'background 0.2s', cursor: 'pointer' }} className="hover-bg">
-                                    <div style={{ position: 'relative' }}>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg,#ff7700,#e21b3c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', overflow: 'hidden' }}>
-                                            {friend.avatar ? <img src={friend.avatar.startsWith('http') ? friend.avatar : `https://preexam.online${friend.avatar}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '😎'}
-                                        </div>
-                                        <div style={{ position: 'absolute', bottom: 0, right: 0, width: '12px', height: '12px', background: friend.isOnline ? 'var(--k-teal)' : 'var(--k-orange)', border: '2px solid var(--k-bg)', borderRadius: '50%' }}></div>
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 800, fontSize: '14px' }}>{friend.display_name || friend.username || 'User'}</div>
-                                        <div style={{ fontSize: '11px', color: friend.isOnline ? 'var(--k-teal)' : 'var(--text-muted)' }}>
-                                            {friend.isOnline ? 'Online' : 'Offline'}
-                                        </div>
-                                    </div>
-                                    <button onClick={() => navigate('/profile/messages', { state: { friend } })} className="btn-outline" style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'rgba(255,255,255,0.1)' }}>ทักทาย</button>
-                                </div>
-                            )) : (
-                                <div style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '10px' }}>
-                                    ยังไม่มีเพื่อน 
-                                </div>
-                            )}
-                        </div>
+  const handleRemove = async (id) => {
+    try {
+      await friendService.removeFriend(id);
+      setFriends((prev) => prev.filter((f) => f.id !== id));
+      setPending((prev) => prev.filter((req) => req.id !== id));
+    } catch (err) {
+      console.error('Error removing friend:', err);
+    }
+  };
+
+  return (
+    <div id="sec-friends">
+      <div className="section-title" style={{ marginBottom: '20px', fontSize: '20px' }}>
+        <div className="dot" />
+        <Users size={20} className="text-amber-300" />
+        <span>Friends</span>
+      </div>
+
+      {loading ? (
+        <div className="py-10 text-center text-white/75 font-bold">กำลังโหลดรายชื่อเพื่อน...</div>
+      ) : (
+        <div className="grid-2" style={{ animation: 'fadeSlideIn 0.4s both' }}>
+          <div className="activity-card">
+            <div className="mb-4 flex items-center gap-2 text-sm font-black text-white">
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-300 shadow-[0_0_8px_rgba(253,224,71,0.7)]" />
+              <span>เพื่อนของคุณ ({friends.length})</span>
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {friends.length > 0 ? (
+                friends.map((friend, i) => (
+                  <div
+                    key={friend.id || i}
+                    className="flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-white/10"
+                  >
+                    <div className="relative shrink-0">
+                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-orange-500 to-rose-600 text-white border border-white/25">
+                        {friend.avatar ? (
+                          <img
+                            src={
+                              friend.avatar.startsWith('http')
+                                ? friend.avatar
+                                : `https://preexam.online${friend.avatar}`
+                            }
+                            alt={friend.display_name || friend.username || 'Avatar'}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <User size={18} />
+                        )}
+                      </div>
+                      <span
+                        className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#2d0d6b] ${
+                          friend.isOnline ? 'bg-emerald-400' : 'bg-orange-400'
+                        }`}
+                      />
                     </div>
-
-                    <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '18px', padding: '20px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 800, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--k-yellow)' }}></span>
-                            คำขอเป็นเพื่อน ({pending.length})
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {pending.length > 0 ? pending.map((req, i) => (
-                                <div key={req.id || i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', borderRadius: '10px', transition: 'background 0.2s' }} className="hover-bg">
-                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,119,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', overflow: 'hidden' }}>
-                                        {req.avatar ? <img src={req.avatar.startsWith('http') ? req.avatar : `https://preexam.online${req.avatar}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐉'}
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 800, fontSize: '14px' }}>{req.display_name || 'User'}</div>
-                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>ต้องการเป็นเพื่อนกับคุณ</div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '6px' }}>
-                                        <button onClick={() => handleAccept(req.id)} style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--k-yellow)', border: 'none', color: '#1a0533', fontWeight: 'bold', cursor: 'pointer' }}>✓</button>
-                                        <button onClick={() => handleRemove(req.id)} style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>✕</button>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '10px' }}>
-                                    ไม่มีคำขอเป็นเพื่อน
-                                </div>
-                            )}
-                        </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-extrabold text-white">
+                        {friend.display_name || friend.username || 'User'}
+                      </div>
+                      <div
+                        className={`text-[11px] font-semibold ${
+                          friend.isOnline ? 'text-emerald-300' : 'text-white/65'
+                        }`}
+                      >
+                        {friend.isOnline ? 'Online' : 'Offline'}
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/profile/messages', { state: { friend } })}
+                      className="btn-outline shrink-0"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                    >
+                      <MessageSquare size={13} />
+                      <span>ทักทาย</span>
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-sm text-white/70 font-semibold">
+                  ยังไม่มีเพื่อนในรายชื่อ
                 </div>
-            )}
-            <style>{`
-                .hover-bg:hover { background: rgba(255,255,255,0.05); }
-            `}</style>
+              )}
+            </div>
+          </div>
+
+          <div className="activity-card">
+            <div className="mb-4 flex items-center gap-2 text-sm font-black text-white">
+              <UserPlus size={16} className="text-amber-300" />
+              <span>คำขอเป็นเพื่อน ({pending.length})</span>
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {pending.length > 0 ? (
+                pending.map((req, i) => (
+                  <div
+                    key={req.id || i}
+                    className="flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-white/10"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-amber-400/15 text-amber-300 border border-amber-300/30">
+                      {req.avatar ? (
+                        <img
+                          src={
+                            req.avatar.startsWith('http')
+                              ? req.avatar
+                              : `https://preexam.online${req.avatar}`
+                          }
+                          alt={req.display_name || 'Avatar'}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <User size={18} />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-extrabold text-white">
+                        {req.display_name || 'User'}
+                      </div>
+                      <div className="text-[11px] text-white/70">ต้องการเป็นเพื่อนกับคุณ</div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleAccept(req.id)}
+                        aria-label="ตอบรับคำขอเป็นเพื่อน"
+                        title="ตอบรับ"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-300 text-slate-950 font-black transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                      >
+                        <Check size={15} strokeWidth={2.8} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(req.id)}
+                        aria-label="ปฏิเสธคำขอเป็นเพื่อน"
+                        title="ปฏิเสธ"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white transition-colors hover:bg-rose-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                      >
+                        <X size={15} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-sm text-white/70 font-semibold">
+                  ไม่มีคำขอเป็นเพื่อนใหม่
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default ProfileFriends;

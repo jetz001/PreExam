@@ -1,9 +1,22 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Trash2, Image as ImageIcon, Volume2, X, Clock } from 'lucide-react';
+import {
+    Upload,
+    Trash2,
+    Image as ImageIcon,
+    Volume2,
+    X,
+    Clock,
+    Settings,
+    Save,
+    ShieldAlert
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
 import { versionHistory, getCurrentVersion } from '../../config/versionHistory';
+
+const inputClass =
+    'w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all';
 
 const SettingsManager = () => {
     const queryClient = useQueryClient();
@@ -53,7 +66,7 @@ const SettingsManager = () => {
         onSuccess: () => {
             toast.success('Asset uploaded successfully!');
             setIsUploading(false);
-            setUploadForm({ name: '', type: 'background', file: null });
+            setUploadForm({ name: '', type: 'background', url: '', is_premium: true });
             queryClient.invalidateQueries(['assets']);
         },
         onError: (err) => {
@@ -63,7 +76,7 @@ const SettingsManager = () => {
     });
 
     const deleteAssetMutation = useMutation({
-        mutationFn: adminApi.deleteAsset, // Assuming this exists in adminApi based on assetRoutes
+        mutationFn: adminApi.deleteAsset,
         onSuccess: () => {
             toast.success('Asset deleted');
             queryClient.invalidateQueries(['assets']);
@@ -100,27 +113,43 @@ const SettingsManager = () => {
 
     const renderTabButton = (id, label, icon) => (
         <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === id}
             onClick={() => setActiveTab(id)}
-            className={`
-                flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                ${activeTab === id
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'}
-            `}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                activeTab === id
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+            }`}
         >
             {icon}
-            <span className="ml-2">{label}</span>
+            <span>{label}</span>
         </button>
     );
 
     return (
-        <div className="space-y-6 pb-20">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h2 className="text-2xl font-bold text-slate-800">System Settings</h2>
-                <div className="flex space-x-2">
-                    {renderTabButton('general', 'General', <Volume2 size={18} />)}
-                    {renderTabButton('assets', 'Assets', <ImageIcon size={18} />)}
-                    {renderTabButton('versions', 'Versions', <Clock size={18} />)}
+        <div className="space-y-6 pb-16">
+            {/* Executive Page Header */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl bg-white/90 backdrop-blur-sm p-5 sm:p-6 border border-slate-200/80 shadow-sm">
+                <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20">
+                        <Settings size={24} />
+                    </div>
+                    <div className="min-w-0">
+                        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight truncate">
+                            ตั้งค่าระบบ (System Settings)
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                            จัดการประกาศระบบ คำต้องห้าม คลังภาพพื้นหลัง/กรอบโปรไฟล์ และประวัติเวอร์ชัน
+                        </p>
+                    </div>
+                </div>
+
+                <div className="inline-flex flex-wrap items-center gap-1 rounded-xl bg-slate-100/90 p-1 border border-slate-200/80" role="tablist">
+                    {renderTabButton('general', 'General', <Volume2 size={16} />)}
+                    {renderTabButton('assets', 'Assets', <ImageIcon size={16} />)}
+                    {renderTabButton('versions', 'Versions', <Clock size={16} />)}
                 </div>
             </div>
 
@@ -128,52 +157,56 @@ const SettingsManager = () => {
             {activeTab === 'general' && (
                 <>
                     {/* System Broadcast */}
-                    <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center">
-                            <Volume2 size={20} className="mr-2" />
-                            System Broadcast (Dashboard Banner)
+                    <section className="rounded-2xl bg-white/90 backdrop-blur-sm p-6 border border-slate-200/80 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 mb-1.5 flex items-center gap-2">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/70">
+                                <Volume2 size={17} />
+                            </span>
+                            <span>System Broadcast (Dashboard Banner)</span>
                         </h3>
-                        <p className="text-sm text-gray-500 mb-6">Display a banner message on the top of Business Dashboard.</p>
+                        <p className="text-sm text-slate-500 mb-6">
+                            Display a banner message on the top of Business Dashboard.
+                        </p>
 
-                        <div className="space-y-4 max-w-2xl">
+                        <div className="space-y-5 max-w-2xl">
                             <div className="flex items-center gap-4">
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
                                         type="checkbox"
                                         className="sr-only peer"
-                                        checked={settings.announcement_active}
+                                        checked={Boolean(settings.announcement_active)}
                                         onChange={e => setSettings({ ...settings, announcement_active: e.target.checked })}
                                     />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    <span className="ml-3 text-sm font-medium text-gray-900">Active</span>
+                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600" />
+                                    <span className="ml-3 text-sm font-semibold text-slate-900">Active</span>
                                 </label>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Message</label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className={inputClass}
                                     placeholder="e.g. System maintenance at 02:00 AM"
-                                    value={settings.announcement_text}
+                                    value={settings.announcement_text || ''}
                                     onChange={e => setSettings({ ...settings, announcement_text: e.target.value })}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                                <div className="flex gap-4">
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Type</label>
+                                <div className="flex flex-wrap gap-4">
                                     {['info', 'warning', 'success'].map(type => (
-                                        <label key={type} className="flex items-center cursor-pointer">
+                                        <label key={type} className="inline-flex items-center cursor-pointer px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100 transition-colors">
                                             <input
                                                 type="radio"
                                                 name="announcement_type"
                                                 value={type}
                                                 checked={settings.announcement_type === type}
                                                 onChange={e => setSettings({ ...settings, announcement_type: e.target.value })}
-                                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                                className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                                             />
-                                            <span className="ml-2 text-sm text-gray-700 capitalize">{type}</span>
+                                            <span className="ml-2 text-sm font-medium text-slate-800 capitalize">{type}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -181,43 +214,57 @@ const SettingsManager = () => {
 
                             {/* Preview */}
                             {settings.announcement_active && (
-                                <div className={`p-4 rounded-lg mt-4 flex items-center gap-3 ${settings.announcement_type === 'warning' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                                    settings.announcement_type === 'success' ? 'bg-green-50 text-green-800 border-green-200' :
-                                        'bg-blue-50 text-blue-800 border-blue-200'
-                                    } border`}>
-                                    <Volume2 size={20} />
-                                    <span className="font-medium">{settings.announcement_text || 'Preview Message'}</span>
+                                <div
+                                    className={`p-4 rounded-xl mt-2 flex items-center gap-3 border ${
+                                        settings.announcement_type === 'warning'
+                                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                            : settings.announcement_type === 'success'
+                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                            : 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                                    }`}
+                                >
+                                    <Volume2 size={20} className="flex-shrink-0" />
+                                    <span className="font-semibold text-sm">{settings.announcement_text || 'Preview Message'}</span>
                                 </div>
                             )}
                         </div>
                     </section>
 
                     {/* Global Blacklist Management */}
-                    <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center">
-                            <Trash2 size={20} className="mr-2" />
-                            Global Blacklist Management
+                    <section className="rounded-2xl bg-white/90 backdrop-blur-sm p-6 border border-slate-200/80 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 mb-1.5 flex items-center gap-2">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200/70">
+                                <ShieldAlert size={17} />
+                            </span>
+                            <span>Global Blacklist Management</span>
                         </h3>
-                        <p className="text-sm text-gray-500 mb-6">Manage bad words for the profanity filter. Separate words with commas.</p>
+                        <p className="text-sm text-slate-500 mb-5">
+                            Manage bad words for the profanity filter. Separate words with commas.
+                        </p>
 
                         <div className="max-w-2xl">
                             <textarea
-                                className="w-full h-32 border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm text-gray-900"
+                                className={`${inputClass} h-32 resize-none font-mono`}
                                 placeholder="badword1, badword2, badword3"
-                                value={settings.blacklisted_words}
+                                value={settings.blacklisted_words || ''}
                                 onChange={e => setSettings({ ...settings, blacklisted_words: e.target.value })}
                             />
-                            <p className="text-xs text-gray-400 mt-2">Changes are applied immediately after saving.</p>
+                            <p className="text-xs font-medium text-slate-500 mt-2">
+                                Changes are applied immediately after saving.
+                            </p>
                         </div>
                     </section>
 
                     {/* Save Button */}
-                    <div className="flex justify-end pt-4">
+                    <div className="flex justify-end pt-2">
                         <button
+                            type="button"
                             onClick={handleSaveSettings}
-                            className="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all active:scale-95 font-medium flex items-center"
+                            disabled={updateSettingsMutation.isPending}
+                            className="inline-flex items-center gap-2 px-7 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl shadow-md shadow-indigo-500/20 transition-all active:scale-95 text-sm font-semibold disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                         >
-                            Save Changes
+                            <Save size={17} />
+                            <span>{updateSettingsMutation.isPending ? 'Saving...' : 'Save Changes'}</span>
                         </button>
                     </div>
                 </>
@@ -225,47 +272,54 @@ const SettingsManager = () => {
 
             {/* Versions Tab Content */}
             {activeTab === 'versions' && (
-                <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                    <div className="flex justify-between items-start mb-6">
+                <section className="rounded-2xl bg-white/90 backdrop-blur-sm p-6 border border-slate-200/80 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-8">
                         <div>
-                            <h3 className="text-lg font-semibold text-slate-700 flex items-center">
-                                <Clock size={20} className="mr-2" />
-                                Version History & Changelog
+                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <Clock size={19} className="text-indigo-600" />
+                                <span>Version History &amp; Changelog</span>
                             </h3>
-                            <p className="text-sm text-gray-500 mt-1">Track system updates and new features.</p>
+                            <p className="text-sm text-slate-500 mt-1">Track system updates and new features.</p>
                         </div>
-                        <div className="flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200">
-                            <span className="text-xs font-semibold mr-1">CURRENT VER.</span>
-                            <span className="text-sm font-bold">{getCurrentVersion()}</span>
+                        <div className="inline-flex items-center bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-full border border-indigo-200/80 self-start">
+                            <span className="text-xs font-bold mr-1.5">CURRENT VER.</span>
+                            <span className="text-sm font-extrabold">{getCurrentVersion()}</span>
                         </div>
                     </div>
 
                     <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
                         {versionHistory.map((version, index) => (
-                            <div key={version.version} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                            <div key={version.version} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
                                 {/* Icon */}
-                                <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-50 text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                                    {index === 0 ? <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" /> : <div className="w-3 h-3 bg-slate-300 rounded-full" />}
+                                <div className="flex items-center justify-center w-10 h-10 rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                                    {index === 0 ? (
+                                        <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+                                    ) : (
+                                        <div className="w-3 h-3 bg-slate-400 rounded-full" />
+                                    )}
                                 </div>
 
                                 {/* Content */}
-                                <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="font-bold text-slate-700 text-lg">v{version.version}</div>
-                                        <time className="font-mono text-xs text-slate-400">{version.date}</time>
+                                <div className="w-[calc(100%-3.5rem)] md:w-[calc(50%-2.5rem)] p-4 sm:p-5 rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                                    <div className="flex items-center justify-between mb-2.5">
+                                        <div className="font-extrabold text-slate-900 text-lg">v{version.version}</div>
+                                        <time className="font-mono text-xs font-medium text-slate-500">{version.date}</time>
                                     </div>
                                     <ul className="space-y-2">
                                         {version.changes.map((change, i) => (
                                             <li key={i} className="flex items-start text-sm">
-                                                <span className={`
-                                                    inline-flex items-center justify-center px-2 py-0.5 mr-2 text-xs font-medium rounded
-                                                    ${change.type === 'new' ? 'bg-green-100 text-green-800' : ''}
-                                                    ${change.type === 'fix' ? 'bg-red-100 text-red-800' : ''}
-                                                    ${change.type === 'improvement' ? 'bg-blue-100 text-blue-800' : ''}
-                                                `}>
+                                                <span
+                                                    className={`inline-flex items-center justify-center px-2 py-0.5 mr-2 text-[11px] font-bold rounded-md border flex-shrink-0 ${
+                                                        change.type === 'new'
+                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                            : change.type === 'fix'
+                                                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                                            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                                    }`}
+                                                >
                                                     {change.type.toUpperCase()}
                                                 </span>
-                                                <span className="text-slate-600">{change.description}</span>
+                                                <span className="text-slate-700 leading-relaxed">{change.description}</span>
                                             </li>
                                         ))}
                                     </ul>
@@ -278,35 +332,39 @@ const SettingsManager = () => {
 
             {/* Assets Tab Content */}
             {activeTab === 'assets' && (
-                <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-semibold text-slate-700">Asset Library</h3>
+                <section className="rounded-2xl bg-white/90 backdrop-blur-sm p-6 border border-slate-200/80 shadow-sm">
+                    <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900">Asset Library</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">จัดการภาพพื้นหลังและกรอบรูปโปรไฟล์ภายในระบบ</p>
+                        </div>
                         <button
+                            type="button"
                             onClick={() => setIsUploading(!isUploading)}
-                            className="flex items-center px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors text-sm"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-colors text-sm font-semibold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                         >
-                            {isUploading ? <X size={16} className="mr-2" /> : <Upload size={16} className="mr-2" />}
-                            {isUploading ? 'Cancel Upload' : 'Upload New Asset'}
+                            {isUploading ? <X size={16} /> : <Upload size={16} />}
+                            <span>{isUploading ? 'Cancel Upload' : 'Upload New Asset'}</span>
                         </button>
                     </div>
 
                     {isUploading && (
-                        <form onSubmit={handleUpload} className="mb-8 p-4 bg-slate-50 rounded-lg border border-slate-200 animate-in fade-in slide-in-from-top-2">
+                        <form onSubmit={handleUpload} className="mb-8 p-5 bg-slate-50/90 rounded-2xl border border-slate-200/80">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Asset Name</label>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Asset Name</label>
                                     <input
                                         type="text"
                                         required
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                                        className={`${inputClass} bg-white`}
                                         value={uploadForm.name}
                                         onChange={e => setUploadForm({ ...uploadForm, name: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Type</label>
                                     <select
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                                        className={`${inputClass} bg-white`}
                                         value={uploadForm.type}
                                         onChange={e => setUploadForm({ ...uploadForm, type: e.target.value })}
                                     >
@@ -315,12 +373,12 @@ const SettingsManager = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Image URL</label>
                                     <input
                                         type="url"
                                         required
                                         placeholder="https://example.com/image.jpg"
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className={`${inputClass} bg-white`}
                                         value={uploadForm.url}
                                         onChange={e => setUploadForm({ ...uploadForm, url: e.target.value })}
                                     />
@@ -331,18 +389,18 @@ const SettingsManager = () => {
                                     <input
                                         type="checkbox"
                                         className="sr-only peer"
-                                        checked={uploadForm.is_premium}
+                                        checked={Boolean(uploadForm.is_premium)}
                                         onChange={e => setUploadForm({ ...uploadForm, is_premium: e.target.checked })}
                                     />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                                    <span className="ml-3 text-sm font-medium text-gray-900">Premium Asset (Requires Subscription)</span>
+                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
+                                    <span className="ml-3 text-sm font-semibold text-slate-900">Premium Asset (Requires Subscription)</span>
                                 </label>
                             </div>
                             <div className="mt-4 flex justify-end">
                                 <button
                                     type="submit"
                                     disabled={uploadMutation.isPending}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
+                                    className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-sm font-semibold disabled:opacity-50 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                 >
                                     {uploadMutation.isPending ? 'Uploading...' : 'Upload Asset'}
                                 </button>
@@ -352,29 +410,32 @@ const SettingsManager = () => {
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
                         {assets.map((asset) => (
-                            <div key={asset.id} className="aspect-square bg-slate-100 rounded-lg border border-slate-200 overflow-hidden relative group">
+                            <div key={asset.id} className="aspect-square bg-slate-100 rounded-2xl border border-slate-200/80 overflow-hidden relative group shadow-sm">
                                 <img
                                     src={asset.url}
                                     alt={asset.name}
                                     className="w-full h-full object-cover"
-                                    onError={(e) => { e.target.src = 'https://placehold.co/150?text=Error' }}
+                                    onError={(e) => { e.target.src = 'https://placehold.co/150?text=Error'; }}
                                 />
 
                                 {/* Overlay Info */}
-                                <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 transform translate-y-full group-hover:translate-y-0 transition-transform">
-                                    <p className="text-white text-xs truncate">{asset.name}</p>
-                                    <p className="text-gray-300 text-[10px] capitalize">{asset.type}</p>
+                                <div className="absolute inset-x-0 bottom-0 bg-slate-950/75 backdrop-blur-sm p-2.5 translate-y-0 sm:translate-y-full sm:group-hover:translate-y-0 transition-transform">
+                                    <p className="text-white text-xs font-semibold truncate">{asset.name}</p>
+                                    <p className="text-slate-200 text-[11px] capitalize">{asset.type}</p>
                                 </div>
 
                                 {/* Delete Button */}
-                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute top-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             if (window.confirm('Delete this asset?')) {
-                                                deleteAssetMutation.mutate(asset.id); // You might need to add deleteAsset to adminApi or just use api directly
+                                                deleteAssetMutation.mutate(asset.id);
                                             }
                                         }}
-                                        className="bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
+                                        aria-label={`ลบ ${asset.name}`}
+                                        title="ลบ Asset"
+                                        className="bg-rose-600 text-white p-1.5 rounded-full hover:bg-rose-700 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                                     >
                                         <Trash2 size={14} />
                                     </button>
@@ -382,9 +443,9 @@ const SettingsManager = () => {
                             </div>
                         ))}
                         {assets.length === 0 && (
-                            <div className="col-span-full py-10 text-center text-gray-400 flex flex-col items-center">
-                                <ImageIcon size={48} className="mb-2 opacity-20" />
-                                <p>No assets found</p>
+                            <div className="col-span-full py-14 text-center text-slate-500 flex flex-col items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/70">
+                                <ImageIcon size={40} className="mb-2 text-slate-500" />
+                                <p className="text-sm font-semibold text-slate-700">No assets found</p>
                             </div>
                         )}
                     </div>

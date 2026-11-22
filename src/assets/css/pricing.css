@@ -1,18 +1,18 @@
 /* src/assets/css/pricing.css */
 @keyframes float {
   0% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-30px) rotate(15deg); }
+  50% { transform: translateY(-28px) rotate(12deg); }
   100% { transform: translateY(0) rotate(0deg); }
 }
 
 @keyframes floatReverse {
   0% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(30px) rotate(-15deg); }
+  50% { transform: translateY(28px) rotate(-12deg); }
   100% { transform: translateY(0) rotate(0deg); }
 }
 
 .kahoot-bg {
-  background-color: #f2f2f2;
+  background: radial-gradient(circle at top center, #ffffff 0%, #f3f0ff 55%, #eef2ff 100%);
   position: relative;
   overflow: hidden;
 }
@@ -22,57 +22,59 @@
   content: '';
   position: absolute;
   z-index: 0;
-  opacity: 0.6;
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 /* Floating shapes */
 .shape {
   position: absolute;
   z-index: 0;
-  opacity: 0.7;
+  opacity: 0.22;
+  pointer-events: none;
+  filter: blur(0.5px);
 }
 .shape-triangle {
   width: 0;
   height: 0;
-  border-left: 60px solid transparent;
-  border-right: 60px solid transparent;
-  border-bottom: 120px solid #ff3355;
+  border-left: 56px solid transparent;
+  border-right: 56px solid transparent;
+  border-bottom: 112px solid #f43f5e;
   animation: float 6s ease-in-out infinite;
 }
 .shape-circle {
-  width: 120px;
-  height: 120px;
-  background-color: #33ccff;
+  width: 116px;
+  height: 116px;
+  background-color: #06b6d4;
   border-radius: 50%;
   animation: floatReverse 8s ease-in-out infinite;
 }
 .shape-square {
-  width: 90px;
-  height: 90px;
-  background-color: #ffcc00;
+  width: 86px;
+  height: 86px;
+  background-color: #fbbf24;
+  border-radius: 18px;
   animation: float 7s ease-in-out infinite;
   transform: rotate(15deg);
 }
 .shape-diamond {
-  width: 80px;
-  height: 80px;
-  background-color: #66cc33;
+  width: 76px;
+  height: 76px;
+  background-color: #22c55e;
+  border-radius: 16px;
   transform: rotate(45deg);
   animation: floatReverse 9s ease-in-out infinite;
 }
 
 /* Kahoot-like button */
 .btn-kahoot {
-  transition: transform 0.1s, border-width 0.1s;
+  transition: transform 0.12s, border-width 0.12s, box-shadow 0.15s;
   cursor: pointer;
 }
 .btn-kahoot:active:not(:disabled) {
-  transform: translateY(4px);
-  border-bottom-width: 0px !important;
-  margin-bottom: 4px;
+  transform: translateY(3px);
+  border-bottom-width: 1px !important;
 }
-.btn-kahoot.cursor-not-allowed:active {
-  transform: none;
-  border-bottom-width: 4px !important;
-  margin-bottom: 0;
+.btn-kahoot:disabled {
+  cursor: not-allowed;
 }

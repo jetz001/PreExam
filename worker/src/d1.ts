@@ -182,8 +182,8 @@ export async function createUser(db: D1Database, data: Record<string, any>) {
   const timestamp = data.created_at || nowIso();
   let finalId = data.id;
   if (!finalId) {
-    const { max_id } = await db.prepare("SELECT MAX(CAST(SUBSTR(id, 1, 7) AS INTEGER)) as max_id FROM users WHERE length(id) >= 10 AND SUBSTR(id, 8, 1) = '-'").first() || { max_id: null };
-    const nextSeq = (max_id || 0) + 1;
+    const maxRow = await db.prepare("SELECT MAX(CAST(SUBSTR(id, 1, 7) AS INTEGER)) as max_id FROM users WHERE length(id) >= 10 AND SUBSTR(id, 8, 1) = '-'").first<{ max_id: number | null }>();
+    const nextSeq = Number(maxRow?.max_id || 0) + 1;
     const country = data.country || "NO";
     finalId = String(nextSeq).padStart(7, '0') + '-' + String(country).toUpperCase();
   }
@@ -487,6 +487,86 @@ const maybeJsonStringify = (value: unknown) => {
   if (value === undefined || value === null) return null;
   if (typeof value === "string") return value;
   return JSON.stringify(value);
+};
+
+const extractChoiceMap = (raw: unknown): Partial<Record<"A" | "B" | "C" | "D", string>> => {
+  if (raw === undefined || raw === null) return {};
+  const parsed = typeof raw === "string" ? safeJsonParse<any>(raw, null) : raw;
+  if (!parsed) return {};
+  if (Array.isArray(parsed)) {
+    const keys = ["A", "B", "C", "D"] as const;
+    const out: Partial<Record<"A" | "B" | "C" | "D", string>> = {};
+    keys.forEach((k, idx) => {
+      if (parsed[idx] !== undefined && parsed[idx] !== null) {
+        out[k] = String(parsed[idx]);
+      }
+    });
+    return out;
+  }
+  if (typeof parsed === "object") {
+    const out: Partial<Record<"A" | "B" | "C" | "D", string>> = {};
+    const pairs: Array<["A" | "B" | "C" | "D", string[]]> = [
+      ["A", ["A", "a", "choice_a"]],
+      ["B", ["B", "b", "choice_b"]],
+      ["C", ["C", "c", "choice_c"]],
+      ["D", ["D", "d", "choice_d"]],
+    ];
+    for (const [target, aliases] of pairs) {
+      for (const alias of aliases) {
+        if (parsed[alias] !== undefined && parsed[alias] !== null) {
+          out[target] = String(parsed[alias]);
+          break;
+        }
+      }
+    }
+    return out;
+  }
+  return {};
+};
+
+export const resolveQuestionChoices = (data: Record<string, any>): string | undefined => {
+  const hasChoicesInput =
+    data.choices !== undefined ||
+    data.options !== undefined ||
+    data.choice_a !== undefined ||
+    data.choice_b !== undefined ||
+    data.choice_c !== undefined ||
+    data.choice_d !== undefined;
+
+  if (!hasChoicesInput) return undefined;
+
+  const merged: Record<"A" | "B" | "C" | "D", string> = { A: "", B: "", C: "", D: "" };
+  const fromOptions = extractChoiceMap(data.options);
+  const fromChoices = extractChoiceMap(data.choices);
+
+  for (const key of ["A", "B", "C", "D"] as const) {
+    if (fromOptions[key] !== undefined) merged[key] = fromOptions[key]!;
+    if (fromChoices[key] !== undefined) merged[key] = fromChoices[key]!;
+  }
+
+  const flatPairs: Array<["A" | "B" | "C" | "D", unknown]> = [
+    ["A", data.choice_a],
+    ["B", data.choice_b],
+    ["C", data.choice_c],
+    ["D", data.choice_d],
+  ];
+  for (const [key, val] of flatPairs) {
+    if (val !== undefined && val !== null) {
+      const strVal = String(val);
+      if (strVal !== "" || !merged[key]) {
+        merged[key] = strVal;
+      }
+    }
+  }
+
+  return JSON.stringify(merged);
+};
+
+export const normalizeCorrectAnswer = (value: unknown): string | undefined => {
+  if (value === undefined) return undefined;
+  const raw = String(value ?? "").trim();
+  if (/^[a-d]$/i.test(raw)) return raw.toUpperCase();
+  return raw;
 };
 
 const parseQuestionRow = (row: any) => {
@@ -957,11 +1037,12 @@ export async function getQuestionById(db: D1Database, id: string) {
 }
 
 export async function createQuestion(db: D1Database, data: Record<string, any>) {
+  const resolvedChoices = resolveQuestionChoices(data);
   const row = {
     id: String(data.id || generateTextId()),
     question_text: data.question_text ?? "",
-    choices: maybeJsonStringify(data.choices ?? { A: "", B: "", C: "", D: "" }),
-    correct_answer: data.correct_answer ?? "",
+    choices: resolvedChoices ?? JSON.stringify({ A: "", B: "", C: "", D: "" }),
+    correct_answer: normalizeCorrectAnswer(data.correct_answer) ?? "",
     explanation: data.explanation ?? "",
     category: data.category ?? "",
     subject: data.subject ?? "",
@@ -1002,9 +1083,11 @@ export async function createQuestion(db: D1Database, data: Record<string, any>) 
 }
 
 export async function updateQuestion(db: D1Database, id: string, data: Record<string, any>) {
+  const resolvedChoices = resolveQuestionChoices(data);
   const normalized = {
     ...data,
-    choices: data.choices !== undefined ? maybeJsonStringify(data.choices) : undefined,
+    ...(resolvedChoices !== undefined ? { choices: resolvedChoices } : {}),
+    ...(data.correct_answer !== undefined ? { correct_answer: normalizeCorrectAnswer(data.correct_answer) } : {}),
     catalogs: data.catalogs !== undefined ? maybeJsonStringify(data.catalogs) : undefined,
     updated_at: data.updated_at ?? nowIso(),
   };
@@ -1047,12 +1130,13 @@ export async function getUserQuestionById(db: D1Database, id: string, userId: st
 }
 
 export async function createUserQuestion(db: D1Database, data: Record<string, any>) {
+  const resolvedChoices = resolveQuestionChoices(data);
   const row = {
     id: String(data.id || `uq_${generateTextId()}`),
     user_id: String(data.user_id),
     question_text: data.question_text ?? "",
-    choices: maybeJsonStringify(data.choices ?? { A: "", B: "", C: "", D: "" }),
-    correct_answer: data.correct_answer ?? "",
+    choices: resolvedChoices ?? JSON.stringify({ A: "", B: "", C: "", D: "" }),
+    correct_answer: normalizeCorrectAnswer(data.correct_answer) ?? "",
     explanation: data.explanation ?? "",
     category: data.category ?? "",
     subject: data.subject ?? "",
@@ -1090,9 +1174,11 @@ export async function createUserQuestion(db: D1Database, data: Record<string, an
 }
 
 export async function updateUserQuestion(db: D1Database, id: string, userId: string, data: Record<string, any>) {
+  const resolvedChoices = resolveQuestionChoices(data);
   const normalized = {
     ...data,
-    choices: data.choices !== undefined ? maybeJsonStringify(data.choices) : undefined,
+    ...(resolvedChoices !== undefined ? { choices: resolvedChoices } : {}),
+    ...(data.correct_answer !== undefined ? { correct_answer: normalizeCorrectAnswer(data.correct_answer) } : {}),
     catalogs: data.catalogs !== undefined ? maybeJsonStringify(data.catalogs) : undefined,
     updated_at: data.updated_at ?? nowIso(),
   };
@@ -1141,9 +1227,11 @@ export async function adminListUserQuestions(db: D1Database, limit: number = 500
 }
 
 export async function adminUpdateUserQuestion(db: D1Database, id: string, data: Record<string, any>) {
+  const resolvedChoices = resolveQuestionChoices(data);
   const normalized = {
     ...data,
-    choices: data.choices !== undefined ? maybeJsonStringify(data.choices) : undefined,
+    ...(resolvedChoices !== undefined ? { choices: resolvedChoices } : {}),
+    ...(data.correct_answer !== undefined ? { correct_answer: normalizeCorrectAnswer(data.correct_answer) } : {}),
     catalogs: data.catalogs !== undefined ? maybeJsonStringify(data.catalogs) : undefined,
     updated_at: data.updated_at ?? nowIso(),
   };
@@ -1163,14 +1251,40 @@ export async function adminUpdateUserQuestion(db: D1Database, id: string, data: 
   ] as const;
   const entries = Object.entries(pickExisting(normalized, allowed));
   if (!entries.length) {
-    const row = await db.prepare("SELECT * FROM user_questions WHERE id = ?").bind(String(id)).first();
-    return parseQuestionFullRow(row);
+    const row = await db
+      .prepare(
+        `SELECT uq.*, u.display_name as user_display_name, u.email as user_email
+         FROM user_questions uq
+         LEFT JOIN users u ON uq.user_id = u.id
+         WHERE uq.id = ?`
+      )
+      .bind(String(id))
+      .first();
+    const q = parseQuestionFullRow(row);
+    if (q && row) {
+      q.user_display_name = (row as any).user_display_name;
+      q.user_email = (row as any).user_email;
+    }
+    return q;
   }
   const sql = `UPDATE user_questions SET ${entries.map(([key]) => `${key} = ?`).join(", ")} WHERE id = ?`;
   await db.prepare(sql).bind(...entries.map(([, value]) => value), String(id)).run();
   
-  const row = await db.prepare("SELECT * FROM user_questions WHERE id = ?").bind(String(id)).first();
-  return parseQuestionFullRow(row);
+  const row = await db
+    .prepare(
+      `SELECT uq.*, u.display_name as user_display_name, u.email as user_email
+       FROM user_questions uq
+       LEFT JOIN users u ON uq.user_id = u.id
+       WHERE uq.id = ?`
+    )
+    .bind(String(id))
+    .first();
+  const q = parseQuestionFullRow(row);
+  if (q && row) {
+    q.user_display_name = (row as any).user_display_name;
+    q.user_email = (row as any).user_email;
+  }
+  return q;
 }
 
 export async function adminGetDashboardStats(db: D1Database) {

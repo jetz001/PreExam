@@ -36,14 +36,14 @@ const AnimationPresetManager = () => {
                     key={option.value}
                     type="button"
                     onClick={() => onChange(option.value)}
-                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                    className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                         currentValue === option.value
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                 >
                     {option.icon}
-                    {option.label}
+                    <span>{option.label}</span>
                 </button>
             ))}
         </div>
@@ -51,38 +51,43 @@ const AnimationPresetManager = () => {
 
     return (
         <section className="space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 p-6 text-white shadow-sm">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-100">
-                    <Sparkles size={16} />
-                    Animation Studio
+            <div className="relative overflow-hidden rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-950 p-6 sm:p-7 text-white shadow-xl">
+                <div className="pointer-events-none absolute -top-16 -right-12 h-48 w-48 rounded-full bg-indigo-500/20 blur-3xl" />
+                <div className="relative z-10">
+                    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3 py-1 text-xs font-semibold text-amber-300 backdrop-blur-md">
+                        <Sparkles size={14} />
+                        <span>ANIMATION STUDIO PRESETS</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                        พรีวิวแอนิเมชันที่ผูกกับ flow สอบและหน้าผลสอบ
+                    </h3>
+                    <p className="mt-2 max-w-3xl text-sm text-slate-300 leading-relaxed">
+                        ใช้ส่วนนี้เช็กว่าขนาดครึ่งจอหรือเต็มจอเหมาะกับหน้าไหน และทดลองทิศทางการเคลื่อนที่ก่อนนำไปใช้จริงในระบบสอบ
+                    </p>
                 </div>
-                <h3 className="text-xl font-bold">พรีวิวแอนิเมชันที่ผูกกับ flow สอบและหน้าผลสอบ</h3>
-                <p className="mt-2 max-w-3xl text-sm text-blue-100/90">
-                    ใช้ส่วนนี้เช็กว่าขนาดครึ่งจอหรือเต็มจอเหมาะกับหน้าไหน และทดลองทิศทางการเคลื่อนที่ก่อนนำไปใช้จริงในระบบสอบ
-                </p>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div className="mb-3 text-sm font-semibold text-slate-700">ขนาดแอนิเมชัน</div>
+                <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur-sm p-5 shadow-sm">
+                    <div className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-600">ขนาดแอนิเมชัน (Scale)</div>
                     {renderSwitch(scaleOptions, scaleMode, setScaleMode)}
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div className="mb-3 text-sm font-semibold text-slate-700">ทิศทางเคลื่อนที่</div>
+                <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur-sm p-5 shadow-sm">
+                    <div className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-600">ทิศทางเคลื่อนที่ (Direction)</div>
                     {renderSwitch(directionOptions, directionMode, setDirectionMode)}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 {presets.map((preset) => (
-                    <div key={preset.key} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div key={preset.key} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
                         <div className="border-b border-slate-100 p-5">
-                            <div className="mb-1 text-lg font-bold text-slate-800">{preset.name}</div>
-                            <p className="text-sm leading-6 text-slate-500">{preset.description}</p>
+                            <div className="mb-1 text-lg font-bold text-slate-900">{preset.name}</div>
+                            <p className="text-sm leading-6 text-slate-600">{preset.description}</p>
                         </div>
 
-                        <div className="bg-slate-50 p-5">
-                            <div className="flex min-h-[320px] items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-[radial-gradient(circle_at_top,#dbeafe_0%,#eff6ff_35%,#f8fafc_100%)] p-4">
+                        <div className="bg-slate-50/80 p-5">
+                            <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-slate-300/80 bg-[radial-gradient(circle_at_top,#e0e7ff_0%,#eef2ff_38%,#f8fafc_100%)] p-4">
                                 <AdaptiveLottie
                                     animationData={preset.animationData}
                                     scale={resolveScale(preset)}
@@ -95,18 +100,18 @@ const AnimationPresetManager = () => {
                             </div>
                         </div>
 
-                        <div className="grid gap-3 border-t border-slate-100 p-5 text-sm text-slate-600 md:grid-cols-3">
+                        <div className="grid gap-3 border-t border-slate-100 bg-white p-5 text-sm text-slate-600 sm:grid-cols-3">
                             <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Preset scale</div>
-                                <div className="mt-1 font-medium text-slate-700">{preset.scale}</div>
+                                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Preset scale</div>
+                                <div className="mt-1 font-semibold text-slate-800">{preset.scale}</div>
                             </div>
                             <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Preset direction</div>
-                                <div className="mt-1 font-medium text-slate-700">{preset.direction}</div>
+                                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Preset direction</div>
+                                <div className="mt-1 font-semibold text-slate-800">{preset.direction}</div>
                             </div>
                             <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Usage</div>
-                                <div className="mt-1 font-medium text-slate-700">{preset.usage}</div>
+                                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Usage</div>
+                                <div className="mt-1 font-semibold text-slate-800">{preset.usage}</div>
                             </div>
                         </div>
                     </div>

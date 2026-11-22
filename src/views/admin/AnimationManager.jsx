@@ -1,6 +1,28 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckSquare, Save, Sparkles, PlayCircle, Trash2, Upload, Link2, ChevronRight, RotateCcw, Eye } from 'lucide-react';
+import {
+    CheckSquare,
+    Save,
+    Sparkles,
+    Trash2,
+    Upload,
+    ChevronRight,
+    RotateCcw,
+    Eye,
+    Film,
+    Mountain,
+    Globe,
+    Sliders,
+    Clock,
+    Zap,
+    Hourglass,
+    Maximize2,
+    Navigation,
+    Flag,
+    StickyNote,
+    BellOff,
+    Layers
+} from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import Lottie from 'lottie-react';
@@ -25,25 +47,25 @@ const MINI_SCENES = [
 
 // ─── Option lists ─────────────────────────────────────────────────────────────
 const positionOptions = [
-    { value: 'center',              label: '🎯 กลางจอ' },
-    { value: 'left',                label: '⬅️ ซ้ายในจอ' },
-    { value: 'right',               label: '➡️ ขวาในจอ' },
-    { value: 'up',                  label: '⬆️ บนในจอ' },
-    { value: 'down',                label: '⬇️ ล่างในจอ' },
-    { value: 'offscreen-left',      label: '💨 นอกจอซ้าย' },
-    { value: 'offscreen-right',     label: '💨 นอกจอขวา' },
-    { value: 'offscreen-top',       label: '💨 นอกจอบน' },
-    { value: 'offscreen-bottom',    label: '💨 นอกจอล่าง' },
-    { value: 'fade-offscreen-left', label: '🌫️ นอกจอซ้าย (Fade)' },
-    { value: 'fade-offscreen-right',label: '🌫️ นอกจอขวา (Fade)' },
-    { value: 'fade-offscreen-top',  label: '🌫️ นอกจอบน (Fade)' },
-    { value: 'fade-offscreen-bottom',label:'🌫️ นอกจอล่าง (Fade)' },
-    { value: 'scale-up-center',     label: '🔭 ขยายออกจากกลาง' },
-    { value: 'scale-down-center',   label: '🔬 ยุบเข้ากลาง' },
+    { value: 'center',                label: 'กลางจอ (Center)' },
+    { value: 'left',                  label: 'ซ้ายในจอ (Left)' },
+    { value: 'right',                 label: 'ขวาในจอ (Right)' },
+    { value: 'up',                    label: 'บนในจอ (Up)' },
+    { value: 'down',                  label: 'ล่างในจอ (Down)' },
+    { value: 'offscreen-left',        label: 'นอกจอซ้าย (Offscreen Left)' },
+    { value: 'offscreen-right',       label: 'นอกจอขวา (Offscreen Right)' },
+    { value: 'offscreen-top',         label: 'นอกจอบน (Offscreen Top)' },
+    { value: 'offscreen-bottom',      label: 'นอกจอล่าง (Offscreen Bottom)' },
+    { value: 'fade-offscreen-left',   label: 'นอกจอซ้าย - Fade' },
+    { value: 'fade-offscreen-right',  label: 'นอกจอขวา - Fade' },
+    { value: 'fade-offscreen-top',    label: 'นอกจอบน - Fade' },
+    { value: 'fade-offscreen-bottom', label: 'นอกจอล่าง - Fade' },
+    { value: 'scale-up-center',       label: 'ขยายออกจากกลาง (Scale Up)' },
+    { value: 'scale-down-center',     label: 'ยุบเข้ากลาง (Scale Down)' },
 ];
 
 const delayModeOptions = [
-    { value: 'normal', label: 'ปกติ — เคลื่อนตรงจาก A → B' },
+    { value: 'normal', label: 'ปกติ — เคลื่อนตรงจาก A -> B' },
     { value: 'start',  label: 'หน่วงต้น — หยุดที่ A แล้วไป B' },
     { value: 'middle', label: 'หน่วงกลาง — ไปกลาง หยุด แล้วไป B' },
     { value: 'end',    label: 'หน่วงปลาย — ไป B แล้วหยุดรอ' },
@@ -83,29 +105,18 @@ const buildAssetFormState = (assetFile, savedConfig = {}) => {
     };
 };
 
-// ─── Styled helpers ──────────────────────────────────────────────────────────
-const Label = ({ children }) => (
-    <div style={{ fontSize:'0.75rem', fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>
-        {children}
-    </div>
-);
-
-const Field = ({ label, children }) => (
+const Field = ({ label, icon: Icon, children }) => (
     <div>
-        <Label>{label}</Label>
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+            {Icon && <Icon size={13} className="text-indigo-500 flex-shrink-0" aria-hidden="true" />}
+            <span>{label}</span>
+        </div>
         {children}
     </div>
 );
 
-const inputStyle = {
-    width:'100%', borderRadius:10, border:'1px solid #e2e8f0',
-    background:'#f8fafc', padding:'9px 14px', fontSize:'0.875rem',
-    color:'#1e293b', outline:'none', boxSizing:'border-box',
-    transition:'border-color 0.15s',
-    fontFamily:'inherit',
-};
-
-const selectStyle = { ...inputStyle, cursor:'pointer' };
+const inputClassName =
+    'w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all';
 
 // ─── Mini Journey Preview Panel ───────────────────────────────────────────────
 const MiniJourneyPreview = ({ previewConfig, selectedAssetKey, speedText, sceneIdx, activeScenes }) => {
@@ -117,23 +128,26 @@ const MiniJourneyPreview = ({ previewConfig, selectedAssetKey, speedText, sceneI
     }, [selectedAssetKey, speedText]);
 
     return (
-        <div style={{ position:'relative', borderRadius:20, overflow:'hidden', aspectRatio:'16/9', minHeight:200, background: scene.bgGradient || scene.bg }}>
+        <div
+            className="relative rounded-2xl overflow-hidden aspect-video min-h-[200px] border border-slate-200/80 shadow-inner"
+            style={{ background: scene.bgGradient || scene.bg }}
+        >
             {/* Lottie background scene */}
             <AnimatePresence mode="sync">
-                <motion.div key={scene.id} initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} transition={{ duration:0.8 }} style={{ position:'absolute', inset:0 }}>
-                    <div style={{ position:'absolute', inset:0, overflow:'hidden', opacity:0.6 }}>
+                <motion.div key={scene.id} initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} transition={{ duration:0.8 }} className="absolute inset-0">
+                    <div className="absolute inset-0 overflow-hidden opacity-60">
                         {scene.animationUrl ? (
                             <AdaptiveLottie animationUrl={scene.animationUrl} loop autoplay scale="none" className="w-full h-full object-cover" />
                         ) : (
                             <Lottie animationData={scene.lottie} loop autoplay style={{ width:'100%', height:'100%', objectFit:'cover' }} rendererSettings={{ preserveAspectRatio:'xMidYMax slice' }} />
                         )}
                     </div>
-                    <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.45) 100%)' }} />
+                    <div className="absolute inset-0" style={{ background:'radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.45) 100%)' }} />
                 </motion.div>
             </AnimatePresence>
 
             {/* Character animation */}
-            <div key={replayKey} style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', zIndex:10, pointerEvents:'none' }}>
+            <div key={replayKey} className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                 {(previewConfig.animationData || previewConfig.animationUrl) ? (
                     <AdaptiveLottie
                         animationData={previewConfig.animationData}
@@ -145,27 +159,37 @@ const MiniJourneyPreview = ({ previewConfig, selectedAssetKey, speedText, sceneI
                         display="inline"
                     />
                 ) : (
-                    <div style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.8rem', fontWeight:700, background:'rgba(0,0,0,0.4)', borderRadius:10, padding:'8px 16px', backdropFilter:'blur(8px)' }}>
-                        🔕 ไม่มี asset
+                    <div className="inline-flex items-center gap-2 text-slate-200 text-xs font-bold bg-slate-950/60 border border-white/15 rounded-xl px-4 py-2 backdrop-blur-md">
+                        <BellOff size={14} />
+                        <span>ไม่มี asset</span>
                     </div>
                 )}
             </div>
 
             {/* Overlay badge */}
-            <div style={{ position:'absolute', top:10, left:10, zIndex:20, display:'flex', gap:6 }}>
-                <span style={{ background:'rgba(0,0,0,0.55)', backdropFilter:'blur(8px)', borderRadius:99, padding:'3px 10px', fontSize:'0.65rem', fontWeight:800, color:scene.accent, border:`1px solid ${scene.accent}55` }}>
-                    🎬 Live Preview
+            <div className="absolute top-2.5 left-2.5 z-20 flex gap-1.5">
+                <span
+                    className="inline-flex items-center gap-1.5 bg-slate-950/65 backdrop-blur-md rounded-full px-2.5 py-1 text-[11px] font-bold"
+                    style={{ color: scene.accent || '#a5b4fc', border: `1px solid ${scene.accent || '#6366f1'}55` }}
+                >
+                    <Film size={11} />
+                    <span>Live Preview</span>
                 </span>
             </div>
             <button
+                type="button"
                 onClick={() => setReplayKey(k => k + 1)}
                 title="เล่นใหม่"
-                style={{ position:'absolute', top:10, right:10, zIndex:20, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(8px)', border:`1px solid ${scene.accent}55`, borderRadius:99, padding:'4px 10px', color:scene.accent, cursor:'pointer', fontSize:'0.65rem', fontWeight:700, display:'flex', alignItems:'center', gap:4 }}>
-                <RotateCcw size={10} /> เล่นใหม่
+                aria-label="เล่นพรีวิวใหม่อีกครั้ง"
+                className="absolute top-2.5 right-2.5 z-20 inline-flex items-center gap-1 bg-slate-950/65 hover:bg-slate-900/80 backdrop-blur-md rounded-full px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                style={{ color: scene.accent || '#a5b4fc', border: `1px solid ${scene.accent || '#6366f1'}55` }}
+            >
+                <RotateCcw size={11} />
+                <span>เล่นใหม่</span>
             </button>
 
             {/* Asset label */}
-            <div style={{ position:'absolute', bottom:10, left:'50%', transform:'translateX(-50%)', zIndex:20, background:'rgba(0,0,0,0.55)', backdropFilter:'blur(8px)', borderRadius:99, padding:'3px 12px', fontSize:'0.65rem', fontWeight:700, color:'rgba(255,255,255,0.7)', whiteSpace:'nowrap', maxWidth:'90%', overflow:'hidden', textOverflow:'ellipsis' }}>
+            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 bg-slate-950/65 backdrop-blur-md border border-white/15 rounded-full px-3 py-1 text-[11px] font-semibold text-slate-200 whitespace-nowrap max-w-[90%] overflow-hidden text-ellipsis">
                 {selectedAssetKey || 'ยังไม่ได้เลือก'}
             </div>
         </div>
@@ -227,6 +251,15 @@ const AnimationManager = () => {
     const [isUploadingFile, setIsUploadingFile]   = useState(false);
     const [showUploadPanel, setShowUploadPanel]   = useState(false);
 
+    useEffect(() => {
+        if (!showPreview) return undefined;
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') setShowPreview(false);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showPreview]);
+
     const previewPreset = getAnimationPreset(previewUsageKey);
     const selectedAsset = useMemo(() => {
         if (!selectedAssetKey) return null;
@@ -263,7 +296,7 @@ const AnimationManager = () => {
                 settings: { ...old?.settings, ...payload }
             }));
             queryClient.invalidateQueries({ queryKey: ['systemSettings'] });
-            toast.success('บันทึกสำเร็จ ✅');
+            toast.success('บันทึกการตั้งค่าสำเร็จ');
         },
         onError: () => toast.error('บันทึกไม่สำเร็จ'),
     });
@@ -338,326 +371,447 @@ const AnimationManager = () => {
 
     const toggleUsage = (key) => setSelectedUsageKeys(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
 
-    const cardStyle = {
-        background: 'white',
-        border: '1px solid #e2e8f0',
-        borderRadius: 20,
-        overflow: 'hidden',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
-    };
-
-    const sectionHead = {
-        padding: '14px 18px',
-        borderBottom: '1px solid #f1f5f9',
-        display: 'flex', alignItems: 'center', gap: 8,
-        fontSize: '0.8rem', fontWeight: 800,
-        color: '#334155', letterSpacing: '0.04em', textTransform: 'uppercase',
-        background: '#f8fafc',
-    };
-
     return (
-        <div style={{ paddingBottom: 80, fontFamily:"'Inter','Sarabun',sans-serif" }}>
-            <style>{`
-                .anim-input:focus { border-color:#6366f1 !important; box-shadow:0 0 0 3px rgba(99,102,241,0.12); }
-                .asset-row { transition: background 0.12s, border-color 0.12s; }
-                .asset-row:hover { background:#f8fafc; }
-                .usage-chip { transition: all 0.15s; }
-                .usage-chip:hover { filter:brightness(0.97); }
-                .btn-primary { transition: filter 0.12s, transform 0.08s, box-shadow 0.12s; }
-                .btn-primary:hover { filter:brightness(1.08); transform:translateY(-1px); }
-                .btn-primary:active { transform:translateY(1px); filter:brightness(0.96); }
-            `}</style>
+        <div className="space-y-6 pb-16">
+            {/* ── Executive Header & Tabs ── */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 rounded-2xl bg-white/90 backdrop-blur-sm p-5 sm:p-6 border border-slate-200/80 shadow-sm">
+                <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20">
+                        <Film size={24} />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight truncate">
+                                Animation Studio
+                            </h2>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+                                {assets.length} Assets
+                            </span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                            เลือก asset .json, ตั้งค่าเส้นทางและเวลา, กำหนดจุดใช้งานในระบบสอบ และจัดการฉากหลังการเดินทาง
+                        </p>
+                    </div>
+                </div>
 
-            {/* ── Tabs ── */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid #e2e8f0', paddingBottom: 16 }}>
-                <button
-                    onClick={() => setActiveTab('animations')}
-                    style={{
-                        background: activeTab === 'animations' ? '#eef2ff' : 'transparent',
-                        color: activeTab === 'animations' ? '#4338ca' : '#64748b',
-                        border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
-                        display: 'flex', alignItems: 'center', gap: 6
-                    }}
-                >
-                    🎬 ตัวละคร & ท่าทาง (Animations)
-                </button>
-                <button
-                    onClick={() => setActiveTab('scenes')}
-                    style={{
-                        background: activeTab === 'scenes' ? '#f0fdf4' : 'transparent',
-                        color: activeTab === 'scenes' ? '#15803d' : '#64748b',
-                        border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
-                        display: 'flex', alignItems: 'center', gap: 6
-                    }}
-                >
-                    🌄 ฉากหลังการเดินทาง (Scenes)
-                </button>
+                <div className="flex flex-wrap items-center gap-2.5">
+                    <div className="inline-flex flex-wrap items-center gap-1 rounded-xl bg-slate-100/90 p-1 border border-slate-200/80" role="tablist">
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === 'animations'}
+                            onClick={() => setActiveTab('animations')}
+                            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                activeTab === 'animations'
+                                    ? 'bg-white text-indigo-700 shadow-sm'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            <Sparkles size={15} />
+                            <span>ตัวละคร &amp; ท่าทาง (Animations)</span>
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === 'scenes'}
+                            onClick={() => setActiveTab('scenes')}
+                            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                activeTab === 'scenes'
+                                    ? 'bg-white text-emerald-700 shadow-sm'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            <Mountain size={15} />
+                            <span>ฉากหลังการเดินทาง (Scenes)</span>
+                        </button>
+                    </div>
+
+                    {activeTab === 'animations' && (
+                        <button
+                            type="button"
+                            onClick={() => setMiniSceneIdx(i => (i + 1) % activeScenes.length)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200/80 text-xs sm:text-sm font-semibold text-slate-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        >
+                            <Globe size={15} className="text-indigo-600" />
+                            <span>เปลี่ยนฉาก</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             {activeTab === 'scenes' && <JourneySceneManager systemSettings={systemSettings} />}
 
             {activeTab === 'animations' && (
                 <>
-                    {/* ── Page header ── */}
-                    <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:24 }}>
-                        <div>
-                            <h2 style={{ fontSize:'1.4rem', fontWeight:900, color:'#0f172a', margin:0 }}>🎬 Animation Studio</h2>
-                            <p style={{ margin:'4px 0 0', fontSize:'0.82rem', color:'#64748b' }}>
-                                เลือก asset .json → ตั้งค่าเส้นทาง/เวลา → กำหนดว่าจะใช้ที่ไหน → บันทึก
-                            </p>
+                    {/* ── 3-column grid ── */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                        {/* ── COL 1: Asset list ── */}
+                        <div className="lg:col-span-3 rounded-2xl bg-white/90 backdrop-blur-sm border border-slate-200/80 shadow-sm overflow-hidden">
+                            <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50/90 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                                <Sparkles size={14} className="text-indigo-600" />
+                                <span>รายการ Asset</span>
+                            </div>
+                            <div className="p-3.5 space-y-3">
+                                <div className="max-h-[340px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                                    {assets.map(asset => {
+                                        const active = selectedAssetKey === asset.value;
+                                        return (
+                                            <div
+                                                key={asset.value}
+                                                className={`flex items-center justify-between rounded-xl border px-3 py-2 transition-colors ${
+                                                    active
+                                                        ? 'border-indigo-500 bg-indigo-50/90'
+                                                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedAssetKey(asset.value)}
+                                                    className={`flex-1 text-left text-xs font-semibold truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded ${
+                                                        active ? 'text-indigo-700 font-bold' : 'text-slate-700'
+                                                    }`}
+                                                >
+                                                    {asset.isCustom && (
+                                                        <span className="inline-block text-[10px] bg-amber-100 text-amber-800 border border-amber-200 rounded px-1.5 py-0.5 mr-1.5 font-bold">
+                                                            custom
+                                                        </span>
+                                                    )}
+                                                    {asset.label}
+                                                </button>
+                                                {asset.isCustom && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { if (window.confirm('ยืนยันการลบ?')) deleteAssetMutation.mutate(asset.value); }}
+                                                        aria-label={`ลบ ${asset.label}`}
+                                                        title="ลบ Asset"
+                                                        className="ml-2 p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Upload toggle */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowUploadPanel(v => !v)}
+                                    className={`w-full rounded-xl border border-dashed px-3 py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                        showUploadPanel
+                                            ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                                            : 'border-indigo-300 bg-slate-50 text-indigo-700 hover:bg-indigo-50/60'
+                                    }`}
+                                >
+                                    <Upload size={14} />
+                                    <span>{showUploadPanel ? 'ซ่อนฟอร์มอัปโหลด' : 'อัปโหลด Asset ใหม่'}</span>
+                                </button>
+
+                                <AnimatePresence>
+                                    {showUploadPanel && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.25 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <form onSubmit={handleUploadAnimation} className="pt-2 space-y-2.5">
+                                                <input
+                                                    type="text"
+                                                    placeholder="ชื่อแอนิเมชัน"
+                                                    value={uploadForm.name}
+                                                    onChange={e => setUploadForm({ ...uploadForm, name: e.target.value })}
+                                                    className={inputClassName}
+                                                />
+                                                <label className="relative flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 p-3.5 cursor-pointer text-xs font-bold text-indigo-700 transition-colors">
+                                                    <input
+                                                        type="file"
+                                                        accept=".json"
+                                                        onChange={handleFileUpload}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    />
+                                                    <Upload size={14} />
+                                                    <span>{isUploadingFile ? 'กำลังอัปโหลด...' : 'เลือกไฟล์ .json'}</span>
+                                                </label>
+                                                <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                                                    <div className="h-px flex-1 bg-slate-200" />
+                                                    <span>หรือวางลิงก์</span>
+                                                    <div className="h-px flex-1 bg-slate-200" />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Lottie JSON URL (Google Drive)"
+                                                    value={uploadForm.url}
+                                                    onChange={e => setUploadForm({ ...uploadForm, url: e.target.value })}
+                                                    className={inputClassName}
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    disabled={isUploadingFile || uploadMutation.isPending || !uploadForm.name || !uploadForm.url}
+                                                    className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white py-2.5 text-xs font-bold shadow-md shadow-indigo-500/20 disabled:opacity-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                                >
+                                                    {uploadMutation.isPending ? 'กำลังเพิ่ม...' : 'เพิ่มแอนิเมชัน'}
+                                                </button>
+                                            </form>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
-                <div style={{ display:'flex', gap:8 }}>
-                    <button
-                        onClick={() => setMiniSceneIdx(i => (i + 1) % activeScenes.length)}
-                        style={{ background:'#f1f5f9', border:'1px solid #e2e8f0', borderRadius:10, padding:'8px 14px', fontSize:'0.8rem', fontWeight:700, cursor:'pointer', color:'#475569', display:'flex', alignItems:'center', gap:6 }}
-                    >
-                        🌍 เปลี่ยนฉาก
-                    </button>
-                </div>
-            </div>
 
-            {/* ── 3-column grid ── */}
-            <div style={{ display:'grid', gap:16, gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,280px),1fr))', alignItems:'start' }}>
-
-                {/* ── COL 1: Asset list ── */}
-                <div style={cardStyle}>
-                    <div style={sectionHead}>
-                        <Sparkles size={14} color="#6366f1" /> รายการ Asset
-                    </div>
-                    <div style={{ padding:12 }}>
-                        <div style={{ maxHeight:340, overflowY:'auto', display:'flex', flexDirection:'column', gap:4 }}>
-                            {assets.map(asset => {
-                                const active = selectedAssetKey === asset.value;
-                                return (
-                                    <div key={asset.value} className="asset-row" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', borderRadius:10, border:`1px solid ${active ? '#6366f1' : '#e2e8f0'}`, background: active ? '#eef2ff' : 'white', padding:'8px 10px 8px 14px' }}>
-                                        <button type="button" onClick={() => setSelectedAssetKey(asset.value)} style={{ flexGrow:1, textAlign:'left', background:'none', border:'none', cursor:'pointer', fontSize:'0.8rem', fontWeight: active ? 800 : 600, color: active ? '#4338ca' : '#475569', padding:0 }}>
-                                            {asset.isCustom && <span style={{ fontSize:'0.6rem', background:'#fef3c7', color:'#92400e', borderRadius:4, padding:'1px 5px', marginRight:5, fontWeight:800 }}>custom</span>}
-                                            {asset.label}
-                                        </button>
-                                        {asset.isCustom && (
-                                            <button type="button" onClick={() => { if (window.confirm('ยืนยันการลบ?')) deleteAssetMutation.mutate(asset.value); }} style={{ background:'none', border:'none', cursor:'pointer', padding:'4px 6px', borderRadius:6, color:'#ef4444' }}>
-                                                <Trash2 size={14} />
-                                            </button>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Upload toggle */}
-                        <button
-                            type="button"
-                            onClick={() => setShowUploadPanel(v => !v)}
-                            style={{ marginTop:12, width:'100%', background: showUploadPanel ? '#eef2ff' : '#f8fafc', border:'1px dashed #c7d2fe', borderRadius:10, padding:'9px', fontSize:'0.78rem', fontWeight:700, cursor:'pointer', color:'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}
-                        >
-                            <Upload size={13} /> {showUploadPanel ? 'ซ่อนฟอร์มอัปโหลด' : 'อัปโหลด Asset ใหม่'}
-                        </button>
-
-                        <AnimatePresence>
-                            {showUploadPanel && (
-                                <motion.div initial={{ height:0, opacity:0 }} animate={{ height:'auto', opacity:1 }} exit={{ height:0, opacity:0 }} transition={{ duration:0.25 }} style={{ overflow:'hidden' }}>
-                                    <form onSubmit={handleUploadAnimation} style={{ marginTop:12, display:'flex', flexDirection:'column', gap:8 }}>
-                                        <input
-                                            type="text" placeholder="ชื่อแอนิเมชัน" value={uploadForm.name}
-                                            onChange={e => setUploadForm({ ...uploadForm, name: e.target.value })}
-                                            className="anim-input" style={inputStyle}
-                                        />
-                                        <label style={{ position:'relative', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:10, border:'2px dashed #c7d2fe', background:'#f5f7ff', padding:'14px', cursor:'pointer', fontSize:'0.78rem', fontWeight:700, color:'#6366f1', gap:6 }}>
-                                            <input type="file" accept=".json" onChange={handleFileUpload} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer' }} />
-                                            <Upload size={13} /> {isUploadingFile ? 'กำลังอัปโหลด...' : 'เลือกไฟล์ .json'}
-                                        </label>
-                                        <div style={{ display:'flex', alignItems:'center', gap:8, color:'#94a3b8', fontSize:'0.7rem' }}>
-                                            <hr style={{ flex:1, border:'none', borderTop:'1px solid #e2e8f0' }} /> หรือวางลิงก์ <hr style={{ flex:1, border:'none', borderTop:'1px solid #e2e8f0' }} />
+                        {/* ── COL 2: Settings ── */}
+                        <div className="lg:col-span-5 rounded-2xl bg-white/90 backdrop-blur-sm border border-slate-200/80 shadow-sm overflow-hidden">
+                            <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50/90 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                                <Sliders size={14} className="text-indigo-600" />
+                                <span>ตั้งค่าแอนิเมชัน (Motion &amp; Timing)</span>
+                            </div>
+                            <div className="p-4 sm:p-5 space-y-4">
+                                {/* Asset + Preview target */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    <Field label="Asset ที่เลือก" icon={Layers}>
+                                        <div className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-xs font-semibold text-slate-700 truncate">
+                                            {selectedAssetKey || 'ยังไม่ได้เลือก'}
                                         </div>
+                                    </Field>
+                                    <Field label="Preview Target" icon={Eye}>
+                                        <select
+                                            value={previewUsageKey}
+                                            onChange={e => setPreviewUsageKey(e.target.value)}
+                                            className={inputClassName}
+                                        >
+                                            {usageOptions.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                                        </select>
+                                    </Field>
+                                </div>
+
+                                {/* Duration + Speed */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    <Field label="ระยะเวลา (วินาที)" icon={Clock}>
                                         <input
-                                            type="text" placeholder="Lottie JSON URL (Google Drive)" value={uploadForm.url}
-                                            onChange={e => setUploadForm({ ...uploadForm, url: e.target.value })}
-                                            className="anim-input" style={{ ...inputStyle, fontSize:'0.75rem' }}
+                                            value={durationText}
+                                            onChange={e => setDurationText(e.target.value)}
+                                            placeholder="เช่น 0.8s"
+                                            className={inputClassName}
                                         />
-                                        <button type="submit" disabled={isUploadingFile || uploadMutation.isLoading || !uploadForm.name || !uploadForm.url}
-                                            className="btn-primary"
-                                            style={{ background:'linear-gradient(135deg,#6366f1,#4f46e5)', color:'white', border:'none', borderRadius:10, padding:'10px', fontSize:'0.8rem', fontWeight:800, cursor:'pointer', boxShadow:'0 4px 12px rgba(99,102,241,0.3)', opacity: (!uploadForm.name || !uploadForm.url) ? 0.5 : 1 }}>
-                                            {uploadMutation.isLoading ? 'กำลังเพิ่ม...' : 'เพิ่มแอนิเมชัน'}
-                                        </button>
-                                    </form>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-
-                {/* ── COL 2: Settings ── */}
-                <div style={cardStyle}>
-                    <div style={sectionHead}>
-                        ⚙️ ตั้งค่าแอนิเมชัน
-                    </div>
-                    <div style={{ padding:16, display:'flex', flexDirection:'column', gap:16 }}>
-                        {/* Asset + Preview target */}
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                            <Field label="Asset ที่เลือก">
-                                <div style={{ ...inputStyle, background:'#f1f5f9', color:'#475569', fontSize:'0.78rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                                    {selectedAssetKey || 'ยังไม่ได้เลือก'}
+                                        <p className="mt-1 text-xs text-slate-500">เวลาเดินทาง Start → End</p>
+                                    </Field>
+                                    <Field label="ความเร็ว Lottie" icon={Zap}>
+                                        <input
+                                            value={speedText}
+                                            onChange={e => setSpeedText(e.target.value)}
+                                            placeholder="เช่น 1, 1.5"
+                                            className={inputClassName}
+                                        />
+                                        <p className="mt-1 text-xs text-slate-500">1=ปกติ | &lt;1=ช้า | &gt;1=เร็ว</p>
+                                    </Field>
                                 </div>
-                            </Field>
-                            <Field label="Preview Target">
-                                <select value={previewUsageKey} onChange={e => setPreviewUsageKey(e.target.value)} className="anim-input" style={selectStyle}>
-                                    {usageOptions.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
-                                </select>
-                            </Field>
-                        </div>
 
-                        {/* Duration + Speed */}
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                            <Field label="⏱ ระยะเวลา (วินาที)">
-                                <input value={durationText} onChange={e => setDurationText(e.target.value)} placeholder="เช่น 0.8s" className="anim-input" style={inputStyle} />
-                                <p style={{ marginTop:4, fontSize:'0.68rem', color:'#94a3b8' }}>เวลาเดินทาง Start → End</p>
-                            </Field>
-                            <Field label="⚡ ความเร็ว Lottie">
-                                <input value={speedText} onChange={e => setSpeedText(e.target.value)} placeholder="เช่น 1, 1.5" className="anim-input" style={inputStyle} />
-                                <p style={{ marginTop:4, fontSize:'0.68rem', color:'#94a3b8' }}>1=ปกติ | &lt;1=ช้า | &gt;1=เร็ว</p>
-                            </Field>
-                        </div>
-
-                        {/* Delay mode + percent */}
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 120px', gap:12 }}>
-                            <Field label="⏳ โหมดหน่วงเวลา">
-                                <select value={delayMode} onChange={e => setDelayMode(e.target.value)} className="anim-input" style={selectStyle}>
-                                    {delayModeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                </select>
-                            </Field>
-                            <Field label="% หน่วง">
-                                <div style={{ position:'relative' }}>
-                                    <input value={delayPercent} onChange={e => setDelayPercent(e.target.value)} placeholder="20" className="anim-input" style={{ ...inputStyle, paddingRight:28 }} />
-                                    <span style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', fontSize:'0.78rem', color:'#94a3b8', pointerEvents:'none' }}>%</span>
+                                {/* Delay mode + percent */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                                    <div className="sm:col-span-2">
+                                        <Field label="โหมดหน่วงเวลา" icon={Hourglass}>
+                                            <select
+                                                value={delayMode}
+                                                onChange={e => setDelayMode(e.target.value)}
+                                                className={inputClassName}
+                                            >
+                                                {delayModeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                            </select>
+                                        </Field>
+                                    </div>
+                                    <Field label="% หน่วง">
+                                        <div className="relative">
+                                            <input
+                                                value={delayPercent}
+                                                onChange={e => setDelayPercent(e.target.value)}
+                                                placeholder="20"
+                                                className={`${inputClassName} pr-8`}
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 pointer-events-none">%</span>
+                                        </div>
+                                    </Field>
                                 </div>
-                            </Field>
-                        </div>
 
-                        {/* Scale + Start */}
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                            <Field label="📐 ขนาด">
-                                <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                                    {['half','full','card'].map(s => (
-                                        <button key={s} type="button" onClick={() => setScaleMode(s)}
-                                            style={{ borderRadius:8, border:`1px solid ${scaleMode===s?'#6366f1':'#e2e8f0'}`, background: scaleMode===s?'#eef2ff':'white', color: scaleMode===s?'#4338ca':'#64748b', padding:'6px 12px', fontSize:'0.78rem', fontWeight: scaleMode===s?800:600, cursor:'pointer', transition:'all 0.12s' }}>
-                                            {s}
-                                        </button>
-                                    ))}
+                                {/* Scale + Start */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    <Field label="ขนาด (Scale)" icon={Maximize2}>
+                                        <div className="flex gap-1.5 flex-wrap">
+                                            {['half','full','card'].map(s => (
+                                                <button
+                                                    key={s}
+                                                    type="button"
+                                                    onClick={() => setScaleMode(s)}
+                                                    className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                                        scaleMode === s
+                                                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                                                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                                    }`}
+                                                >
+                                                    {s}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </Field>
+                                    <Field label="Start Point" icon={Navigation}>
+                                        <select
+                                            value={startPosition}
+                                            onChange={e => setStartPosition(e.target.value)}
+                                            className={inputClassName}
+                                        >
+                                            {positionOptions.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                                        </select>
+                                    </Field>
                                 </div>
-                            </Field>
-                            <Field label="🚀 Start Point">
-                                <select value={startPosition} onChange={e => setStartPosition(e.target.value)} className="anim-input" style={selectStyle}>
-                                    {positionOptions.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                                </select>
-                            </Field>
+
+                                {/* End position */}
+                                <Field label="End Point" icon={Flag}>
+                                    <select
+                                        value={endPosition}
+                                        onChange={e => setEndPosition(e.target.value)}
+                                        className={inputClassName}
+                                    >
+                                        {positionOptions.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                                    </select>
+                                </Field>
+
+                                {/* Journey path visualizer */}
+                                <div className="bg-slate-50 rounded-xl px-3.5 py-2.5 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-700 border border-slate-200/80">
+                                    <span className="bg-indigo-50 text-indigo-700 border border-indigo-200/70 rounded-lg px-2.5 py-1">
+                                        {startPosition}
+                                    </span>
+                                    <ChevronRight size={14} className="text-slate-500" aria-hidden="true" />
+                                    <span className="text-slate-600 font-semibold">{durationText} · {delayMode}</span>
+                                    <ChevronRight size={14} className="text-slate-500" aria-hidden="true" />
+                                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/70 rounded-lg px-2.5 py-1">
+                                        {endPosition}
+                                    </span>
+                                </div>
+
+                                {/* Note + Preview button */}
+                                <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                                    <div className="flex-1">
+                                        <Field label="โน้ต" icon={StickyNote}>
+                                            <input
+                                                value={noteText}
+                                                onChange={e => setNoteText(e.target.value)}
+                                                placeholder="บันทึก"
+                                                className={inputClassName}
+                                            />
+                                        </Field>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPreview(true)}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 text-sm font-bold shadow-md transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                    >
+                                        <Eye size={16} />
+                                        <span>Preview เต็มจอ</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* End position */}
-                        <Field label="🏁 End Point">
-                            <select value={endPosition} onChange={e => setEndPosition(e.target.value)} className="anim-input" style={selectStyle}>
-                                {positionOptions.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                            </select>
-                        </Field>
+                        {/* ── COL 3: Mini preview + Usage checkboxes + Save ── */}
+                        <div className="lg:col-span-4 space-y-5">
+                            {/* Mini journey preview */}
+                            <div className="rounded-2xl bg-white/90 backdrop-blur-sm border border-slate-200/80 shadow-sm overflow-hidden">
+                                <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50/90 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                                    <Globe size={14} className="text-indigo-600" />
+                                    <span>Journey Preview</span>
+                                </div>
+                                <div className="p-3.5">
+                                    <MiniJourneyPreview
+                                        previewConfig={previewConfig}
+                                        selectedAssetKey={selectedAssetKey}
+                                        speedText={speedText}
+                                        sceneIdx={miniSceneIdx}
+                                        activeScenes={activeScenes}
+                                    />
+                                    <p className="mt-2.5 text-xs text-slate-500 text-center">
+                                        กด &ldquo;เปลี่ยนฉาก&rdquo; เพื่อทดสอบบนฉากต่างๆ
+                                    </p>
+                                </div>
+                            </div>
 
-                        {/* Journey path visualizer */}
-                        <div style={{ background:'#f8fafc', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:8, fontSize:'0.78rem', fontWeight:700, color:'#475569', border:'1px solid #e2e8f0' }}>
-                            <span style={{ background:'#eef2ff', color:'#6366f1', borderRadius:6, padding:'3px 8px', fontSize:'0.72rem' }}>{startPosition}</span>
-                            <ChevronRight size={14} color="#94a3b8" />
-                            <span style={{ fontSize:'0.68rem', color:'#94a3b8' }}>{durationText} · {delayMode}</span>
-                            <ChevronRight size={14} color="#94a3b8" />
-                            <span style={{ background:'#f0fdf4', color:'#16a34a', borderRadius:6, padding:'3px 8px', fontSize:'0.72rem' }}>{endPosition}</span>
-                        </div>
+                            {/* Usage checkboxes */}
+                            <div className="rounded-2xl bg-white/90 backdrop-blur-sm border border-slate-200/80 shadow-sm overflow-hidden">
+                                <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50/90 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                                    <CheckSquare size={14} className="text-indigo-600" />
+                                    <span>asset นี้จะใช้ที่ไหน</span>
+                                </div>
+                                <div className="p-3.5 space-y-2">
+                                    {usageOptions.map(usage => {
+                                        const checked = selectedUsageKeys.includes(usage.value);
+                                        return (
+                                            <label
+                                                key={usage.value}
+                                                className={`flex items-start gap-2.5 rounded-xl border p-3 cursor-pointer transition-colors ${
+                                                    checked
+                                                        ? 'border-indigo-500 bg-indigo-50/90'
+                                                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    onChange={() => toggleUsage(usage.value)}
+                                                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                                />
+                                                <div>
+                                                    <div className={`text-xs font-bold ${checked ? 'text-indigo-800' : 'text-slate-800'}`}>
+                                                        {usage.label}
+                                                    </div>
+                                                    <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                                                        {usage.description}
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
 
-                        {/* Note + Preview button */}
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:12, alignItems:'end' }}>
-                            <Field label="📝 โน้ต">
-                                <input value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="บันทึก" className="anim-input" style={inputStyle} />
-                            </Field>
-                            <button type="button" onClick={() => setShowPreview(true)} className="btn-primary"
-                                style={{ background:'#0f172a', color:'white', border:'none', borderRadius:10, padding:'10px 16px', fontSize:'0.8rem', fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap', boxShadow:'0 4px 12px rgba(0,0,0,0.2)' }}>
-                                <Eye size={14} /> Preview
+                            {/* Save button */}
+                            <button
+                                type="button"
+                                onClick={handleSave}
+                                disabled={saveMutation.isPending}
+                                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white py-3.5 px-5 text-sm font-bold shadow-lg shadow-indigo-500/25 disabled:opacity-60 transition-all active:translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            >
+                                <Save size={18} />
+                                <span>{saveMutation.isPending ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่าทั้งหมด'}</span>
                             </button>
                         </div>
                     </div>
-                </div>
 
-                {/* ── COL 3: Mini preview + Usage checkboxes + Save ── */}
-                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-                    {/* Mini journey preview */}
-                    <div style={cardStyle}>
-                        <div style={sectionHead}>
-                            🌍 Journey Preview
-                        </div>
-                        <div style={{ padding:12 }}>
-                            <MiniJourneyPreview
-                                previewConfig={previewConfig}
-                                selectedAssetKey={selectedAssetKey}
-                                speedText={speedText}
-                                sceneIdx={miniSceneIdx}
+                    {/* ── Full Preview Modal ── */}
+                    {showPreview && createPortal(
+                        <div className="fixed inset-0 z-[9999]" role="dialog" aria-modal="true" aria-label="พรีวิวแอนิเมชันเต็มหน้าจอ">
+                            <AnimationPreviewMockup
+                                inlinePreviewState={{
+                                    presetKey: previewUsageKey,
+                                    assetKey: selectedAssetKey,
+                                    assetLabel: selectedAsset?.sourceFile,
+                                    animationUrl: previewConfig.animationUrl,
+                                    scale: scaleMode,
+                                    startPosition,
+                                    endPosition,
+                                    durationText,
+                                    speedText,
+                                    delayMode,
+                                    delayPercent,
+                                    noteText
+                                }}
+                                onCloseHandler={() => setShowPreview(false)}
                                 activeScenes={activeScenes}
                             />
-                            <p style={{ marginTop:8, fontSize:'0.68rem', color:'#94a3b8', textAlign:'center' }}>
-                                กด "เปลี่ยนฉาก" เพื่อทดสอบบนฉากต่างๆ
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Usage checkboxes */}
-                    <div style={cardStyle}>
-                        <div style={sectionHead}>
-                            <CheckSquare size={14} color="#6366f1" /> asset นี้จะใช้ที่ไหน
-                        </div>
-                        <div style={{ padding:12, display:'flex', flexDirection:'column', gap:6 }}>
-                            {usageOptions.map(usage => {
-                                const checked = selectedUsageKeys.includes(usage.value);
-                                return (
-                                    <label key={usage.value} className="usage-chip" style={{ display:'flex', alignItems:'flex-start', gap:10, borderRadius:10, border:`1px solid ${checked?'#6366f1':'#e2e8f0'}`, background: checked?'#eef2ff':'white', padding:'10px 12px', cursor:'pointer' }}>
-                                        <input type="checkbox" checked={checked} onChange={() => toggleUsage(usage.value)} style={{ marginTop:2, accentColor:'#6366f1' }} />
-                                        <div>
-                                            <div style={{ fontSize:'0.82rem', fontWeight:800, color: checked?'#4338ca':'#334155' }}>{usage.label}</div>
-                                            <div style={{ fontSize:'0.68rem', color:'#94a3b8', marginTop:2, lineHeight:1.4 }}>{usage.description}</div>
-                                        </div>
-                                    </label>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Save button */}
-                    <button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={saveMutation.isPending}
-                        className="btn-primary"
-                        style={{
-                            width:'100%', background:'linear-gradient(135deg,#6366f1 0%,#4f46e5 100%)',
-                            color:'white', border:'none', borderRadius:14, padding:'14px',
-                            fontSize:'0.9rem', fontWeight:900, cursor:'pointer',
-                            display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-                            boxShadow:'0 6px 0 #3730a3, 0 8px 24px rgba(99,102,241,0.35)',
-                            opacity: saveMutation.isPending ? 0.7 : 1,
-                        }}
-                        onMouseDown={e => { e.currentTarget.style.transform='translateY(5px)'; e.currentTarget.style.boxShadow='0 1px 0 #3730a3'; }}
-                        onMouseUp={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow='0 6px 0 #3730a3, 0 8px 24px rgba(99,102,241,0.35)'; }}
-                    >
-                        <Save size={16} />
-                        {saveMutation.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
-                    </button>
-                </div>
-            </div>
-
-            {/* ── Full Preview Modal ── */}
-            {showPreview && createPortal(
-                <div style={{ position:'fixed', inset:0, zIndex:9999 }}>
-                    <AnimationPreviewMockup
-                        inlinePreviewState={{ presetKey: previewUsageKey, assetKey: selectedAssetKey, assetLabel: selectedAsset?.sourceFile, animationUrl: previewConfig.animationUrl, scale: scaleMode, startPosition, endPosition, durationText, speedText, delayMode, delayPercent, noteText }}
-                        onCloseHandler={() => setShowPreview(false)}
-                        activeScenes={activeScenes}
-                    />
-                </div>,
-                document.body
+                        </div>,
+                        document.body
+                    )}
+                </>
             )}
-            </>)}
         </div>
     );
 };

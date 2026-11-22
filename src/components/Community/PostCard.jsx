@@ -1,13 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { MessageCircle, Heart, Share2, MoreVertical, Trash2, Flag, PenSquare, Bookmark } from 'lucide-react';
+import {
+    MessageCircle,
+    Heart,
+    Share2,
+    MoreVertical,
+    Trash2,
+    Flag,
+    Bookmark,
+    Crown,
+    BarChart2,
+    Newspaper,
+    Store,
+    ExternalLink,
+} from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import communityService from '../../services/communityService';
 import ReadMoreText from '../common/ReadMoreText';
 import bookmarkService from '../../services/bookmarkService';
-import { useSocket } from '../../context/SocketContext';
 import { useAuth } from '../../context/AuthContext';
 import RichText from './RichText';
 import FriendButton from './FriendButton';
@@ -15,50 +28,64 @@ import toast from 'react-hot-toast';
 import { isPremiumUser } from '../../utils/userAccess';
 
 const BACKGROUND_STYLES = {
-    'c1': 'bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500',
-    'c2': 'bg-gradient-to-br from-orange-400 to-rose-400',
-    'c3': 'bg-gradient-to-br from-emerald-400 to-cyan-500',
-    'c4': 'bg-gradient-to-br from-blue-500 to-indigo-600',
-    'c5': 'bg-gradient-to-br from-slate-900 to-slate-700'
+    c1: 'bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500',
+    c2: 'bg-gradient-to-br from-orange-400 to-rose-500',
+    c3: 'bg-gradient-to-br from-emerald-400 to-cyan-500',
+    c4: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+    c5: 'bg-gradient-to-br from-slate-900 to-slate-700',
+};
+
+const CATEGORY_LABELS = {
+    general: 'พูดคุยทั่วไป',
+    exam_news: 'ข่าวการสอบ',
+    qa_help: 'ถาม-ตอบ',
+    relax: 'พักผ่อน/รีวิว',
+    hot: 'Hot',
 };
 
 const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
-    const [likes, setLikes] = useState(thread.likes);
+    const [likes, setLikes] = useState(thread.likes || 0);
     const [isLiked, setIsLiked] = useState(thread.isLiked || false);
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const { user } = useAuth();
     const queryClient = useQueryClient();
-    const socket = useSocket();
+    const navigate = useNavigate();
 
-    // Close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
                 setShowMenu(false);
             }
         };
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setShowMenu(false);
+            }
+        };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
     }, []);
+
+    useEffect(() => {
+        setLikes(thread.likes || 0);
+    }, [thread.likes]);
+
+    useEffect(() => {
+        setIsLiked(Boolean(thread.isLiked));
+    }, [thread.isLiked]);
 
     const getImageUrl = (path) => {
         if (!path) return `https://ui-avatars.com/api/?name=User&background=random`;
-
-        // Fix: Detect and strip localhost URLs to ensure relative path usage in production (prevents Mixed Content)
-        if (path && typeof path === 'string' && path.includes('localhost:3000')) {
+        if (typeof path === 'string' && path.includes('localhost:3000')) {
             path = path.replace('http://localhost:3000', '').replace('https://localhost:3000', '');
         }
-
         if (path.startsWith('http') || path.startsWith('blob:')) return path;
-
-        // Use relative path which works for both dev (proxy) and prod
         return path.startsWith('/') ? path : `/${path}`;
-    };
-
-    const handleImageError = (e) => {
-        e.target.onerror = null; // Prevent infinite loop
-        e.target.src = 'https://ui-avatars.com/api/?name=Error&background=E5E7EB&color=6B7280&size=128';
     };
 
     const likeMutation = useMutation({
@@ -67,30 +94,24 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
         },
         onSuccess: (data) => {
             setLikes(data.data.likes);
-        }
+        },
     });
 
-    // Delete Mutation
     const deleteMutation = useMutation({
         mutationFn: communityService.deleteThread,
         onSuccess: () => {
             toast.success('ลบกระทู้เรียบร้อยแล้ว');
             queryClient.invalidateQueries(['threads']);
-            // Optionally close modal or redirect if needed, but invalidating queries handles list update
-            // If in modal, might need to close it. But PostCard doesn't control modal. 
-            // Ideally parent should handle closure, but let's stick to core logic.
-            // Actually if deleted, the modal viewing it might break or show empty.
-            // For now, let's assume user closes it or we reload.
-            window.location.href = '/community'; // Force redirect to avoid stuck empty modal
+            window.location.href = '/community';
         },
         onError: (error) => {
-            toast.error(error.response?.data?.error || 'Failed to delete thread');
-        }
+            toast.error(error.response?.data?.error || 'ไม่สามารถลบกระทู้ได้');
+        },
     });
 
     const handleDelete = (e) => {
         e.stopPropagation();
-        if (window.confirm('คุณลดต้องการลบกระทู้นี้ใช่หรือไม่?')) {
+        if (window.confirm('คุณต้องการลบกระทู้นี้ใช่หรือไม่?')) {
             deleteMutation.mutate(thread.id);
         }
         setShowMenu(false);
@@ -100,11 +121,13 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
         e.stopPropagation();
         const reason = prompt('ระบุเหตุผลในการรายงาน:');
         if (reason) {
-            communityService.reportContent({
-                target_type: 'thread',
-                target_id: thread.id,
-                reason
-            }).then(() => toast.success('ขอบคุณสำหรับการรายงาน เราจะตรวจสอบโดยเร็วที่สุด'))
+            communityService
+                .reportContent({
+                    target_type: 'thread',
+                    target_id: thread.id,
+                    reason,
+                })
+                .then(() => toast.success('ขอบคุณสำหรับการรายงาน เราจะตรวจสอบโดยเร็วที่สุด'))
                 .catch(() => toast.error('เกิดข้อผิดพลาดในการส่งรายงาน'));
         }
         setShowMenu(false);
@@ -115,7 +138,7 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
             await bookmarkService.addBookmark({
                 target_type: 'thread',
                 target_id: thread.id,
-                title: thread.title
+                title: thread.title,
             });
             toast.success('บันทึกรายการแล้ว');
         } catch (error) {
@@ -127,27 +150,20 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
         }
     };
 
-    // Sync state with props when they change (e.g. from socket or refetch)
-    useEffect(() => {
-        setLikes(thread.likes);
-    }, [thread.likes]);
-
     const handleLike = () => {
-        // Optimistic toggle
-        setIsLiked(prev => !prev);
-        setLikes(prev => isLiked ? prev - 1 : prev + 1);
+        const nextLiked = !isLiked;
+        setIsLiked(nextLiked);
+        setLikes((prev) => (nextLiked ? prev + 1 : Math.max(0, prev - 1)));
 
         likeMutation.mutate(null, {
             onSuccess: (data) => {
-                // Sync with server truth
                 setLikes(data.data.likes);
                 setIsLiked(data.data.liked);
             },
             onError: () => {
-                // Revert on error
-                setIsLiked(prev => !prev);
-                setLikes(prev => isLiked ? prev + 1 : prev - 1);
-            }
+                setIsLiked(!nextLiked);
+                setLikes((prev) => (nextLiked ? Math.max(0, prev - 1) : prev + 1));
+            },
         });
     };
 
@@ -155,26 +171,26 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
         try {
             await api.post('/community/poll/vote', {
                 pollId: thread.Poll.id,
-                optionId
+                optionId,
             });
-            // Optimistic update handled by socket listener in parent or here if we listened
-            // For now, rely on parent refresh or socket
+            queryClient.invalidateQueries(['thread', thread.id]);
+            toast.success('บันทึกคะแนนโหวตแล้ว');
         } catch (error) {
-            console.error("Vote failed", error);
-            if (error.response?.data?.error) alert(error.response.data.error);
+            console.error('Vote failed', error);
+            if (error.response?.data?.error) toast.error(error.response.data.error);
         }
     };
 
-    const totalVotes = thread.Poll ? thread.Poll.Options.reduce((acc, opt) => acc + opt.vote_count, 0) : 0;
+    const totalVotes = thread.Poll?.Options
+        ? thread.Poll.Options.reduce((acc, opt) => acc + (opt.vote_count || 0), 0)
+        : 0;
 
     const handleShare = () => {
         const shareUrl = `${window.location.origin}/community?threadId=${thread.id}`;
-        navigator.clipboard.writeText(shareUrl).then(() => {
-            toast.success('คัดลอกลิงก์เรียบร้อยแล้ว');
-        }).catch(err => {
-            console.error('Failed to copy: ', err);
-            toast.error('Failed to copy link');
-        });
+        navigator.clipboard
+            .writeText(shareUrl)
+            .then(() => toast.success('คัดลอกลิงก์เรียบร้อยแล้ว'))
+            .catch(() => toast.error('คัดลอกลิงก์ไม่สำเร็จ'));
     };
 
     const handleFacebookShare = (e) => {
@@ -186,74 +202,102 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
     };
 
     const isOwner = user && thread.user_id === user.id;
+    const authorName = thread.User?.display_name || 'ผู้ใช้งาน';
+    const isAuthorPremium = isPremiumUser(thread.User);
+    const hasValidDate = thread.created_at && !isNaN(new Date(thread.created_at).getTime());
 
     return (
-        <div className="rounded-[24px] shadow-[0_8px_0_rgba(0,0,0,0.2)] border-2 border-white/10 mb-6 overflow-hidden hover:shadow-[0_12px_0_rgba(0,0,0,0.2)] hover:-translate-y-1 transition-all relative" style={{ background: 'linear-gradient(135deg, #184e36 0%, #113627 100%)', color: '#fff' }}>
+        <article className="rounded-3xl bg-gradient-to-br from-emerald-950/90 via-teal-950/85 to-slate-900/95 backdrop-blur-xl border border-white/15 shadow-2xl mb-5 overflow-hidden text-white">
             {/* Header */}
-            <div className="p-4 flex justify-between items-start">
-                <div className="flex items-center space-x-3">
-                    <div className={`relative ${isPremiumUser(thread.User) ? 'p-0.5 rounded-full bg-gradient-to-tr from-yellow-400 via-orange-300 to-yellow-600' : ''}`}>
+            <div className="p-4 sm:p-5 flex justify-between items-start gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div
+                        className={`relative flex-shrink-0 ${
+                            isAuthorPremium
+                                ? 'p-0.5 rounded-full bg-gradient-to-tr from-amber-300 via-yellow-400 to-orange-500'
+                                : ''
+                        }`}
+                    >
                         <img
                             src={getImageUrl(thread.User?.avatar)}
-                            alt="Avatar"
-                            className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                            alt={authorName}
+                            className="w-11 h-11 rounded-full object-cover border-2 border-white/30"
                             onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = `https://ui-avatars.com/api/?name=${thread.User?.display_name || 'User'}&background=random`;
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=4f46e5&color=fff`;
                             }}
                         />
-                        {isPremiumUser(thread.User) && (
-                            <div className="absolute -bottom-1 -right-1 bg-yellow-400 text-white text-[10px] px-1 rounded-full font-bold shadow-sm">PRO</div>
+                        {isAuthorPremium && (
+                            <div
+                                className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-300 to-amber-500 text-[#1a0533] w-5 h-5 rounded-full flex items-center justify-center shadow border border-slate-900"
+                                title="สมาชิกพรีเมียม"
+                            >
+                                <Crown size={11} />
+                            </div>
                         )}
                     </div>
-                    <div>
-                        <div className="flex items-center space-x-2">
-                            <h3 className="font-bold text-white leading-tight">{thread.User?.display_name || 'Anonymous'}</h3>
-                            {thread.User && <FriendButton targetUserId={thread.User.id} />}
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-bold text-white leading-tight truncate">{authorName}</h3>
+                            {thread.User && <FriendButton targetUserId={thread.User.id} variant="glass" />}
                         </div>
-                        <span className="text-xs text-white/60">
-                            {thread.created_at && !isNaN(new Date(thread.created_at).getTime())
-                                ? formatDistanceToNow(new Date(thread.created_at), { addSuffix: true, locale: th })
-                                : 'เมื่อสักครู่'}
-                            {' • '}
-                            <span className="text-[#ffcc00] font-medium">{thread.category}</span>
-                        </span>
+                        <div className="text-xs text-white/70 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span>
+                                {hasValidDate
+                                    ? formatDistanceToNow(new Date(thread.created_at), { addSuffix: true, locale: th })
+                                    : 'เมื่อสักครู่'}
+                            </span>
+                            <span aria-hidden="true">•</span>
+                            <span className="text-[#fde047] font-semibold">
+                                {CATEGORY_LABELS[thread.category] || thread.category || 'ทั่วไป'}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
                 {/* More Options Menu */}
-                <div className="relative" ref={menuRef}>
+                <div className="relative flex-shrink-0" ref={menuRef}>
                     <button
-                        onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                        className="p-1 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowMenu(!showMenu);
+                        }}
+                        aria-label="ตัวเลือกเพิ่มเติม"
+                        aria-expanded={showMenu}
+                        className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00]"
                     >
-                        <MoreVertical size={20} />
+                        <MoreVertical size={18} />
                     </button>
 
                     {showMenu && (
-                        <div className="absolute right-0 top-8 w-40 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-30 animate-fade-in text-gray-900">
+                        <div className="absolute right-0 top-10 w-48 bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/15 py-1.5 z-30">
                             {isOwner ? (
-                                <>
-                                    <button
-                                        onClick={handleDelete}
-                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
-                                    >
-                                        <Trash2 size={16} className="mr-2" /> ลบกระทู้
-                                    </button>
-                                </>
+                                <button
+                                    type="button"
+                                    onClick={handleDelete}
+                                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-rose-300 hover:bg-white/10 flex items-center gap-2 transition-colors focus-visible:outline-none focus-visible:bg-white/15"
+                                >
+                                    <Trash2 size={15} />
+                                    <span>ลบกระทู้</span>
+                                </button>
                             ) : (
                                 <button
+                                    type="button"
                                     onClick={handleReport}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-white/85 hover:bg-white/10 flex items-center gap-2 transition-colors focus-visible:outline-none focus-visible:bg-white/15"
                                 >
-                                    <Flag size={16} className="mr-2" /> รายงานเนื้อหา
+                                    <Flag size={15} className="text-amber-300" />
+                                    <span>รายงานเนื้อหา</span>
                                 </button>
                             )}
                             <button
+                                type="button"
                                 onClick={handleFacebookShare}
-                                className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center"
+                                className="w-full text-left px-4 py-2.5 text-sm font-semibold text-sky-300 hover:bg-white/10 flex items-center gap-2 transition-colors focus-visible:outline-none focus-visible:bg-white/15"
                             >
-                                <Facebook size={16} className="mr-2" /> แชร์ไปยัง Facebook
+                                <ExternalLink size={15} />
+                                <span>แชร์ไปยัง Facebook</span>
                             </button>
                         </div>
                     )}
@@ -261,37 +305,43 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
             </div>
 
             {/* Content */}
-            <div className="px-4 pb-2">
-                <h2 className="text-xl font-bold text-white mb-2">{thread.title}</h2>
+            <div className="px-4 sm:px-5 pb-3">
+                <h2 className="text-lg sm:text-xl font-extrabold text-white mb-2.5 break-words leading-snug">
+                    {thread.title}
+                </h2>
 
                 {thread.background_style && BACKGROUND_STYLES[thread.background_style] ? (
-                    <div className={`${BACKGROUND_STYLES[thread.background_style]} p-8 rounded-lg min-h-[250px] flex items-center justify-center text-center shadow-inner mb-3`}>
-                        <p className="text-white text-xl font-bold whitespace-pre-line break-words">{thread.content}</p>
+                    <div
+                        className={`${BACKGROUND_STYLES[thread.background_style]} p-6 sm:p-8 rounded-2xl min-h-[200px] flex items-center justify-center text-center shadow-inner mb-3 border border-white/20`}
+                    >
+                        <p className="text-white text-lg sm:text-xl font-extrabold whitespace-pre-line break-words">
+                            {thread.content}
+                        </p>
                     </div>
                 ) : (
-                    <ReadMoreText content={thread.content} forceExpanded={isDetail} className="text-white/90 leading-relaxed">
+                    <ReadMoreText content={thread.content} forceExpanded={isDetail} className="text-white/90 leading-relaxed text-sm sm:text-base break-words">
                         <RichText content={thread.content} />
                     </ReadMoreText>
                 )}
             </div>
 
-            {/* Image */}
+            {/* Image / Video */}
             {thread.image_url && (
-                <div className="mt-2 w-full h-64 sm:h-80 bg-gray-100 overflow-hidden">
-                    {(thread.image_url.endsWith('.mp4') || thread.image_url.endsWith('.webm')) ? (
+                <div className="mx-4 sm:mx-5 mb-3 rounded-2xl overflow-hidden bg-black/40 border border-white/15 max-h-80">
+                    {thread.image_url.endsWith('.mp4') || thread.image_url.endsWith('.webm') ? (
                         <video
                             src={getImageUrl(thread.image_url)}
                             controls
-                            className="w-full h-full object-contain bg-black"
+                            className="w-full h-64 sm:h-80 object-contain bg-black"
                         />
                     ) : (
                         <img
                             src={getImageUrl(thread.image_url)}
-                            alt="Post Content"
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                            alt={thread.title || 'Post Content'}
+                            className="w-full h-64 sm:h-80 object-cover"
                             loading="lazy"
                             onError={(e) => {
-                                e.target.parentNode.style.display = 'none'; // Hide container if image fails
+                                e.currentTarget.parentElement.style.display = 'none';
                             }}
                         />
                     )}
@@ -300,32 +350,57 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
 
             {/* Shared Business Post */}
             {thread.SharedBusinessPost && (
-                <div className="mx-4 mt-2 border border-gray-200 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => window.location.href = `/learning-center/profile/${thread.SharedBusinessPost.business_id}`}>
+                <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/learning-center/profile/${thread.SharedBusinessPost.business_id}`)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            navigate(`/learning-center/profile/${thread.SharedBusinessPost.business_id}`);
+                        }
+                    }}
+                    className="mx-4 sm:mx-5 mb-3 bg-white/10 hover:bg-white/15 border border-white/20 rounded-2xl overflow-hidden cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00]"
+                >
                     {(() => {
-                        const images = typeof thread.SharedBusinessPost.images === 'string'
-                            ? JSON.parse(thread.SharedBusinessPost.images)
-                            : thread.SharedBusinessPost.images || [];
-
-                        return images.length > 0 && (
-                            <div className="h-48 w-full bg-gray-200">
-                                <img
-                                    src={getImageUrl(images[0])}
-                                    className="w-full h-full object-cover"
-                                    alt={thread.SharedBusinessPost.title}
-                                />
-                            </div>
+                        let images = [];
+                        try {
+                            images =
+                                typeof thread.SharedBusinessPost.images === 'string'
+                                    ? JSON.parse(thread.SharedBusinessPost.images)
+                                    : thread.SharedBusinessPost.images || [];
+                        } catch {
+                            images = [];
+                        }
+                        return (
+                            images.length > 0 && (
+                                <div className="h-44 w-full bg-black/30">
+                                    <img
+                                        src={getImageUrl(images[0])}
+                                        className="w-full h-full object-cover"
+                                        alt={thread.SharedBusinessPost.title}
+                                    />
+                                </div>
+                            )
                         );
                     })()}
-                    <div className="p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                            {thread.SharedBusinessPost.Business?.logo_image && (
-                                <img src={getImageUrl(thread.SharedBusinessPost.Business.logo_image)} className="w-5 h-5 rounded-full" />
+                    <div className="p-3.5">
+                        <div className="flex items-center gap-2 mb-1.5 text-xs text-white/75">
+                            {thread.SharedBusinessPost.Business?.logo_image ? (
+                                <img
+                                    src={getImageUrl(thread.SharedBusinessPost.Business.logo_image)}
+                                    alt={thread.SharedBusinessPost.Business?.name || 'Business'}
+                                    className="w-5 h-5 rounded-full object-cover"
+                                />
+                            ) : (
+                                <Store size={14} className="text-[#fde047]" />
                             )}
-                            <span className="text-xs font-bold text-gray-700">{thread.SharedBusinessPost.Business?.name}</span>
-                            <span className="text-xs text-gray-400">• {new Date(thread.SharedBusinessPost.created_at).toLocaleDateString()}</span>
+                            <span className="font-bold text-white">{thread.SharedBusinessPost.Business?.name}</span>
+                            <span>•</span>
+                            <span>{new Date(thread.SharedBusinessPost.created_at).toLocaleDateString('th-TH')}</span>
                         </div>
-                        <h4 className="font-bold text-gray-900 mb-1">{thread.SharedBusinessPost.title}</h4>
-                        <div className="mt-2 text-gray-800 text-sm">
+                        <h4 className="font-bold text-white mb-1">{thread.SharedBusinessPost.title}</h4>
+                        <div className="text-white/80 text-xs sm:text-sm">
                             <ReadMoreText content={thread.SharedBusinessPost.content} forceExpanded={isDetail} />
                         </div>
                     </div>
@@ -333,114 +408,155 @@ const PostCard = ({ thread, onCommentClick, isDetail = false }) => {
             )}
 
             {/* Shared News */}
-            {
-                thread.SharedNews && (
-                    <div className="mx-4 mt-2 border border-gray-200 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => window.location.href = `/news/${thread.SharedNews.id}`}>
-                        {thread.SharedNews.image_url && (
-                            <div className="h-48 w-full bg-gray-200">
-                                <img
-                                    src={thread.SharedNews.image_url}
-                                    className="w-full h-full object-cover"
-                                    alt={thread.SharedNews.title}
-                                />
-                            </div>
-                        )}
-                        <div className="p-3">
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded text-[10px] font-bold uppercase">{thread.SharedNews.category}</span>
-                                <span className="text-xs text-gray-400">• {new Date(thread.SharedNews.published_at).toLocaleDateString()}</span>
-                            </div>
-                            <h4 className="font-bold text-gray-900 mb-1">{thread.SharedNews.title}</h4>
-                            <p className="text-sm text-gray-600 line-clamp-2">{thread.SharedNews.summary}</p>
+            {thread.SharedNews && (
+                <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/news/${thread.SharedNews.id}`)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            navigate(`/news/${thread.SharedNews.id}`);
+                        }
+                    }}
+                    className="mx-4 sm:mx-5 mb-3 bg-white/10 hover:bg-white/15 border border-white/20 rounded-2xl overflow-hidden cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00]"
+                >
+                    {thread.SharedNews.image_url && (
+                        <div className="h-44 w-full bg-black/30">
+                            <img
+                                src={thread.SharedNews.image_url}
+                                className="w-full h-full object-cover"
+                                alt={thread.SharedNews.title}
+                            />
                         </div>
+                    )}
+                    <div className="p-3.5">
+                        <div className="flex items-center gap-2 mb-1.5">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-pink-500/25 border border-pink-300/35 text-pink-200 rounded-full text-[11px] font-bold">
+                                <Newspaper size={11} />
+                                <span>{thread.SharedNews.category || 'ข่าวสาร'}</span>
+                            </span>
+                            {thread.SharedNews.published_at && (
+                                <span className="text-xs text-white/70">
+                                    • {new Date(thread.SharedNews.published_at).toLocaleDateString('th-TH')}
+                                </span>
+                            )}
+                        </div>
+                        <h4 className="font-bold text-white mb-1">{thread.SharedNews.title}</h4>
+                        <p className="text-xs sm:text-sm text-white/75 line-clamp-2">{thread.SharedNews.summary}</p>
                     </div>
-                )
-            }
+                </div>
+            )}
 
             {/* Poll */}
-            {
-                thread.Poll && (() => {
-                    console.log('Poll Data:', thread.Poll); // Debug Log
-                    const isPollExpired = new Date(thread.Poll.expires_at) < new Date();
-                    const hasVoted = thread.Poll.isVoted; // From backend
-                    const showResults = hasVoted || isPollExpired || isOwner;
+            {thread.Poll && (() => {
+                const isPollExpired = new Date(thread.Poll.expires_at) < new Date();
+                const hasVoted = thread.Poll.isVoted;
+                const showResults = hasVoted || isPollExpired || isOwner;
 
-                    return (
-                        <div className="px-4 py-3">
-                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                <h4 className="font-bold text-gray-800 mb-3 text-sm">{thread.Poll.question}</h4>
-                                <div className="space-y-2">
-                                    {thread.Poll.Options.map(opt => {
-                                        const percent = totalVotes > 0 ? Math.round((opt.vote_count / totalVotes) * 100) : 0;
-                                        return (
-                                            <button
-                                                key={opt.id}
-                                                onClick={() => !showResults && handleVote(opt.id)}
-                                                disabled={showResults}
-                                                className={`relative w-full text-left py-2 px-3 rounded-lg border transition-all overflow-hidden group ${showResults ? 'border-gray-200 cursor-default' : 'border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer'}`}
-                                            >
+                return (
+                    <div className="px-4 sm:px-5 py-3">
+                        <div className="bg-black/25 rounded-2xl p-4 border border-white/15">
+                            <h4 className="font-bold text-white mb-3 text-sm flex items-center gap-2">
+                                <span className="w-7 h-7 rounded-lg bg-emerald-400/20 border border-emerald-300/35 text-emerald-300 inline-flex items-center justify-center flex-shrink-0">
+                                    <BarChart2 size={15} />
+                                </span>
+                                <span>{thread.Poll.question}</span>
+                            </h4>
+                            <div className="space-y-2">
+                                {thread.Poll.Options?.map((opt) => {
+                                    const percent = totalVotes > 0 ? Math.round(((opt.vote_count || 0) / totalVotes) * 100) : 0;
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={opt.id}
+                                            onClick={() => !showResults && handleVote(opt.id)}
+                                            disabled={showResults}
+                                            className={`relative w-full text-left py-2.5 px-3.5 rounded-xl border transition-all overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00] ${
+                                                showResults
+                                                    ? 'border-white/15 bg-white/5 cursor-default'
+                                                    : 'border-white/25 bg-white/10 hover:border-[#fde047] hover:bg-white/15 cursor-pointer'
+                                            }`}
+                                        >
+                                            {showResults && (
+                                                <div
+                                                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400/30 to-amber-300/25 transition-all duration-500"
+                                                    style={{ width: `${percent}%` }}
+                                                />
+                                            )}
+                                            <div className="relative flex justify-between items-center gap-2 z-10">
+                                                <span className="text-sm font-semibold text-white break-words">
+                                                    {opt.option_text || opt.text}
+                                                </span>
                                                 {showResults && (
-                                                    <div className="absolute top-0 left-0 h-full bg-indigo-100 transition-all duration-500" style={{ width: `${percent}%` }}></div>
-                                                )}
-                                                <div className="relative flex justify-between items-center z-10">
-                                                    <span className={`text-sm font-medium ${showResults ? 'text-gray-700' : 'text-indigo-700 font-semibold'}`}>
-                                                        {opt.option_text}
+                                                    <span className="text-xs text-[#fde047] font-bold flex-shrink-0">
+                                                        {percent}% ({opt.vote_count || 0})
                                                     </span>
-                                                    {showResults && (
-                                                        <span className="text-xs text-indigo-600 font-bold">{percent}% ({opt.vote_count})</span>
-                                                    )}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <div className="mt-3 text-xs text-gray-400 text-right">
-                                    {totalVotes} total votes • Ends {new Date(thread.Poll.expires_at).toLocaleDateString()}
-                                </div>
+                                                )}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div className="mt-3 text-xs text-white/70 text-right">
+                                {totalVotes} โหวต • ปิดรับ {new Date(thread.Poll.expires_at).toLocaleDateString('th-TH')}
                             </div>
                         </div>
-                    );
-                })()
-            }
+                    </div>
+                );
+            })()}
 
             {/* Stats */}
-            <div className="px-4 py-2 flex justify-between text-sm text-white/60 border-b border-white/10">
+            <div className="px-4 sm:px-5 py-2.5 flex justify-between text-xs sm:text-sm text-white/75 border-y border-white/10">
                 <span>{likes} ถูกใจ</span>
-                <span>{thread.Comments?.length || 0} ความคิดเห็น • {thread.views || 0} อ่าน</span>
+                <span>
+                    {thread.Comments?.length || 0} ความคิดเห็น • {thread.views || 0} ครั้งอ่าน
+                </span>
             </div>
 
             {/* Actions */}
-            <div className="flex justify-between items-center px-2 py-1">
+            <div className="grid grid-cols-4 gap-1 px-2 py-2">
                 <button
+                    type="button"
                     onClick={handleLike}
-                    className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-white/10 transition-colors ${isLiked ? 'text-pink-400' : 'text-white/80 hover:text-white'}`}
+                    aria-label="ถูกใจ"
+                    aria-pressed={isLiked}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl hover:bg-white/10 text-xs sm:text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00] ${
+                        isLiked ? 'text-rose-300 bg-rose-500/15' : 'text-white/85 hover:text-white'
+                    }`}
                 >
-                    <Heart size={20} className={isLiked ? 'fill-current' : ''} />
-                    <span>ถูกใจ</span>
+                    <Heart size={17} className={isLiked ? 'fill-current' : ''} />
+                    <span className="hidden sm:inline">ถูกใจ</span>
                 </button>
                 <button
+                    type="button"
                     onClick={() => onCommentClick(thread.id)}
-                    className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors"
+                    aria-label="แสดงความคิดเห็น"
+                    className="flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl hover:bg-white/10 text-white/85 hover:text-white text-xs sm:text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00]"
                 >
-                    <MessageCircle size={20} />
-                    <span>แสดงความคิดเห็น</span>
+                    <MessageCircle size={17} />
+                    <span className="hidden sm:inline">ตอบกลับ</span>
                 </button>
                 <button
+                    type="button"
                     onClick={handleBookmark}
-                    className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors"
+                    aria-label="บันทึกโพสต์"
+                    className="flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl hover:bg-white/10 text-white/85 hover:text-white text-xs sm:text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00]"
                 >
-                    <Bookmark size={20} />
-                    <span>บันทึก</span>
+                    <Bookmark size={17} />
+                    <span className="hidden sm:inline">บันทึก</span>
                 </button>
                 <button
+                    type="button"
                     onClick={handleShare}
-                    className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors"
+                    aria-label="แชร์โพสต์"
+                    className="flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl hover:bg-white/10 text-white/85 hover:text-white text-xs sm:text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffcc00]"
                 >
-                    <Share2 size={20} />
-                    <span>แชร์</span>
+                    <Share2 size={17} />
+                    <span className="hidden sm:inline">แชร์</span>
                 </button>
             </div>
-        </div >
+        </article>
     );
 };
 

@@ -1,252 +1,317 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Bell } from 'lucide-react';
+import {
+  Menu,
+  X,
+  Home,
+  MessageSquare,
+  BookOpen,
+  Newspaper,
+  Trophy,
+  FileCheck2,
+  User,
+  Building2,
+  LogOut,
+  Briefcase,
+  LogIn,
+  Sparkles,
+} from 'lucide-react';
 import authService from '../services/authService';
 import publicService from '../services/publicService';
 import EditProfileModal from './EditProfileModal';
 import { useTour } from '../context/TourContext';
-
 import NotificationCenter from './Community/NotificationCenter';
+import BrandLogo from './common/BrandLogo';
+
+const NAV_ITEMS = [
+  { path: '/', label: 'หน้าแรก', Icon: Home },
+  { path: '/community', label: 'ชุมชน', Icon: MessageSquare },
+  { path: '/learning-center', label: 'ศูนย์การเรียนรู้', Icon: BookOpen },
+  { path: '/news', label: 'ข่าวสอบ', Icon: Newspaper },
+  { path: '/lobby', label: 'ห้องสอบกลุ่ม', Icon: Trophy },
+  { path: '/exam', label: 'ห้องสอบเดี่ยว', Icon: FileCheck2 },
+];
 
 const Navbar = () => {
-    const { startTour } = useTour();
-    const [isOpen, setIsOpen] = useState(false);
-    const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-    const [user, setUser] = useState(null);
-    const navigate = useNavigate();
-    const location = useLocation();
+  const { startTour } = useTour();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    useEffect(() => {
-        const currentUser = authService.getCurrentUser();
-        setUser(currentUser);
-    }, [location]);
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    setUser(currentUser);
+    setIsOpen(false);
+  }, [location]);
 
-    const handleLogout = async () => {
-        await publicService.logActivity('BTN_LOGOUT', { type: 'manual' });
-        authService.logout();
-        setUser(null);
-        navigate('/login');
-    };
+  const handleLogout = async () => {
+    await publicService.logActivity('BTN_LOGOUT', { type: 'manual' });
+    authService.logout();
+    setUser(null);
+    navigate('/login');
+  };
 
-    const handleNavClick = (label, path) => {
-        if (user) {
-            publicService.logActivity('BTN_NAV_CLICK', { label, path });
-        }
-    };
+  const handleNavClick = (label, path) => {
+    if (user) {
+      publicService.logActivity('BTN_NAV_CLICK', { label, path });
+    }
+  };
 
-    return (
-        <>
-            <nav className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-50 border-b dark:border-slate-700 transition-colors">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex">
-                            <Link to="/" className="flex-shrink-0 flex items-center">
-                                <span className="text-2xl font-bold text-primary dark:text-indigo-400">PreExam</span>
-                            </Link>
-                            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                                {[
-                                    { path: '/', label: 'หน้าแรก' },
-                                    { path: '/community', label: 'ชุมชน' },
-                                    { path: '/learning-center', label: 'ศูนย์การเรียนรู้' },
-                                    { path: '/news', label: 'ข่าวสอบ' },
-                                    { path: '/lobby', label: 'ห้องสอบกลุ่ม' },
-                                    { path: '/exam', label: 'ห้องสอบเดี่ยว' }
-                                ].map((item) => (
-                                    <Link
-                                        key={item.path}
-                                        to={item.path}
-                                        onClick={() => handleNavClick(item.label, item.path)}
-                                        className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${location.pathname === item.path
-                                            ? 'border-indigo-500 text-gray-900 dark:text-white'
-                                            : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200'
-                                            }`}
-                                    >
-                                        {item.label}
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+  const displayName = user?.display_name || user?.username || 'User';
 
-                            <NotificationCenter />
+  return (
+    <>
+      <nav
+        aria-label="แถบนำทาง"
+        className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl transition-colors duration-200 dark:border-slate-800/80 dark:bg-slate-900/85"
+        style={{ fontFamily: "'Sarabun', 'Nunito', sans-serif" }}
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between gap-4">
+            <div className="flex items-center gap-6">
+              <Link
+                to="/"
+                aria-label="PreExam หน้าแรก"
+                className="group flex shrink-0 items-center gap-2.5 rounded-xl px-1.5 py-1 transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              >
+                <BrandLogo showText={false} size="sm" variant="light" aria-hidden="true" />
+                <span
+                  className="text-xl font-black tracking-tight text-slate-900 dark:text-white"
+                  style={{ fontFamily: "'Nunito', 'Sarabun', sans-serif" }}
+                >
+                  PreExam
+                  <span className="text-rose-500 dark:text-amber-400">!</span>
+                </span>
+              </Link>
 
-                            {user ? (
-                                <>
-                                    <span className="text-gray-700 dark:text-gray-200 text-sm font-medium mr-2">
-                                        {user.display_name || user.username || 'User'}
-                                    </span>
+              <div className="hidden lg:flex lg:items-center lg:gap-1">
+                {NAV_ITEMS.map(({ path, label, Icon }) => {
+                  const active = location.pathname === path;
+                  return (
+                    <Link
+                      key={path}
+                      to={path}
+                      onClick={() => handleNavClick(label, path)}
+                      className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                        active
+                          ? 'bg-indigo-50 text-indigo-700 shadow-xs dark:bg-indigo-500/15 dark:text-indigo-300'
+                          : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                      }`}
+                    >
+                      <Icon size={16} strokeWidth={2.2} />
+                      <span>{label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
 
-                                    <Link
-                                        to="/profile"
-                                        onClick={() => handleNavClick('My Profile', '/profile')}
-                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                                    >
-                                        My Profile
-                                    </Link>
+            <div className="hidden lg:flex lg:items-center lg:gap-3">
+              <NotificationCenter />
 
-                                    <Link
-                                        to={user.email?.startsWith('guest_') ? "/login" : "/business/content"}
-                                        onClick={() => handleNavClick('Manage Page', user.email?.startsWith('guest_') ? "/login" : "/business/content")}
-                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                                    >
-                                        จัดการหน้าเพจ
-                                    </Link>
-                                    <button
-                                        onClick={handleLogout}
-                                        className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                                    >
-                                        ออกจากระบบ
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <Link
-                                        to="/auth/business/login"
-                                        onClick={() => handleNavClick('Business Login', '/auth/business/login')}
-                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                                    >
-                                        สำหรับธุรกิจ
-                                    </Link>
-                                    <Link
-                                        to="/login"
-                                        onClick={() => handleNavClick('Login', '/login')}
-                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                                    >
-                                        เข้าสู่ระบบ
-                                    </Link>
-                                    <Link
-                                        to="/register"
-                                        onClick={() => handleNavClick('Register', '/register')}
-                                        className="bg-primary dark:bg-indigo-600 text-white hover:bg-blue-700 dark:hover:bg-indigo-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                                    >
-                                        สมัครสมาชิก
-                                    </Link>
-                                </>
-                            )}
-                        </div>
+              {user ? (
+                <>
+                  <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-100/80 px-3 py-1.5 text-sm font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200">
+                    <User size={15} className="text-indigo-500 dark:text-indigo-400" />
+                    <span className="max-w-[140px] truncate">{displayName}</span>
+                  </div>
 
-                        <div className="-mr-2 flex items-center sm:hidden">
-                            <div className="sm:hidden flex items-center">
-                                <NotificationCenter />
-                            </div>
-                            <button
-                                onClick={() => setIsOpen(!isOpen)}
-                                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary ml-2"
-                            >
-                                {isOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
-                            </button>
-                        </div>
-                    </div>
+                  <Link
+                    to="/profile"
+                    onClick={() => handleNavClick('My Profile', '/profile')}
+                    className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                  >
+                    <User size={16} />
+                    <span>โปรไฟล์</span>
+                  </Link>
+
+                  <Link
+                    to={user.email?.startsWith('guest_') ? '/login' : '/business/content'}
+                    onClick={() =>
+                      handleNavClick(
+                        'Manage Page',
+                        user.email?.startsWith('guest_') ? '/login' : '/business/content'
+                      )
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                  >
+                    <Building2 size={16} />
+                    <span>จัดการหน้าเพจ</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3.5 py-2 text-sm font-bold text-rose-600 transition-all duration-200 hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25"
+                  >
+                    <LogOut size={16} />
+                    <span>ออกจากระบบ</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/auth/business/login"
+                    onClick={() => handleNavClick('Business Login', '/auth/business/login')}
+                    className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                  >
+                    <Briefcase size={16} />
+                    <span>สำหรับธุรกิจ</span>
+                  </Link>
+                  <Link
+                    to="/login"
+                    onClick={() => handleNavClick('Login', '/login')}
+                    className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold text-slate-700 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
+                  >
+                    <LogIn size={16} />
+                    <span>เข้าสู่ระบบ</span>
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => handleNavClick('Register', '/register')}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:from-indigo-500 hover:to-violet-500 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    <Sparkles size={15} />
+                    <span>สมัครสมาชิก</span>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 lg:hidden">
+              <NotificationCenter />
+              <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label={isOpen ? 'ปิดเมนู' : 'เปิดเมนู'}
+                aria-expanded={isOpen}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white/80 p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+              >
+                {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {isOpen && (
+          <div className="border-t border-slate-200/80 bg-white/95 backdrop-blur-xl lg:hidden dark:border-slate-800 dark:bg-slate-900/95">
+            <div className="space-y-1 px-3 pb-3 pt-3">
+              {NAV_ITEMS.map(({ path, label, Icon }) => {
+                const active = location.pathname === path;
+                return (
+                  <Link
+                    key={path}
+                    to={path}
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleNavClick(label, path);
+                    }}
+                    className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-base font-bold transition-colors ${
+                      active
+                        ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                    }`}
+                  >
+                    <Icon size={18} />
+                    <span>{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="border-t border-slate-200/80 px-4 py-4 dark:border-slate-800">
+              {user ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5 text-base font-bold text-slate-800 dark:border-slate-800 dark:text-slate-100">
+                    <User size={18} className="text-indigo-500" />
+                    <span>สวัสดี, {displayName}</span>
+                  </div>
+
+                  <Link
+                    to="/profile"
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleNavClick('My Profile', '/profile');
+                    }}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-base font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                  >
+                    <User size={17} />
+                    <span>โปรไฟล์ของฉัน</span>
+                  </Link>
+
+                  <Link
+                    to={user.email?.startsWith('guest_') ? '/login' : '/business/content'}
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleNavClick(
+                        'Manage Page',
+                        user.email?.startsWith('guest_') ? '/login' : '/business/content'
+                      );
+                    }}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-base font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                  >
+                    <Building2 size={17} />
+                    <span>จัดการหน้าเพจ</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2.5 rounded-xl bg-rose-50 px-3 py-2.5 text-left text-base font-bold text-rose-600 transition-colors hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25"
+                  >
+                    <LogOut size={17} />
+                    <span>ออกจากระบบ</span>
+                  </button>
                 </div>
-
-                {/* Mobile menu */}
-                {isOpen && (
-                    <div className="sm:hidden bg-white dark:bg-slate-800 border-t dark:border-slate-700 shadow-lg">
-                        <div className="pt-2 pb-3 space-y-1">
-                            {[
-                                { path: '/', label: 'หน้าแรก' },
-                                { path: '/community', label: 'ชุมชน' },
-                                { path: '/learning-center', label: 'ศูนย์การเรียนรู้' },
-                                { path: '/news', label: 'ข่าวสอบ' },
-                                { path: '/lobby', label: 'ห้องสอบกลุ่ม' },
-                                { path: '/exam', label: 'ห้องสอบเดี่ยว' }
-                            ].map((item) => (
-                                <Link
-                                    key={item.path}
-                                    to={item.path}
-                                    onClick={() => {
-                                        setIsOpen(false);
-                                        handleNavClick(item.label, item.path);
-                                    }}
-                                    className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors ${location.pathname === item.path
-                                        ? 'bg-indigo-50 dark:bg-indigo-900/20 border-primary text-primary dark:text-indigo-400'
-                                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200'
-                                        }`}
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </div>
-                        <div className="pt-4 pb-4 border-t border-gray-200 dark:border-slate-700">
-                            <div className="flex items-center px-4 space-x-4">
-                                {user ? (
-                                    <div className="w-full">
-                                        <div className="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-slate-700 mb-2">
-                                            สวัสดี, {user.display_name}
-                                        </div>
-
-                                        <Link
-                                            to="/profile"
-                                            onClick={() => {
-                                                setIsOpen(false);
-                                                handleNavClick('My Profile', '/profile');
-                                            }}
-                                            className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
-                                        >
-                                            My Profile
-                                        </Link>
-
-                                        <Link
-                                            to={user.email?.startsWith('guest_') ? "/login" : "/business/content"}
-                                            onClick={() => {
-                                                setIsOpen(false);
-                                                handleNavClick('Manage Page', user.email?.startsWith('guest_') ? "/login" : "/business/content");
-                                            }}
-                                            className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
-                                        >
-                                            จัดการหน้าเพจ
-                                        </Link>
-                                        <button
-                                            onClick={handleLogout}
-                                            className="block w-full text-left text-base font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 mt-2 px-3 py-2"
-                                        >
-                                            ออกจากระบบ
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="w-full space-y-2">
-                                        <Link
-                                            to="/auth/business/login"
-                                            onClick={() => {
-                                                setIsOpen(false);
-                                                handleNavClick('Business Login', '/auth/business/login');
-                                            }}
-                                            className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
-                                        >
-                                            สำหรับธุรกิจ
-                                        </Link>
-                                        <Link
-                                            to="/login"
-                                            onClick={() => {
-                                                setIsOpen(false);
-                                                handleNavClick('Login', '/login');
-                                            }}
-                                            className="block text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white px-3 py-2"
-                                        >
-                                            เข้าสู่ระบบ
-                                        </Link>
-                                        <Link
-                                            to="/register"
-                                            onClick={() => {
-                                                setIsOpen(false);
-                                                handleNavClick('Register', '/register');
-                                            }}
-                                            className="block text-base font-medium text-primary dark:text-indigo-400 hover:text-blue-700 dark:hover:text-indigo-300 px-3 py-2"
-                                        >
-                                            สมัครสมาชิก
-                                        </Link>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </nav>
-            {isEditProfileOpen && user && (
-                <EditProfileModal user={user} onClose={() => setIsEditProfileOpen(false)} />
-            )}
-        </>
-    );
+              ) : (
+                <div className="space-y-2">
+                  <Link
+                    to="/auth/business/login"
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleNavClick('Business Login', '/auth/business/login');
+                    }}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-base font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                  >
+                    <Briefcase size={17} />
+                    <span>สำหรับธุรกิจ</span>
+                  </Link>
+                  <Link
+                    to="/login"
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleNavClick('Login', '/login');
+                    }}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-base font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                  >
+                    <LogIn size={17} />
+                    <span>เข้าสู่ระบบ</span>
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleNavClick('Register', '/register');
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-base font-bold text-white shadow-sm hover:from-indigo-500 hover:to-violet-500"
+                  >
+                    <Sparkles size={17} />
+                    <span>สมัครสมาชิก</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </nav>
+      {isEditProfileOpen && user && (
+        <EditProfileModal user={user} onClose={() => setIsEditProfileOpen(false)} />
+      )}
+    </>
+  );
 };
 
 export default Navbar;

@@ -62,6 +62,16 @@ const examService = {
         return response.data;
     },
 
+    createUserQuestion: async (data) => {
+        const response = await api.post('/user/questions', data);
+        return response.data;
+    },
+
+    updateUserQuestion: async (id, data) => {
+        const response = await api.put(`/user/questions/${id}`, data);
+        return response.data;
+    },
+
     bulkCreateUserQuestions: async (data) => {
         const response = await api.post('/user/questions/bulk', data);
         return response.data;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send } from 'lucide-react';
+import { Send, MessageCircle } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -28,7 +28,7 @@ const ChatBox = ({ socket, roomId, userId, displayName, messages: externalMessag
 
                 // Show Toast
                 toast(`${message.displayName}: ${message.message.substring(0, 30)}${message.message.length > 30 ? '...' : ''}`, {
-                    icon: '💬',
+                    icon: <MessageCircle className="w-4 h-4 text-indigo-600" />,
                     duration: 4000
                 });
             }
@@ -63,37 +63,69 @@ const ChatBox = ({ socket, roomId, userId, displayName, messages: externalMessag
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-b-3xl shadow-sm border border-gray-200">
-            <div className="p-4 border-b border-gray-200 bg-gray-50 text-gray-800">
-                <h3 className="font-bold text-gray-800 text-lg flex items-center">💬 Chat Room</h3>
+        <div
+            className="flex flex-col h-full bg-white/95 backdrop-blur-md rounded-b-3xl shadow-sm border border-slate-200/80 overflow-hidden"
+            style={{ fontFamily: "'Sarabun', 'Nunito', sans-serif" }}
+        >
+            <div className="px-4 py-3 border-b border-slate-200/80 bg-gradient-to-r from-indigo-50/90 via-white to-violet-50/90 text-slate-800 flex items-center justify-between gap-2">
+                <h3 className="font-extrabold text-slate-800 text-base sm:text-lg flex items-center gap-2.5">
+                    <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                        <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
+                    </span>
+                    <span>Chat Room</span>
+                </h3>
+                <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                    {messages.length} ข้อความ
+                </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 h-64">
-                {messages.map((msg, idx) => (
-                    <div key={idx} className={`flex flex-col ${msg.userId === userId ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-[80%] rounded-lg p-2 ${msg.userId === userId
-                            ? 'bg-blue-500 text-white rounded-br-none'
-                            : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                            }`}>
-                            <p className="text-xs opacity-75 mb-1 font-bold">{msg.displayName}</p>
-                            <p className="text-sm">{msg.message}</p>
+            <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3 min-h-[220px] bg-slate-50/70 custom-scrollbar">
+                {messages.length === 0 ? (
+                    <div className="h-full min-h-[160px] flex flex-col items-center justify-center text-center text-slate-500 px-4">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-400 flex items-center justify-center mb-2.5">
+                            <MessageCircle className="w-6 h-6" />
                         </div>
+                        <p className="text-sm font-bold text-slate-700">ยังไม่มีข้อความในห้อง</p>
+                        <p className="text-xs text-slate-500 mt-0.5">พิมพ์ทักทายเพื่อนร่วมห้องได้เลย</p>
                     </div>
-                ))}
+                ) : (
+                    messages.map((msg, idx) => {
+                        const isMe = msg.userId === userId;
+                        return (
+                            <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                <div
+                                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 break-words shadow-xs ${
+                                        isMe
+                                            ? 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-br-sm'
+                                            : 'bg-white border border-slate-200/90 text-slate-800 rounded-bl-sm'
+                                    }`}
+                                >
+                                    <p className={`text-xs mb-0.5 font-extrabold ${isMe ? 'text-indigo-100' : 'text-indigo-700'}`}>
+                                        {msg.displayName}
+                                    </p>
+                                    <p className="text-sm leading-relaxed">{msg.message}</p>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
                 <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={sendMessage} className="p-3 border-t border-gray-200 flex">
+            <form onSubmit={sendMessage} className="p-3 border-t border-slate-200/80 bg-white flex items-center gap-2">
                 <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 border-2 border-gray-300 rounded-l-xl px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-gray-900 font-medium"
+                    placeholder="พิมพ์ข้อความ..."
+                    aria-label="พิมพ์ข้อความในห้องแชท"
+                    className="min-w-0 flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 font-semibold placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-400 transition-all"
                 />
                 <button
                     type="submit"
-                    className="bg-blue-600 text-white px-5 py-3 rounded-r-xl hover:bg-blue-700 font-bold flex items-center transition-colors"
+                    disabled={!input.trim()}
+                    aria-label="ส่งข้อความ"
+                    className="shrink-0 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer"
                 >
                     <Send className="w-4 h-4" />
                 </button>

@@ -1,6 +1,26 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { X, ArrowRight, ChevronLeft, MapPin, Play, RotateCcw } from 'lucide-react';
+import {
+    X,
+    ArrowRight,
+    MapPin,
+    Play,
+    RotateCcw,
+    Film,
+    BellOff,
+    Trophy,
+    AlertCircle,
+    Package,
+    Clock,
+    Zap,
+    Hourglass,
+    Check,
+    Sunrise,
+    Trees,
+    Building2,
+    Mountain,
+    Sparkles
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Lottie from 'lottie-react';
 import AdaptiveLottie from '../../components/common/AdaptiveLottie';
@@ -16,7 +36,6 @@ const JOURNEY_SCENES = [
     {
         id: 'dawn',
         name: 'รุ่งอรุณ',
-        emoji: '🌅',
         lottie: mainSceneBAnimation,
         bgGradient: 'linear-gradient(160deg, #1a0533 0%, #3b0764 40%, #7c2d12 80%, #92400e 100%)',
         overlayTint: 'rgba(120, 40, 20, 0.25)',
@@ -25,7 +44,6 @@ const JOURNEY_SCENES = [
     {
         id: 'forest',
         name: 'ป่าลึก',
-        emoji: '🌲',
         lottie: mainSceneCAnimation,
         bgGradient: 'linear-gradient(160deg, #052e16 0%, #14532d 35%, #166534 70%, #15803d 100%)',
         overlayTint: 'rgba(5, 46, 22, 0.35)',
@@ -34,7 +52,6 @@ const JOURNEY_SCENES = [
     {
         id: 'city',
         name: 'เมืองใหม่',
-        emoji: '🏙️',
         lottie: mainSceneDAnimation,
         bgGradient: 'linear-gradient(160deg, #020617 0%, #0f172a 40%, #1e3a5f 80%, #1e40af 100%)',
         overlayTint: 'rgba(30, 64, 175, 0.2)',
@@ -43,13 +60,27 @@ const JOURNEY_SCENES = [
     {
         id: 'summit',
         name: 'ยอดเขา',
-        emoji: '🏔️',
         lottie: mainSceneBAnimation,
         bgGradient: 'linear-gradient(160deg, #0c0a09 0%, #1c1917 30%, #292524 60%, #44403c 100%)',
         overlayTint: 'rgba(120, 113, 108, 0.2)',
         accentColor: '#e2e8f0',
     },
 ];
+
+const renderSceneIcon = (sceneId, size = 15) => {
+    switch (sceneId) {
+        case 'dawn':
+            return <Sunrise size={size} aria-hidden="true" />;
+        case 'forest':
+            return <Trees size={size} aria-hidden="true" />;
+        case 'city':
+            return <Building2 size={size} aria-hidden="true" />;
+        case 'summit':
+            return <Mountain size={size} aria-hidden="true" />;
+        default:
+            return <Sparkles size={size} aria-hidden="true" />;
+    }
+};
 
 // ─── constants shared with AdaptiveLottie ────────────────────────────────────
 const POSITION_COORDS = {
@@ -262,18 +293,13 @@ const PreviewAnimatedLayer = ({ isAnimationDisabled, motionConfig, motionDuratio
     ]);
 
     if (isAnimationDisabled || (!previewConfig.animationData && !previewConfig.animationUrl)) return (
-        <div style={{
-            position: 'absolute', inset: 0, zIndex: 20,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            pointerEvents: 'none',
-        }}>
-            <div style={{
-                background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)',
-                border: `1px solid ${accentColor}44`, borderRadius: 16,
-                padding: '14px 24px', color: 'rgba(255,255,255,0.5)',
-                fontSize: '0.85rem', fontWeight: 700,
-            }}>
-                🔕 ไม่มีแอนนิเมชัน
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+            <div
+                className="inline-flex items-center gap-2 bg-slate-950/60 backdrop-blur-md rounded-2xl px-6 py-3.5 text-slate-200 text-sm font-bold"
+                style={{ border: `1px solid ${accentColor}44` }}
+            >
+                <BellOff size={16} />
+                <span>ไม่มีแอนิเมชัน</span>
             </div>
         </div>
     );
@@ -338,12 +364,19 @@ const ResultPreviewMockup = ({ isPassed, previewState, previewConfig, motionConf
             background: isPassed ? 'rgba(22,163,74,0.45)' : 'rgba(220,38,38,0.45)',
         }} />
 
-        <div style={{ position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px' }}>
-            <span style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', borderRadius: 99, padding: '6px 14px', fontSize: '0.8rem', fontWeight: 700, color: 'white', border: '1px solid rgba(255,255,255,0.15)' }}>
-                🎬 Result Preview
+        <div className="relative z-10 flex items-center justify-between px-5 py-3.5">
+            <span className="inline-flex items-center gap-2 bg-slate-950/50 backdrop-blur-md rounded-full px-3.5 py-1.5 text-xs font-bold text-white border border-white/15">
+                <Film size={14} />
+                <span>Result Preview</span>
             </span>
-            <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '8px 16px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 700 }}>
-                <X size={14} /> ปิด
+            <button
+                type="button"
+                onClick={onClose}
+                aria-label="ปิดหน้าต่างพรีวิว"
+                className="inline-flex items-center gap-1.5 bg-slate-950/50 hover:bg-slate-950/70 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white cursor-pointer text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+                <X size={14} />
+                <span>ปิด</span>
             </button>
         </div>
 
@@ -357,31 +390,32 @@ const ResultPreviewMockup = ({ isPassed, previewState, previewConfig, motionConf
                 accentColor={isPassed ? '#4ade80' : '#f87171'}
             />
 
-            <div style={{ textAlign: 'center', color: 'white', marginTop: 32, marginBottom: 20 }}>
-                <div style={{ fontSize: 'clamp(2rem,6vw,3rem)', fontWeight: 900, textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
-                    {isPassed ? '🎉 สอบผ่านแล้ว!' : '😓 ยังไม่ผ่านเกณฑ์'}
+            <div className="text-center text-white mt-8 mb-5">
+                <div className="inline-flex items-center justify-center gap-3 text-3xl sm:text-5xl font-black drop-shadow-lg">
+                    {isPassed ? <Trophy size={38} className="text-amber-300" /> : <AlertCircle size={38} className="text-rose-200" />}
+                    <span>{isPassed ? 'สอบผ่านแล้ว!' : 'ยังไม่ผ่านเกณฑ์'}</span>
                 </div>
-                <div style={{ fontSize: '1rem', opacity: 0.85, marginTop: 6, fontWeight: 600 }}>
+                <div className="text-base text-white/90 mt-2 font-semibold">
                     {isPassed ? 'ยอดเยี่ยมมาก ทำได้ดีแล้ว!' : 'ไม่เป็นไร ลองใหม่อีกครั้งนะ!'}
                 </div>
             </div>
 
-            <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 24, padding: 24, width: '100%', maxWidth: 360, color: 'white', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6, marginBottom: 6 }}>คะแนนของคุณ</div>
-                <div style={{ fontSize: 'clamp(3rem,10vw,5rem)', fontWeight: 900, lineHeight: 1 }}>
-                    {isPassed ? '5' : '2'} <span style={{ fontSize: '1.5rem', opacity: 0.55 }}>/ 5</span>
+            <div className="bg-slate-950/55 backdrop-blur-xl border border-white/15 rounded-3xl p-6 w-full max-w-[360px] text-white text-center shadow-2xl">
+                <div className="text-xs font-extrabold uppercase tracking-widest text-white/75 mb-1.5">คะแนนของคุณ</div>
+                <div className="text-6xl font-black leading-none">
+                    {isPassed ? '5' : '2'} <span className="text-2xl text-white/60">/ 5</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 16 }}>
+                <div className="grid grid-cols-2 gap-2.5 mt-4">
                     {[{ label: 'เวลาที่ใช้', value: '0 น. 25 วิ.' }, { label: 'ความแม่นยำ', value: isPassed ? '100%' : '40%' }].map(s => (
-                        <div key={s.label} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: 12, border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ fontSize: '0.65rem', fontWeight: 700, opacity: 0.6, marginBottom: 4 }}>{s.label}</div>
-                            <div style={{ fontWeight: 900, fontSize: '1rem' }}>{s.value}</div>
+                        <div key={s.label} className="bg-white/10 rounded-2xl p-3 border border-white/10">
+                            <div className="text-[11px] font-bold text-white/70 mb-1">{s.label}</div>
+                            <div className="font-black text-base">{s.value}</div>
                         </div>
                     ))}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
-                    <button style={{ background: 'rgba(255,255,255,0.95)', color: '#111', border: 'none', borderRadius: 14, padding: '12px 8px', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>ทำอีกครั้ง</button>
-                    <button style={{ background: 'rgba(255,255,255,0.12)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 14, padding: '12px 8px', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>กลับหน้าหลัก</button>
+                <div className="grid grid-cols-2 gap-2.5 mt-3">
+                    <button type="button" className="bg-white/95 hover:bg-white text-slate-900 rounded-2xl py-3 px-2 font-extrabold text-sm cursor-pointer transition-colors">ทำอีกครั้ง</button>
+                    <button type="button" className="bg-white/15 hover:bg-white/25 text-white border border-white/20 rounded-2xl py-3 px-2 font-extrabold text-sm cursor-pointer transition-colors">กลับหน้าหลัก</button>
                 </div>
             </div>
 
@@ -393,30 +427,29 @@ const ResultPreviewMockup = ({ isPassed, previewState, previewConfig, motionConf
 
 // ─── Config pill (bottom info bar) ──────────────────────────────────────────
 const ConfigPill = ({ previewState, previewConfig, accentColor }) => (
-    <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-        background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(20px)',
-        borderTop: `1px solid ${accentColor}33`,
-        padding: '10px 16px',
-        display: 'flex', flexWrap: 'wrap', alignItems: 'center',
-        gap: 6, justifyContent: 'center',
-    }}>
+    <div
+        className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/75 backdrop-blur-xl px-4 py-2.5 flex flex-wrap items-center gap-1.5 justify-center"
+        style={{ borderTop: `1px solid ${accentColor}33` }}
+    >
         {[
-            { label: '📦', value: previewState.assetKey ? (previewState.assetLabel || previewState.assetKey) : 'ปิด' },
-            { label: '⏱', value: previewState.durationText || '0.8s' },
-            { label: '⚡', value: `${previewState.speedText || previewConfig.speed || 1}x` },
-            { label: '📍', value: `${POSITION_LABELS[previewState.startPosition] || 'กลาง'} → ${POSITION_LABELS[previewState.endPosition] || 'กลาง'}` },
-            { label: '⏳', value: `${DELAY_LABELS[previewState.delayMode || 'normal']} ${previewState.delayPercent || 20}%` },
-        ].map((item, i) => (
-            <span key={i} style={{
-                background: 'rgba(255,255,255,0.1)', border: `1px solid ${accentColor}33`,
-                borderRadius: 99, padding: '4px 10px',
-                fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)',
-                display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
-            }}>
-                {item.label} {item.value}
-            </span>
-        ))}
+            { icon: Package, value: previewState.assetKey ? (previewState.assetLabel || previewState.assetKey) : 'ปิด' },
+            { icon: Clock, value: previewState.durationText || '0.8s' },
+            { icon: Zap, value: `${previewState.speedText || previewConfig.speed || 1}x` },
+            { icon: MapPin, value: `${POSITION_LABELS[previewState.startPosition] || 'กลาง'} → ${POSITION_LABELS[previewState.endPosition] || 'กลาง'}` },
+            { icon: Hourglass, value: `${DELAY_LABELS[previewState.delayMode || 'normal']} ${previewState.delayPercent || 20}%` },
+        ].map((item, i) => {
+            const Icon = item.icon;
+            return (
+                <span
+                    key={i}
+                    className="inline-flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1 text-xs font-bold text-slate-100 whitespace-nowrap"
+                    style={{ border: `1px solid ${accentColor}33` }}
+                >
+                    <Icon size={12} style={{ color: accentColor }} aria-hidden="true" />
+                    <span>{item.value}</span>
+                </span>
+            );
+        })}
     </div>
 );
 
@@ -459,6 +492,20 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
 
     const activeScenes = externalActiveScenes || JOURNEY_SCENES;
     const scene = activeScenes[sceneIdx % activeScenes.length];
+    const sceneAccent = scene.accentColor || scene.accent || '#818cf8';
+
+    const onClose = useCallback(() => {
+        if (onCloseHandler) onCloseHandler();
+        else navigate('/admin/animations');
+    }, [onCloseHandler, navigate]);
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
 
     const handleNextQuestion = useCallback(() => {
         const next = questionIdx + 1;
@@ -471,17 +518,16 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
             setTimeout(() => {
                 const ns = (sceneIdx + 1) % activeScenes.length;
                 setSceneIdx(ns);
-                setShowMilestone(activeScenes[ns].emoji + ' ' + activeScenes[ns].name);
+                setShowMilestone(activeScenes[ns].name);
                 setTimeout(() => setShowMilestone(null), 2200);
             }, 750);
             setTimeout(() => setIsRunning(false), 1600);
         }
         setReplayKey(k => k + 1);
-    }, [questionIdx, sceneIdx]);
+    }, [questionIdx, sceneIdx, activeScenes]);
 
     const isResultPreview = preset.usage === 'exam-result';
     const isPassedResult  = preset.key === 'examResultPass';
-    const onClose = () => onCloseHandler ? onCloseHandler() : navigate('/admin/animations');
     const progressPct = ((questionIdx + 1) / 10) * 100;
 
     if (isResultPreview) {
@@ -494,7 +540,7 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
                 motionDuration={motionDuration}
                 isAnimationDisabled={isAnimationDisabled}
                 onClose={onClose}
-                scene={scene}
+                scene={{ ...scene, accentColor: sceneAccent }}
             />
         );
     }
@@ -556,16 +602,17 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
                         style={{
                             position: 'fixed', top: 70, left: '50%', transform: 'translateX(-50%)',
                             zIndex: 100,
-                            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(16px)',
-                            border: `1px solid ${scene.accentColor}55`, borderRadius: 99,
-                            padding: '9px 22px', color: scene.accentColor,
+                            background: 'rgba(2,6,23,0.82)', backdropFilter: 'blur(16px)',
+                            border: `1px solid ${sceneAccent}55`, borderRadius: 99,
+                            padding: '9px 22px', color: sceneAccent,
                             fontWeight: 900, fontSize: '1rem',
                             display: 'flex', alignItems: 'center', gap: 7,
-                            boxShadow: `0 4px 24px ${scene.accentColor}44`,
+                            boxShadow: `0 4px 24px ${sceneAccent}44`,
                             whiteSpace: 'nowrap',
                         }}
                     >
-                        <MapPin size={14} /> มาถึง {showMilestone} แล้ว!
+                        <MapPin size={15} />
+                        <span>มาถึง {showMilestone} แล้ว!</span>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -578,20 +625,38 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
                 motionDuration={motionDuration}
                 previewState={previewState}
                 previewConfig={previewConfig}
-                accentColor={scene.accentColor}
+                accentColor={sceneAccent}
             />
 
             {/* ── Top bar ── */}
-            <div style={{ position: 'relative', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', borderRadius: 99, padding: '6px 14px', fontSize: '0.78rem', fontWeight: 800, color: 'white', border: `1px solid ${scene.accentColor}44`, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    🎬 Preview — {preset.name}
+            <div className="relative z-30 flex items-center justify-between px-4 py-3 gap-2 flex-wrap">
+                <span
+                    className="inline-flex items-center gap-2 bg-slate-950/55 backdrop-blur-md rounded-full px-3.5 py-1.5 text-xs font-extrabold text-white"
+                    style={{ border: `1px solid ${sceneAccent}44` }}
+                >
+                    <Film size={14} style={{ color: sceneAccent }} />
+                    <span>Preview — {preset.name}</span>
                 </span>
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => setReplayKey(k => k + 1)} title="เล่นอีกครั้ง" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', border: `1px solid ${scene.accentColor}55`, borderRadius: 99, padding: '7px 14px', color: scene.accentColor, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8rem', fontWeight: 700 }}>
-                        <RotateCcw size={13} /> เล่นใหม่
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setReplayKey(k => k + 1)}
+                        title="เล่นอีกครั้ง"
+                        aria-label="เล่นแอนิเมชันใหม่อีกครั้ง"
+                        className="inline-flex items-center gap-1.5 bg-slate-950/55 hover:bg-slate-900/75 backdrop-blur-md rounded-full px-3.5 py-1.5 text-xs font-bold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        style={{ border: `1px solid ${sceneAccent}55`, color: sceneAccent }}
+                    >
+                        <RotateCcw size={13} />
+                        <span>เล่นใหม่</span>
                     </button>
-                    <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '7px 14px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8rem', fontWeight: 700 }}>
-                        <X size={13} /> ปิด
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="ปิดหน้าต่างพรีวิว"
+                        className="inline-flex items-center gap-1.5 bg-slate-950/55 hover:bg-slate-900/75 backdrop-blur-md border border-white/20 rounded-full px-3.5 py-1.5 text-white cursor-pointer text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    >
+                        <X size={13} />
+                        <span>ปิด</span>
                     </button>
                 </div>
             </div>
@@ -606,15 +671,28 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
 
                 {/* Counter */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                    <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', borderRadius: 99, padding: '5px 16px', fontWeight: 800, color: 'white', fontSize: '0.9rem', border: `1px solid ${scene.accentColor}44`, display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <span style={{ color: scene.accentColor }}>{scene.emoji}</span>
+                    <div
+                        className="bg-slate-950/50 backdrop-blur-md rounded-full px-4 py-1.5 font-extrabold text-white text-sm inline-flex items-center gap-2"
+                        style={{ border: `1px solid ${sceneAccent}44` }}
+                    >
+                        <span style={{ color: sceneAccent }}>{renderSceneIcon(scene.id, 15)}</span>
                         <span>{questionIdx + 1}</span>
-                        <span style={{ opacity: 0.4 }}>/ 10</span>
+                        <span className="opacity-55">/ 10</span>
                     </div>
                     {/* Scene dots */}
                     <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                         {activeScenes.map((s, i) => (
-                            <div key={s.id} style={{ width: i === sceneIdx ? 20 : 6, height: 6, borderRadius: 99, background: i === sceneIdx ? scene.accentColor : 'rgba(255,255,255,0.22)', transition: 'all 0.4s', boxShadow: i === sceneIdx ? `0 0 8px ${scene.accentColor}` : 'none' }} />
+                            <div
+                                key={s.id}
+                                style={{
+                                    width: i === sceneIdx ? 20 : 6,
+                                    height: 6,
+                                    borderRadius: 99,
+                                    background: i === sceneIdx ? sceneAccent : 'rgba(255,255,255,0.22)',
+                                    transition: 'all 0.4s',
+                                    boxShadow: i === sceneIdx ? `0 0 8px ${sceneAccent}` : 'none'
+                                }}
+                            />
                         ))}
                     </div>
                 </div>
@@ -626,8 +704,8 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
                     style={{
-                        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(24px)',
-                        border: `1px solid ${scene.accentColor}33`, borderRadius: '1.4rem',
+                        background: 'rgba(2,6,23,0.52)', backdropFilter: 'blur(24px)',
+                        border: `1px solid ${sceneAccent}33`, borderRadius: '1.4rem',
                         padding: 'clamp(14px,4vw,24px)',
                         boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
                         marginBottom: 16,
@@ -636,7 +714,7 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
                 >
                     <div style={{ fontSize: 'clamp(0.9rem,2.5vw,1.15rem)', fontWeight: 800, color: 'white', lineHeight: 1.65, textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
                         ข้อใดต่อไปนี้กล่าวถูกต้องเกี่ยวกับการโอนรับงบประมาณรายจ่ายระหว่างส่วนราชการ
-                        <br /><span style={{ opacity: 0.4, fontSize: '0.7rem', fontWeight: 600, fontFamily: 'monospace' }}>(ข้อที่ {questionIdx + 1} / ฉากปัจจุบัน: {scene.name})</span>
+                        <br /><span style={{ opacity: 0.65, fontSize: '0.75rem', fontWeight: 600, fontFamily: 'monospace' }}>(ข้อที่ {questionIdx + 1} / ฉากปัจจุบัน: {scene.name})</span>
                     </div>
                 </motion.div>
 
@@ -647,7 +725,8 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
                         return (
                             <motion.button
                                 key={`${questionIdx}-${c.key}`}
-                                className="choice-pill"
+                                type="button"
+                                className="choice-pill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                                 initial={{ opacity: 0, y: 18, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 transition={{ delay: idx * 0.06, duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
@@ -669,7 +748,11 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
                                 <span style={{ fontWeight: 800, color: 'white', fontSize: 'clamp(0.8rem,2vw,0.95rem)', lineHeight: 1.4, flexGrow: 1, textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
                                     {c.label}
                                 </span>
-                                {sel && <span style={{ flexShrink: 0, width: 24, height: 24, background: 'rgba(255,255,255,0.28)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>✓</span>}
+                                {sel && (
+                                    <span className="flex-shrink-0 w-6 h-6 bg-white/30 rounded-full flex items-center justify-center text-white">
+                                        <Check size={14} />
+                                    </span>
+                                )}
                             </motion.button>
                         );
                     })}
@@ -677,41 +760,51 @@ const AnimationPreviewMockup = ({ inlinePreviewState, onCloseHandler, activeScen
             </div>
 
             {/* ── Bottom nav ── */}
-            <div style={{
-                position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-                background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)',
-                borderTop: `1px solid ${scene.accentColor}33`,
-                padding: '10px 16px', transition: 'border-color 0.5s',
-            }}>
-                <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div
+                className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/75 backdrop-blur-xl px-4 py-2.5 transition-colors"
+                style={{ borderTop: `1px solid ${sceneAccent}33` }}
+            >
+                <div className="max-w-[860px] mx-auto flex justify-between items-center gap-2 flex-wrap">
                     {/* Config tags */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flex: 1 }}>
+                    <div className="flex flex-wrap gap-1.5 flex-1">
                         {[
-                            `📦 ${previewState.assetKey || 'ปิด'}`,
-                            `⏱ ${previewState.durationText || '0.8s'}`,
-                            `⚡ ${previewState.speedText || previewConfig.speed || 1}x`,
-                        ].map((tag, i) => (
-                            <span key={i} style={{ background: 'rgba(255,255,255,0.08)', border: `1px solid ${scene.accentColor}33`, borderRadius: 99, padding: '3px 9px', fontSize: '0.68rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', whiteSpace: 'nowrap' }}>
-                                {tag}
-                            </span>
-                        ))}
+                            { icon: Package, label: previewState.assetKey || 'ปิด' },
+                            { icon: Clock, label: previewState.durationText || '0.8s' },
+                            { icon: Zap, label: `${previewState.speedText || previewConfig.speed || 1}x` },
+                        ].map((tag, i) => {
+                            const Icon = tag.icon;
+                            return (
+                                <span
+                                    key={i}
+                                    className="inline-flex items-center gap-1.5 bg-white/10 rounded-full px-2.5 py-1 text-xs font-bold text-slate-200 whitespace-nowrap"
+                                    style={{ border: `1px solid ${sceneAccent}33` }}
+                                >
+                                    <Icon size={12} style={{ color: sceneAccent }} aria-hidden="true" />
+                                    <span>{tag.label}</span>
+                                </span>
+                            );
+                        })}
                     </div>
                     {/* Next question button */}
                     <button
+                        type="button"
                         onClick={handleNextQuestion}
                         style={{
-                            background: scene.accentColor, color: '#111',
+                            background: sceneAccent, color: '#0f172a',
                             border: 'none', borderRadius: 99,
                             padding: '10px 22px', fontWeight: 900, fontSize: '0.9rem',
                             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7,
-                            boxShadow: `0 4px 0 rgba(0,0,0,0.3), 0 6px 18px ${scene.accentColor}55`,
+                            boxShadow: `0 4px 0 rgba(0,0,0,0.3), 0 6px 18px ${sceneAccent}55`,
                             whiteSpace: 'nowrap', flexShrink: 0,
                             transition: 'all 0.15s',
                         }}
+                        className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                         onMouseDown={e => { e.currentTarget.style.transform = 'translateY(3px)'; e.currentTarget.style.boxShadow = `0 1px 0 rgba(0,0,0,0.3)`; }}
-                        onMouseUp={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = `0 4px 0 rgba(0,0,0,0.3), 0 6px 18px ${scene.accentColor}55`; }}
+                        onMouseUp={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = `0 4px 0 rgba(0,0,0,0.3), 0 6px 18px ${sceneAccent}55`; }}
                     >
-                        <Play size={14} /> ข้อถัดไป <ArrowRight size={14} />
+                        <Play size={14} />
+                        <span>ข้อถัดไป</span>
+                        <ArrowRight size={14} />
                     </button>
                 </div>
             </div>

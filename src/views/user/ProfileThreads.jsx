@@ -1,109 +1,119 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
+import { MessageSquare, Clock, Eye, Heart, MessageCircle, Trash2, Sparkles } from 'lucide-react';
 import communityService from '../../services/communityService';
 
 const ProfileThreads = () => {
-    const { user } = useOutletContext();
-    const navigate = useNavigate();
-    const [threads, setThreads] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const { user } = useOutletContext();
+  const navigate = useNavigate();
+  const [threads, setThreads] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    const fetchThreads = async () => {
-        if (!user?.id) {
-            setLoading(false);
-            return;
-        }
-        try {
-            setLoading(true);
-            const res = await communityService.getUserThreads(user.id);
-            setThreads(res?.data || res || []);
-        } catch (err) {
-            console.error('Error fetching user threads:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchThreads = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await communityService.getUserThreads(user.id);
+      setThreads(res?.data || res || []);
+    } catch (err) {
+      console.error('Error fetching user threads:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        fetchThreads();
-    }, [user?.id]);
+  useEffect(() => {
+    fetchThreads();
+  }, [user?.id]);
 
-    const handleDelete = async (e, id) => {
-        e.stopPropagation(); // prevent navigating to thread
-        if (!window.confirm('คุณต้องการลบกระทู้นี้ใช่หรือไม่?')) return;
-        try {
-            await communityService.deleteThread(id);
-            setThreads(prev => prev.filter(t => t.id !== id));
-        } catch (err) {
-            console.error('Failed to delete thread', err);
-            alert('ไม่สามารถลบกระทู้ได้');
-        }
-    };
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    if (!window.confirm('คุณต้องการลบกระทู้นี้ใช่หรือไม่?')) return;
+    try {
+      await communityService.deleteThread(id);
+      setThreads((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      console.error('Failed to delete thread', err);
+      alert('ไม่สามารถลบกระทู้ได้');
+    }
+  };
 
-    return (
-        <div id="sec-threads">
-            <div className="section-title" style={{ marginBottom: '20px', fontSize: '22px' }}>
-                <div className="dot"></div>💬 กระทู้ของฉัน
+  return (
+    <div id="sec-threads">
+      <div className="section-title" style={{ marginBottom: '20px', fontSize: '20px' }}>
+        <div className="dot" />
+        <MessageSquare size={20} className="text-amber-300" />
+        <span>กระทู้ของฉัน</span>
+      </div>
+
+      {loading ? (
+        <div className="py-10 text-center text-white/75 font-bold">กำลังโหลดกระทู้...</div>
+      ) : threads.length > 0 ? (
+        <div className="flex flex-col gap-3" style={{ animation: 'fadeSlideIn 0.4s both' }}>
+          {threads.map((thread, i) => (
+            <div
+              key={thread.id || i}
+              onClick={() => navigate(`/community?threadId=${thread.id}`)}
+              className="activity-card relative cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
+            >
+              <div className="flex items-start gap-3">
+                <div className="act-icon b mt-0.5">
+                  <MessageSquare size={18} />
+                </div>
+                <div className="min-w-0 flex-1 pr-10">
+                  <div className="font-extrabold text-base text-white mb-1 truncate">
+                    {thread.title || 'Untitled Thread'}
+                  </div>
+                  <div className="text-white/75 text-sm mb-2.5 line-clamp-2">
+                    {thread.content?.replace(/<[^>]+>/g, '') || 'No content'}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-white/70 font-semibold">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock size={13} />
+                      {new Date(thread.created_at).toLocaleDateString('th-TH')}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Eye size={13} />
+                      {thread.stats?.views || 0}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Heart size={13} className="text-rose-300" />
+                      {thread.stats?.likes || 0}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <MessageCircle size={13} className="text-emerald-300" />
+                      {thread.stats?.comments_count || 0}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => handleDelete(e, thread.id)}
+                  aria-label="ลบกระทู้"
+                  title="ลบกระทู้"
+                  className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-rose-500/15 text-rose-300 transition-colors hover:bg-rose-500/30 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
-            
-            {loading ? (
-                <div style={{ color: 'var(--text-muted)' }}>กำลังโหลดกระทู้...</div>
-            ) : threads.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fadeSlideIn 0.4s both' }}>
-                    {threads.map((thread, i) => (
-                        <div 
-                            key={thread.id || i} 
-                            onClick={() => navigate(`/community?threadId=${thread.id}`)}
-                            className="activity-card hover-lift" 
-                            style={{ cursor: 'pointer', transition: 'transform 0.2s', position: 'relative' }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                                <div style={{ fontSize: '24px', marginTop: '4px' }}>💬</div>
-                                <div style={{ flex: 1, paddingRight: '40px' }}>
-                                    <div style={{ fontWeight: 800, marginBottom: '5px', fontSize: '16px' }}>{thread.title || 'Untitled Thread'}</div>
-                                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                        {thread.content?.replace(/<[^>]+>/g, '') || 'No content'}
-                                    </div>
-                                    <div style={{ color: 'var(--text-muted)', fontSize: '12px', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                        <span>⏱ {new Date(thread.created_at).toLocaleDateString()}</span>
-                                        <span>👁 {thread.stats?.views || 0}</span>
-                                        <span>❤️ {thread.stats?.likes || 0}</span>
-                                        <span>💬 {thread.stats?.comments_count || 0}</span>
-                                    </div>
-                                </div>
-                                
-                                {/* Delete Button */}
-                                <button 
-                                    onClick={(e) => handleDelete(e, thread.id)}
-                                    style={{ 
-                                        position: 'absolute', top: '15px', right: '15px', 
-                                        background: 'rgba(226, 27, 60, 0.1)', color: '#e21b3c', 
-                                        border: 'none', width: '32px', height: '32px', borderRadius: '50%',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        cursor: 'pointer', transition: 'background 0.2s'
-                                    }}
-                                    title="ลบกระทู้"
-                                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(226, 27, 60, 0.2)'}
-                                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(226, 27, 60, 0.1)'}
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-bg)', borderRadius: '18px', border: '1px dashed var(--card-border)' }}>
-                    <div style={{ fontSize: '32px', marginBottom: '10px' }}>🌱</div>
-                    <div style={{ fontWeight: 800 }}>ยังไม่มีกระทู้</div>
-                    <div style={{ fontSize: '13px' }}>กระทู้ที่คุณสร้างจะแสดงที่นี่</div>
-                </div>
-            )}
-            <style>{`
-                .hover-lift:hover { transform: translateY(-3px); }
-            `}</style>
+          ))}
         </div>
-    );
+      ) : (
+        <div className="rounded-2xl border border-dashed border-white/25 bg-white/10 p-8 text-center text-white/80 backdrop-blur-md">
+          <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-emerald-300">
+            <Sparkles size={24} />
+          </div>
+          <div className="font-black text-white">ยังไม่มีกระทู้</div>
+          <div className="mt-1 text-sm text-white/70">กระทู้ที่คุณสร้างจะแสดงที่นี่</div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default ProfileThreads;

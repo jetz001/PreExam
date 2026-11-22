@@ -5,8 +5,6 @@ import { hashPassword, verifyPassword } from "./password";
 import { aiGeneratorState, runAIGenerator } from "./generator";
 import {
   createAsset,
-  createBookmark,
-  createBusiness,
   createComment,
   createDirectMessage,
   completeActiveSeasons,
@@ -30,7 +28,6 @@ import {
   adminUpdateUserQuestion,
   adminDeleteUserQuestion,
   deleteAsset,
-  deleteBookmark,
   deleteBusiness,
   deleteFriend,
   deletePaymentPlan,
@@ -39,7 +36,6 @@ import {
   getActiveSeason,
   getBookmarkById,
   getBusinessById,
-  getBusinessByOwner,
   getCommentById,
   getExamResultById,
   getExamRoomById,
@@ -57,7 +53,6 @@ import {
   getUserById,
   listAllQuestions,
   listAssets,
-  listBookmarksByUser,
   listBusinesses,
   listBusinessPosts,
   listCommentsByThread,
@@ -84,6 +79,7 @@ import {
   markNotificationRead,
   resetExamRoomParticipants,
   touchUserLastActive,
+  updateAsset,
   updateExamRoom,
   updateFriend,
   updateComment,
@@ -91,7 +87,6 @@ import {
   updateQuestion,
   updateSeason,
   updateTicket,
-  updateBusiness,
   toggleNewsFeatured,
   updateNews,
   updateUser,
@@ -160,9 +155,183 @@ function setCache(key: string, data: any, ttl = CACHE_TTL) {
   globalCache[key] = { data, exp: Date.now() + ttl };
 }
 
+function invalidateQuestionCache(questionId?: string) {
+  delete globalCache["qs_subjects"];
+  delete globalCache["qs_years"];
+  delete globalCache["qs_sets"];
+  for (const key of Object.keys(globalCache)) {
+    if (key.startsWith("qs_list_") || key.startsWith("qs_cats_")) {
+      delete globalCache[key];
+    }
+  }
+  if (questionId) {
+    delete globalCache[`q_${questionId}`];
+  }
+}
+
+const parseCsvLines = (text: string): string[][] => {
+  const cleanText = text.replace(/^\uFEFF/, "");
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentCell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < cleanText.length; i++) {
+    const ch = cleanText[i];
+    const next = cleanText[i + 1];
+
+    if (inQuotes) {
+      if (ch === '"' && next === '"') {
+        currentCell += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        currentCell += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        currentRow.push(currentCell.trim());
+        currentCell = "";
+      } else if (ch === "\r" && next === "\n") {
+        currentRow.push(currentCell.trim());
+        rows.push(currentRow);
+        currentRow = [];
+        currentCell = "";
+        i++;
+      } else if (ch === "\n" || ch === "\r") {
+        currentRow.push(currentCell.trim());
+        rows.push(currentRow);
+        currentRow = [];
+        currentCell = "";
+      } else {
+        currentCell += ch;
+      }
+    }
+  }
+
+  if (currentCell.length > 0 || currentRow.length > 0) {
+    currentRow.push(currentCell.trim());
+    rows.push(currentRow);
+  }
+
+  return rows.filter((r) => r.some((cell) => cell !== ""));
+};
+
+const parseCsvQuestions = (csvText: string): Record<string, any>[] => {
+  const rows = parseCsvLines(csvText);
+  if (rows.length < 2) return [];
+  const headers = rows[0].map((h) => h.trim().toLowerCase());
+
+  const findCol = (aliases: string[]) =>
+    headers.findIndex((h) => aliases.includes(h));
+
+  const idxQ = findCol(["question", "question text", "question_text", "โจทย์"]);
+  const idxA = findCol(["option a", "choice a", "choice_a", "a", "ก"]);
+  const idxB = findCol(["option b", "choice b", "choice_b", "b", "ข"]);
+  const idxC = findCol(["option c", "choice c", "choice_c", "c", "ค"]);
+  const idxD = findCol(["option d", "choice d", "choice_d", "d", "ง"]);
+  const idxAns = findCol(["correct answer", "correct_answer", "answer", "เฉลย"]);
+  const idxSubj = findCol(["subject", "วิชา"]);
+  const idxCat = findCol(["category", "catalogs", "หมวดหมู่"]);
+  const idxExp = findCol(["explanation", "คำอธิบาย"]);
+  const idxYear = findCol(["exam year", "exam_year", "ปี"]);
+  const idxSet = findCol(["exam set", "exam_set", "ชุดข้อสอบ"]);
+  const idxSkill = findCol(["skill", "ทักษะ"]);
+
+  return rows.slice(1).map((cols) => {
+    const get = (idx: number) => (idx >= 0 && cols[idx] !== undefined ? cols[idx] : "");
+    const choiceA = get(idxA);
+    const choiceB = get(idxB);
+    const choiceC = get(idxC);
+    const choiceD = get(idxD);
+    const category = get(idxCat) || "General";
+    return {
+      question_text: get(idxQ),
+      choices: { A: choiceA, B: choiceB, C: choiceC, D: choiceD },
+      choice_a: choiceA,
+      choice_b: choiceB,
+      choice_c: choiceC,
+      choice_d: choiceD,
+      correct_answer: get(idxAns) || "A",
+      subject: get(idxSubj) || "General",
+      category,
+      catalogs: category ? category.split(",").map((s) => s.trim()).filter(Boolean) : [],
+      explanation: get(idxExp),
+      exam_year: get(idxYear) || null,
+      exam_set: get(idxSet) || null,
+      skill: get(idxSkill) || null,
+    };
+  }).filter((q) => q.question_text);
+};
+
+async function bulkInsertQuestions(db: D1Database, rawItems: any[]) {
+  const { results: idRows } = await db.prepare("SELECT id FROM questions").all();
+  let maxId = 0;
+  for (const row of (idRows || []) as any[]) {
+    const num = Number(row.id);
+    if (!isNaN(num) && num > maxId) maxId = num;
+  }
+
+  const now = new Date().toISOString();
+  const payloads = rawItems.map((raw) => {
+    maxId += 1;
+    const rawCatalogs = raw.catalogs;
+    let finalCatalogs: string[] = [];
+    if (Array.isArray(rawCatalogs)) {
+      finalCatalogs = rawCatalogs.map((c) => String(c || "").trim()).filter(Boolean);
+    } else if (typeof rawCatalogs === "string" && rawCatalogs.trim()) {
+      try {
+        const parsed = JSON.parse(rawCatalogs);
+        finalCatalogs = Array.isArray(parsed)
+          ? parsed.map((c) => String(c || "").trim()).filter(Boolean)
+          : [rawCatalogs.trim()];
+      } catch {
+        finalCatalogs = rawCatalogs.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+    }
+
+    const catStr = raw.category ? String(raw.category).trim() : "";
+    if (catStr && !finalCatalogs.includes(catStr)) {
+      finalCatalogs.push(catStr);
+    }
+    const finalCategory = catStr || (finalCatalogs.length > 0 ? finalCatalogs[0] : "General");
+
+    const ansRaw = String(raw.correct_answer ?? raw.answer ?? "A").trim();
+    const correctAnswer = /^[a-d]$/i.test(ansRaw) ? ansRaw.toUpperCase() : ansRaw;
+
+    return {
+      ...raw,
+      id: String(maxId),
+      question_text: raw.question_text ?? raw.question ?? "",
+      correct_answer: correctAnswer,
+      category: finalCategory,
+      catalogs: finalCatalogs,
+      subject: raw.subject || "General",
+      skill: raw.skill || null,
+      exam_year: raw.exam_year || null,
+      exam_set: raw.exam_set || null,
+      created_at: now,
+      updated_at: now,
+    };
+  });
+
+  const created: any[] = [];
+  for (let i = 0; i < payloads.length; i += 10) {
+    const chunk = payloads.slice(i, i + 10);
+    const inserted = await Promise.all(chunk.map((item) => createQuestion(db, item)));
+    for (const q of inserted) {
+      if (q) created.push(normalizeQuestion(q));
+    }
+  }
+  return created;
+}
+
 const json = (body: unknown, init?: ResponseInit) => withCors(Response.json(body, init));
 
-const readJson = async (req: Request) => {
+const readJson = async (req: Request): Promise<any> => {
   const contentType = req.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) return null;
   try {
@@ -544,7 +713,7 @@ export default {
         });
 
         return json({ success: true, url: `/api/media/${encodeURIComponent(key)}` }, { status: 201 });
-      } catch (err) {
+      } catch (err: any) {
         return json({ error: 'Upload failed', details: err.message }, { status: 500 });
       }
     }
@@ -1736,7 +1905,68 @@ export default {
           };
           
           const createdQuestion = await createQuestion(env.DB, newQuestion);
-          return json({ success: true, data: createdQuestion }, { status: 201 });
+          invalidateQuestionCache();
+          return json({ success: true, data: normalizeQuestion(createdQuestion) }, { status: 201 });
+        }
+
+        // /api/questions/bulk (Admin Bulk Create)
+        if (url.pathname === "/api/questions/bulk" && request.method === "POST") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+
+          const body: any = await readJson(request);
+          const items = Array.isArray(body) ? body : Array.isArray(body?.questions) ? body.questions : null;
+          if (!items || items.length === 0) {
+            return json({ success: false, message: "questions array is required" }, { status: 400 });
+          }
+
+          const created = await bulkInsertQuestions(env.DB, items);
+          invalidateQuestionCache();
+          return json({ success: true, count: created.length, data: created }, { status: 201 });
+        }
+
+        // /api/questions/import (Admin Import JSON or CSV)
+        if (url.pathname === "/api/questions/import" && request.method === "POST") {
+          const auth = await requireAdmin(request, env);
+          if ("error" in auth) return auth.error;
+
+          const contentType = request.headers.get("content-type") || "";
+          let items: any[] | null = null;
+
+          if (contentType.includes("multipart/form-data")) {
+            const formData = await request.formData();
+            const file = formData.get("file");
+            if (!file || typeof file === "string") {
+              return json({ success: false, message: "No file provided" }, { status: 400 });
+            }
+            const lowerName = (file.name || "").toLowerCase();
+            if (lowerName.endsWith(".json")) {
+              try {
+                const parsed = JSON.parse(await file.text());
+                items = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.questions) ? parsed.questions : null;
+              } catch {
+                return json({ success: false, message: "Invalid JSON file" }, { status: 400 });
+              }
+            } else if (lowerName.endsWith(".csv")) {
+              items = parseCsvQuestions(await file.text());
+            } else {
+              return json(
+                { success: false, message: "Supported file formats: .csv or .json" },
+                { status: 400 }
+              );
+            }
+          } else {
+            const body: any = await readJson(request);
+            items = Array.isArray(body) ? body : Array.isArray(body?.questions) ? body.questions : null;
+          }
+
+          if (!items || items.length === 0) {
+            return json({ success: false, message: "No valid questions found to import" }, { status: 400 });
+          }
+
+          const created = await bulkInsertQuestions(env.DB, items);
+          invalidateQuestionCache();
+          return json({ success: true, count: created.length, data: created }, { status: 201 });
         }
 
         // /api/questions/:id (Update)
@@ -1754,6 +1984,7 @@ export default {
           
           const updateData = { ...body, updated_at: new Date().toISOString() };
           const updated = await updateQuestion(env.DB, qIdMatch[1], updateData);
+          invalidateQuestionCache(qIdMatch[1]);
           return json({ success: true, data: normalizeQuestion(updated) });
         }
 
@@ -1768,6 +1999,7 @@ export default {
           if (!doc) return json({ success: false, message: "Question not found" }, { status: 404 });
           
           await deleteQuestion(env.DB, qIdMatch[1]);
+          invalidateQuestionCache(qIdMatch[1]);
           return json({ success: true, message: "Question deleted" });
         }
 
@@ -1826,6 +2058,7 @@ if (url.pathname === "/api/admin/reports" && request.method === "GET") {
         if (url.pathname === "/api/admin/exam-sets" && request.method === "POST") {
           const body = await request.json();
           const result = await createExamSet(env.DB, body);
+          invalidateQuestionCache();
           return json({ success: true, data: result }, { status: 201 });
         }
         if (url.pathname.startsWith("/api/admin/exam-sets/")) {
@@ -1833,10 +2066,12 @@ if (url.pathname === "/api/admin/reports" && request.method === "GET") {
           if (request.method === "PUT") {
             const body = await request.json();
             const result = await updateExamSet(env.DB, setId, body);
+            invalidateQuestionCache();
             return json({ success: true, data: result });
           }
           if (request.method === "DELETE") {
             await deleteExamSet(env.DB, setId);
+            invalidateQuestionCache();
             return json({ success: true });
           }
         }
@@ -1951,7 +2186,14 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
           
           const userQs = await adminListUserQuestions(env.DB, 500);
-          return json({ success: true, data: userQs });
+          return json({
+            success: true,
+            data: userQs.map((q: any) => ({
+              ...normalizeQuestion(q),
+              user_display_name: q?.user_display_name,
+              user_email: q?.user_email,
+            })),
+          });
         }
 
         // /api/admin/user-questions/:id (Update)
@@ -1965,7 +2207,16 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           if (!body) return json({ success: false, message: "invalid_body" }, { status: 400 });
           
           const updated = await adminUpdateUserQuestion(env.DB, adminUqIdMatch[1], body);
-          return json({ success: true, data: updated });
+          if (!updated) return json({ success: false, message: "Not found" }, { status: 404 });
+          invalidateQuestionCache(adminUqIdMatch[1]);
+          return json({
+            success: true,
+            data: {
+              ...normalizeQuestion(updated),
+              user_display_name: (updated as any)?.user_display_name,
+              user_email: (updated as any)?.user_email,
+            },
+          });
         }
 
         // /api/admin/user-questions/:id (Delete)
@@ -1976,6 +2227,7 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           if (!userDoc || userDoc.role !== "admin") return json({ success: false, message: "Forbidden: Admin access required" }, { status: 403 });
           
           await adminDeleteUserQuestion(env.DB, adminUqIdMatch[1]);
+          invalidateQuestionCache(adminUqIdMatch[1]);
           return json({ success: true, message: "Deleted" });
         }
 
@@ -3050,15 +3302,54 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
         if (url.pathname === "/api/users/profile" && request.method === "PUT") {
             const auth = await requireAuthUserId(request, env);
             if ("error" in auth) return auth.error;
-            const body = await readJson(request) as any;
-            if (!body || !body.username) return json({ success: false, message: "Username is required" }, { status: 400 });
-            
-            const updates = {
-                display_name: String(body.username).trim(),
+
+            const contentType = request.headers.get("content-type") || "";
+            const updates: Record<string, any> = {
                 updated_at: new Date().toISOString()
             };
+
+            if (contentType.includes("multipart/form-data")) {
+                const formData = await request.formData();
+                const nameRaw = formData.get("display_name") ?? formData.get("username");
+                if (typeof nameRaw === "string" && nameRaw.trim()) {
+                    updates.display_name = nameRaw.trim();
+                }
+
+                const avatarFile = formData.get("avatar");
+                if (avatarFile && typeof avatarFile !== "string") {
+                    if (!env.BUCKET) {
+                        return json({ success: false, error: "R2 bucket not configured" }, { status: 500 });
+                    }
+                    const fileName = avatarFile.name || "avatar.png";
+                    const ext = fileName.includes(".") ? (fileName.split(".").pop() || "png").toLowerCase() : "png";
+                    const key = `uploads/avatars/${auth.userId}-${Date.now()}.${ext}`;
+                    await env.BUCKET.put(key, await avatarFile.arrayBuffer(), {
+                        httpMetadata: { contentType: avatarFile.type || "image/png" }
+                    });
+                    updates.avatar = `/api/media/${encodeURIComponent(key)}`;
+                }
+
+                if (updates.display_name === undefined && updates.avatar === undefined) {
+                    return json({ success: false, message: "No profile updates provided" }, { status: 400 });
+                }
+            } else {
+                const body = await readJson(request) as any;
+                const rawName = body?.display_name ?? body?.username;
+                if (typeof rawName === "string" && rawName.trim()) {
+                    updates.display_name = rawName.trim();
+                }
+                if (typeof body?.avatar === "string" && body.avatar.trim()) {
+                    updates.avatar = body.avatar.trim();
+                }
+
+                if (updates.display_name === undefined && updates.avatar === undefined) {
+                    return json({ success: false, message: "Username or avatar is required" }, { status: 400 });
+                }
+            }
+
             await updateUser(env.DB, auth.userId, updates);
-            
+            delete globalCache[`u_${auth.userId}`];
+
             const updatedUser = await getUserById(env.DB, auth.userId);
             return json({ success: true, data: sanitizeUser(updatedUser) });
         }
@@ -3547,6 +3838,76 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           }
         }
 
+        if (url.pathname === "/api/payments/upload-slip" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+          if (!env.BUCKET) return json({ success: false, error: "R2 bucket not configured" }, { status: 500 });
+
+          try {
+            const formData = await request.formData();
+            const slip = formData.get("slip");
+            const transactionId = String(formData.get("transaction_id") || "").trim();
+
+            if (!slip || typeof slip === "string") {
+              return json({ success: false, message: "Slip file is required" }, { status: 400 });
+            }
+            if (!transactionId) {
+              return json({ success: false, message: "transaction_id is required" }, { status: 400 });
+            }
+
+            const existingTx = await env.DB
+              .prepare("SELECT id, user_id, session_id FROM transactions WHERE id = ? LIMIT 1")
+              .bind(transactionId)
+              .first<{ id: string; user_id?: string | null; session_id?: string | null }>();
+
+            if (existingTx?.user_id && String(existingTx.user_id) !== String(auth.userId)) {
+              return json({ success: false, message: "Forbidden" }, { status: 403 });
+            }
+
+            const rawName = slip.name || "slip.png";
+            const ext = rawName.includes(".") ? (rawName.split(".").pop() || "png").toLowerCase() : "png";
+            const key = `uploads/slips/${transactionId}-${Date.now()}.${ext}`;
+            await env.BUCKET.put(key, await slip.arrayBuffer(), {
+              httpMetadata: { contentType: slip.type || "image/png" }
+            });
+
+            const slipUrl = `/api/media/${encodeURIComponent(key)}`;
+            const updatedAt = new Date().toISOString();
+
+            try {
+              await env.DB
+                .prepare("UPDATE transactions SET slip_url = ?, updated_at = ? WHERE id = ?")
+                .bind(slipUrl, updatedAt, transactionId)
+                .run();
+            } catch {
+              try {
+                await env.DB
+                  .prepare("UPDATE transactions SET receipt_url = ?, updated_at = ? WHERE id = ?")
+                  .bind(slipUrl, updatedAt, transactionId)
+                  .run();
+              } catch {
+                let meta: Record<string, any> = {};
+                try {
+                  if (existingTx?.session_id) meta = JSON.parse(String(existingTx.session_id));
+                } catch {}
+                meta.slip_url = slipUrl;
+                await env.DB
+                  .prepare("UPDATE transactions SET session_id = ?, updated_at = ? WHERE id = ?")
+                  .bind(JSON.stringify(meta), updatedAt, transactionId)
+                  .run();
+              }
+            }
+
+            return json({
+              success: true,
+              url: slipUrl,
+              transaction: { id: transactionId, slip_url: slipUrl },
+            });
+          } catch (e: any) {
+            return json({ success: false, message: e.message || "Slip upload failed" }, { status: 500 });
+          }
+        }
+
         const adminPlanMatch = url.pathname.match(/^\/api\/admin\/payments\/plans\/([^\/]+)$/);
         if (adminPlanMatch) {
           const auth = await requireAuthUserId(request, env);
@@ -3949,7 +4310,7 @@ if (url.pathname === "/api/legal/policy") {
             try {
                 const { results } = await env.DB.prepare("SELECT value FROM system_config WHERE key = 'ads_config'").all();
                 if (results.length > 0 && results[0].value) {
-                    return json(JSON.parse(results[0].value));
+                    return json(JSON.parse(String(results[0].value)));
                 }
                 return json({ communityViewCost: 0.1, communityClickCost: 5.0, newsViewCost: 0.15, newsClickCost: 6.0, resultViewCost: 0.2, resultClickCost: 8.0, inFeedFrequency: 10, adSenseBackupId: '', examResultSlotId: '', homeSlotId: '' });
             } catch(e) {
@@ -4478,14 +4839,14 @@ if (url.pathname === "/api/legal/policy") {
         // =======================
 
         if (url.pathname === "/api/bookmarks" && request.method === "GET") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const bookmarks = await listBookmarksByUser(env.DB, auth.userId);
           return json(bookmarks);
         }
 
         if (url.pathname === "/api/bookmarks" && request.method === "POST") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const reqBody = await readJson(request);
           const bm = await createBookmark(env.DB, { user_id: auth.userId, ...reqBody });
@@ -4494,7 +4855,7 @@ if (url.pathname === "/api/legal/policy") {
 
         const bookmarkMatch = url.pathname.match(/^\/api\/bookmarks\/([^\/]+)$/);
         if (bookmarkMatch && request.method === "DELETE") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           await deleteBookmark(env.DB, bookmarkMatch[1]);
           return json({ success: true });
@@ -4505,14 +4866,14 @@ if (url.pathname === "/api/legal/policy") {
         // =======================
 
         if (url.pathname === "/api/business/my-business" && request.method === "GET") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const business = await getBusinessByOwner(env.DB, auth.userId);
           return json(business || { success: false, message: "No business profile" }, { status: business ? 200 : 404 });
         }
 
         if (url.pathname === "/api/business" && request.method === "POST") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const reqBody = await readJson(request);
           const business = await createBusiness(env.DB, { owner_uid: auth.userId, ...reqBody });
@@ -4520,7 +4881,7 @@ if (url.pathname === "/api/legal/policy") {
         }
 
         if (url.pathname === "/api/business" && request.method === "PUT") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const reqBody = await readJson(request);
           const existing = await getBusinessByOwner(env.DB, auth.userId);
@@ -4530,7 +4891,7 @@ if (url.pathname === "/api/legal/policy") {
         }
 
         if (url.pathname === "/api/business/ads" && request.method === "GET") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const existing = await getBusinessByOwner(env.DB, auth.userId);
           if (!existing) return json([]);
@@ -4539,7 +4900,7 @@ if (url.pathname === "/api/legal/policy") {
         }
 
         if (url.pathname === "/api/business/ads" && request.method === "POST") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const existing = await getBusinessByOwner(env.DB, auth.userId);
           if (!existing) return json({ success: false, message: "Business not found" }, { status: 404 });
@@ -4550,21 +4911,21 @@ if (url.pathname === "/api/legal/policy") {
 
         const businessAdMatch = url.pathname.match(/^\/api\/business\/ads\/([^\/]+)$/);
         if (businessAdMatch && request.method === "PUT") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const reqBody = await readJson(request);
           await updateAd(env.DB, businessAdMatch[1], reqBody);
           return json({ success: true });
         }
         if (businessAdMatch && request.method === "DELETE") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           await deleteAd(env.DB, businessAdMatch[1]);
           return json({ success: true });
         }
 
         if (url.pathname === "/api/business/transactions" && request.method === "GET") {
-          const auth = requireAuth(request);
+          const auth = await requireAuthUserId(request, env);
           if ("error" in auth) return auth.error;
           const existing = await getBusinessByOwner(env.DB, auth.userId);
           if (!existing) return json([]);

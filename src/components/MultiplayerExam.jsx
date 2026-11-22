@@ -1,5 +1,15 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Clock, AlertTriangle } from 'lucide-react';
+import {
+    Clock,
+    AlertTriangle,
+    Triangle,
+    Diamond,
+    Circle,
+    Square,
+    Loader2,
+    Sparkles,
+    ArrowLeft
+} from 'lucide-react';
 import ReportModal from './exam/ReportModal';
 import AmbiencePlayer from './exam/AmbiencePlayer';
 import QuestionNote from './exam/QuestionNote';
@@ -27,16 +37,22 @@ const decodeHtml = (html) => {
 
 // Authentic Kahoot! brand colors & chunky shadows
 const choiceStyles = {
-    'A': 'bg-[#e21b3c] hover:bg-[#c91835] shadow-[0_6px_0_#b3152d]', // Triangle (Red)
-    'B': 'bg-[#1368ce] hover:bg-[#105bb5] shadow-[0_6px_0_#0e4e9c]', // Diamond (Blue)
-    'C': 'bg-[#d89e00] hover:bg-[#c28e00] shadow-[0_6px_0_#a87b00]', // Circle (Yellow/Mustard)
-    'D': 'bg-[#26890c] hover:bg-[#20750a] shadow-[0_6px_0_#1a5e08]'  // Square (Green)
+    'A': 'bg-gradient-to-br from-[#e21b3c] to-[#c91835] hover:brightness-110 shadow-[0_6px_0_#9f122a] border border-white/25',
+    'B': 'bg-gradient-to-br from-[#1368ce] to-[#0f54a8] hover:brightness-110 shadow-[0_6px_0_#0b4082] border border-white/25',
+    'C': 'bg-gradient-to-br from-[#e5a600] to-[#c78f00] hover:brightness-110 shadow-[0_6px_0_#9c6f00] border border-white/25',
+    'D': 'bg-gradient-to-br from-[#26890c] to-[#1e6e09] hover:brightness-110 shadow-[0_6px_0_#155106] border border-white/25'
 };
 
-// Helper shapes
+// Helper geometric shape icons
 const ShapeIcon = ({ choice }) => {
-    const numberMap = { 'A': '1', 'B': '2', 'C': '3', 'D': '4' };
-    return <span className="text-white text-3xl font-bold">{numberMap[choice] || choice}</span>;
+    const iconProps = { className: 'w-6 h-6 text-white fill-white/95 drop-shadow-sm', strokeWidth: 2.2 };
+    switch (choice) {
+        case 'A': return <Triangle {...iconProps} />;
+        case 'B': return <Diamond {...iconProps} />;
+        case 'C': return <Circle {...iconProps} />;
+        case 'D': return <Square {...iconProps} />;
+        default: return <span className="text-white text-xl font-black">{choice}</span>;
+    }
 };
 
 const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinish, onPersistFinish, onScoreChange, onProgressChange, timeLimit }, ref) => {
@@ -148,106 +164,155 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
     };
 
     if (!questions || questions.length === 0) return (
-        <div className="fixed inset-0 z-[100] bg-[#46178f] flex flex-col items-center justify-center">
+        <div className="fixed inset-0 z-[100] bg-gradient-to-br from-[#371172] via-[#46178f] to-[#1e1b4b] flex flex-col items-center justify-center p-4">
             <div className="absolute top-0 left-0 right-0 z-50">
                 <HomeNavbar />
             </div>
-            <div className="flex flex-col items-center justify-center h-full">
-                <h2 className="text-3xl font-black text-white animate-pulse mb-8">Loading questions...</h2>
-                <button 
-                    onClick={() => window.location.href = '/lobby'} 
-                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg border-2 border-red-400"
+            <div className="flex flex-col items-center justify-center text-center bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-10 shadow-2xl max-w-md w-full">
+                <div className="w-16 h-16 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center mb-5">
+                    <Loader2 className="w-8 h-8 text-amber-300 animate-spin" />
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white mb-6">กำลังโหลดชุดข้อสอบ...</h2>
+                <button
+                    onClick={() => window.location.href = '/lobby'}
+                    className="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-7 rounded-full shadow-lg border border-rose-300/40 flex items-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 cursor-pointer"
                 >
-                    Exit to Lobby
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>กลับสู่ห้องรวม</span>
                 </button>
             </div>
         </div>
     );
 
     if (isStarting) return (
-        <div className="fixed inset-0 z-[100] bg-[#46178f] flex flex-col items-center justify-center">
+        <div className="fixed inset-0 z-[100] bg-gradient-to-br from-[#371172] via-[#46178f] to-[#1e1b4b] flex flex-col items-center justify-center p-4">
             <div className="absolute top-0 left-0 right-0 z-50">
                 <HomeNavbar />
             </div>
-            <div className="flex flex-col items-center justify-center h-full">
-                <h2 className="text-4xl md:text-6xl font-black text-white mb-8 drop-shadow-lg">Get Ready!</h2>
-                <div className="text-8xl md:text-[10rem] font-black text-yellow-300 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] animate-bounce">
-                    {countdown}
+            <div className="flex flex-col items-center justify-center text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-amber-200 font-extrabold text-sm mb-6">
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <span>เตรียมตัวให้พร้อม</span>
+                </div>
+                <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-8 drop-shadow-lg tracking-tight">
+                    Get Ready!
+                </h2>
+                <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-[2.5rem] bg-white/15 backdrop-blur-xl border-2 border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.45)] flex items-center justify-center animate-bounce">
+                    <span className="text-7xl sm:text-8xl font-black text-amber-300 drop-shadow-[0_6px_16px_rgba(0,0,0,0.5)]">
+                        {countdown}
+                    </span>
                 </div>
             </div>
         </div>
     );
 
     const currentQuestion = questions[currentIndex];
+    const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
 
     return (
         <div className="flex flex-col h-full overflow-hidden w-full max-w-5xl mx-auto font-['Nunito','Sarabun',sans-serif]">
-            {/* Header */}
-            <div className="bg-white/20 backdrop-blur-md rounded-full px-5 py-3 mb-6 shadow-lg border border-white/30 flex justify-between items-center w-full">
-                <div className="text-xl font-black text-white">
-                    ข้อที่ {currentIndex + 1} <span className="opacity-70">/ {questions.length}</span>
+            {/* Header & Progress */}
+            <div className="bg-slate-950/35 backdrop-blur-xl rounded-2xl px-4 sm:px-5 py-3 mb-4 sm:mb-5 shadow-lg border border-white/20 w-full">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                    <div className="flex items-center gap-2.5 text-base sm:text-xl font-black text-white">
+                        <span className="px-3 py-1 rounded-xl bg-white/15 border border-white/20 text-sm sm:text-base">
+                            ข้อที่ {currentIndex + 1} <span className="text-white/75 font-bold">/ {questions.length}</span>
+                        </span>
+                    </div>
+                    <div
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-base sm:text-lg font-black border ${
+                            timeLeft < 300
+                                ? 'bg-rose-500/25 border-rose-400/50 text-rose-200 animate-pulse'
+                                : 'bg-white/15 border-white/20 text-white'
+                        }`}
+                    >
+                        <Clock className="h-5 w-5 shrink-0" />
+                        <span>{formatTime(timeLeft)}</span>
+                    </div>
                 </div>
-                <div className={`flex items-center text-xl font-black ${timeLeft < 300 ? 'text-[#ff6b8a] animate-pulse' : 'text-white'}`}>
-                    <Clock className="mr-2 h-6 w-6" />
-                    {formatTime(timeLeft)}
+                <div className="mt-2.5 h-2 w-full bg-white/15 rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-gradient-to-r from-amber-300 via-yellow-400 to-emerald-400 rounded-full transition-all duration-300"
+                        style={{ width: `${progressPercent}%` }}
+                    />
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto w-full custom-scrollbar pb-4 pr-2">
+            <div className="flex-1 overflow-y-auto w-full custom-scrollbar pb-4 pr-1">
                 {/* Question Area */}
-                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[2rem] p-6 md:p-12 shadow-xl relative w-full mb-6">
-                    {/* Question ID for reference */}
-                    <div className="absolute top-4 left-4 md:top-6 md:left-8 text-white/40 text-xs md:text-sm font-mono font-semibold tracking-wider">
-                        ID: {currentQuestion.id}
-                    </div>
-
-                    <div className="absolute top-4 right-4 flex gap-2">
+                <div className="bg-slate-950/35 backdrop-blur-xl border border-white/25 rounded-3xl p-4 sm:p-7 md:p-9 shadow-2xl relative w-full mb-5">
+                    {/* Non-overlapping Metadata & Actions Header */}
+                    <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-white/15">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white/12 border border-white/15 text-white/85 text-xs font-mono font-bold tracking-wider">
+                            ID: #{currentQuestion.id}
+                        </span>
                         <button
+                            type="button"
                             onClick={() => setShowReportModal(true)}
-                            className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
+                            aria-label="แจ้งปัญหาข้อสอบ"
                             title="แจ้งปัญหา"
+                            className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-amber-200 border border-white/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 cursor-pointer"
                         >
-                            <AlertTriangle className="h-5 w-5" />
+                            <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
                         </button>
                     </div>
 
-                    <h3 className="text-white font-black text-2xl md:text-4xl text-left leading-relaxed mt-4 mb-4 drop-shadow-md" style={{ fontSize: `${1.4 * fontSizeScale}rem` }}>
-                        <div className="whitespace-pre-line" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }} />
-                        <span className="block text-sm text-white/50 font-normal mt-2">
-                            #{currentQuestion.id}
-                        </span>
-                    </h3>
+                    <div
+                        className="text-white font-bold text-left leading-relaxed drop-shadow-sm break-words"
+                        style={{ fontSize: `${1.25 * fontSizeScale}rem` }}
+                    >
+                        <div
+                            className="whitespace-pre-line"
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }}
+                        />
+                    </div>
                     {currentQuestion.question_image && (
-                        <img src={currentQuestion.question_image} alt="Question" className="mt-6 mx-auto max-w-full h-64 object-contain rounded-xl border border-white/20 shadow-lg" />
+                        <img
+                            src={currentQuestion.question_image}
+                            alt="ภาพประกอบโจทย์"
+                            className="mt-5 mx-auto max-w-full max-h-64 object-contain rounded-2xl border border-white/25 shadow-lg bg-white/5"
+                        />
                     )}
 
                     {/* Premium Tools: Question Note */}
                     <PermissionGate requiredTier="premium" type="hide">
-                        <QuestionNote questionId={currentQuestion.id} />
+                        <div className="mt-4">
+                            <QuestionNote questionId={currentQuestion.id} />
+                        </div>
                     </PermissionGate>
                 </div>
 
-                {/* Choices (Kahoot Style 2x2 Grid) */}
-                <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-8">
+                {/* Choices (Kahoot Style 2x2 Grid -> 1-col on mobile) */}
+                <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-5 pb-6">
                     {['A', 'B', 'C', 'D'].map((choice) => {
                         const isSelected = answers[currentQuestion.id] === choice;
+                        const isAnswered = Boolean(answers[currentQuestion.id]);
                         return (
                             <button
                                 key={choice}
+                                type="button"
                                 onClick={() => handleAnswer(choice)}
-                                disabled={answers[currentQuestion.id]}
-                                className={`relative p-6 md:p-8 rounded-[1rem] flex items-center transform transition-all duration-100 active:translate-y-[6px] active:shadow-none
-                                    ${choiceStyles[choice]} 
-                                    ${isSelected ? 'ring-4 ring-white ring-offset-4 ring-offset-[#46178f] scale-[1.02]' : 'hover:brightness-110'}
-                                    ${answers[currentQuestion.id] && !isSelected ? 'opacity-50 grayscale cursor-not-allowed' : ''}
+                                disabled={isAnswered}
+                                className={`relative p-4 sm:p-6 rounded-2xl flex items-center gap-4 text-left transform transition-all duration-150 active:translate-y-[5px] active:shadow-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/80 cursor-pointer
+                                    ${choiceStyles[choice]}
+                                    ${isSelected ? 'ring-4 ring-white ring-offset-2 ring-offset-[#3b1285] scale-[1.01]' : ''}
+                                    ${isAnswered && !isSelected ? 'opacity-50 grayscale cursor-not-allowed' : ''}
                                 `}
                             >
-                                <div className="mr-6 flex-shrink-0">
+                                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shrink-0 shadow-inner">
                                     <ShapeIcon choice={choice} />
                                 </div>
-                                <span className="font-bold text-white text-xl md:text-2xl text-left drop-shadow-sm leading-tight" style={{ fontSize: `${1.2 * fontSizeScale}rem` }}>
-                                    {currentQuestion[`choice_${choice.toLowerCase()}`]}
-                                </span>
+                                <div className="flex-1 min-w-0">
+                                    <span className="inline-block text-[11px] font-black uppercase tracking-wider text-white/80 mb-0.5">
+                                        ตัวเลือก {choice}
+                                    </span>
+                                    <div
+                                        className="font-bold text-white text-base sm:text-xl leading-snug break-words drop-shadow-xs"
+                                        style={{ fontSize: `${1.1 * fontSizeScale}rem` }}
+                                    >
+                                        {currentQuestion[`choice_${choice.toLowerCase()}`]}
+                                    </div>
+                                </div>
                             </button>
                         );
                     })}
@@ -271,7 +336,7 @@ const MultiplayerExam = forwardRef(({ questions, socket, roomId, userId, onFinis
                     />
                 )
             }
-        </div >
+        </div>
     );
 });
 

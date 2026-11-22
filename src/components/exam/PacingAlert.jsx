@@ -1,58 +1,60 @@
 import React, { useEffect } from 'react';
 import useUserRole from '../../hooks/useUserRole';
-import { Timer } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
+import { Timer, AlertTriangle, Zap, Hourglass } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const PacingAlert = ({ timeUsed, totalTime }) => {
     const { isPremium } = useUserRole();
+
+    const notify = (msg, IconComp = Hourglass, accentClass = 'text-amber-400') => {
+        toast(msg, {
+            icon: (
+                <span className="w-7 h-7 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                    <IconComp size={16} className={accentClass} aria-hidden="true" />
+                </span>
+            ),
+            duration: 4000,
+            position: 'top-right',
+            style: {
+                background: 'rgba(15, 23, 42, 0.92)',
+                backdropFilter: 'blur(14px)',
+                color: '#f8fafc',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                borderRadius: '16px',
+                fontFamily: "'Sarabun', 'Nunito', sans-serif",
+                fontWeight: 700,
+                boxShadow: '0 12px 30px rgba(0, 0, 0, 0.35)',
+            },
+        });
+    };
 
     useEffect(() => {
         if (!isPremium) return;
 
         // Logic: Alert every 30 minutes (1800 seconds)
         // Also alert at 50% time used and 90% time used
-
         if (timeUsed > 0) {
             if (timeUsed % 1800 === 0) {
-                notify(`⏱ Checkpoint: You have spent ${timeUsed / 60} minutes.`);
+                notify(`Checkpoint: คุณใช้เวลาไปแล้ว ${timeUsed / 60} นาที`, Timer, 'text-sky-400');
             }
 
-            // prevent division by zero
             if (totalTime > 0) {
-                const percentUsed = (timeUsed / totalTime) * 100;
-                // Use a small range because interval is 1s, exact match might be missed if using floats roughly
-                // But here we check integer seconds updates.
-
-                // Trigger once when passing threshold (needs state to avoid span spam)
-                // Simply relying on exact second match assuming update interval is 1s
-
                 const halfTime = Math.floor(totalTime / 2);
                 const ninetyTime = Math.floor(totalTime * 0.9);
 
                 if (timeUsed === halfTime) {
-                    notify('⚠️ Halfway point! Check your pace.');
+                    notify('ผ่านไปครึ่งทางแล้ว! เช็กจังหวะเวลาของคุณด้วยนะ', AlertTriangle, 'text-amber-400');
                 }
                 if (timeUsed === ninetyTime) {
-                    notify('🚨 10% time remaining! Speed up.');
+                    notify('เหลือเวลาอีก 10%! เร่งมือทำข้อที่เหลือเลย', Zap, 'text-rose-400');
                 }
             }
         }
-
     }, [timeUsed, totalTime, isPremium]);
-
-    const notify = (msg) => toast(msg, {
-        icon: '⏳',
-        duration: 4000,
-        position: 'top-right',
-        style: {
-            background: '#333',
-            color: '#fff',
-        }
-    });
 
     if (!isPremium) return null;
 
-    return <Toaster />;
+    return null;
 };
 
 export default PacingAlert;

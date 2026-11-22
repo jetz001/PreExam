@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
+import { Globe, PenSquare, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // New Components
@@ -117,9 +118,35 @@ const Community = () => {
             <canvas id="cv"></canvas>
 
             {/* PAGE HEADER */}
-            <div className="page-header">
-                <div className="page-title">🌐 Community</div>
-                <button className="new-post-btn" onClick={handleCreatePost}>✏️ โพสต์ใหม่</button>
+            <div className="page-header-wrap">
+                <header className="page-header">
+                    <div className="page-title-group">
+                        <div className="page-title-icon" aria-hidden="true">
+                            <Globe size={24} strokeWidth={2.2} />
+                        </div>
+                        <div className="min-w-0">
+                            <h1 className="page-title">
+                                <span>Community</span>
+                                <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-300/20 text-amber-200 border border-amber-300/35">
+                                    <Sparkles size={11} />
+                                    ชุมชนติวสอบ
+                                </span>
+                            </h1>
+                            <p className="page-subtitle truncate">
+                                แลกเปลี่ยนแนวข้อสอบ ถาม-ตอบ และแบ่งปันประสบการณ์กับเพื่อนติวสอบ
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        className="new-post-btn"
+                        onClick={handleCreatePost}
+                    >
+                        <PenSquare size={17} strokeWidth={2.3} />
+                        <span>โพสต์ใหม่</span>
+                    </button>
+                </header>
             </div>
 
             {/* 3-COL GRID */}
@@ -128,8 +155,8 @@ const Community = () => {
                 <CommunityLeftBar user={user} />
 
                 {/* MIDDLE FEED */}
-                <CommunityFeed 
-                    onThreadSelect={(thread) => setSelectedThread(thread)} 
+                <CommunityFeed
+                    onThreadSelect={(thread) => setSelectedThread(thread)}
                     onBurst={burst}
                 />
 
@@ -138,7 +165,15 @@ const Community = () => {
             </div>
 
             {/* FAB */}
-            <button className="fab" onClick={handleCreatePost}>✏️</button>
+            <button
+                type="button"
+                className="fab lg:hidden"
+                onClick={handleCreatePost}
+                aria-label="สร้างโพสต์ใหม่"
+                title="สร้างโพสต์ใหม่"
+            >
+                <PenSquare size={22} strokeWidth={2.4} />
+            </button>
 
             {/* MODALS */}
             {selectedThread && (

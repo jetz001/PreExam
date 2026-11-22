@@ -1,261 +1,365 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Building2, User, Mail, Phone, Lock, FileText, ArrowRight } from 'lucide-react';
+import {
+  Building2,
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Eye,
+  EyeOff,
+  FileCheck2,
+  ArrowRight,
+  ArrowLeft,
+  AtSign,
+  Hash,
+  Loader2,
+  Sparkles,
+} from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import BrandLogo from '../../components/common/BrandLogo';
 
 const BusinessRegister = () => {
-    const navigate = useNavigate();
-    const [formData, setFormData] = useState({
-        businessName: '',
-        taxId: '',
-        businessHandle: '',
-        contactName: '',
-        phone: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        agreedToTerms: false
-    });
-    const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    businessName: '',
+    taxId: '',
+    businessHandle: '',
+    contactName: '',
+    phone: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    agreedToTerms: false,
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData({
-            ...formData,
-            [name]: type === 'checkbox' ? checked : value
-        });
-    };
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (formData.password !== formData.confirmPassword) {
-            toast.error('Passwords do not match');
-            return;
-        }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
 
-        if (!formData.agreedToTerms) {
-            toast.error('คุณต้องยอมรับข้อตกลงในการสร้างเนื้อหาเพื่อดำเนินการต่อ');
-            return;
-        }
+    if (!formData.agreedToTerms) {
+      toast.error('คุณต้องยอมรับข้อตกลงในการสร้างเนื้อหาเพื่อดำเนินการต่อ');
+      return;
+    }
 
-        setLoading(true);
-        try {
-            // Using the standard register endpoint with sponsor role
-            await api.post('/auth/register', {
-                display_name: formData.contactName, // Map contactName to display_name
-                email: formData.email,
-                password: formData.password,
-                role: 'sponsor',
-                business_name: formData.businessName,
-                tax_id: formData.taxId
-            });
-            toast.success('Registration successful! Please login.');
-            navigate('/auth/business/login');
-        } catch (error) {
-            console.error(error);
-            toast.error(error.response?.data?.message || 'Registration failed');
-        } finally {
-            setLoading(false);
-        }
-    };
+    setLoading(true);
+    try {
+      // Using the standard register endpoint with sponsor role
+      await api.post('/auth/register', {
+        display_name: formData.contactName,
+        email: formData.email,
+        password: formData.password,
+        role: 'sponsor',
+        business_name: formData.businessName,
+        tax_id: formData.taxId,
+      });
+      toast.success('Registration successful! Please login.');
+      navigate('/auth/business/login');
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans text-slate-800">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="flex justify-center text-blue-600 mb-4">
-                    <Building2 size={48} />
-                </div>
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                    Sign up for Business
-                </h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    Create your ad account to reach thousands of students.
-                </p>
-            </div>
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,#4f46e5_0%,#3b0764_50%,#1e1b4b_100%)] px-4 py-10 font-sans text-slate-800 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -left-24 top-12 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-3xl" />
+        <div className="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-indigo-400/20 blur-3xl" />
+      </div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
-                    <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="relative z-10 mx-auto w-full max-w-2xl">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center rounded-full transition-transform duration-200 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+          >
+            <BrandLogo variant="glass" size="sm" badge="BUSINESS" />
+          </Link>
 
-                        <div className="bg-blue-50 p-4 rounded-md mb-6">
-                            <h3 className="text-sm font-semibold text-blue-800 mb-3 flex items-center">
-                                <Building2 size={16} className="mr-2" /> Business Information
-                            </h3>
-                            <div className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700">Business / Brand Name</label>
-                                    <div className="mt-1 relative rounded-md shadow-sm">
-                                        <input
-                                            type="text"
-                                            name="businessName"
-                                            required
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 pr-3 sm:text-sm border-gray-300 rounded-md py-2"
-                                            placeholder="My Awesome Brand"
-                                            value={formData.businessName}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Business Handle (ID)</label>
-                                    <input
-                                        type="text"
-                                        name="businessHandle"
-                                        required
-                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 pr-3 sm:text-sm border-gray-300 rounded-md py-2 mt-1"
-                                        placeholder="@brand"
-                                        value={formData.businessHandle}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Tax ID (Optional)</label>
-                                    <input
-                                        type="text"
-                                        name="taxId"
-                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 pr-3 sm:text-sm border-gray-300 rounded-md py-2 mt-1"
-                                        placeholder="1234567890123"
-                                        value={formData.taxId}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-50 p-4 rounded-md">
-                            <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                                <User size={16} className="mr-2" /> Contact Person
-                            </h3>
-                            <div className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
-                                <div className="col-span-2 sm:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700">Contact Name</label>
-                                    <input
-                                        type="text"
-                                        name="contactName"
-                                        required
-                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 pr-3 sm:text-sm border-gray-300 rounded-md py-2 mt-1"
-                                        value={formData.contactName}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                                <div className="col-span-2 sm:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        required
-                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 pr-3 sm:text-sm border-gray-300 rounded-md py-2 mt-1"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700">Email Address (Username)</label>
-                                    <div className="mt-1 relative rounded-md shadow-sm">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Mail className="h-5 w-5 text-gray-400" />
-                                        </div>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            required
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2"
-                                            placeholder="you@company.com"
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="col-span-2 sm:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700">Password</label>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        required
-                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 pr-3 sm:text-sm border-gray-300 rounded-md py-2 mt-1"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                                <div className="col-span-2 sm:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
-                                    <input
-                                        type="password"
-                                        name="confirmPassword"
-                                        required
-                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 pr-3 sm:text-sm border-gray-300 rounded-md py-2 mt-1"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start">
-                            <div className="flex items-center h-5">
-                                <input
-                                    id="agreedToTerms"
-                                    name="agreedToTerms"
-                                    type="checkbox"
-                                    required
-                                    checked={formData.agreedToTerms}
-                                    onChange={handleChange}
-                                    className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded cursor-pointer"
-                                />
-                            </div>
-                            <div className="ml-3 text-sm">
-                                <label htmlFor="agreedToTerms" className="font-medium text-gray-700 cursor-pointer">
-                                    ข้าพเจ้ายอมรับข้อตกลงในการเป็นผู้สร้างเนื้อหา (Creator Agreement)
-                                </label>
-                                <p className="text-gray-500 text-xs mt-1">
-                                    ข้าพเจ้ายอมรับว่าจะเป็นผู้ดูแลและรับผิดชอบต่อเนื้อหาทั้งหมดที่เกิดขึ้นในเพจแต่เพียงผู้เดียว และจะไม่นำเนื้อหาที่ละเมิดลิขสิทธิ์หรือผิดกฎหมายมาเผยแพร่
-                                </p>
-                            </div>
-                        </div>
-
-
-                        <div>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors"
-                            >
-                                {loading ? 'Registering...' : 'Create Business Account'}
-                            </button>
-                        </div>
-                    </form>
-
-                    <div className="mt-6">
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-300" />
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-white text-gray-500">
-                                    Already have an account?
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 grid grid-cols-1 gap-3">
-                            <Link
-                                to="/auth/business/login"
-                                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                            >
-                                Sign in
-                            </Link>
-                        </div>
-                        <div className="mt-4 text-center">
-                            <Link to="/" className="text-sm text-blue-600 hover:text-blue-500">
-                                Back to Platform Home
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </div>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white backdrop-blur-md transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+          >
+            <ArrowLeft size={14} />
+            Back to Platform Home
+          </Link>
         </div>
-    );
+
+        <div className="rounded-[2rem] border border-white/25 bg-white/95 p-6 shadow-[0_24px_80px_rgba(13,6,41,0.45)] backdrop-blur-xl sm:p-9">
+          <div className="mb-7 text-center">
+            <div className="mx-auto mb-3 inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider text-indigo-700">
+              <Sparkles size={13} />
+              Sponsor & Educator Portal
+            </div>
+            <h1
+              className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl"
+              style={{ fontFamily: "'Nunito', 'Sarabun', sans-serif" }}
+            >
+              Sign up for Business
+            </h1>
+            <p className="mt-1.5 text-sm font-medium text-slate-600">
+              Create your sponsor account to publish lessons, manage ads, and reach thousands of learners.
+            </p>
+          </div>
+
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Business Information Section */}
+            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 sm:p-5">
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-extrabold text-indigo-950">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white">
+                  <Building2 size={15} />
+                </span>
+                Business Information
+              </h2>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label htmlFor="businessName" className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm">
+                    Business / Brand Name
+                  </label>
+                  <div className="relative">
+                    <Building2 size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      id="businessName"
+                      type="text"
+                      name="businessName"
+                      required
+                      className="block w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder="My Awesome Brand"
+                      value={formData.businessName}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="businessHandle" className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm">
+                    Business Handle (ID)
+                  </label>
+                  <div className="relative">
+                    <AtSign size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      id="businessHandle"
+                      type="text"
+                      name="businessHandle"
+                      required
+                      className="block w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder="brand_handle"
+                      value={formData.businessHandle}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="taxId" className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm">
+                    Tax ID (Optional)
+                  </label>
+                  <div className="relative">
+                    <Hash size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      id="taxId"
+                      type="text"
+                      name="taxId"
+                      className="block w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder="1234567890123"
+                      value={formData.taxId}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Person Section */}
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5">
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-extrabold text-slate-900">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-800 text-white">
+                  <User size={15} />
+                </span>
+                Contact Person & Account
+              </h2>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="contactName" className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm">
+                    Contact Name
+                  </label>
+                  <div className="relative">
+                    <User size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      id="contactName"
+                      type="text"
+                      name="contactName"
+                      required
+                      className="block w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder="ชื่อผู้ติดต่อ"
+                      value={formData.contactName}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="phone" className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm">
+                    Phone Number
+                  </label>
+                  <div className="relative">
+                    <Phone size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      id="phone"
+                      type="tel"
+                      name="phone"
+                      required
+                      className="block w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder="08X-XXX-XXXX"
+                      value={formData.phone}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label htmlFor="email" className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm">
+                    Email Address (Username)
+                  </label>
+                  <div className="relative">
+                    <Mail size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      id="email"
+                      type="email"
+                      name="email"
+                      required
+                      className="block w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder="you@company.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="password" className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      required
+                      className="block w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-10 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={handleChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="mb-1.5 block text-xs font-bold text-slate-700 sm:text-sm">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <Lock size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      id="confirmPassword"
+                      type={showPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      required
+                      className="block w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder="••••••••"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Creator Agreement */}
+            <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <input
+                id="agreedToTerms"
+                name="agreedToTerms"
+                type="checkbox"
+                required
+                checked={formData.agreedToTerms}
+                onChange={handleChange}
+                className="mt-0.5 h-4 w-4 cursor-pointer rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
+              />
+              <div className="text-sm">
+                <label htmlFor="agreedToTerms" className="flex cursor-pointer items-center gap-1.5 font-bold text-slate-800">
+                  <FileCheck2 size={15} className="text-indigo-600" />
+                  ข้าพเจ้ายอมรับข้อตกลงในการเป็นผู้สร้างเนื้อหา (Creator Agreement)
+                </label>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                  ข้าพเจ้ายอมรับว่าจะเป็นผู้ดูแลและรับผิดชอบต่อเนื้อหาทั้งหมดที่เกิดขึ้นในเพจแต่เพียงผู้เดียว และจะไม่นำเนื้อหาที่ละเมิดลิขสิทธิ์หรือผิดกฎหมายมาเผยแพร่
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_30px_rgba(79,70,229,0.3)] transition-all duration-200 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                <>
+                  Create Business Account
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-7 border-t border-slate-200 pt-6">
+            <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+              <span className="text-sm font-medium text-slate-600">Already have an account?</span>
+              <Link
+                to="/auth/business/login"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-5 py-2.5 text-sm font-bold text-slate-800 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 sm:w-auto"
+              >
+                Sign in
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default BusinessRegister;

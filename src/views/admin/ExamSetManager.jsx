@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Layers, Plus, Edit2, Trash2, HelpCircle, X } from 'lucide-react';
+import { Layers, Plus, Edit2, Trash2, HelpCircle, X, Sparkles, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminApi from '../../services/adminApi';
 
@@ -18,6 +18,22 @@ const ExamSetManager = () => {
         time_limit_minutes: 0,
         total_questions: 100
     });
+
+    useEffect(() => {
+        if (!isCreateModalOpen && !isEditModalOpen && !isNoteOpen) return undefined;
+        const onKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                if (isNoteOpen) {
+                    setIsNoteOpen(false);
+                } else {
+                    setIsCreateModalOpen(false);
+                    setIsEditModalOpen(false);
+                }
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isCreateModalOpen, isEditModalOpen, isNoteOpen]);
 
     const { data: setsResponse, isLoading } = useQuery({
         queryKey: ['adminExamSets'],
@@ -41,7 +57,14 @@ const ExamSetManager = () => {
         onSuccess: () => {
             toast.success('Exam Set created successfully!');
             setIsCreateModalOpen(false);
-            setFormData({ name: '', description: '', is_korpor_format: false, education_level: 'bachelor', time_limit_minutes: 0 });
+            setFormData({
+                name: '',
+                description: '',
+                is_korpor_format: false,
+                education_level: 'bachelor',
+                time_limit_minutes: 0,
+                total_questions: 100
+            });
             queryClient.invalidateQueries(['adminExamSets']);
         },
         onError: (error) => toast.error(error.response?.data?.message || 'Failed to create exam set')
@@ -79,7 +102,7 @@ const ExamSetManager = () => {
         let eng = 0;
         const counts = formData.rules?.catalog_counts || {};
         const catalogs = formData.rules?.catalogs || [];
-        catalogs.forEach(catalog => {
+        catalogs.forEach((catalog) => {
             const c = parseInt(counts[catalog]) || 0;
             const lower = catalog.toLowerCase();
             if (/[a-z]/.test(lower) || lower.includes('english') || lower.includes('อังกฤษ')) {
@@ -96,50 +119,50 @@ const ExamSetManager = () => {
 
     const handleAutoFillKorPor63 = () => {
         const templateConfigs = [
-            { name: "อนุกรม", keywords: ["อนุกรม"], target: 5 },
-            { name: "เลขทั่วไป", keywords: ["เลขทั่วไป", "คณิต", "สมการ", "ระยะทาง", "ความเร็ว", "พื้นที่", "ปริมาตร", "กำไร", "ขาดทุน", "ร้อยละ", "เปอร์เซ็นต์", "ห.ร.ม.", "ค.ร.น."], target: 5 },
-            { name: "ตาราง", keywords: ["ตาราง", "ข้อมูล"], target: 5 },
-            { name: "เงื่อนไขสัญลักษณ์", keywords: ["เงื่อนไขสัญลักษณ์", "สัญลักษณ์"], target: 10 },
-            { name: "เงื่อนไขภาษา", keywords: ["เงื่อนไขภาษา"], target: 5 },
-            { name: "เรียงประโยค", keywords: ["เรียงประโยค", "เรียงลำดับ"], target: 5 },
-            { name: "สรุปความ", keywords: ["สรุปความ", "จับใจความ", "อนุมาน", "สอดคล้อง"], target: 10 },
-            { name: "อุปมาอุปไมย", keywords: ["อุปมาอุปไมย", "อุปมา"], target: 5 },
-            { name: "พ.ร.บ.บริหารราชการแผ่นดิน", keywords: ["บริหารราชการแผ่นดิน"], target: 6 },
-            { name: "พ.ร.ฎ.กิจการบ้านเมืองที่ดี", keywords: ["บ้านเมืองที่ดี"], target: 6 },
-            { name: "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง", keywords: ["ทางปกครอง", "วิธีปฏิบัติราชการ"], target: 6 },
-            { name: "พ.ร.บ.มาตรฐานทางจริยธรรม", keywords: ["จริยธรรม"], target: 3 },
-            { name: "พ.ร.บ.ความรับผิดทางละเมิดฯ", keywords: ["ละเมิด"], target: 2 },
-            { name: "ป.อาญา ความผิดต่อตำแหน่งหน้าที่", keywords: ["อาญา", "ตำแหน่งหน้าที่"], target: 2 },
-            { name: "CONVERSATION", keywords: ["conversation"], target: 5 },
-            { name: "VOCABULARY", keywords: ["vocabulary", "vocab"], target: 5 },
-            { name: "STRUCTURE", keywords: ["structure", "grammar", "speech"], target: 5 },
-            { name: "READING", keywords: ["reading", "comprehension"], target: 10 }
+            { name: 'อนุกรม', keywords: ['อนุกรม'], target: 5 },
+            {
+                name: 'เลขทั่วไป',
+                keywords: ['เลขทั่วไป', 'คณิต', 'สมการ', 'ระยะทาง', 'ความเร็ว', 'พื้นที่', 'ปริมาตร', 'กำไร', 'ขาดทุน', 'ร้อยละ', 'เปอร์เซ็นต์', 'ห.ร.ม.', 'ค.ร.น.'],
+                target: 5
+            },
+            { name: 'ตาราง', keywords: ['ตาราง', 'ข้อมูล'], target: 5 },
+            { name: 'เงื่อนไขสัญลักษณ์', keywords: ['เงื่อนไขสัญลักษณ์', 'สัญลักษณ์'], target: 10 },
+            { name: 'เงื่อนไขภาษา', keywords: ['เงื่อนไขภาษา'], target: 5 },
+            { name: 'เรียงประโยค', keywords: ['เรียงประโยค', 'เรียงลำดับ'], target: 5 },
+            { name: 'สรุปความ', keywords: ['สรุปความ', 'จับใจความ', 'อนุมาน', 'สอดคล้อง'], target: 10 },
+            { name: 'อุปมาอุปไมย', keywords: ['อุปมาอุปไมย', 'อุปมา'], target: 5 },
+            { name: 'พ.ร.บ.บริหารราชการแผ่นดิน', keywords: ['บริหารราชการแผ่นดิน'], target: 6 },
+            { name: 'พ.ร.ฎ.กิจการบ้านเมืองที่ดี', keywords: ['บ้านเมืองที่ดี'], target: 6 },
+            { name: 'พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง', keywords: ['ทางปกครอง', 'วิธีปฏิบัติราชการ'], target: 6 },
+            { name: 'พ.ร.บ.มาตรฐานทางจริยธรรม', keywords: ['จริยธรรม'], target: 3 },
+            { name: 'พ.ร.บ.ความรับผิดทางละเมิดฯ', keywords: ['ละเมิด'], target: 2 },
+            { name: 'ป.อาญา ความผิดต่อตำแหน่งหน้าที่', keywords: ['อาญา', 'ตำแหน่งหน้าที่'], target: 2 },
+            { name: 'CONVERSATION', keywords: ['conversation'], target: 5 },
+            { name: 'VOCABULARY', keywords: ['vocabulary', 'vocab'], target: 5 },
+            { name: 'STRUCTURE', keywords: ['structure', 'grammar', 'speech'], target: 5 },
+            { name: 'READING', keywords: ['reading', 'comprehension'], target: 10 }
         ];
 
         const newCounts = {};
-        let actualTotal = 0;
         let newCatalogs = [];
         const usedCatalogs = new Set();
 
-        templateConfigs.forEach(config => {
+        templateConfigs.forEach((config) => {
             let remainingTarget = config.target;
-            
-            // Find all DB catalogs that match any keyword for this config
-            const matchedCatalogs = Object.keys(catalogCounts).filter(cat => {
+
+            const matchedCatalogs = Object.keys(catalogCounts).filter((cat) => {
                 if (usedCatalogs.has(cat)) return false;
                 const catLower = cat.toLowerCase();
-                return config.keywords.some(kw => catLower.includes(kw.toLowerCase()));
+                return config.keywords.some((kw) => catLower.includes(kw.toLowerCase()));
             });
 
-            // For each matched catalog, pull as many questions as we need
-            matchedCatalogs.forEach(cat => {
+            matchedCatalogs.forEach((cat) => {
                 if (remainingTarget <= 0) return;
-                
+
                 const available = catalogCounts[cat] || 0;
                 if (available > 0) {
                     const take = Math.min(remainingTarget, available);
                     newCounts[cat] = take;
-                    actualTotal += take;
                     remainingTarget -= take;
                     newCatalogs.push(cat);
                     usedCatalogs.add(cat);
@@ -147,7 +170,7 @@ const ExamSetManager = () => {
             });
         });
 
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             time_limit_minutes: 180,
             total_questions: 100,
@@ -157,13 +180,13 @@ const ExamSetManager = () => {
                 catalog_counts: newCounts
             }
         }));
-        toast.success("ดึงรูปแบบอัตโนมัติ เรียบร้อยแล้ว (เฉพาะข้อที่มี)");
+        toast.success('ดึงรูปแบบอัตโนมัติ เรียบร้อยแล้ว (เฉพาะข้อที่มี)');
     };
 
     const handleCatalogToggle = (catalog) => {
-        setFormData(prev => {
+        setFormData((prev) => {
             const newCatalogs = prev.rules?.catalogs?.includes(catalog)
-                ? prev.rules.catalogs.filter(c => c !== catalog)
+                ? prev.rules.catalogs.filter((c) => c !== catalog)
                 : [...(prev.rules?.catalogs || []), catalog];
             return { ...prev, rules: { ...(prev.rules || {}), catalogs: newCatalogs } };
         });
@@ -173,7 +196,7 @@ const ExamSetManager = () => {
         const numCount = parseInt(count) || 0;
         const available = catalogCounts[catalog] || 0;
         const safeCount = Math.max(0, Math.min(numCount, available));
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             rules: {
                 ...(prev.rules || {}),
@@ -212,170 +235,283 @@ const ExamSetManager = () => {
         }
     };
 
+    const isSaving = createMutation.isPending || createMutation.isLoading || updateMutation.isPending || updateMutation.isLoading;
+
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center">
-                        <Layers className="w-8 h-8 mr-3 text-blue-600" />
-                        Exam Set Manager
-                    </h1>
-                    <p className="text-slate-500 mt-2">Manage exam sets, Kor Por formatting, and grouped questions.</p>
+        <div className="space-y-6">
+            {/* Executive Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
+                        <Layers size={24} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                            จัดชุดข้อสอบ (Exam Set Manager)
+                        </h1>
+                        <p className="text-sm text-slate-500 mt-0.5">
+                            Manage exam sets, Kor Por formatting, and grouped question blueprints
+                        </p>
+                    </div>
                 </div>
                 <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm font-medium flex items-center"
+                    type="button"
+                    onClick={() => {
+                        setFormData({
+                            name: '',
+                            description: '',
+                            is_korpor_format: false,
+                            education_level: 'bachelor',
+                            time_limit_minutes: 0,
+                            total_questions: 100,
+                            rules: { catalogs: [], catalog_counts: {} }
+                        });
+                        setIsCreateModalOpen(true);
+                    }}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl shadow-md shadow-indigo-500/20 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 >
-                    <Plus size={16} className="mr-2" />
-                    Create Set
+                    <Plus size={17} />
+                    <span>Create Set</span>
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200">
-                            <th className="p-4 text-sm font-semibold text-slate-600">Name</th>
-                            <th className="p-4 text-sm font-semibold text-slate-600">Description</th>
-                            <th className="p-4 text-sm font-semibold text-slate-600">Kor Por Format</th>
-                            <th className="p-4 text-sm font-semibold text-slate-600">Level</th>
-                            <th className="p-4 text-sm font-semibold text-slate-600 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                        {isLoading ? (
-                            <tr><td colSpan="5" className="p-8 text-center text-slate-500">Loading...</td></tr>
-                        ) : sets.length === 0 ? (
-                            <tr><td colSpan="5" className="p-8 text-center text-slate-500">No exam sets found.</td></tr>
-                        ) : (
-                            sets.map((set) => (
-                                <tr key={set.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="p-4 font-medium text-slate-900">{set.name}</td>
-                                    <td className="p-4 text-slate-500 text-sm">{set.description || '-'}</td>
-                                    <td className="p-4">
-                                        {set.is_korpor_format ? (
-                                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Yes</span>
-                                        ) : (
-                                            <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">No</span>
-                                        )}
-                                    </td>
-                                    <td className="p-4 text-slate-500 text-sm">{set.education_level || '-'}</td>
-                                    <td className="p-4 text-right">
-                                        <button onClick={() => openEditModal(set)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg mr-2">
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button onClick={() => handleDelete(set.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
-                                            <Trash2 size={16} />
-                                        </button>
+            {/* Table */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-sm text-slate-600">
+                        <thead className="bg-slate-50/90 border-b border-slate-200/80 text-xs uppercase tracking-wider text-slate-700">
+                            <tr>
+                                <th className="px-6 py-4 font-bold">Name</th>
+                                <th className="px-6 py-4 font-bold">Description</th>
+                                <th className="px-6 py-4 font-bold">Kor Por Format</th>
+                                <th className="px-6 py-4 font-bold">Level</th>
+                                <th className="px-6 py-4 font-bold text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan="5" className="p-10 text-center text-slate-500">
+                                        <div className="inline-flex items-center gap-2 font-medium">
+                                            <Loader2 size={18} className="animate-spin text-indigo-600" />
+                                            Loading exam sets...
+                                        </div>
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                            ) : sets.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="p-10 text-center text-slate-500 font-medium">
+                                        No exam sets found.
+                                    </td>
+                                </tr>
+                            ) : (
+                                sets.map((set) => (
+                                    <tr key={set.id} className="hover:bg-indigo-50/30 transition-colors">
+                                        <td className="px-6 py-4 font-bold text-slate-900">{set.name}</td>
+                                        <td className="px-6 py-4 text-slate-600 text-sm">{set.description || '-'}</td>
+                                        <td className="px-6 py-4">
+                                            {set.is_korpor_format ? (
+                                                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-full">
+                                                    Yes (ก.พ.)
+                                                </span>
+                                            ) : (
+                                                <span className="px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold rounded-full">
+                                                    No
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 text-sm capitalize">
+                                            {set.education_level || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                                            <button
+                                                type="button"
+                                                onClick={() => openEditModal(set)}
+                                                aria-label={`แก้ไขชุดข้อสอบ ${set.name}`}
+                                                title="แก้ไขชุดข้อสอบ"
+                                                className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl border border-indigo-200/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDelete(set.id)}
+                                                aria-label={`ลบชุดข้อสอบ ${set.name}`}
+                                                title="ลบชุดข้อสอบ"
+                                                className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-200/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            {/* Modals */}
+            {/* Create / Edit Modal */}
             {(isCreateModalOpen || isEditModalOpen) && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="p-6 border-b border-slate-200">
-                            <h2 className="text-xl font-bold text-slate-900">{isEditModalOpen ? 'Edit Exam Set' : 'Create Exam Set'}</h2>
+                <div
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                    onClick={() => {
+                        setIsCreateModalOpen(false);
+                        setIsEditModalOpen(false);
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-6 border-b border-slate-200/80 bg-slate-50/80 flex items-center justify-between sticky top-0 z-10">
+                            <h2 className="text-xl font-bold text-slate-900">
+                                {isEditModalOpen ? 'Edit Exam Set' : 'Create Exam Set'}
+                            </h2>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsCreateModalOpen(false);
+                                    setIsEditModalOpen(false);
+                                }}
+                                aria-label="ปิดหน้าต่าง"
+                                className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
+
                         <form onSubmit={isEditModalOpen ? handleUpdate : handleCreate} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Set Name (e.g. ก.พ. 67)</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                    Set Name (e.g. ก.พ. 67)
+                                </label>
                                 <input
                                     required
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-slate-900 text-sm"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                    Description
+                                </label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    rows="2"
+                                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-slate-900 text-sm"
                                 />
                             </div>
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2.5">
                                 <input
                                     type="checkbox"
                                     id="is_korpor"
                                     checked={formData.is_korpor_format}
-                                    onChange={(e) => setFormData({ ...formData, is_korpor_format: e.target.checked })}
-                                    className="rounded text-blue-600 focus:ring-blue-500"
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, is_korpor_format: e.target.checked })
+                                    }
+                                    className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500"
                                 />
-                                <label htmlFor="is_korpor" className="text-sm font-medium text-slate-700">Enable Kor Por Result Format</label>
+                                <label htmlFor="is_korpor" className="text-sm font-semibold text-slate-700 cursor-pointer">
+                                    Enable Kor Por Result Format
+                                </label>
                             </div>
                             {formData.is_korpor_format && (
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Education Level (For passing criteria)</label>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                        Education Level (For passing criteria)
+                                    </label>
                                     <select
                                         value={formData.education_level}
                                         onChange={(e) => setFormData({ ...formData, education_level: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-slate-900 text-sm"
                                     >
                                         <option value="bachelor">ปวช./ปวส./ปริญญาตรี (60%)</option>
                                         <option value="master">ปริญญาโท (65%)</option>
                                     </select>
                                 </div>
                             )}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Total Questions Goal (เป้าหมายจำนวนข้อรวม)</label>
-                                <input
-                                    type="number"
-                                    value={formData.total_questions || ''}
-                                    onChange={(e) => setFormData({ ...formData, total_questions: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    min="1"
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                        Total Questions Goal (เป้าหมายจำนวนข้อรวม)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={formData.total_questions || ''}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                total_questions: parseInt(e.target.value) || 0
+                                            })
+                                        }
+                                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-slate-900 text-sm"
+                                        min="1"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                        Time Limit (นาที, 0 = 1 นาที/ข้อ)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={formData.time_limit_minutes || 0}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                time_limit_minutes: parseInt(e.target.value) || 0
+                                            })
+                                        }
+                                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-slate-900 text-sm"
+                                        min="0"
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Time Limit (เวลาเป็นนาที, 0 = ค่าเริ่มต้น 1 นาที/ข้อ)</label>
-                                <input
-                                    type="number"
-                                    value={formData.time_limit_minutes || 0}
-                                    onChange={(e) => setFormData({ ...formData, time_limit_minutes: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    min="0"
-                                />
-                            </div>
-                            <div className="border-t border-slate-200 pt-4 mt-4">
-                                <div className="flex justify-between items-center mb-2">
-                                    <div className="flex items-center space-x-2">
-                                        <label className="block text-sm font-medium text-slate-700">หมวดหมู่ข้อสอบ (Catalogs)</label>
-                                        <button 
+
+                            <div className="border-t border-slate-200/80 pt-4 mt-2">
+                                <div className="flex flex-wrap justify-between items-center gap-2 mb-2.5">
+                                    <div className="flex items-center gap-2">
+                                        <label className="block text-sm font-semibold text-slate-700">
+                                            หมวดหมู่ข้อสอบ (Catalogs)
+                                        </label>
+                                        <button
                                             type="button"
                                             onClick={() => setIsNoteOpen(true)}
-                                            className="flex items-center px-2 py-1 bg-slate-100 text-slate-600 rounded-md hover:bg-slate-200 transition-colors text-xs font-medium"
+                                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-xs font-semibold"
                                         >
-                                            <HelpCircle size={14} className="mr-1" />
-                                            สัดส่วนข้อสอบ ก.พ.
+                                            <HelpCircle size={14} />
+                                            <span>สัดส่วนข้อสอบ ก.พ.</span>
                                         </button>
                                     </div>
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={handleAutoFillKorPor63}
-                                        className="text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg hover:bg-purple-200 font-medium transition-colors"
+                                        className="inline-flex items-center gap-1.5 text-xs bg-violet-100 text-violet-800 border border-violet-200 px-3 py-1.5 rounded-xl hover:bg-violet-200 font-semibold transition-colors"
                                     >
-                                        ✨ เลือกข้ออัตโนมัติ
+                                        <Sparkles size={14} />
+                                        <span>เลือกข้ออัตโนมัติ</span>
                                     </button>
                                 </div>
-                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
-                                    {Array.from(new Set([...uniqueCatalogs, ...(formData.rules?.catalogs || [])])).map(catalog => (
+
+                                <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 max-h-60 overflow-y-auto space-y-2">
+                                    {Array.from(
+                                        new Set([...uniqueCatalogs, ...(formData.rules?.catalogs || [])])
+                                    ).map((catalog) => (
                                         <div key={catalog} className="flex items-center space-x-3">
                                             <input
                                                 type="checkbox"
                                                 id={`catalog-${catalog}`}
-                                                checked={formData.rules?.catalogs?.includes(catalog)}
+                                                checked={Boolean(formData.rules?.catalogs?.includes(catalog))}
                                                 onChange={() => handleCatalogToggle(catalog)}
-                                                className="rounded text-blue-600 focus:ring-blue-500"
+                                                className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500"
                                             />
-                                            <label htmlFor={`catalog-${catalog}`} className="text-sm font-medium text-slate-700 flex-1">
+                                            <label
+                                                htmlFor={`catalog-${catalog}`}
+                                                className="text-sm font-medium text-slate-700 flex-1"
+                                            >
                                                 {catalog}{' '}
                                                 <button
                                                     type="button"
@@ -389,7 +525,7 @@ const ExamSetManager = () => {
                                                             handleCatalogCountChange(catalog, count);
                                                         }
                                                     }}
-                                                    className="text-blue-500 hover:text-blue-700 font-medium hover:underline px-1 rounded transition-colors cursor-pointer"
+                                                    className="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline px-1 rounded transition-colors cursor-pointer"
                                                     title={`เลือกทั้งหมด ${catalogCounts[catalog] || 0} ข้อ`}
                                                 >
                                                     ({catalogCounts[catalog] || 0})
@@ -401,7 +537,7 @@ const ExamSetManager = () => {
                                                     placeholder="จำนวนข้อ"
                                                     value={formData.rules?.catalog_counts?.[catalog] || ''}
                                                     onChange={(e) => handleCatalogCountChange(catalog, e.target.value)}
-                                                    className="w-24 px-2 py-1 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                                                    className="w-24 px-2.5 py-1 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-slate-900 bg-white"
                                                     min="1"
                                                     max={catalogCounts[catalog] || 0}
                                                 />
@@ -409,123 +545,172 @@ const ExamSetManager = () => {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="mt-2 text-sm font-medium">
+
+                                <div className="mt-2.5 text-sm font-semibold">
                                     {difference > 0 ? (
-                                        <span className="text-amber-600 flex items-center">จำนวนข้อที่เลือกยังขาดอีก {difference} ข้อ (รวม {totalSelectedQuestions}/{formData.total_questions})</span>
+                                        <span className="text-amber-700 flex items-center">
+                                            จำนวนข้อที่เลือกยังขาดอีก {difference} ข้อ (รวม {totalSelectedQuestions}/{formData.total_questions})
+                                        </span>
                                     ) : difference < 0 ? (
-                                        <span className="text-red-600 flex items-center">จำนวนข้อที่เลือกเกินมา {Math.abs(difference)} ข้อ (รวม {totalSelectedQuestions}/{formData.total_questions})</span>
+                                        <span className="text-rose-600 flex items-center">
+                                            จำนวนข้อที่เลือกเกินมา {Math.abs(difference)} ข้อ (รวม {totalSelectedQuestions}/{formData.total_questions})
+                                        </span>
                                     ) : formData.total_questions > 0 ? (
-                                        <span className="text-green-600 flex items-center">จำนวนข้อที่เลือกครบถ้วนพอดี (รวม {totalSelectedQuestions}/{formData.total_questions})</span>
+                                        <span className="text-emerald-700 flex items-center">
+                                            จำนวนข้อที่เลือกครบถ้วนพอดี (รวม {totalSelectedQuestions}/{formData.total_questions})
+                                        </span>
                                     ) : null}
                                 </div>
+
                                 {formData.is_korpor_format && (
-                                    <div className="mt-4 p-3 bg-blue-50/50 border border-blue-100 rounded-lg text-sm">
-                                        <div className="font-semibold text-blue-800 mb-2">สรุปตามหมวด ก.พ. (เป้าหมาย 100 ข้อ)</div>
-                                        <div className="grid grid-cols-3 gap-2">
+                                    <div className="mt-4 p-4 bg-indigo-50/70 border border-indigo-200/70 rounded-xl text-sm">
+                                        <div className="font-bold text-indigo-900 mb-2">
+                                            สรุปตามหมวด ก.พ. (เป้าหมาย 100 ข้อ)
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-3">
                                             <div>
-                                                <div className="text-slate-500 text-xs">คณิตฯ + ภาษาไทย</div>
-                                                <div className={`font-medium ${korPorSummary.mathThai === 50 ? 'text-green-600' : 'text-slate-700'}`}>{korPorSummary.mathThai}/50 ข้อ</div>
+                                                <div className="text-slate-600 text-xs">คณิตฯ + ภาษาไทย</div>
+                                                <div
+                                                    className={`font-bold ${
+                                                        korPorSummary.mathThai === 50
+                                                            ? 'text-emerald-700'
+                                                            : 'text-slate-800'
+                                                    }`}
+                                                >
+                                                    {korPorSummary.mathThai}/50 ข้อ
+                                                </div>
                                             </div>
                                             <div>
-                                                <div className="text-slate-500 text-xs">กฎหมาย</div>
-                                                <div className={`font-medium ${korPorSummary.law === 25 ? 'text-green-600' : 'text-slate-700'}`}>{korPorSummary.law}/25 ข้อ</div>
+                                                <div className="text-slate-600 text-xs">กฎหมาย</div>
+                                                <div
+                                                    className={`font-bold ${
+                                                        korPorSummary.law === 25 ? 'text-emerald-700' : 'text-slate-800'
+                                                    }`}
+                                                >
+                                                    {korPorSummary.law}/25 ข้อ
+                                                </div>
                                             </div>
                                             <div>
-                                                <div className="text-slate-500 text-xs">ภาษาอังกฤษ</div>
-                                                <div className={`font-medium ${korPorSummary.eng === 25 ? 'text-green-600' : 'text-slate-700'}`}>{korPorSummary.eng}/25 ข้อ</div>
+                                                <div className="text-slate-600 text-xs">ภาษาอังกฤษ</div>
+                                                <div
+                                                    className={`font-bold ${
+                                                        korPorSummary.eng === 25 ? 'text-emerald-700' : 'text-slate-800'
+                                                    }`}
+                                                >
+                                                    {korPorSummary.eng}/25 ข้อ
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 )}
                             </div>
-                            <div className="pt-4 flex justify-end space-x-3">
+
+                            <div className="pt-4 flex justify-end gap-2.5 border-t border-slate-100">
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setIsCreateModalOpen(false);
                                         setIsEditModalOpen(false);
                                     }}
-                                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                    className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    disabled={isSaving}
+                                    className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl shadow-sm transition-all disabled:opacity-50"
                                 >
-                                    {isEditModalOpen ? 'Save Changes' : 'Create'}
+                                    {isSaving && <Loader2 size={15} className="animate-spin" />}
+                                    <span>{isEditModalOpen ? 'Save Changes' : 'Create'}</span>
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
-            {/* Note Modal */}
+
+            {/* Kor Por Proportions Note Modal */}
             {isNoteOpen && (
-                <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
-                            <h3 className="text-xl font-bold text-slate-800 flex items-center">
-                                <HelpCircle size={20} className="mr-2 text-blue-600" />
+                <div
+                    className="fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm"
+                    onClick={() => setIsNoteOpen(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between p-6 border-b border-slate-200/80 sticky top-0 bg-white z-10">
+                            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <HelpCircle size={20} className="text-indigo-600" />
                                 สัดส่วนข้อสอบ ก.พ.
                             </h3>
-                            <button onClick={() => setIsNoteOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors">
-                                <X size={24} />
+                            <button
+                                type="button"
+                                onClick={() => setIsNoteOpen(false)}
+                                aria-label="ปิดหน้าต่างสัดส่วนข้อสอบ"
+                                className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            >
+                                <X size={22} />
                             </button>
                         </div>
                         <div className="p-6">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* Column 1: Math + Thai */}
                                 <div className="space-y-4">
-                                    <div className="border-b-2 border-slate-800 pb-2">
-                                        <h4 className="font-semibold text-slate-800">คณิตศาสตร์ + ภาษาไทย</h4>
+                                    <div className="border-b-2 border-indigo-600 pb-2">
+                                        <h4 className="font-bold text-slate-900">คณิตศาสตร์ + ภาษาไทย</h4>
                                         <p className="text-sm text-slate-500">50 ข้อ</p>
                                     </div>
                                     <ul className="space-y-2 text-sm text-slate-600">
-                                        <li className="flex justify-between"><span>อนุกรม</span> <span className="font-medium text-slate-900">5</span></li>
-                                        <li className="flex justify-between"><span>เลขทั่วไป</span> <span className="font-medium text-slate-900">5</span></li>
-                                        <li className="flex justify-between"><span>ตาราง</span> <span className="font-medium text-slate-900">5</span></li>
-                                        <li className="flex justify-between"><span>เงื่อนไขสัญลักษณ์</span> <span className="font-medium text-slate-900">10</span></li>
-                                        <li className="flex justify-between"><span>เงื่อนไขภาษา</span> <span className="font-medium text-slate-900">5</span></li>
-                                        <li className="flex justify-between"><span>เรียงประโยค</span> <span className="font-medium text-slate-900">5</span></li>
-                                        <li className="flex justify-between"><span>สรุปความ</span> <span className="font-medium text-slate-900">10</span></li>
-                                        <li className="flex justify-between"><span>อุปมาอุปไมย</span> <span className="font-medium text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>อนุกรม</span> <span className="font-semibold text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>เลขทั่วไป</span> <span className="font-semibold text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>ตาราง</span> <span className="font-semibold text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>เงื่อนไขสัญลักษณ์</span> <span className="font-semibold text-slate-900">10</span></li>
+                                        <li className="flex justify-between"><span>เงื่อนไขภาษา</span> <span className="font-semibold text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>เรียงประโยค</span> <span className="font-semibold text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>สรุปความ</span> <span className="font-semibold text-slate-900">10</span></li>
+                                        <li className="flex justify-between"><span>อุปมาอุปไมย</span> <span className="font-semibold text-slate-900">5</span></li>
                                     </ul>
                                 </div>
 
                                 {/* Column 2: Law */}
                                 <div className="space-y-4">
-                                    <div className="border-b-2 border-slate-800 pb-2">
-                                        <h4 className="font-semibold text-slate-800">กฎหมาย</h4>
+                                    <div className="border-b-2 border-violet-600 pb-2">
+                                        <h4 className="font-bold text-slate-900">กฎหมาย</h4>
                                         <p className="text-sm text-slate-500">25 ข้อ</p>
                                     </div>
                                     <ul className="space-y-2 text-sm text-slate-600">
-                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.บ.บริหารราชการแผ่นดิน</span> <span className="font-medium text-slate-900 shrink-0">6</span></li>
-                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.ฎ.กิจการบ้านเมืองที่ดี</span> <span className="font-medium text-slate-900 shrink-0">6</span></li>
-                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง</span> <span className="font-medium text-slate-900 shrink-0">6</span></li>
-                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.บ.มาตรฐานทางจริยธรรม</span> <span className="font-medium text-slate-900 shrink-0">3</span></li>
-                                        <li className="flex justify-between gap-2"><span className="truncate" title="พ.ร.บ.ความรับผิดทางละเมิดของเจ้าหน้าที่">พ.ร.บ.ความรับผิดทางละเมิดฯ</span> <span className="font-medium text-slate-900 shrink-0">2</span></li>
-                                        <li className="flex justify-between gap-2"><span className="truncate" title="ประมวลกฎหมายอาญาความผิดต่อตำแหน่งหน้าที่ราชการ">ป.อาญา ความผิดต่อตำแหน่งหน้าที่</span> <span className="font-medium text-slate-900 shrink-0">2</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.บ.บริหารราชการแผ่นดิน</span> <span className="font-semibold text-slate-900 shrink-0">6</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.ฎ.กิจการบ้านเมืองที่ดี</span> <span className="font-semibold text-slate-900 shrink-0">6</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง</span> <span className="font-semibold text-slate-900 shrink-0">6</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate">พ.ร.บ.มาตรฐานทางจริยธรรม</span> <span className="font-semibold text-slate-900 shrink-0">3</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate" title="พ.ร.บ.ความรับผิดทางละเมิดของเจ้าหน้าที่">พ.ร.บ.ความรับผิดทางละเมิดฯ</span> <span className="font-semibold text-slate-900 shrink-0">2</span></li>
+                                        <li className="flex justify-between gap-2"><span className="truncate" title="ประมวลกฎหมายอาญาความผิดต่อตำแหน่งหน้าที่ราชการ">ป.อาญา ความผิดต่อตำแหน่งหน้าที่</span> <span className="font-semibold text-slate-900 shrink-0">2</span></li>
                                     </ul>
                                 </div>
 
                                 {/* Column 3: English */}
                                 <div className="space-y-4">
-                                    <div className="border-b-2 border-slate-800 pb-2">
-                                        <h4 className="font-semibold text-slate-800">ภาษาอังกฤษ</h4>
+                                    <div className="border-b-2 border-amber-500 pb-2">
+                                        <h4 className="font-bold text-slate-900">ภาษาอังกฤษ</h4>
                                         <p className="text-sm text-slate-500">25 ข้อ</p>
                                     </div>
                                     <ul className="space-y-2 text-sm text-slate-600">
-                                        <li className="flex justify-between"><span>CONVERSATION</span> <span className="font-medium text-slate-900">5</span></li>
-                                        <li className="flex justify-between"><span>VOCABULARY</span> <span className="font-medium text-slate-900">5</span></li>
-                                        <li className="flex justify-between"><span>STRUCTURE</span> <span className="font-medium text-slate-900">5</span></li>
-                                        <li className="flex justify-between"><span>READING</span> <span className="font-medium text-slate-900">10</span></li>
+                                        <li className="flex justify-between"><span>CONVERSATION</span> <span className="font-semibold text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>VOCABULARY</span> <span className="font-semibold text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>STRUCTURE</span> <span className="font-semibold text-slate-900">5</span></li>
+                                        <li className="flex justify-between"><span>READING</span> <span className="font-semibold text-slate-900">10</span></li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
                         <div className="p-6 border-t border-slate-100 flex justify-end">
-                            <button onClick={() => setIsNoteOpen(false)} className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                            <button
+                                type="button"
+                                onClick={() => setIsNoteOpen(false)}
+                                className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold rounded-xl transition-all"
+                            >
                                 ปิด
                             </button>
                         </div>

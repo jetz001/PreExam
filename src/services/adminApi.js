@@ -1,4 +1,89 @@
+import * as XLSX from 'xlsx';
 import api from './api';
+
+const pickExcelField = (normalizedRow, candidates) => {
+    for (const candidate of candidates) {
+        const key = candidate.toLowerCase();
+        if (normalizedRow[key] !== undefined && normalizedRow[key] !== null && String(normalizedRow[key]).trim() !== '') {
+            return String(normalizedRow[key]).trim();
+        }
+    }
+    return '';
+};
+
+const normalizeImportedAnswer = (rawAnswer) => {
+    const val = String(rawAnswer || '').trim();
+    if (!val) return 'A';
+    const thaiMap = { ก: 'A', ข: 'B', ค: 'C', ง: 'D' };
+    if (thaiMap[val]) return thaiMap[val];
+    const cleaned = val.replace(/^option\s*/i, '').replace(/^choice\s*/i, '').trim().toUpperCase();
+    if (['A', 'B', 'C', 'D'].includes(cleaned)) return cleaned;
+    const firstChar = cleaned.charAt(0);
+    if (['A', 'B', 'C', 'D'].includes(firstChar)) return firstChar;
+    return 'A';
+};
+
+const parseSpreadsheetRows = async (file) => {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) return [];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+    return rawRows
+        .map((row) => {
+            const normalizedRow = {};
+            for (const [key, value] of Object.entries(row)) {
+                normalizedRow[String(key).trim().toLowerCase()] = value;
+            }
+
+            const questionText = pickExcelField(normalizedRow, [
+                'question_text',
+                'question text',
+                'question',
+                'โจทย์',
+                'คำถาม',
+                'q'
+            ]);
+            if (!questionText) return null;
+
+            const choiceA = pickExcelField(normalizedRow, ['choice_a', 'option a', 'option_a', 'choice a', 'a', 'ก', 'ตัวเลือก a']);
+            const choiceB = pickExcelField(normalizedRow, ['choice_b', 'option b', 'option_b', 'choice b', 'b', 'ข', 'ตัวเลือก b']);
+            const choiceC = pickExcelField(normalizedRow, ['choice_c', 'option c', 'option_c', 'choice c', 'c', 'ค', 'ตัวเลือก c']);
+            const choiceD = pickExcelField(normalizedRow, ['choice_d', 'option d', 'option_d', 'choice d', 'd', 'ง', 'ตัวเลือก d']);
+            const correctAnswer = normalizeImportedAnswer(
+                pickExcelField(normalizedRow, ['correct_answer', 'correct answer', 'answer', 'ans', 'เฉลย', 'คำตอบ'])
+            );
+            const subject = pickExcelField(normalizedRow, ['subject', 'วิชา']) || 'General';
+            const rawCatalogs = pickExcelField(normalizedRow, ['catalogs', 'category', 'หมวดหมู่', 'tags', 'tag']);
+            const catalogs = rawCatalogs
+                ? rawCatalogs.split(',').map((s) => s.trim()).filter(Boolean)
+                : [];
+            const explanation = pickExcelField(normalizedRow, ['explanation', 'คำอธิบาย', 'อธิบาย', 'เฉลยละเอียด']);
+            const examYear = pickExcelField(normalizedRow, ['exam_year', 'exam year', 'ปี', 'year']);
+            const examSet = pickExcelField(normalizedRow, ['exam_set', 'exam set', 'ชุดข้อสอบ', 'set']);
+            const skill = pickExcelField(normalizedRow, ['skill', 'ทักษะ']);
+
+            return {
+                question_text: questionText,
+                choices: { A: choiceA, B: choiceB, C: choiceC, D: choiceD },
+                choice_a: choiceA,
+                choice_b: choiceB,
+                choice_c: choiceC,
+                choice_d: choiceD,
+                correct_answer: correctAnswer,
+                subject,
+                catalogs,
+                category: catalogs[0] || '',
+                explanation,
+                exam_year: examYear || null,
+                exam_set: examSet || null,
+                skill: skill || null
+            };
+        })
+        .filter(Boolean);
+};
 
 const adminApi = {
     getExamSets: async () => { const response = await api.get('/admin/exam-sets'); return response.data; },
@@ -66,6 +151,21 @@ const adminApi = {
         return response.data.data;
     },
     importQuestions: async (formData) => {
+        const file = formData instanceof FormData ? formData.get('file') : formData;
+        if (file && typeof file.arrayBuffer === 'function') {
+            const parsedRows = await parseSpreadsheetRows(file);
+            if (parsedRows.length > 0) {
+                try {
+                    const response = await api.post('/questions/bulk', { questions: parsedRows });
+                    return response.data;
+                } catch (bulkError) {
+                    const status = bulkError?.response?.status;
+                    if (status !== 404 && status !== 405) {
+                        throw bulkError;
+                    }
+                }
+            }
+        }
         const response = await api.post('/questions/import', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });

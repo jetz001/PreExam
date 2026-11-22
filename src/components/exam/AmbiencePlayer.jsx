@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { Volume2, VolumeX, CloudRain, Coffee, Wind } from 'lucide-react';
+import { Volume2, VolumeX, CloudRain, Coffee, Wind, Headphones } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const sounds = [
-    { id: 'rain', name: 'Rain', icon: CloudRain, url: '/assets/sounds/rain.mp3' }, // Assumption: assets exist or will be placeholders
-    { id: 'cafe', name: 'Cafe', icon: Coffee, url: '/assets/sounds/cafe.mp3' },
-    { id: 'wind', name: 'White Noise', icon: Wind, url: '/assets/sounds/whitenoise.mp3' },
+    { id: 'rain', name: 'Rain', label: 'เสียงฝน', icon: CloudRain, url: '/assets/sounds/rain.mp3' },
+    { id: 'cafe', name: 'Cafe', label: 'คาเฟ่', icon: Coffee, url: '/assets/sounds/cafe.mp3' },
+    { id: 'wind', name: 'White Noise', label: 'สายลม', icon: Wind, url: '/assets/sounds/whitenoise.mp3' },
 ];
 
 const AmbiencePlayer = () => {
@@ -25,7 +26,7 @@ const AmbiencePlayer = () => {
                     .catch(error => {
                         console.log("Audio playback failed (likely missing file):", error);
                         setIsPlaying(false);
-                        alert(`Cannot play audio: The file for '${currentSound.name}' is missing.`);
+                        toast.error(`ไม่สามารถเล่นเสียง '${currentSound.name}' ได้ (ไม่พบไฟล์เสียง)`);
                     });
             }
         }
@@ -34,7 +35,6 @@ const AmbiencePlayer = () => {
     const changeSound = (sound) => {
         setCurrentSound(sound);
         if (isPlaying) {
-            // Audio ref src will update on render, just need to play after update
             setTimeout(() => {
                 if (audioRef.current) {
                     audioRef.current.play().catch(e => console.log("Audio switch failed:", e));
@@ -52,44 +52,77 @@ const AmbiencePlayer = () => {
     };
 
     return (
-        <div className="fixed bottom-4 left-4 z-50 bg-white p-3 rounded-xl shadow-lg border border-gray-200 w-64 transition-all transform hover:scale-105">
-            <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-gray-700">Zen Mode</span>
+        <div
+            className={`fixed bottom-20 left-3 sm:left-4 z-50 bg-slate-900/85 backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-white/20 transition-all duration-200 font-['Sarabun','Nunito',sans-serif] ${
+                isPlaying ? 'w-[calc(100vw-24px)] max-w-[260px] p-3.5' : 'px-3 py-2'
+            }`}
+        >
+            <div className={`flex items-center justify-between gap-2.5 ${isPlaying ? 'mb-3' : ''}`}>
+                <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-7 h-7 rounded-xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 border border-indigo-400/35 flex items-center justify-center shrink-0 text-indigo-300 shadow-inner">
+                        <Headphones size={14} aria-hidden="true" />
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-white/95 truncate">Zen Mode</span>
+                </div>
+
                 <button
+                    type="button"
                     onClick={togglePlay}
-                    className={`p-2 rounded-full ${isPlaying ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
+                    aria-label={isPlaying ? 'ปิดเสียงบรรยากาศ' : 'เปิดเสียงบรรยากาศ'}
+                    aria-pressed={isPlaying}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 cursor-pointer shrink-0 ${
+                        isPlaying
+                            ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/35 border border-white/30'
+                            : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white border border-white/15'
+                    }`}
                 >
-                    {isPlaying ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                    {isPlaying ? <Volume2 size={16} aria-hidden="true" /> : <VolumeX size={16} aria-hidden="true" />}
                 </button>
             </div>
 
             {isPlaying && (
-                <div className="space-y-2 animate-fadeIn">
-                    <div className="flex space-x-2 overflow-x-auto pb-1 custom-scrollbar">
-                        {sounds.map((sound) => (
-                            <button
-                                key={sound.id}
-                                onClick={() => changeSound(sound)}
-                                className={`flex flex-col items-center p-2 rounded-lg min-w-[3rem] ${currentSound.id === sound.id ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-gray-50'}`}
-                            >
-                                <sound.icon size={16} />
-                                <span className="text-[10px] mt-1">{sound.name}</span>
-                            </button>
-                        ))}
+                <div className="space-y-3">
+                    <div className="grid grid-cols-3 gap-1.5">
+                        {sounds.map((sound) => {
+                            const active = currentSound.id === sound.id;
+                            const IconComp = sound.icon;
+                            return (
+                                <button
+                                    key={sound.id}
+                                    type="button"
+                                    onClick={() => changeSound(sound)}
+                                    aria-label={`เลือกเสียง ${sound.name}`}
+                                    aria-pressed={active}
+                                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 cursor-pointer ${
+                                        active
+                                            ? 'bg-indigo-500/30 text-indigo-200 border-indigo-400/50 shadow-sm'
+                                            : 'bg-white/5 text-white/75 border-white/10 hover:bg-white/15 hover:text-white'
+                                    }`}
+                                >
+                                    <IconComp size={15} aria-hidden="true" />
+                                    <span className="text-[10px] font-semibold mt-1 truncate max-w-full">{sound.name}</span>
+                                </button>
+                            );
+                        })}
                     </div>
-                    <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={volume}
-                        onChange={handleVolumeChange}
-                        className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                    />
+
+                    <div className="flex items-center gap-2 pt-0.5">
+                        <VolumeX size={12} className="text-white/50 shrink-0" aria-hidden="true" />
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={volume}
+                            onChange={handleVolumeChange}
+                            aria-label="ปรับระดับเสียงบรรยากาศ"
+                            className="w-full h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                        />
+                        <Volume2 size={12} className="text-white/70 shrink-0" aria-hidden="true" />
+                    </div>
                 </div>
             )}
-            {/* Hidden Audio Element */}
-            {/* Note: In a real app, use a real URL. For now, we use a placeholder that might fail 404 but UI works */}
+
             <audio
                 ref={audioRef}
                 src={currentSound.url}

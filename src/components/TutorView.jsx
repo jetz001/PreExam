@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Eye, CheckCircle2 } from 'lucide-react';
+import {
+    ChevronRight,
+    Eye,
+    CheckCircle2,
+    Users,
+    Lightbulb,
+    Triangle,
+    Diamond,
+    Circle,
+    Square,
+    Loader2
+} from 'lucide-react';
 import DOMPurify from 'dompurify';
 
 const decodeHtml = (html) => {
@@ -14,6 +25,17 @@ const decodeHtml = (html) => {
         limit--;
     }
     return decoded;
+};
+
+const ChoiceShape = ({ choice }) => {
+    const props = { className: 'w-5 h-5 sm:w-6 sm:h-6 text-white fill-white/95', strokeWidth: 2.2 };
+    switch (choice) {
+        case 'A': return <Triangle {...props} />;
+        case 'B': return <Diamond {...props} />;
+        case 'C': return <Circle {...props} />;
+        case 'D': return <Square {...props} />;
+        default: return <span className="font-black text-white">{choice}</span>;
+    }
 };
 
 const TutorView = ({ questions, socket, roomId, isHost, currentQuestionIndex, participantCount = 0, answerCounts = {}, onNavigateQuestion, onRevealAnswer }) => {
@@ -43,7 +65,14 @@ const TutorView = ({ questions, socket, roomId, isHost, currentQuestionIndex, pa
         }
     };
 
-    if (!questions || questions.length === 0) return <div className="text-white text-center mt-20 font-bold text-2xl">Loading questions...</div>;
+    if (!questions || questions.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full min-h-[260px] text-white text-center p-6">
+                <Loader2 className="w-10 h-10 animate-spin text-amber-300 mb-3" />
+                <p className="font-bold text-xl">กำลังโหลดชุดข้อสอบ...</p>
+            </div>
+        );
+    }
 
     const currentQuestion = questions[localIndex];
     // Some questions have choices in an object or as choice_a, choice_b.
@@ -54,63 +83,83 @@ const TutorView = ({ questions, socket, roomId, isHost, currentQuestionIndex, pa
         D: currentQuestion.choice_d || currentQuestion.choice_D,
     };
     const choiceColors = {
-        A: 'bg-[#e21b3c] shadow-[0_6px_0_#b3142e]',
-        B: 'bg-[#1368ce] shadow-[0_6px_0_#0e55a3]',
-        C: 'bg-[#d89e00] shadow-[0_6px_0_#a87b00]',
-        D: 'bg-[#26890c] shadow-[0_6px_0_#1d6b0a]'
+        A: 'bg-gradient-to-br from-[#e21b3c] to-[#c91835] shadow-[0_5px_0_#9f122a] border border-white/25',
+        B: 'bg-gradient-to-br from-[#1368ce] to-[#0f54a8] shadow-[0_5px_0_#0b4082] border border-white/25',
+        C: 'bg-gradient-to-br from-[#e5a600] to-[#c78f00] shadow-[0_5px_0_#9c6f00] border border-white/25',
+        D: 'bg-gradient-to-br from-[#26890c] to-[#1e6e09] shadow-[0_5px_0_#155106] border border-white/25'
     };
-    const choiceIcons = { A: '▲', B: '◆', C: '●', D: '■' };
 
     return (
-        <div className="flex flex-col h-full bg-[#f2f2f2] font-sans relative overflow-hidden">
+        <div
+            className="flex flex-col h-full bg-slate-50/95 backdrop-blur-md rounded-2xl border border-white/60 shadow-inner relative overflow-hidden"
+            style={{ fontFamily: "'Sarabun', 'Nunito', sans-serif" }}
+        >
             {/* Header */}
-            <div className="bg-white shadow-md px-6 py-4 flex justify-between items-center z-10 border-b-4 border-gray-200">
-                <div className="text-2xl font-black text-[#333]">
-                    <span className="bg-[#2d0d6b] text-white px-3 py-1 rounded-lg mr-2">{localIndex + 1}</span> 
-                    of {questions.length}
+            <div className="bg-white/95 backdrop-blur-md shadow-xs px-4 sm:px-6 py-3.5 flex flex-wrap justify-between items-center gap-3 z-10 border-b border-slate-200/80">
+                <div className="text-lg sm:text-2xl font-black text-slate-800 flex items-center gap-2">
+                    <span className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-3 py-1 rounded-xl shadow-xs">
+                        {localIndex + 1}
+                    </span>
+                    <span className="text-slate-600 text-base sm:text-lg font-bold">/ {questions.length} ข้อ</span>
                 </div>
-                <div className="flex gap-4 items-center">
-                    <div className="text-lg font-bold text-gray-600 bg-gray-100 px-4 py-2 rounded-xl border-2 border-gray-300">
-                        👥 ผู้เล่นทั้งหมด: <span className="text-[#2d0d6b]">{participantCount}</span>
+                <div className="flex gap-3 items-center">
+                    <div className="text-sm sm:text-base font-bold text-slate-700 bg-indigo-50 px-3.5 py-2 rounded-xl border border-indigo-200/80 flex items-center gap-2">
+                        <Users className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 shrink-0" />
+                        <span>ผู้เล่นทั้งหมด:</span>
+                        <span className="text-indigo-700 font-black">{participantCount}</span>
                     </div>
                 </div>
             </div>
 
             {/* Question Area */}
-            <div className="flex-1 flex flex-col items-center justify-center p-8 z-10 w-full max-w-6xl mx-auto">
-                <div className="bg-white px-8 py-10 w-full rounded-2xl shadow-lg border-b-8 border-gray-300 mb-8 text-left">
-                    <h2 className="text-3xl font-black text-gray-800 leading-relaxed">
+            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center p-4 sm:p-6 md:p-8 z-10 w-full max-w-5xl mx-auto">
+                <div className="bg-white px-5 sm:px-8 py-6 sm:py-8 w-full rounded-2xl sm:rounded-3xl shadow-md border border-slate-200/90 mb-5 sm:mb-7 text-left">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-800 leading-relaxed break-words">
                         <div className="whitespace-pre-line" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text || '')) }} />
                     </h2>
                 </div>
 
                 {currentQuestion.question_image && (
-                    <img src={currentQuestion.question_image} alt="Question" className="mb-8 max-h-[30vh] object-contain rounded-xl shadow-md border-4 border-white" />
+                    <img
+                        src={currentQuestion.question_image}
+                        alt="ภาพประกอบโจทย์"
+                        className="mb-6 max-h-[30vh] object-contain rounded-2xl shadow-md border-4 border-white bg-white"
+                    />
                 )}
 
-                <div className="grid grid-cols-2 gap-4 w-full mt-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 w-full mt-auto">
                     {['A', 'B', 'C', 'D'].map((choice) => {
                         const correctNorm = currentQuestion.correct_answer ? String(currentQuestion.correct_answer).toUpperCase() : '';
                         const isCorrect = correctNorm === choice;
-                        const opacityClass = isAnswerRevealed ? (isCorrect ? 'opacity-100' : 'opacity-30') : 'opacity-100';
+                        const opacityClass = isAnswerRevealed ? (isCorrect ? 'opacity-100 ring-4 ring-emerald-400' : 'opacity-40') : 'opacity-100';
                         const count = answerCounts[choice] || 0;
-                        
+
                         return (
                             <div
                                 key={choice}
-                                className={`${choiceColors[choice]} ${opacityClass} text-white text-left p-6 rounded-xl transition-all duration-300 relative flex flex-col justify-center`}
+                                className={`${choiceColors[choice]} ${opacityClass} text-white text-left p-4 sm:p-5 rounded-2xl transition-all duration-300 relative flex items-center gap-3.5`}
                             >
-                                <div className="flex items-center">
-                                    <span className="text-3xl font-black mr-4 drop-shadow-md">{choiceIcons[choice]}</span>
-                                    <span className="text-2xl font-bold drop-shadow-md flex-1">{choices[choice]}</span>
-                                    {isAnswerRevealed && (
-                                        <div className="bg-black/20 px-4 py-2 rounded-lg ml-4 flex items-center shadow-inner border border-white/10">
-                                            <span className="text-xl font-black">👥 {count}</span>
-                                        </div>
-                                    )}
+                                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/25 flex items-center justify-center shrink-0">
+                                    <ChoiceShape choice={choice} />
                                 </div>
-                                {isAnswerRevealed && isCorrect && (
-                                    <CheckCircle2 className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 text-white drop-shadow-md opacity-100" />
+                                <div className="flex-1 min-w-0">
+                                    <span className="block text-[11px] font-black uppercase tracking-wider text-white/80">
+                                        ตัวเลือก {choice}
+                                    </span>
+                                    <span className="text-base sm:text-xl font-bold drop-shadow-xs break-words block leading-snug">
+                                        {choices[choice]}
+                                    </span>
+                                </div>
+                                {isAnswerRevealed && (
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <div className="bg-black/25 px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/15">
+                                            <Users className="w-4 h-4" />
+                                            <span className="text-sm sm:text-base font-black">{count}</span>
+                                        </div>
+                                        {isCorrect && (
+                                            <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-white drop-shadow-md shrink-0" />
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         );
@@ -118,34 +167,43 @@ const TutorView = ({ questions, socket, roomId, isHost, currentQuestionIndex, pa
                 </div>
 
                 {isAnswerRevealed && currentQuestion.explanation && (
-                    <div className="w-full mt-6 bg-blue-100 border-4 border-blue-400 p-6 rounded-2xl text-blue-900 font-bold animate-in fade-in slide-in-from-bottom-4">
-                        <h4 className="text-xl mb-2 flex items-center gap-2">💡 คำอธิบาย (Explanation)</h4>
-                        <p className="text-lg whitespace-pre-line">{currentQuestion.explanation}</p>
+                    <div className="w-full mt-6 bg-sky-50 border-2 border-sky-300 p-4 sm:p-6 rounded-2xl text-slate-800 shadow-sm animate-in fade-in slide-in-from-bottom-4 text-left">
+                        <h4 className="text-base sm:text-lg font-black mb-1.5 flex items-center gap-2 text-sky-800">
+                            <span className="w-8 h-8 rounded-xl bg-sky-200/80 text-sky-700 flex items-center justify-center shrink-0">
+                                <Lightbulb className="w-4 h-4" strokeWidth={2.5} />
+                            </span>
+                            <span>คำอธิบาย (Explanation)</span>
+                        </h4>
+                        <p className="text-sm sm:text-base font-semibold text-slate-700 whitespace-pre-line leading-relaxed">
+                            {currentQuestion.explanation}
+                        </p>
                     </div>
                 )}
             </div>
 
             {/* Navigation (Host Only) */}
             {isHost && (
-                <div className="bg-white p-6 shadow-lg border-t-4 border-gray-200 z-10 flex justify-between items-center">
-                    <div className="text-gray-500 font-bold">
+                <div className="bg-white/95 backdrop-blur-md px-4 sm:px-6 py-4 shadow-lg border-t border-slate-200/80 z-10 flex flex-wrap justify-between items-center gap-3">
+                    <div className="text-slate-600 font-bold text-sm sm:text-base">
                         คุณคือโฮสต์ผู้ควบคุมเกม
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-3 w-full sm:w-auto justify-end">
                         {!isAnswerRevealed ? (
                             <button
+                                type="button"
                                 onClick={handleRevealAnswer}
-                                className="bg-[#1368ce] text-white px-8 py-4 rounded-xl font-black text-xl shadow-[0_6px_0_#0e55a3] hover:translate-y-1 hover:shadow-[0_2px_0_#0e55a3] transition-all flex items-center gap-2"
+                                className="w-full sm:w-auto bg-gradient-to-r from-[#1368ce] to-[#2563eb] hover:brightness-110 text-white px-6 py-3 rounded-xl font-black text-base sm:text-lg shadow-[0_4px_0_#0e55a3] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer"
                             >
-                                <Eye size={24} /> เฉลยคำตอบ
+                                <Eye size={20} /> เฉลยคำตอบ
                             </button>
                         ) : (
                             <button
+                                type="button"
                                 onClick={handleNext}
                                 disabled={localIndex === questions.length - 1}
-                                className="bg-[#26890c] text-white px-8 py-4 rounded-xl font-black text-xl shadow-[0_6px_0_#1d6b0a] hover:translate-y-1 hover:shadow-[0_2px_0_#1d6b0a] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="w-full sm:w-auto bg-gradient-to-r from-[#26890c] to-[#16a34a] hover:brightness-110 text-white px-6 py-3 rounded-xl font-black text-base sm:text-lg shadow-[0_4px_0_#15803d] active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
                             >
-                                ถัดไป <ChevronRight size={24} />
+                                ถัดไป <ChevronRight size={20} />
                             </button>
                         )}
                     </div>

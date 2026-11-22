@@ -1,6 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, Flag, ChevronLeft, ChevronRight, AlertTriangle, Bookmark, Type, MapPin, Grid, X } from 'lucide-react';
+import {
+    Clock,
+    Flag,
+    ChevronLeft,
+    ChevronRight,
+    AlertTriangle,
+    Bookmark,
+    Type,
+    MapPin,
+    Grid,
+    X,
+    Sunrise,
+    Trees,
+    Building2,
+    Mountain,
+    Compass,
+    Check,
+    CheckCircle2,
+    XCircle,
+    Send,
+} from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { useNavigate } from 'react-router-dom';
 import Lottie from 'lottie-react';
@@ -30,7 +50,6 @@ const JOURNEY_SCENES = [
     {
         id: 'dawn',
         name: 'รุ่งอรุณ',
-        emoji: '🌅',
         lottie: mainSceneBAnimation,
         bgGradient: 'linear-gradient(160deg, #1a0533 0%, #3b0764 40%, #7c2d12 80%, #92400e 100%)',
         overlayTint: 'rgba(120, 40, 20, 0.25)',
@@ -39,7 +58,6 @@ const JOURNEY_SCENES = [
     {
         id: 'forest',
         name: 'ป่าลึก',
-        emoji: '🌲',
         lottie: mainSceneCAnimation,
         bgGradient: 'linear-gradient(160deg, #052e16 0%, #14532d 35%, #166534 70%, #15803d 100%)',
         overlayTint: 'rgba(5, 46, 22, 0.35)',
@@ -48,7 +66,6 @@ const JOURNEY_SCENES = [
     {
         id: 'city',
         name: 'เมืองใหม่',
-        emoji: '🏙️',
         lottie: mainSceneDAnimation,
         bgGradient: 'linear-gradient(160deg, #020617 0%, #0f172a 40%, #1e3a5f 80%, #1e40af 100%)',
         overlayTint: 'rgba(30, 64, 175, 0.2)',
@@ -57,7 +74,6 @@ const JOURNEY_SCENES = [
     {
         id: 'summit',
         name: 'ยอดเขา',
-        emoji: '🏔️',
         lottie: mainSceneBAnimation,
         bgGradient: 'linear-gradient(160deg, #0c0a09 0%, #1c1917 30%, #292524 60%, #44403c 100%)',
         overlayTint: 'rgba(120, 113, 108, 0.2)',
@@ -65,7 +81,15 @@ const JOURNEY_SCENES = [
     },
 ];
 
-// How many questions per scene (dynamically calculated later)
+const SCENE_ICONS = {
+    dawn: Sunrise,
+    forest: Trees,
+    city: Building2,
+    summit: Mountain,
+};
+
+const getSceneIcon = (scene) => SCENE_ICONS[scene?.id] || Compass;
+
 const EXAM_CSS = `
     /* ─── Scene crossfade ─── */
     @keyframes scene-fade-in {
@@ -87,21 +111,6 @@ const EXAM_CSS = `
         0%, 100% { opacity: 0.15; transform: scale(0.7); }
         50%       { opacity: 0.9;  transform: scale(1.4); }
     }
-    @keyframes float-up {
-        0%   { transform: translateY(0) rotate(0deg);   opacity: 0.5; }
-        50%  { transform: translateY(-24px) rotate(8deg); opacity: 0.9; }
-        100% { transform: translateY(0) rotate(0deg);   opacity: 0.5; }
-    }
-
-    /* ─── Question slide ─── */
-    @keyframes q-slide-in {
-        from { opacity: 0; transform: translateY(18px) scale(0.98); }
-        to   { opacity: 1; transform: translateY(0)    scale(1); }
-    }
-    @keyframes choice-pop-in {
-        from { opacity: 0; transform: translateY(22px) scale(0.95); }
-        to   { opacity: 1; transform: translateY(0)    scale(1); }
-    }
 
     /* ─── Ripple ─── */
     @keyframes ripple-out {
@@ -121,43 +130,43 @@ const EXAM_CSS = `
     /* ─── Button press ─── */
     .journey-btn {
         position: relative; overflow: hidden;
-        transition: filter 0.1s ease, transform 0.07s ease;
+        transition: filter 0.14s ease, transform 0.1s ease, box-shadow 0.14s ease;
     }
     .journey-btn:hover:not(:disabled) {
-        filter: brightness(1.15);
+        filter: brightness(1.08);
         transform: translateY(-2px) scale(1.01);
     }
     .journey-btn:active:not(:disabled) {
-        transform: translateY(5px) scale(0.98) !important;
+        transform: translateY(4px) scale(0.985) !important;
         box-shadow: none !important;
-        filter: brightness(0.9);
+        filter: brightness(0.92);
     }
 
     /* ─── Correct / wrong feedback ─── */
     @keyframes feedback-in {
-        from { opacity: 0; transform: scale(0.88) translateY(10px); }
+        from { opacity: 0; transform: scale(0.92) translateY(10px); }
         to   { opacity: 1; transform: scale(1)    translateY(0); }
     }
     @keyframes shake-x {
         0%,100% { transform: translateX(0); }
-        18%  { transform: translateX(-9px); }
-        36%  { transform: translateX(7px); }
-        54%  { transform: translateX(-5px); }
-        72%  { transform: translateX(3px); }
+        18%  { transform: translateX(-8px); }
+        36%  { transform: translateX(6px); }
+        54%  { transform: translateX(-4px); }
+        72%  { transform: translateX(2px); }
     }
     @keyframes correct-pulse {
         0%,100% { box-shadow: 0 0 16px rgba(74,222,128,0.25); }
-        50%      { box-shadow: 0 0 36px rgba(74,222,128,0.55); }
+        50%      { box-shadow: 0 0 34px rgba(74,222,128,0.5); }
     }
     @keyframes wrong-pulse {
         0%,100% { box-shadow: 0 0 16px rgba(248,113,113,0.25); }
-        50%      { box-shadow: 0 0 36px rgba(248,113,113,0.55); }
+        50%      { box-shadow: 0 0 34px rgba(248,113,113,0.5); }
     }
 
     /* ─── Timer ─── */
     @keyframes timer-pulse {
         0%,100% { transform: scale(1); }
-        50%      { transform: scale(1.06); }
+        50%      { transform: scale(1.05); }
     }
 
     /* ─── Progress shimmer ─── */
@@ -172,21 +181,13 @@ const EXAM_CSS = `
         animation: shimmer-move 3s linear infinite;
     }
 
-    /* ─── Milestone badge ─── */
-    @keyframes badge-pop {
-        0%   { transform: scale(0) rotate(-12deg); opacity: 0; }
-        60%  { transform: scale(1.18) rotate(4deg); opacity: 1; }
-        100% { transform: scale(1) rotate(0deg); opacity: 1; }
-    }
-    .milestone-badge { animation: badge-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
-
     /* ─── Number badge ─── */
     .choice-badge {
         min-width: 38px; height: 38px;
         border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        background: rgba(0,0,0,0.22);
-        border: 2px solid rgba(255,255,255,0.38);
+        background: rgba(0,0,0,0.25);
+        border: 2px solid rgba(255,255,255,0.4);
         font-weight: 900; font-size: 1rem;
         color: white; flex-shrink: 0;
         transition: background 0.18s, border-color 0.18s;
@@ -216,12 +217,12 @@ const parseDurationMs = (input, fallback = 900) => {
     return Number.isFinite(parsed) && parsed > 0 ? parsed * 1000 : fallback;
 };
 
-// ─── Choice colors ──────────────────────────────────────────────────────────
+// ─── Choice colors (WCAG AA compliant with white text) ───────────────────────
 const CHOICE_CFG = {
-    A: { bg: '#e21b3c', shadow: '#b3152d', num: 'ก' },
-    B: { bg: '#1368ce', shadow: '#0e4e9c', num: 'ข' },
-    C: { bg: '#d89e00', shadow: '#a87b00', num: 'ค' },
-    D: { bg: '#26890c', shadow: '#1a5e08', num: 'ง' },
+    A: { bg: '#dc1a3a', shadow: '#9f1229', num: 'ก' },
+    B: { bg: '#1368ce', shadow: '#0d4a94', num: 'ข' },
+    C: { bg: '#b45309', shadow: '#78350f', num: 'ค' },
+    D: { bg: '#1f7a09', shadow: '#145306', num: 'ง' },
 };
 
 // ─── BackgroundScene ─────────────────────────────────────────────────────────
@@ -297,7 +298,6 @@ const BackgroundScene = ({ scene, isTransitioning }) => (
 );
 
 // ─── TravelingCharacter ─────────────────────────────────────────────────────
-// Shows the running character sliding across the screen on scene change
 const TravelingCharacter = ({ isRunning, onDone }) => {
     useEffect(() => {
         if (!isRunning) return;
@@ -332,9 +332,9 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState({});
     const [flagged, setFlagged] = useState({});
-    
+
     // Timer calculation
-    const totalTimeSeconds = config?.time_limit_minutes ? config.time_limit_minutes * 60 : questions.length * 60;
+    const totalTimeSeconds = config?.time_limit_minutes ? config.time_limit_minutes * 60 : (questions?.length || 0) * 60;
     const [timeLeft, setTimeLeft] = useState(totalTimeSeconds);
     const [startTime] = useState(Date.now());
     const [showReportModal, setShowReportModal] = useState(false);
@@ -344,8 +344,8 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     const [transientAnimation, setTransientAnimation] = useState(null);
     const [questionKey, setQuestionKey] = useState(0);
     const [ripples, setRipples] = useState({});
-    const [isRunning, setIsRunning] = useState(false);      // character running across
-    const [isTransitioning, setIsTransitioning] = useState(false); // scene fade
+    const [isRunning, setIsRunning] = useState(false);
+    const [isTransitioning, setIsTransitioning] = useState(false);
     const [sceneIdx, setSceneIdx] = useState(0);
     const [showMilestone, setShowMilestone] = useState(null); // null | scene name
     const [showGridModal, setShowGridModal] = useState(false);
@@ -368,6 +368,7 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     }, [runtimeAnimationSettings?.journey_scenes]);
 
     const currentScene = activeScenes[sceneIdx % activeScenes.length];
+    const CurrentSceneIcon = getSceneIcon(currentScene);
 
     // Timer
     useEffect(() => {
@@ -408,18 +409,17 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
         setQuestionKey(k => k + 1);
 
         if (newScene !== oldScene) {
-            // Scene change: character runs, background crossfades
             setIsRunning(true);
             setIsTransitioning(true);
             setTimeout(() => {
                 setSceneIdx(newScene % activeScenes.length);
                 const arrivedAt = activeScenes[newScene % activeScenes.length];
-                setShowMilestone(arrivedAt.emoji + ' ' + arrivedAt.name);
+                setShowMilestone(arrivedAt.name);
                 setTimeout(() => setShowMilestone(null), 2500);
-            }, 800); // character is mid-run when scene swaps
+            }, 800);
             setTimeout(() => setIsTransitioning(false), 1400);
         }
-    }, [currentIndex, activeScenes]);
+    }, [currentIndex, activeScenes, runtimeAnimationSettings?.questions_per_scene]);
 
     const handleRunDone = useCallback(() => setIsRunning(false), []);
 
@@ -489,7 +489,30 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
 
     const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-    const currentQuestion = questions[currentIndex];
+    const currentQuestion = questions?.[currentIndex];
+
+    if (!questions || questions.length === 0 || !currentQuestion) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#2e0d63] via-[#46178f] to-[#5b21b6] font-['Sarabun','Nunito',sans-serif]">
+                <HomeNavbar />
+                <div className="max-w-md w-full bg-white/10 backdrop-blur-xl border border-white/25 rounded-3xl p-8 text-center text-white shadow-2xl">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-amber-300">
+                        <AlertTriangle size={28} aria-hidden="true" />
+                    </div>
+                    <h2 className="text-xl font-extrabold mb-2">ไม่พบข้อสอบในชุดนี้</h2>
+                    <p className="text-sm text-white/80 mb-6">กรุณาลองเลือกหมวดหมู่หรือเงื่อนไขอื่นใหม่อีกครั้ง</p>
+                    <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-2.5 rounded-2xl bg-white text-indigo-950 font-extrabold text-sm hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white cursor-pointer"
+                    >
+                        กลับไปเลือกข้อสอบ
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     const isAnswered = answers[currentQuestion.id];
     const isLastQuestion = currentIndex === questions.length - 1;
     const allAnswered = Object.keys(answers).length === questions.length;
@@ -505,14 +528,7 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
     };
 
     return (
-        <div style={{
-            position: 'relative',
-            minHeight: '100vh',
-            overflow: 'hidden',
-            fontFamily: "'Nunito', 'Sarabun', sans-serif",
-            display: 'flex',
-            flexDirection: 'column',
-        }}>
+        <div className="relative min-h-screen overflow-x-hidden flex flex-col font-['Nunito','Sarabun',sans-serif]">
             <style>{EXAM_CSS}</style>
 
             {/* ── Background Scene (AnimatePresence for crossfade) ── */}
@@ -536,169 +552,172 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -30, scale: 0.85 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                        className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-slate-950/85 backdrop-blur-xl rounded-full px-5 py-2.5 font-black text-sm sm:text-base flex items-center gap-2 whitespace-nowrap shadow-2xl max-w-[calc(100vw-24px)]"
                         style={{
-                            position: 'fixed',
-                            top: 80,
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            zIndex: 100,
-                            background: 'rgba(0,0,0,0.75)',
-                            backdropFilter: 'blur(16px)',
-                            border: `1px solid ${currentScene.accentColor}55`,
-                            borderRadius: 99,
-                            padding: '10px 28px',
+                            border: `1px solid ${currentScene.accentColor}66`,
                             color: currentScene.accentColor,
-                            fontWeight: 900,
-                            fontSize: '1.1rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            boxShadow: `0 4px 24px ${currentScene.accentColor}44`,
-                            whiteSpace: 'nowrap',
+                            boxShadow: `0 6px 26px ${currentScene.accentColor}44`,
                         }}
                     >
-                        <MapPin size={16} /> มาถึง {showMilestone} แล้ว!
+                        <MapPin size={16} aria-hidden="true" />
+                        <CurrentSceneIcon size={16} aria-hidden="true" />
+                        <span>มาถึง {showMilestone} แล้ว!</span>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* ── Navbar ── */}
-            <div style={{ position: 'relative', zIndex: 50 }}>
+            <div className="relative z-50">
                 <HomeNavbar />
             </div>
 
             {/* ── Main content ── */}
-            <div style={{ position: 'relative', zIndex: 10, flexGrow: 1, display: 'flex', flexDirection: 'column', paddingTop: 80, paddingInline: 16, paddingBottom: 110 }}>
+            <div className="relative z-10 flex-1 flex flex-col pt-20 px-3 sm:px-5 pb-28">
 
                 {/* Top bar */}
-                <div style={{ maxWidth: 900, margin: '0 auto', width: '100%', marginBottom: 16 }}>
+                <div className="max-w-[900px] mx-auto w-full mb-4">
                     {/* Progress bar */}
-                    <div style={{ height: 7, background: 'rgba(255,255,255,0.12)', borderRadius: 99, overflow: 'hidden', marginBottom: 10, border: '1px solid rgba(255,255,255,0.15)' }}>
-                        <div className="progress-bar-fill" style={{ height: '100%', width: `${progressPct}%`, borderRadius: 99 }} />
+                    <div
+                        className="h-2 bg-white/15 backdrop-blur-md rounded-full overflow-hidden mb-3 border border-white/20"
+                        role="progressbar"
+                        aria-valuenow={currentIndex + 1}
+                        aria-valuemin={1}
+                        aria-valuemax={questions.length}
+                        aria-label={`ความคืบหน้าข้อสอบ ข้อ ${currentIndex + 1} จาก ${questions.length}`}
+                    >
+                        <div className="progress-bar-fill h-full rounded-full" style={{ width: `${progressPct}%` }} />
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <div className="flex justify-between items-center gap-2 flex-wrap">
                         {/* Question counter + scene */}
-                        <div style={{
-                            background: 'rgba(0,0,0,0.4)',
-                            backdropFilter: 'blur(12px)',
-                            borderRadius: 99,
-                            padding: '6px 18px',
-                            fontWeight: 800,
-                            color: 'white',
-                            fontSize: '0.95rem',
-                            border: `1px solid ${currentScene.accentColor}55`,
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            transition: 'border-color 0.5s',
-                        }}>
-                            <span style={{ color: currentScene.accentColor, transition: 'color 0.5s' }}>{currentScene.emoji}</span>
+                        <div
+                            className="bg-slate-950/55 backdrop-blur-md rounded-full py-1.5 px-3.5 sm:px-4 font-extrabold text-white text-sm sm:text-base flex items-center gap-2 transition-colors shadow-lg"
+                            style={{ border: `1px solid ${currentScene.accentColor}66` }}
+                        >
+                            <span
+                                className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                                style={{
+                                    background: `${currentScene.accentColor}26`,
+                                    color: currentScene.accentColor,
+                                }}
+                            >
+                                <CurrentSceneIcon size={14} aria-hidden="true" />
+                            </span>
                             <span>{currentIndex + 1}</span>
-                            <span style={{ opacity: 0.45 }}>/ {questions.length}</span>
+                            <span className="text-white/60">/ {questions.length}</span>
                         </div>
 
                         {/* Timer */}
                         {mode === 'simulation' && (
-                            <div style={{
-                                background: isTimerUrgent ? 'rgba(185,28,28,0.45)' : 'rgba(0,0,0,0.4)',
-                                backdropFilter: 'blur(12px)',
-                                borderRadius: 99,
-                                padding: '6px 20px',
-                                display: 'flex', alignItems: 'center', gap: 7,
-                                fontWeight: 900, fontSize: '1.1rem',
-                                color: isTimerUrgent ? '#fca5a5' : 'white',
-                                border: `1px solid ${isTimerUrgent ? 'rgba(248,113,113,0.5)' : 'rgba(255,255,255,0.18)'}`,
-                                animation: isTimerUrgent ? 'timer-pulse 1s ease-in-out infinite' : 'none',
-                                letterSpacing: '0.05em',
-                                transition: 'background 0.3s',
-                            }}>
-                                <Clock size={16} />
-                                {formatTime(timeLeft)}
+                            <div
+                                role="timer"
+                                aria-live="off"
+                                className={`backdrop-blur-md rounded-full py-1.5 px-4 flex items-center gap-2 font-black text-base sm:text-lg tracking-wider transition-colors shadow-lg ${
+                                    isTimerUrgent
+                                        ? 'bg-red-800/70 text-red-100 border border-red-300/60'
+                                        : 'bg-slate-950/55 text-white border border-white/20'
+                                }`}
+                                style={{
+                                    animation: isTimerUrgent ? 'timer-pulse 1s ease-in-out infinite' : 'none',
+                                }}
+                            >
+                                <Clock size={16} aria-hidden="true" />
+                                <span>{formatTime(timeLeft)}</span>
                             </div>
                         )}
 
                         {/* Font tool */}
                         <button
+                            type="button"
                             onClick={() => setShowFontMenu(!showFontMenu)}
                             aria-label="ปรับขนาดตัวอักษร"
-                            style={{
-                                background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)',
-                                border: '1px solid rgba(255,255,255,0.18)', borderRadius: '50%',
-                                width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: 'white', cursor: 'pointer',
-                            }}
+                            aria-expanded={showFontMenu}
+                            className={`bg-slate-950/55 hover:bg-slate-900/75 backdrop-blur-md border rounded-full w-10 h-10 flex items-center justify-center text-white cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white shadow-lg ${
+                                showFontMenu ? 'border-indigo-300 bg-indigo-600/50' : 'border-white/25'
+                            }`}
                         >
-                            <Type size={16} />
+                            <Type size={16} aria-hidden="true" />
                         </button>
                     </div>
                 </div>
 
                 {/* Question card */}
-                <div style={{ maxWidth: 900, margin: '0 auto', width: '100%', marginBottom: 18 }}>
+                <div className="max-w-[900px] mx-auto w-full mb-4">
                     <motion.div
                         key={`q-${questionKey}`}
                         initial={{ opacity: 0, y: 16, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                        className="bg-slate-950/55 backdrop-blur-xl rounded-3xl p-4 sm:p-7 shadow-[0_12px_40px_rgba(0,0,0,0.45)] relative transition-colors"
                         style={{
-                            background: 'rgba(0,0,0,0.45)',
-                            backdropFilter: 'blur(24px)',
-                            border: `1px solid ${currentScene.accentColor}33`,
-                            borderRadius: '1.6rem',
-                            padding: '1.8rem 2.2rem',
-                            boxShadow: `0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06)`,
-                            position: 'relative',
-                            transition: 'border-color 0.6s',
+                            border: `1px solid ${currentScene.accentColor}44`,
                         }}
                     >
-                        {/* ID + actions */}
-                        <div style={{ position: 'absolute', top: 12, left: 16, color: 'rgba(255,255,255,0.25)', fontSize: '0.65rem', fontFamily: 'monospace', letterSpacing: '0.1em' }}>
-                            ID: {currentQuestion.id}
-                        </div>
-                        <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 5 }}>
-                            {[
-                                { onClick: toggleFlag, icon: <Flag size={14} fill={flagged[currentQuestion.id] ? 'currentColor' : 'none'} />, active: flagged[currentQuestion.id], activeColor: '#fbbf24' },
-                                { onClick: handleBookmark, icon: <Bookmark size={14} /> },
-                                { onClick: () => setShowReportModal(true), icon: <AlertTriangle size={14} /> },
-                            ].map((btn, i) => (
-                                <button key={i} onClick={btn.onClick} style={{
-                                    background: btn.active ? btn.activeColor : 'rgba(255,255,255,0.12)',
-                                    border: '1px solid rgba(255,255,255,0.18)',
-                                    borderRadius: '50%',
-                                    width: 30, height: 30,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: btn.active ? '#78350f' : 'white',
-                                    cursor: 'pointer', transition: 'all 0.18s',
-                                }}>
-                                    {btn.icon}
+                        {/* ID + actions header */}
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-white/75 text-[11px] font-mono tracking-wider">
+                                ID: {currentQuestion.id}
+                            </span>
+
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={toggleFlag}
+                                    aria-label={flagged[currentQuestion.id] ? 'ยกเลิกปักหมุดข้อนี้' : 'ปักหมุดข้อนี้'}
+                                    aria-pressed={!!flagged[currentQuestion.id]}
+                                    title="ปักหมุดข้อนี้"
+                                    className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+                                        flagged[currentQuestion.id]
+                                            ? 'bg-amber-400 text-amber-950 border-amber-200 shadow-md shadow-amber-400/30'
+                                            : 'bg-white/12 hover:bg-white/22 text-white border-white/20'
+                                    }`}
+                                >
+                                    <Flag size={15} fill={flagged[currentQuestion.id] ? 'currentColor' : 'none'} aria-hidden="true" />
                                 </button>
-                            ))}
+                                <button
+                                    type="button"
+                                    onClick={handleBookmark}
+                                    aria-label="บันทึกข้อสอบ"
+                                    title="บันทึกข้อสอบ"
+                                    className="w-9 h-9 rounded-full flex items-center justify-center bg-white/12 hover:bg-white/22 text-white border border-white/20 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                                >
+                                    <Bookmark size={15} aria-hidden="true" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowReportModal(true)}
+                                    aria-label="แจ้งปัญหาข้อสอบ"
+                                    title="แจ้งปัญหาข้อสอบ"
+                                    className="w-9 h-9 rounded-full flex items-center justify-center bg-white/12 hover:bg-rose-500/35 text-white border border-white/20 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                                >
+                                    <AlertTriangle size={15} aria-hidden="true" />
+                                </button>
+                            </div>
                         </div>
 
                         <div
+                            className="text-white font-extrabold text-left break-words leading-relaxed whitespace-pre-line"
                             style={{
-                                color: 'white', fontWeight: 800,
-                                fontSize: `${1.25 * fontSizeScale}rem`,
-                                lineHeight: 1.65, marginTop: '1.2rem',
+                                fontSize: `${1.2 * fontSizeScale}rem`,
                                 textShadow: '0 2px 12px rgba(0,0,0,0.5)',
-                                whiteSpace: 'pre-line',
                             }}
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.question_text)) }}
                         />
 
                         {currentQuestion.question_image && (
-                            <img
-                                src={currentQuestion.question_image}
-                                alt="Question"
+                            <button
+                                type="button"
                                 onClick={() => setFullScreenImage(currentQuestion.question_image)}
-                                style={{
-                                    marginTop: 14, display: 'block', marginInline: 'auto',
-                                    maxWidth: '100%', maxHeight: 220, objectFit: 'contain',
-                                    borderRadius: 10, cursor: 'pointer',
-                                    border: `1px solid ${currentScene.accentColor}44`,
-                                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-                                    transition: 'transform 0.2s',
-                                }}
-                            />
+                                aria-label="แตะเพื่อขยายรูปภาพข้อสอบ"
+                                className="mt-4 block mx-auto rounded-2xl overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white transition-transform hover:scale-[1.01]"
+                            >
+                                <img
+                                    src={currentQuestion.question_image}
+                                    alt="รูปภาพประกอบข้อสอบ"
+                                    className="max-w-full max-h-56 object-contain rounded-2xl shadow-lg"
+                                    style={{ border: `1px solid ${currentScene.accentColor}44` }}
+                                />
+                            </button>
                         )}
                     </motion.div>
                 </div>
@@ -711,7 +730,7 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                     const choicesToRender = allChoices.filter((c, i) => !hasAnyRealText || String(getRealText(c, i) || '').trim().length > 0);
 
                     return (
-                        <div style={{ maxWidth: 900, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: 14 }}>
+                        <div className="max-w-[900px] mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-3.5">
                             {choicesToRender.map((choice, idx) => {
                                 const cfg = CHOICE_CFG[choice];
                                 const selected = answers[currentQuestion.id] === choice;
@@ -722,45 +741,38 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                                 return (
                                     <motion.button
                                         key={choice}
-                                        className={`journey-btn${selected ? ' selected' : ''}`}
+                                        type="button"
+                                        aria-pressed={selected}
+                                        className={`journey-btn min-w-0 w-full text-left rounded-2xl p-4 sm:px-5 sm:py-4 flex items-center gap-3.5 cursor-pointer border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${selected ? 'selected' : ''}`}
                                         onClick={(e) => handleAnswer(choice, e)}
                                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         transition={{ delay: idx * 0.07, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                                         style={{
                                             background: cfg.bg,
-                                            borderRadius: '0.9rem',
-                                            border: 'none',
-                                            padding: '18px 22px',
-                                            display: 'flex', alignItems: 'center', gap: 14,
-                                            cursor: 'pointer',
                                             boxShadow: selected
-                                                ? `0 0 0 3px white, 0 0 0 6px rgba(255,255,255,0.25), 0 7px 0 ${cfg.shadow}`
-                                                : `0 7px 0 ${cfg.shadow}`,
-                                            transition: 'box-shadow 0.1s',
-                                            textAlign: 'left', width: '100%',
+                                                ? `0 0 0 3px white, 0 0 0 6px rgba(255,255,255,0.28), 0 6px 0 ${cfg.shadow}`
+                                                : `0 6px 0 ${cfg.shadow}`,
                                         }}
                                     >
                                         {ripple && <span key={ripple.id} className="choice-ripple" style={{ left: ripple.x, top: ripple.y }} />}
-                                        <span className="choice-badge">{cfg.num}</span>
-                                        <span style={{
-                                            fontWeight: 800,
-                                            color: 'white',
-                                            fontSize: `${1.0 * fontSizeScale}rem`,
-                                            lineHeight: 1.4,
-                                            textShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                                            flexGrow: 1,
-                                        }}>
+                                        <span className="choice-badge" aria-hidden="true">{cfg.num}</span>
+                                        <span
+                                            className="font-extrabold text-white flex-1 min-w-0 break-words leading-snug"
+                                            style={{
+                                                fontSize: `${1.0 * fontSizeScale}rem`,
+                                                textShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                                            }}
+                                        >
                                             {choiceText}
                                         </span>
                                         {selected && (
-                                            <span style={{
-                                                flexShrink: 0, width: 26, height: 26,
-                                                background: 'rgba(255,255,255,0.28)',
-                                                borderRadius: '50%',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: '0.9rem',
-                                            }}>✓</span>
+                                            <span
+                                                aria-hidden="true"
+                                                className="shrink-0 w-7 h-7 bg-white/30 rounded-full flex items-center justify-center text-white"
+                                            >
+                                                <Check size={15} strokeWidth={3} />
+                                            </span>
                                         )}
                                     </motion.button>
                                 );
@@ -780,36 +792,49 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.94 }}
                                 transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-                                style={{ maxWidth: 900, margin: '18px auto 0', width: '100%' }}
+                                className="max-w-[900px] mt-5 mx-auto w-full"
                             >
-                                <div style={{
-                                    padding: '1.6rem 2rem',
-                                    borderRadius: '1.4rem',
-                                    background: correct
-                                        ? 'linear-gradient(135deg,rgba(21,128,61,0.38),rgba(22,101,52,0.22))'
-                                        : 'linear-gradient(135deg,rgba(185,28,28,0.38),rgba(153,27,27,0.22))',
-                                    backdropFilter: 'blur(16px)',
-                                    border: `1px solid ${correct ? 'rgba(74,222,128,0.35)' : 'rgba(248,113,113,0.35)'}`,
-                                    animation: correct
-                                        ? 'feedback-in 0.4s ease both, correct-pulse 2s 0.4s infinite'
-                                        : 'feedback-in 0.3s ease both, shake-x 0.4s 0.1s, wrong-pulse 2s 0.5s infinite',
-                                }}>
-                                    <h4 style={{
-                                        fontWeight: 900, fontSize: '1.5rem', marginBottom: '0.8rem',
-                                        color: correct ? '#4ade80' : '#f87171',
-                                        textShadow: correct ? '0 0 18px rgba(74,222,128,0.5)' : '0 0 18px rgba(248,113,113,0.5)',
-                                    }}>
-                                        {correct ? '🎉 สุดยอด! ตอบถูก' : '❌ ยังไม่ถูกนะ'}
-                                    </h4>
-                                    <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.7 }}>
-                                        <span style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 7, padding: '3px 11px', marginRight: 8, fontWeight: 900 }}>
-                                            เฉลย: {currentQuestion.correct_answer}
+                                <div
+                                    className="p-5 sm:p-6 rounded-3xl backdrop-blur-xl text-left"
+                                    style={{
+                                        background: correct
+                                            ? 'linear-gradient(135deg, rgba(21,128,61,0.52), rgba(15,83,42,0.42))'
+                                            : 'linear-gradient(135deg, rgba(185,28,28,0.52), rgba(127,29,29,0.42))',
+                                        border: `1px solid ${correct ? 'rgba(74,222,128,0.45)' : 'rgba(248,113,113,0.45)'}`,
+                                        animation: correct
+                                            ? 'feedback-in 0.4s ease both, correct-pulse 2s 0.4s infinite'
+                                            : 'feedback-in 0.3s ease both, shake-x 0.4s 0.1s, wrong-pulse 2s 0.5s infinite',
+                                    }}
+                                >
+                                    <h4
+                                        className="font-black text-xl sm:text-2xl mb-3 flex items-center gap-2.5"
+                                        style={{
+                                            color: correct ? '#86efac' : '#fca5a5',
+                                            textShadow: correct ? '0 0 18px rgba(74,222,128,0.45)' : '0 0 18px rgba(248,113,113,0.45)',
+                                        }}
+                                    >
+                                        <span
+                                            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                                                correct
+                                                    ? 'bg-emerald-500/25 border-emerald-400/50 text-emerald-300'
+                                                    : 'bg-rose-500/25 border-rose-400/50 text-rose-300'
+                                            }`}
+                                        >
+                                            {correct ? <CheckCircle2 size={20} aria-hidden="true" /> : <XCircle size={20} aria-hidden="true" />}
                                         </span>
+                                        <span>{correct ? 'สุดยอด! ตอบถูก' : 'ยังไม่ถูกนะ'}</span>
+                                    </h4>
+                                    <div className="text-white/95 text-sm sm:text-base font-semibold leading-relaxed space-y-3">
+                                        <div>
+                                            <span className="inline-flex items-center bg-white/15 border border-white/30 rounded-xl px-3 py-1 font-black text-white">
+                                                เฉลย: {currentQuestion.correct_answer}
+                                            </span>
+                                        </div>
                                         {currentQuestion.explanation && (
-                                            <>
-                                                <br /><br />
-                                                <div style={{ whiteSpace: 'pre-line' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.explanation)) }} />
-                                            </>
+                                            <div
+                                                className="whitespace-pre-line break-words"
+                                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHtml(currentQuestion.explanation)) }}
+                                            />
                                         )}
                                     </div>
                                 </div>
@@ -820,83 +845,71 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
             </div>
 
             {/* ── Bottom Nav ── */}
-            <div style={{
-                position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-                background: 'rgba(0,0,0,0.55)',
-                backdropFilter: 'blur(20px)',
-                borderTop: `1px solid ${currentScene.accentColor}33`,
-                padding: '10px 24px',
-                boxShadow: '0 -8px 32px rgba(0,0,0,0.35)',
-                transition: 'border-color 0.5s',
-            }}>
-                <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+                className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/75 backdrop-blur-xl px-3 sm:px-6 py-2.5 shadow-[0_-8px_32px_rgba(0,0,0,0.4)] transition-colors"
+                style={{ borderTop: `1px solid ${currentScene.accentColor}44` }}
+            >
+                <div className="max-w-[900px] mx-auto flex justify-between items-center gap-3">
                     <button
+                        type="button"
                         onClick={() => navigateToQuestion(Math.max(0, currentIndex - 1))}
                         disabled={currentIndex === 0}
-                        style={{
-                            width: 50, height: 50,
-                            background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
-                            borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'white', cursor: currentIndex === 0 ? 'not-allowed' : 'pointer',
-                            opacity: currentIndex === 0 ? 0.3 : 1,
-                            transition: 'opacity 0.2s',
-                        }}
+                        aria-label="ข้อก่อนหน้า"
+                        className="w-12 h-12 bg-white/12 hover:bg-white/22 border border-white/25 rounded-full flex items-center justify-center text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shrink-0"
                     >
-                        <ChevronLeft size={24} />
+                        <ChevronLeft size={24} aria-hidden="true" />
                     </button>
 
                     {/* Scene dots and Navigation Grid */}
-                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                        <div style={{ display: 'none', sm: 'flex', gap: 6, alignItems: 'center' }}>
-                            {JOURNEY_SCENES.map((s, i) => (
-                                <div key={s.id} className="hidden sm:block" style={{
-                                    width: i === sceneIdx ? 22 : 7,
-                                    height: 7,
-                                    borderRadius: 99,
-                                    background: i === sceneIdx ? currentScene.accentColor : 'rgba(255,255,255,0.25)',
-                                    transition: 'all 0.4s ease',
-                                    boxShadow: i === sceneIdx ? `0 0 8px ${currentScene.accentColor}` : 'none',
-                                }} />
-                            ))}
+                    <div className="flex items-center gap-4">
+                        <div className="hidden sm:flex items-center gap-1.5" aria-hidden="true">
+                            {activeScenes.map((s, i) => {
+                                const isCurrentScene = i === (sceneIdx % activeScenes.length);
+                                return (
+                                    <div
+                                        key={s.id || i}
+                                        style={{
+                                            width: isCurrentScene ? 22 : 7,
+                                            height: 7,
+                                            borderRadius: 99,
+                                            background: isCurrentScene ? currentScene.accentColor : 'rgba(255,255,255,0.28)',
+                                            transition: 'all 0.4s ease',
+                                            boxShadow: isCurrentScene ? `0 0 8px ${currentScene.accentColor}` : 'none',
+                                        }}
+                                    />
+                                );
+                            })}
                         </div>
-                        
+
                         <button
+                            type="button"
                             onClick={() => setShowGridModal(true)}
-                            style={{
-                                width: 40, height: 40,
-                                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
-                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: 'white', cursor: 'pointer', transition: 'all 0.2s',
-                            }}
+                            aria-label="เปิดตารางเลือกข้อสอบ"
                             title="เลือกข้อสอบ"
+                            className="w-11 h-11 bg-white/15 hover:bg-white/25 border border-white/30 rounded-full flex items-center justify-center text-white cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                         >
-                            <Grid size={18} />
+                            <Grid size={18} aria-hidden="true" />
                         </button>
                     </div>
 
                     <button
+                        type="button"
                         onClick={isReadyToSubmit ? handleSubmit : () => navigateToQuestion(Math.min(questions.length - 1, currentIndex + 1))}
-                        style={{
-                            background: isReadyToSubmit
-                                ? `linear-gradient(135deg,#16a34a,#15803d)`
-                                : 'rgba(255,255,255,0.95)',
-                            color: isReadyToSubmit ? 'white' : '#111',
-                            border: 'none', borderRadius: 99,
-                            padding: isReadyToSubmit ? '12px 30px' : 0,
-                            width: isReadyToSubmit ? 'auto' : 50, height: isReadyToSubmit ? 'auto' : 50,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontWeight: 900, fontSize: isReadyToSubmit ? '1rem' : '1rem',
-                            cursor: 'pointer',
-                            boxShadow: isReadyToSubmit ? '0 5px 0 #14532d, 0 8px 18px rgba(22,163,74,0.4)' : '0 4px 0 rgba(0,0,0,0.2)',
-                            transition: 'all 0.15s',
-                        }}
-                        onMouseDown={e => {
-                            e.currentTarget.style.transform = 'translateY(4px)';
-                            e.currentTarget.style.boxShadow = isReadyToSubmit ? '0 1px 0 #14532d' : 'none';
-                        }}
-                        onMouseUp={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
+                        aria-label={isReadyToSubmit ? 'ส่งคำตอบ' : 'ข้อถัดไป'}
+                        className={`border-0 rounded-full flex items-center justify-center gap-2 font-black text-base cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white shrink-0 ${
+                            isReadyToSubmit
+                                ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white px-5 sm:px-7 py-3 shadow-[0_5px_0_#14532d,0_8px_18px_rgba(22,163,74,0.4)] active:translate-y-1'
+                                : 'bg-white/95 hover:bg-white text-slate-900 w-12 h-12 shadow-[0_4px_0_rgba(0,0,0,0.25)] active:translate-y-1'
+                        }`}
                     >
-                        {isReadyToSubmit ? '🚀 ส่งคำตอบ!' : <ChevronRight size={24} />}
+                        {isReadyToSubmit ? (
+                            <>
+                                <Send size={17} aria-hidden="true" />
+                                <span>ส่งคำตอบ!</span>
+                            </>
+                        ) : (
+                            <ChevronRight size={24} aria-hidden="true" />
+                        )}
                     </button>
                 </div>
             </div>
@@ -932,64 +945,83 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
             <AnimatePresence>
                 {fullScreenImage && (
                     <motion.div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="ดูรูปภาพขนาดเต็ม"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={() => setFullScreenImage(null)}
-                        style={{
-                            position: 'fixed', inset: 0, zIndex: 99999,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(8px)',
-                            cursor: 'pointer', padding: 16,
-                        }}
+                        className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4 cursor-pointer"
                     >
+                        <button
+                            type="button"
+                            onClick={() => setFullScreenImage(null)}
+                            aria-label="ปิดรูปภาพขยาย"
+                            className="fixed top-4 right-4 w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 flex items-center justify-center text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white cursor-pointer"
+                        >
+                            <X size={22} aria-hidden="true" />
+                        </button>
                         <motion.img
                             src={fullScreenImage}
-                            alt="Full"
+                            alt="รูปภาพประกอบข้อสอบขนาดขยาย"
                             initial={{ scale: 0.85 }}
                             animate={{ scale: 1 }}
-                            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 16, boxShadow: `0 0 60px ${currentScene.accentColor}66` }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="max-w-full max-h-full object-contain rounded-2xl cursor-default"
+                            style={{ boxShadow: `0 0 60px ${currentScene.accentColor}66` }}
                         />
                     </motion.div>
                 )}
             </AnimatePresence>
+
             {/* Quick Navigation Modal */}
             <AnimatePresence>
                 {showGridModal && (
                     <motion.div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="grid-modal-title"
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
-                        style={{
-                            position: 'fixed', inset: 0, zIndex: 99999,
-                            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
-                            padding: '20px',
-                        }}
+                        className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-slate-950/75 backdrop-blur-md p-3 sm:p-5"
                         onClick={() => setShowGridModal(false)}
                     >
                         <div
                             onClick={e => e.stopPropagation()}
-                            style={{
-                                width: '100%', maxWidth: 600, maxHeight: '80vh',
-                                background: '#1e293b', borderRadius: '1.5rem',
-                                padding: '24px', overflowY: 'auto',
-                                boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
-                                display: 'flex', flexDirection: 'column', gap: 16
-                            }}
+                            className="w-full max-w-[600px] max-h-[80vh] bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-3xl p-5 sm:p-6 overflow-y-auto custom-scrollbar shadow-2xl flex flex-col gap-4"
                         >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h3 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>ข้ามไปข้อที่...</h3>
-                                <button onClick={() => setShowGridModal(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
-                            </div>
-                            
-                            <div style={{ display: 'flex', gap: 16, marginBottom: 8, fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', justifyContent: 'center' }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, background: '#10b981', borderRadius: 4 }} /> ทำแล้ว</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }} /> ยังไม่ทำ</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, background: '#f59e0b', borderRadius: '50%' }} /> ปักหมุด</span>
+                            <div className="flex justify-between items-center">
+                                <h3 id="grid-modal-title" className="text-white text-lg sm:text-xl font-extrabold m-0">
+                                    ข้ามไปข้อที่...
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGridModal(false)}
+                                    aria-label="ปิดตารางเลือกข้อสอบ"
+                                    className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                                >
+                                    <X size={20} aria-hidden="true" />
+                                </button>
                             </div>
 
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+                            <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-white/80 justify-center">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <span className="w-3 h-3 bg-emerald-500 rounded-sm inline-block" aria-hidden="true" />
+                                    ทำแล้ว
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <span className="w-3 h-3 bg-white/15 border border-white/25 rounded-sm inline-block" aria-hidden="true" />
+                                    ยังไม่ทำ
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <span className="w-3 h-3 bg-amber-500 rounded-full inline-block" aria-hidden="true" />
+                                    ปักหมุด
+                                </span>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 justify-center">
                                 {questions.map((q, idx) => {
                                     const isAns = !!answers[q.id];
                                     const isCur = idx === currentIndex;
@@ -997,19 +1029,25 @@ const ExamTaking = ({ questions, mode, onSubmit, config }) => {
                                     return (
                                         <button
                                             key={q.id}
+                                            type="button"
+                                            aria-label={`ไปที่ข้อ ${idx + 1}${isAns ? ' (ทำแล้ว)' : ' (ยังไม่ทำ)'}${isFlag ? ' (ปักหมุด)' : ''}`}
+                                            aria-current={isCur ? 'step' : undefined}
                                             onClick={() => { navigateToQuestion(idx); setShowGridModal(false); }}
-                                            style={{
-                                                width: 42, height: 42, borderRadius: 10,
-                                                fontWeight: 800, fontSize: '1rem',
-                                                border: isCur ? '2px solid white' : 'none',
-                                                background: isCur ? '#3b82f6' : isAns ? '#10b981' : 'rgba(255,255,255,0.1)',
-                                                color: 'white', cursor: 'pointer',
-                                                position: 'relative',
-                                                boxShadow: isCur ? '0 0 12px rgba(59,130,246,0.6)' : 'none',
-                                            }}
+                                            className={`w-11 h-11 rounded-xl font-extrabold text-sm sm:text-base relative cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+                                                isCur
+                                                    ? 'bg-blue-500 text-white border-2 border-white shadow-[0_0_14px_rgba(59,130,246,0.65)]'
+                                                    : isAns
+                                                        ? 'bg-emerald-500 hover:bg-emerald-400 text-white border border-emerald-300/40'
+                                                        : 'bg-white/10 hover:bg-white/20 text-white border border-white/15'
+                                            }`}
                                         >
                                             {idx + 1}
-                                            {isFlag && <div style={{ position: 'absolute', top: -4, right: -4, background: '#f59e0b', width: 12, height: 12, borderRadius: '50%', border: '2px solid #1e293b' }} />}
+                                            {isFlag && (
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="absolute -top-1 -right-1 bg-amber-400 w-3 h-3 rounded-full border-2 border-slate-900"
+                                                />
+                                            )}
                                         </button>
                                     );
                                 })}

@@ -1,142 +1,205 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import authService from '../../services/authService';
-import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import {
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowLeft,
+  ShieldCheck,
+  Loader2,
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import BrandLogo from '../../components/common/BrandLogo';
 
 const ResetPassword = () => {
-    const [searchParams] = useSearchParams();
-    const token = searchParams.get('token');
-    const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+  const navigate = useNavigate();
 
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isSuccess, setIsSuccess] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        if (password !== confirmPassword) {
-            toast.error('Passwords do not match');
-            return;
-        }
-
-        if (password.length < 6) {
-            toast.error('Password must be at least 6 characters');
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            await authService.resetPassword(token, password);
-            setIsSuccess(true);
-            toast.success('Password reset successfully');
-            setTimeout(() => {
-                navigate('/login');
-            }, 3000);
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to reset password');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    if (!token) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-                    <h2 className="text-xl font-bold text-red-600 mb-2">Invalid Request</h2>
-                    <p className="text-gray-600 mb-6">Missing reset token.</p>
-                    <Link to="/login" className="text-indigo-600 font-medium hover:underline">Return to Login</Link>
-                </div>
-            </div>
-        );
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
     }
 
-    if (isSuccess) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center animate-fade-in">
-                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle size={32} />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Reset!</h2>
-                    <p className="text-gray-600 mb-8">
-                        Your password has been updated successfully. Redirecting you to login...
-                    </p>
-                    <Link
-                        to="/login"
-                        className="inline-flex items-center justify-center w-full px-4 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
-                    >
-                        Login Now
-                    </Link>
-                </div>
-            </div>
-        );
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
     }
 
+    setIsLoading(true);
+    try {
+      await authService.resetPassword(token, password);
+      setIsSuccess(true);
+      toast.success('Password reset successfully');
+      setTimeout(() => {
+        navigate('/login');
+      }, 3000);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to reset password');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!token) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-                <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Lock size={32} />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900">Set New Password</h2>
-                    <p className="text-gray-600 mt-2">
-                        Enter your new password below.
-                    </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                        <div className="relative">
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                style={{ color: '#000000' }}
-                                className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
-                                placeholder="••••••••"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                            >
-                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                        <input
-                            type="password"
-                            required
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            style={{ color: '#000000' }}
-                            className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
-                            placeholder="••••••••"
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        {isLoading ? 'Resetting...' : 'Reset Password'}
-                    </button>
-                </form>
-            </div>
+      <div className="relative flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#6d28d9_0%,#4c1d95_45%,#2e1065_100%)] px-4 py-12 font-sans">
+        <div className="w-full max-w-md rounded-[2rem] border border-white/25 bg-white/95 p-8 text-center shadow-[0_24px_80px_rgba(13,6,41,0.45)] backdrop-blur-xl">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+            <AlertTriangle size={30} />
+          </div>
+          <h1
+            className="text-xl font-black text-slate-900"
+            style={{ fontFamily: "'Nunito', 'Sarabun', sans-serif" }}
+          >
+            Invalid Request
+          </h1>
+          <p className="mt-2 text-sm font-medium text-slate-600">
+            Missing or expired password reset token.
+          </p>
+          <Link
+            to="/login"
+            className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#4c1d95] px-5 py-3 text-sm font-extrabold text-white transition hover:bg-[#5b21b6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+          >
+            <ArrowLeft size={16} />
+            Return to Login
+          </Link>
         </div>
+      </div>
     );
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="relative flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#6d28d9_0%,#4c1d95_45%,#2e1065_100%)] px-4 py-12 font-sans">
+        <div className="w-full max-w-md rounded-[2rem] border border-white/25 bg-white/95 p-8 text-center shadow-[0_24px_80px_rgba(13,6,41,0.45)] backdrop-blur-xl">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+            <CheckCircle2 size={32} />
+          </div>
+          <h1
+            className="text-2xl font-black text-slate-900"
+            style={{ fontFamily: "'Nunito', 'Sarabun', sans-serif" }}
+          >
+            Password Reset!
+          </h1>
+          <p className="mt-2 text-sm font-medium text-slate-600">
+            Your password has been updated successfully. Redirecting you to login...
+          </p>
+          <Link
+            to="/login"
+            className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#4c1d95] px-4 py-3.5 text-sm font-extrabold text-white shadow-[0_10px_28px_rgba(76,29,149,0.28)] transition hover:bg-[#5b21b6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+          >
+            Login Now
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,#6d28d9_0%,#4c1d95_45%,#2e1065_100%)] px-4 py-12 font-sans">
+      <div className="relative z-10 w-full max-w-md">
+        <div className="mb-5 flex justify-center">
+          <Link
+            to="/"
+            className="inline-flex rounded-full transition-transform duration-200 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+          >
+            <BrandLogo variant="glass" size="sm" />
+          </Link>
+        </div>
+
+        <div className="rounded-[2rem] border border-white/25 bg-white/95 p-7 shadow-[0_24px_80px_rgba(13,6,41,0.45)] backdrop-blur-xl sm:p-8">
+          <div className="mb-7 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-xs">
+              <Lock size={30} />
+            </div>
+            <h1
+              className="text-2xl font-black text-slate-900"
+              style={{ fontFamily: "'Nunito', 'Sarabun', sans-serif" }}
+            >
+              Set New Password
+            </h1>
+            <p className="mt-2 text-sm font-medium text-slate-600">
+              Enter your new password below.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="reset-password" className="mb-1.5 block text-sm font-bold text-slate-700">
+                New Password
+              </label>
+              <div className="relative">
+                <Lock size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  id="reset-password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full rounded-2xl border-2 border-slate-200 bg-slate-50 py-3.5 pl-10 pr-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 transition focus:border-[#4c1d95] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 hover:bg-slate-200/70 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="reset-confirm-password" className="mb-1.5 block text-sm font-bold text-slate-700">
+                Confirm New Password
+              </label>
+              <div className="relative">
+                <ShieldCheck size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  id="reset-confirm-password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="block w-full rounded-2xl border-2 border-slate-200 bg-slate-50 py-3.5 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 transition focus:border-[#4c1d95] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#4c1d95] px-4 py-3.5 text-sm font-black text-white shadow-[0_10px_28px_rgba(76,29,149,0.28)] transition hover:bg-[#5b21b6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={17} className="animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                'Reset Password'
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default ResetPassword;

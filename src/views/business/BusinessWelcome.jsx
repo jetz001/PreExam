@@ -1,47 +1,57 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import businessApi from '../../services/businessApi';
-import { BookOpen, ShoppingBag, TrendingUp, CheckCircle, ArrowLeft } from 'lucide-react';
+import BrandLogo from '../../components/common/BrandLogo';
+import {
+    BookOpen,
+    ShoppingBag,
+    TrendingUp,
+    ArrowLeft,
+    Sparkles,
+    Rocket,
+    Target,
+    Lightbulb,
+    Building2,
+    ChevronDown,
+    CheckCircle2,
+    Globe,
+    Tag,
+    FileText
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
-const FloatingShapes = () => {
-    return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-            {/* Shapes */}
-            <motion.div
-                animate={{ y: [0, -20, 0], rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-20 left-10 w-24 h-24 bg-red-500 rounded-2xl border-4 border-black"
-            />
-            <motion.div
-                animate={{ y: [0, 30, 0], rotate: [0, -15, 15, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute top-40 right-20 w-16 h-16 bg-blue-500 rounded-full border-4 border-black"
-            />
-            <motion.div
-                animate={{ x: [0, 20, 0], y: [0, 15, 0], rotate: [0, 45, 0] }}
-                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                className="absolute bottom-32 left-32 w-20 h-20 bg-yellow-400 border-4 border-black"
-                style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }}
-            />
-            <motion.div
-                animate={{ y: [0, -40, 0], rotate: [0, -20, 0] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                className="absolute bottom-20 right-40 w-28 h-28 bg-green-500 rounded-3xl border-4 border-black"
-            />
-            <motion.div
-                animate={{ scale: [1, 1.1, 1], rotate: [0, 10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-                className="absolute top-1/2 left-1/4 w-12 h-12 bg-purple-500 rounded-full border-4 border-black"
-            />
-        </div>
-    );
-};
+const FEATURE_CARDS = [
+    {
+        title: 'เนื้อหาต้องมาก่อน',
+        subtitle: 'Content-First Authority',
+        description: 'ให้คุณค่าก่อนที่จะรับ แบ่งปันเทคนิคการสอบ และบทความสรุปคุณภาพเพื่อดึงดูดผู้ติดตามอย่างยั่งยืน',
+        icon: BookOpen,
+        gradient: 'from-indigo-500 to-blue-600',
+        shadow: 'shadow-indigo-500/20',
+    },
+    {
+        title: 'ร้านค้าในตัว',
+        subtitle: 'Integrated Storefront',
+        description: 'นำเสนอคอร์สเรียน E-books และชีทสรุปโดยตรงบนหน้าโปรไฟล์ผู้เชี่ยวชาญของคุณ',
+        icon: ShoppingBag,
+        gradient: 'from-violet-500 to-purple-600',
+        shadow: 'shadow-violet-500/20',
+    },
+    {
+        title: 'โฆษณาอัจฉริยะ',
+        subtitle: 'Precision Promotion',
+        description: 'ดันเนื้อหาและแคมเปญของคุณสู่กลุ่มผู้เตรียมสอบที่ใช่ด้วยพื้นที่โฆษณาในฟีดและหน้าผลสอบ',
+        icon: TrendingUp,
+        gradient: 'from-fuchsia-500 to-indigo-600',
+        shadow: 'shadow-fuchsia-500/20',
+    },
+];
 
 const BusinessWelcome = () => {
     const navigate = useNavigate();
     const [isRegistering, setIsRegistering] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         tagline: '',
@@ -53,185 +63,284 @@ const BusinessWelcome = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
         try {
             await businessApi.createBusiness(formData);
-            toast.success('Business Page Created Successfully!', {
-                style: { border: '2px solid black', fontWeight: 'bold' }
-            });
+            toast.success('Business Page Created Successfully!');
             navigate('/business/content');
-            window.location.reload(); 
+            window.location.reload();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to create business page', {
-                style: { border: '2px solid black', fontWeight: 'bold', backgroundColor: '#fee2e2' }
-            });
+            toast.error(error.response?.data?.message || 'Failed to create business page');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     if (isRegistering) {
         return (
-            <div className="min-h-screen bg-cyan-100 flex items-center justify-center p-4 relative overflow-hidden font-sans">
-                <FloatingShapes />
-                <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="bg-white max-w-lg w-full rounded-3xl border-4 border-black p-8 relative z-10 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
-                >
-                    <h2 className="text-3xl font-black text-black mb-6 text-center uppercase tracking-wide">
-                        🌟 สร้างเพจของคุณ
-                    </h2>
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-lg font-bold text-black mb-1">ชื่อเพจ</label>
-                            <input
-                                required
-                                type="text"
-                                className="block w-full rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-y-[2px] focus:translate-x-[2px] p-3 text-black font-medium outline-none transition-all"
-                                placeholder="เช่น Kru P'Nan English"
-                                value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            />
+            <div className="min-h-screen bg-slate-50 flex flex-col justify-between relative overflow-hidden font-sans">
+                {/* Top Dark Executive Bar */}
+                <header className="relative z-10 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 border-b border-indigo-500/20">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+                        <BrandLogo
+                            variant="dark"
+                            size="sm"
+                            badge="BUSINESS"
+                            subtitle="SPONSOR PORTAL"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setIsRegistering(false)}
+                            className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>ย้อนกลับ</span>
+                        </button>
+                    </div>
+                </header>
+
+                <main className="flex-1 flex items-center justify-center p-4 sm:p-6 relative z-10">
+                    <motion.div
+                        initial={{ y: 16, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25 }}
+                        className="w-full max-w-xl rounded-2xl bg-white border border-slate-200/80 shadow-xl overflow-hidden"
+                    >
+                        <div className="bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-950 p-6 sm:p-8 text-white relative overflow-hidden">
+                            <div className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-indigo-500/25 blur-2xl" />
+                            <div className="relative z-10 flex items-center gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30 border border-white/20">
+                                    <Sparkles className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-indigo-200">
+                                        Sponsor Onboarding
+                                    </p>
+                                    <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                                        สร้างเพจของคุณ
+                                    </h2>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-lg font-bold text-black mb-1">สโลแกน / คำอธิบายสั้นๆ</label>
-                            <input
-                                type="text"
-                                className="block w-full rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-y-[2px] focus:translate-x-[2px] p-3 text-black font-medium outline-none transition-all"
-                                placeholder="ช่วยให้คุณสอบผ่าน TOEIC"
-                                value={formData.tagline}
-                                onChange={e => setFormData({ ...formData, tagline: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-lg font-bold text-black mb-1">หมวดหมู่</label>
-                            <select
-                                className="block w-full rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-y-[2px] focus:translate-x-[2px] p-3 text-black font-medium outline-none transition-all bg-white appearance-none cursor-pointer"
-                                value={formData.category}
-                                onChange={e => setFormData({ ...formData, category: e.target.value })}
-                            >
-                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-lg font-bold text-black mb-1">ลิงก์ติดต่อ (Line OA / Facebook)</label>
-                            <input
-                                type="url"
-                                className="block w-full rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-y-[2px] focus:translate-x-[2px] p-3 text-black font-medium outline-none transition-all"
-                                placeholder="https://line.me/..."
-                                value={formData.contact_link}
-                                onChange={e => setFormData({ ...formData, contact_link: e.target.value })}
-                            />
-                        </div>
-                        <div className="pt-6 flex gap-4">
-                            <button
-                                type="button"
-                                onClick={() => setIsRegistering(false)}
-                                className="flex-1 py-3 bg-white border-4 border-black text-black rounded-xl font-bold text-lg hover:bg-gray-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px] active:translate-x-[4px] transition-all"
-                            >
-                                ยกเลิก
-                            </button>
-                            <button
-                                type="submit"
-                                className="flex-1 py-3 bg-purple-500 border-4 border-black text-white rounded-xl font-bold text-lg hover:bg-purple-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px] active:translate-x-[4px] transition-all"
-                            >
-                                สร้างเพจ 🚀
-                            </button>
-                        </div>
-                    </form>
-                </motion.div>
+
+                        <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-5">
+                            <div>
+                                <label htmlFor="biz-name" className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1.5">
+                                    <Building2 className="w-4 h-4 text-indigo-600" />
+                                    <span>ชื่อเพจ</span>
+                                    <span className="text-rose-600">*</span>
+                                </label>
+                                <input
+                                    id="biz-name"
+                                    required
+                                    type="text"
+                                    className="block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 shadow-sm focus:border-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-all"
+                                    placeholder="เช่น Kru P'Nan English"
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="biz-tagline" className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1.5">
+                                    <FileText className="w-4 h-4 text-indigo-600" />
+                                    <span>สโลแกน / คำอธิบายสั้นๆ</span>
+                                </label>
+                                <input
+                                    id="biz-tagline"
+                                    type="text"
+                                    className="block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 shadow-sm focus:border-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-all"
+                                    placeholder="ช่วยให้คุณสอบผ่าน TOEIC"
+                                    value={formData.tagline}
+                                    onChange={e => setFormData({ ...formData, tagline: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="biz-category" className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1.5">
+                                    <Tag className="w-4 h-4 text-indigo-600" />
+                                    <span>หมวดหมู่</span>
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        id="biz-category"
+                                        className="block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 shadow-sm appearance-none cursor-pointer focus:border-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-all"
+                                        value={formData.category}
+                                        onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                    >
+                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label htmlFor="biz-contact" className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1.5">
+                                    <Globe className="w-4 h-4 text-indigo-600" />
+                                    <span>ลิงก์ติดต่อ (Line OA / Facebook)</span>
+                                </label>
+                                <input
+                                    id="biz-contact"
+                                    type="url"
+                                    className="block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 shadow-sm focus:border-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-all"
+                                    placeholder="https://line.me/..."
+                                    value={formData.contact_link}
+                                    onChange={e => setFormData({ ...formData, contact_link: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="pt-4 flex flex-col-reverse sm:flex-row gap-3 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsRegistering(false)}
+                                    className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-all"
+                                >
+                                    ยกเลิก
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm shadow-md shadow-indigo-500/20 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-all"
+                                >
+                                    <Rocket className="w-4 h-4" />
+                                    <span>{isSubmitting ? 'กำลังสร้างเพจ...' : 'สร้างเพจ'}</span>
+                                </button>
+                            </div>
+                        </form>
+                    </motion.div>
+                </main>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-yellow-300 relative overflow-hidden font-sans">
-            <FloatingShapes />
-            
-            <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8 relative z-10">
-                {/* Back Button */}
-                <button
-                    onClick={() => navigate('/')}
-                    className="flex items-center text-black hover:text-white hover:bg-black font-bold mb-12 transition-colors border-2 border-transparent hover:border-black rounded-full px-4 py-2"
-                >
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    กลับสู่หน้าหลัก
-                </button>
+        <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans">
+            {/* Executive Dark Hero Header */}
+            <div className="bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-950 text-white relative overflow-hidden border-b border-indigo-500/20">
+                <div className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-indigo-500/25 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-28 left-1/4 h-72 w-72 rounded-full bg-violet-500/20 blur-3xl" />
 
-                <div className="text-center">
-                    <motion.div 
-                        initial={{ y: -50, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ type: "spring", stiffness: 100 }}
-                        className="inline-block bg-white border-4 border-black rounded-3xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-8"
-                    >
-                        <h1 className="text-4xl font-black text-black sm:text-5xl md:text-6xl uppercase tracking-tighter">
-                            แบ่งปันความรู้ <br />
-                            <span className="text-blue-600 block mt-2">สร้างธุรกิจให้เติบโต!</span>
-                        </h1>
-                    </motion.div>
-                    
-                    <motion.p 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="mt-6 max-w-2xl mx-auto text-xl text-black font-bold bg-white/50 p-4 rounded-xl border-2 border-black inline-block"
-                    >
-                        เข้าร่วมตลาดแห่งการเรียนรู้ แบ่งปันความเชี่ยวชาญเพื่อสร้างความน่าเชื่อถือ และโปรโมทคอร์สเรียนหรือสินค้าของคุณอย่างสนุกสนาน!
-                    </motion.p>
-                    
-                    <motion.div 
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.4, type: "spring", stiffness: 150 }}
-                        className="mt-12 flex flex-col sm:flex-row justify-center gap-6"
-                    >
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-10">
+                    {/* Top Navigation Row */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-10 sm:mb-14">
+                        <BrandLogo
+                            variant="dark"
+                            size="md"
+                            badge="BUSINESS"
+                            subtitle="SPONSOR PORTAL"
+                        />
                         <button
-                            onClick={() => setIsRegistering(true)}
-                            className="px-8 py-4 rounded-2xl bg-green-500 text-white font-black text-xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all"
+                            type="button"
+                            onClick={() => navigate('/')}
+                            className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                         >
-                            สร้างเพจผู้เชี่ยวชาญ 🎯
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>กลับสู่หน้าหลัก</span>
                         </button>
-                        <button
-                            onClick={() => window.location.href = 'https://preexam.online/faq'}
-                            className="px-8 py-4 rounded-2xl bg-white text-black font-black text-xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all"
-                        >
-                            เรียนรู้เพิ่มเติม 💡
-                        </button>
-                    </motion.div>
-
-                    <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 text-center pb-20">
-                        <motion.div 
-                            whileHover={{ y: -10 }}
-                            className="p-8 bg-blue-100 rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative"
-                        >
-                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-blue-500 rounded-full border-4 border-black flex items-center justify-center text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                <BookOpen size={32} />
-                            </div>
-                            <h3 className="text-2xl font-black text-black mt-4 mb-2">เนื้อหาต้องมาก่อน</h3>
-                            <p className="text-black font-medium">ให้คุณค่าก่อนที่จะรับ แบ่งปันเทคนิคการสอบ สรุป เพื่อดึงดูดผู้ติดตาม</p>
-                        </motion.div>
-                        
-                        <motion.div 
-                            whileHover={{ y: -10 }}
-                            className="p-8 bg-pink-100 rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative mt-12 md:mt-0"
-                        >
-                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-pink-500 rounded-full border-4 border-black flex items-center justify-center text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                <ShoppingBag size={32} />
-                            </div>
-                            <h3 className="text-2xl font-black text-black mt-4 mb-2">ร้านค้าในตัว</h3>
-                            <p className="text-black font-medium">ขาย E-books คอร์สเรียน และชีทสรุปได้โดยตรงบนหน้าโปรไฟล์ของคุณ</p>
-                        </motion.div>
-
-                        <motion.div 
-                            whileHover={{ y: -10 }}
-                            className="p-8 bg-purple-100 rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative mt-12 md:mt-0"
-                        >
-                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-purple-500 rounded-full border-4 border-black flex items-center justify-center text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                <TrendingUp size={32} />
-                            </div>
-                            <h3 className="text-2xl font-black text-black mt-4 mb-2">โฆษณาอัจฉริยะ</h3>
-                            <p className="text-black font-medium">ดันเนื้อหาของคุณขึ้นสู่ด้านบนของฟีดด้วยระบบพื้นที่โฆษณา</p>
-                        </motion.div>
                     </div>
+
+                    {/* Hero Copy */}
+                    <div className="text-center max-w-3xl mx-auto pb-8 sm:pb-12">
+                        <motion.div
+                            initial={{ y: -12, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                            className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-indigo-200 backdrop-blur-md mb-6"
+                        >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                            <span>PREEXAM EXECUTIVE SPONSOR SUITE</span>
+                        </motion.div>
+
+                        <motion.h1
+                            initial={{ y: 12, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 0.35 }}
+                            className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight"
+                        >
+                            แบ่งปันความรู้
+                            <span className="block mt-2 bg-gradient-to-r from-indigo-300 via-violet-200 to-amber-200 bg-clip-text text-transparent">
+                                สร้างธุรกิจให้เติบโต
+                            </span>
+                        </motion.h1>
+
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.15 }}
+                            className="mt-5 text-base sm:text-lg text-slate-200 leading-relaxed max-w-2xl mx-auto"
+                        >
+                            เข้าร่วมตลาดแห่งการเรียนรู้ แบ่งปันความเชี่ยวชาญเพื่อสร้างความน่าเชื่อถือ และโปรโมทคอร์สเรียนหรือสินค้าของคุณสู่ผู้เตรียมสอบทั่วประเทศ
+                        </motion.p>
+
+                        <motion.div
+                            initial={{ y: 10, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.25 }}
+                            className="mt-8 flex flex-col sm:flex-row justify-center gap-3.5"
+                        >
+                            <button
+                                type="button"
+                                onClick={() => setIsRegistering(true)}
+                                className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-bold text-base shadow-lg shadow-indigo-500/30 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            >
+                                <Target className="w-5 h-5" />
+                                <span>สร้างเพจผู้เชี่ยวชาญ</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => window.location.href = 'https://preexam.online/faq'}
+                                className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-base backdrop-blur-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            >
+                                <Lightbulb className="w-5 h-5 text-amber-300" />
+                                <span>เรียนรู้เพิ่มเติม</span>
+                            </button>
+                        </motion.div>
+
+                        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs sm:text-sm text-slate-200">
+                            <span className="inline-flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                เปิดเพจผู้เชี่ยวชาญฟรี
+                            </span>
+                            <span className="inline-flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                เข้าถึงกลุ่มผู้เตรียมสอบโดยตรง
+                            </span>
+                            <span className="inline-flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                วัดผลแคมเปญแบบเรียลไทม์
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Feature Cards Section */}
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {FEATURE_CARDS.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <motion.div
+                                key={item.title}
+                                whileHover={{ y: -4 }}
+                                transition={{ duration: 0.2 }}
+                                className="rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-200/80 p-6 sm:p-7 transition-all"
+                            >
+                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.gradient} text-white flex items-center justify-center shadow-lg ${item.shadow} mb-5`}>
+                                    <Icon className="w-6 h-6" />
+                                </div>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-1">
+                                    {item.subtitle}
+                                </p>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">
+                                    {item.title}
+                                </h3>
+                                <p className="text-sm text-slate-600 leading-relaxed">
+                                    {item.description}
+                                </p>
+                            </motion.div>
+                        );
+                    })}
                 </div>
             </div>
         </div>

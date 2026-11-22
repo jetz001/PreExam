@@ -7,7 +7,12 @@ const adminService = {
     },
 
     bulkCreateQuestions: async (data) => {
-        const response = await api.post('/questions/bulk', data);
+        const payload = Array.isArray(data)
+            ? { questions: data }
+            : data?.questions
+            ? data
+            : { questions: [] };
+        const response = await api.post('/questions/bulk', payload);
         return response.data;
     },
 
@@ -67,7 +72,7 @@ const adminService = {
     deleteArcadeGame: async (id) => {
         const response = await api.delete(`/admin/arcade/${id}`);
         return response.data;
-    },
+    }
 };
 
 export default adminService;

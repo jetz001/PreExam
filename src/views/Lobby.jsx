@@ -3,11 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import roomService from '../services/roomService';
 import authService from '../services/authService';
 import userService from '../services/userService';
-import api from '../services/api';
 import { getAssetUrl } from '../utils/assets';
 import { canCreateRooms } from '../utils/userAccess';
 import LottieViewer from '../components/room/LottieViewer';
-import { Search, Play, Users, Lock, ChevronRight, Plus } from 'lucide-react';
+import {
+  Search,
+  Play,
+  Users,
+  Lock,
+  ChevronRight,
+  Plus,
+  Star,
+  Sparkles,
+  Gem,
+  Trophy,
+  Ticket,
+  Flame,
+  GraduationCap,
+  Gamepad2,
+  Orbit,
+  Castle,
+  Ghost,
+  Rocket,
+  Gift,
+  PartyPopper,
+  KeyRound,
+  X
+} from 'lucide-react';
 import CreateRoomModal from '../components/room/CreateRoomModal';
 
 let globalLobbyAssetsCache = null;
@@ -16,11 +38,11 @@ export default function Lobby() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
-  
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // User Data for Header & XP
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
@@ -31,7 +53,7 @@ export default function Lobby() {
   const [passwordInput, setPasswordInput] = useState('');
   const [pendingRoomCode, setPendingRoomCode] = useState(null);
   const [customAssets, setCustomAssets] = useState(globalLobbyAssetsCache || []);
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,6 +72,19 @@ export default function Lobby() {
         .catch(err => console.error('Failed to load lobby assets', err));
     }
   }, []);
+
+  useEffect(() => {
+    if (!showPasswordModal) return;
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        setShowPasswordModal(false);
+        setPasswordInput('');
+        setPendingRoomCode(null);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [showPasswordModal]);
 
   const loadUserData = async () => {
     const currentUser = authService.getCurrentUser();
@@ -133,10 +168,10 @@ export default function Lobby() {
 
   const getCardTheme = (index) => {
     const themes = [
-      { bg: '#2d0d6b', header: '#46178f', icon: '🪐' }, // Purple
-      { bg: '#e67300', header: '#ff8c00', icon: '🏆' }, // Orange
-      { bg: '#1c7a1c', header: '#26890c', icon: '🏰' }, // Green
-      { bg: '#0e55a3', header: '#1368ce', icon: '⚽' }, // Blue
+      { bg: '#2d0d6b', header: 'linear-gradient(135deg, #5b21b6, #46178f)', accent: '#a78bfa', Icon: Orbit },
+      { bg: '#b45309', header: 'linear-gradient(135deg, #f59e0b, #ea580c)', accent: '#fde047', Icon: Trophy },
+      { bg: '#15803d', header: 'linear-gradient(135deg, #22c55e, #16a34a)', accent: '#86efac', Icon: Castle },
+      { bg: '#1d4ed8', header: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', accent: '#93c5fd', Icon: Gamepad2 },
     ];
     return themes[index % themes.length];
   };
@@ -153,216 +188,260 @@ export default function Lobby() {
       <style>{`
         .lb-wrapper {
           min-height: 100vh;
-          padding-top: 80px;
-          padding-bottom: 80px;
+          width: 100%;
+          padding-top: 28px;
+          padding-bottom: 112px;
           font-family: 'Nunito', 'Sarabun', sans-serif;
           position: relative;
-          overflow: hidden;
+          overflow-x: hidden;
           color: white;
         }
         /* Fixed background to cover entire screen */
         .lb-bg {
           position: fixed; inset: 0; z-index: 0;
-          background: radial-gradient(circle at 50% 50%, #581cba 0%, #371172 100%);
+          background: radial-gradient(circle at 20% 20%, #6d28d9 0%, #46178f 42%, #240b4c 100%);
           pointer-events: none;
         }
         /* Floating shapes */
         .lb-shape { position: fixed; pointer-events: none; z-index: 0; }
-        .lb-circle-1 { width: 40px; height: 40px; background: #e21b3c; border-radius: 50%; top: 15%; left: 15%; opacity: 0.8; filter: blur(2px); animation: float 6s ease-in-out infinite; }
-        .lb-circle-2 { width: 25px; height: 25px; background: #00c985; border-radius: 50%; bottom: 25%; left: 5%; opacity: 0.6; filter: blur(1px); animation: float 8s ease-in-out infinite reverse; }
-        .lb-rect-1 { width: 30px; height: 30px; background: #ffcc00; top: 10%; right: 20%; transform: rotate(45deg); opacity: 0.9; animation: floatSpin 8s linear infinite alternate; }
-        .lb-rect-2 { width: 20px; height: 20px; background: #e21b3c; bottom: 20%; right: 10%; transform: rotate(15deg); opacity: 0.7; animation: floatSpin 10s linear infinite; }
-        .lb-confetti-1 { width: 15px; height: 35px; background: #00c985; top: 30%; right: 15%; transform: rotate(-20deg); opacity: 0.7; animation: float 5s ease-in-out infinite; }
-        .lb-confetti-2 { width: 12px; height: 12px; background: #1368ce; top: 25%; left: 45%; opacity: 0.8; animation: float 7s ease-in-out infinite; }
-        .lb-confetti-3 { width: 18px; height: 8px; background: #ff8c00; top: 50%; left: 8%; transform: rotate(30deg); opacity: 0.9; animation: float 6s ease-in-out infinite reverse; }
-        .lb-confetti-4 { width: 10px; height: 20px; background: #ffcc00; bottom: 40%; right: 25%; transform: rotate(70deg); opacity: 0.8; animation: float 5.5s ease-in-out infinite; }
-        .lb-star-1 { color: #ffcc00; font-size: 24px; top: 15%; left: 75%; opacity: 0.9; animation: floatPulse 4s ease-in-out infinite; }
-        .lb-star-2 { color: #1368ce; font-size: 30px; bottom: 15%; left: 25%; opacity: 0.7; animation: floatPulse 5s ease-in-out infinite 1s; }
+        .lb-circle-1 { width: 42px; height: 42px; background: #e21b3c; border-radius: 50%; top: 15%; left: 10%; opacity: 0.55; filter: blur(2px); animation: float 6s ease-in-out infinite; }
+        .lb-circle-2 { width: 28px; height: 28px; background: #00c985; border-radius: 50%; bottom: 25%; left: 5%; opacity: 0.5; filter: blur(1px); animation: float 8s ease-in-out infinite reverse; }
+        .lb-rect-1 { width: 28px; height: 28px; background: #ffcc00; top: 12%; right: 16%; transform: rotate(45deg); opacity: 0.65; border-radius: 6px; animation: floatSpin 8s linear infinite alternate; }
+        .lb-rect-2 { width: 22px; height: 22px; background: #e21b3c; bottom: 22%; right: 10%; transform: rotate(15deg); opacity: 0.55; border-radius: 6px; animation: floatSpin 10s linear infinite; }
+        .lb-confetti-1 { width: 14px; height: 32px; background: #00c985; top: 32%; right: 14%; transform: rotate(-20deg); opacity: 0.55; border-radius: 4px; animation: float 5s ease-in-out infinite; }
+        .lb-confetti-2 { width: 12px; height: 12px; background: #38bdf8; top: 26%; left: 45%; opacity: 0.65; border-radius: 3px; animation: float 7s ease-in-out infinite; }
+        .lb-confetti-3 { width: 18px; height: 8px; background: #ff8c00; top: 52%; left: 6%; transform: rotate(30deg); opacity: 0.7; border-radius: 4px; animation: float 6s ease-in-out infinite reverse; }
+        .lb-confetti-4 { width: 10px; height: 20px; background: #ffcc00; bottom: 38%; right: 24%; transform: rotate(70deg); opacity: 0.65; border-radius: 4px; animation: float 5.5s ease-in-out infinite; }
+        .lb-star-1 { color: #fde047; top: 16%; left: 74%; opacity: 0.75; animation: floatPulse 4s ease-in-out infinite; }
+        .lb-star-2 { color: #38bdf8; bottom: 18%; left: 22%; opacity: 0.65; animation: floatPulse 5s ease-in-out infinite 1s; }
 
         @keyframes float {
           0% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-25px) rotate(15deg); }
+          50% { transform: translateY(-22px) rotate(12deg); }
           100% { transform: translateY(0px) rotate(0deg); }
         }
         @keyframes floatSpin {
           0% { transform: translateY(0px) rotate(0deg); }
-          100% { transform: translateY(-30px) rotate(360deg); }
+          100% { transform: translateY(-28px) rotate(360deg); }
         }
         @keyframes floatPulse {
           0% { transform: scale(1) translateY(0); }
-          50% { transform: scale(1.2) translateY(-10px); }
+          50% { transform: scale(1.18) translateY(-10px); }
           100% { transform: scale(1) translateY(0); }
         }
         @keyframes bounceGlow {
-          0%, 100% { text-shadow: 0 4px 10px rgba(0,0,0,0.3); transform: translateY(0); }
-          50% { text-shadow: 0 10px 20px rgba(255,204,0,0.4); transform: translateY(-5px); }
+          0%, 100% { text-shadow: 0 4px 12px rgba(0,0,0,0.3); transform: translateY(0); }
+          50% { text-shadow: 0 10px 24px rgba(253,224,71,0.35); transform: translateY(-3px); }
         }
 
         .lb-container {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 0 20px;
+          padding: 0 16px;
           position: relative;
           z-index: 10;
+        }
+        @media (min-width: 640px) {
+          .lb-container { padding: 0 24px; }
         }
 
         .lb-header {
           display: flex;
+          flex-direction: column;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 40px;
+          gap: 20px;
+          margin-bottom: 44px;
+        }
+        @media (min-width: 640px) {
+          .lb-header {
+            flex-direction: row;
+            align-items: center;
+          }
         }
 
         .lb-welcome-title {
-          font-size: 1.1rem;
-          color: rgba(255,255,255,0.7);
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: rgba(255,255,255,0.82);
           margin-bottom: 4px;
         }
         .lb-username {
-          font-size: 2.8rem;
+          font-size: clamp(1.75rem, 6vw, 2.75rem);
           font-weight: 900;
           margin-bottom: 12px;
-          text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+          text-shadow: 0 4px 12px rgba(0,0,0,0.3);
           display: flex;
           align-items: center;
+          flex-wrap: wrap;
           gap: 12px;
+          line-height: 1.15;
+          word-break: break-word;
           animation: bounceGlow 4s ease-in-out infinite;
         }
-        
+
         .lb-chips {
           display: flex;
-          gap: 10px;
+          flex-wrap: wrap;
+          gap: 8px;
         }
         .lb-chip {
-          background: rgba(255,255,255,0.15);
-          backdrop-filter: blur(5px);
-          padding: 4px 12px;
+          background: rgba(255,255,255,0.14);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          padding: 5px 12px;
           border-radius: 999px;
           font-size: 0.8rem;
-          font-weight: 700;
-          display: flex;
+          font-weight: 800;
+          display: inline-flex;
           align-items: center;
           gap: 6px;
-          border: 1px solid rgba(255,255,255,0.2);
+          border: 1px solid rgba(255,255,255,0.24);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .btn-create-room {
-          background: #46178f;
+          background: linear-gradient(135deg, #6d28d9, #4f46e5);
           color: white;
-          border: none;
-          padding: 12px 24px;
+          border: 1px solid rgba(255,255,255,0.28);
+          padding: 12px 22px;
           border-radius: 999px;
-          font-weight: 800;
-          font-size: 1rem;
+          font-weight: 900;
+          font-size: 0.95rem;
           cursor: pointer;
-          display: flex;
+          display: inline-flex;
           align-items: center;
+          justify-content: center;
           gap: 8px;
-          box-shadow: 0 4px 0 #2d0d6b;
-          transition: all 0.1s;
+          box-shadow: 0 5px 0 #2e1065, 0 10px 24px rgba(15,23,42,0.35);
+          transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+          flex-shrink: 0;
         }
-        .btn-create-room:active { transform: translateY(4px); box-shadow: 0 0 0 #2d0d6b; }
+        .btn-create-room:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        .btn-create-room:active { transform: translateY(4px); box-shadow: 0 1px 0 #2e1065; }
 
         .lb-actions {
-          display: flex;
-          gap: 40px;
-          justify-content: center;
-          margin-bottom: 60px;
-          flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 32px;
+          margin-bottom: 48px;
+          max-width: 960px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        @media (min-width: 768px) {
+          .lb-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 36px;
+          }
         }
 
         .lb-action-card {
-          background: #fff;
+          background: rgba(255, 255, 255, 0.14);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border: 1.5px solid rgba(255, 255, 255, 0.28);
           border-radius: 24px;
-          padding: 24px;
+          padding: 28px 18px 20px;
           width: 100%;
-          max-width: 450px;
-          box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+          box-shadow: 0 18px 42px rgba(15, 5, 36, 0.35);
           position: relative;
-          transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
+          transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s, border-color 0.25s;
+        }
+        @media (min-width: 640px) {
+          .lb-action-card { padding: 30px 24px 24px; }
         }
         .lb-action-card:hover {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+          transform: translateY(-5px);
+          border-color: rgba(255, 255, 255, 0.45);
+          box-shadow: 0 22px 48px rgba(15, 5, 36, 0.45);
         }
         .lb-action-badge {
           position: absolute;
-          top: -20px;
+          top: -18px;
           left: 50%;
           transform: translateX(-50%);
-          padding: 8px 24px;
-          border-radius: 12px;
+          padding: 7px 18px;
+          border-radius: 14px;
           color: white;
           font-weight: 900;
-          font-size: 1.1rem;
-          display: flex;
+          font-size: 0.95rem;
+          display: inline-flex;
           align-items: center;
           gap: 8px;
-          box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.3);
           white-space: nowrap;
+          border: 1px solid rgba(255,255,255,0.25);
         }
-        .lb-action-badge.pink { background: #e21b3c; border-bottom: 4px solid #b3142e; }
-        .lb-action-badge.blue { background: #1368ce; border-bottom: 4px solid #0e55a3; }
-        
+        .lb-action-badge.pink { background: linear-gradient(135deg, #f43f5e, #e11d48); border-bottom: 3px solid #9f1239; }
+        .lb-action-badge.blue { background: linear-gradient(135deg, #0ea5e9, #2563eb); border-bottom: 3px solid #1e40af; }
+
         .lb-input-group {
-          margin-top: 16px;
+          margin-top: 8px;
           display: flex;
-          gap: 12px;
+          align-items: stretch;
+          gap: 8px;
         }
         .lb-input {
+          min-width: 0;
           flex: 1;
-          background: rgba(0,0,0,0.05);
-          border: 2px solid rgba(0,0,0,0.1);
-          border-radius: 12px;
-          padding: 14px 16px;
-          font-size: 1rem;
-          font-weight: 700;
-          color: #333;
+          background: rgba(255, 255, 255, 0.94);
+          border: 2px solid rgba(255, 255, 255, 0.5);
+          border-radius: 14px;
+          padding: 11px 14px;
+          font-size: 0.95rem;
+          font-weight: 800;
+          color: #1e293b;
           outline: none;
-          transition: border-color 0.2s;
+          transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .lb-input:focus { border-color: #46178f; }
-        
+        .lb-input::placeholder { color: #64748b; font-weight: 600; }
+        .lb-input:focus { border-color: #fde047; box-shadow: 0 0 0 3px rgba(253, 224, 71, 0.35); }
+
         .btn-join {
-          background: #e21b3c;
+          background: linear-gradient(135deg, #f43f5e, #e11d48);
           color: white;
           border: none;
-          padding: 0 24px;
-          border-radius: 12px;
+          padding: 0 18px;
+          border-radius: 14px;
           font-weight: 900;
+          font-size: 0.95rem;
           cursor: pointer;
-          box-shadow: 0 4px 0 #b3142e;
-          transition: all 0.1s;
+          box-shadow: 0 4px 0 #9f1239;
+          transition: transform 0.12s, filter 0.15s, box-shadow 0.12s;
+          flex-shrink: 0;
         }
-        .btn-join:active { transform: translateY(4px); box-shadow: 0 0 0 #b3142e; }
+        .btn-join:hover:not(:disabled) { filter: brightness(1.08); }
+        .btn-join:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #9f1239; }
 
         .lb-rooms-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 20px;
+          gap: 12px;
+          margin-bottom: 18px;
         }
-        
+
         .lb-rooms-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 40px;
-          padding: 20px 10px;
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+          gap: 28px;
+          padding: 12px 4px;
         }
 
         .lb-room-card {
-          border-radius: 20px;
+          border-radius: 22px;
           position: relative;
           color: white;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-          transition: transform 0.2s;
+          box-shadow: 0 14px 32px rgba(15, 5, 36, 0.38);
+          transition: transform 0.22s ease, box-shadow 0.22s ease;
           display: flex;
           flex-direction: column;
         }
-        .lb-room-card:hover { transform: translateY(-5px); }
-        
+        .lb-room-card:hover { transform: translateY(-5px); box-shadow: 0 20px 42px rgba(15, 5, 36, 0.48); }
+
         .lb-room-header {
-          padding: 40px 20px 20px;
+          padding: 46px 18px 20px;
           position: relative;
           display: flex;
           flex-direction: column;
@@ -370,23 +449,20 @@ export default function Lobby() {
           text-align: center;
           flex: 1;
         }
-        .lb-room-icon {
-          font-size: 3rem;
-          margin-bottom: 10px;
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
-        }
         .lb-room-count {
           position: absolute;
           top: 12px;
           left: 12px;
-          background: rgba(0,0,0,0.3);
+          background: rgba(15, 23, 42, 0.52);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(255,255,255,0.2);
           padding: 4px 10px;
           border-radius: 999px;
-          font-size: 0.8rem;
+          font-size: 0.78rem;
           font-weight: 800;
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 5px;
         }
 
         .lb-room-mode {
@@ -395,43 +471,45 @@ export default function Lobby() {
           right: 12px;
           padding: 4px 10px;
           border-radius: 999px;
-          font-size: 0.75rem;
+          font-size: 0.74rem;
           font-weight: 900;
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: 4px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          text-shadow: none;
+          gap: 5px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+          border: 1px solid rgba(255,255,255,0.25);
         }
         .lb-room-mode.tutor {
-          background: #1368ce;
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
           color: white;
         }
         .lb-room-mode.exam {
-          background: #e21b3c;
+          background: linear-gradient(135deg, #f43f5e, #e11d48);
           color: white;
         }
 
-
         .lb-room-body {
-          background: white;
-          color: #333;
-          padding: 16px;
+          background: rgba(255, 255, 255, 0.96);
+          backdrop-filter: blur(10px);
+          color: #1e293b;
+          padding: 14px 16px;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          gap: 12px;
         }
-        
+
         .btn-play-circle {
-          width: 40px; height: 40px;
+          width: 42px; height: 42px;
           border-radius: 50%;
-          background: #46178f;
           color: white;
           display: flex; align-items: center; justify-content: center;
           border: none; cursor: pointer;
-          box-shadow: 0 4px 0 #2d0d6b;
+          flex-shrink: 0;
+          transition: transform 0.15s ease, filter 0.15s ease;
         }
-        .btn-play-circle:active { transform: translateY(4px); box-shadow: 0 0 0 #2d0d6b; }
+        .btn-play-circle:hover { filter: brightness(1.1); transform: scale(1.06); }
+        .btn-play-circle:active { transform: translateY(3px); }
 
         /* Bottom XP Bar Fixed */
         .lb-xp-bar-fixed {
@@ -439,10 +517,12 @@ export default function Lobby() {
           bottom: 0;
           left: 0;
           right: 0;
-          background: rgba(55, 17, 114, 0.95);
-          backdrop-filter: blur(10px);
-          border-top: 1px solid rgba(255,255,255,0.1);
-          padding: 12px 20px;
+          background: rgba(20, 9, 48, 0.86);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border-top: 1px solid rgba(255,255,255,0.18);
+          box-shadow: 0 -10px 30px rgba(0,0,0,0.35);
+          padding: 10px 16px;
           display: flex;
           justify-content: center;
           align-items: center;
@@ -450,117 +530,145 @@ export default function Lobby() {
         }
         .lb-xp-container {
           width: 100%;
-          max-width: 800px;
+          max-width: 820px;
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: 12px;
         }
         .lb-xp-badge {
-          width: 46px; height: 46px;
-          background: #ffcc00;
-          color: #2d0d6b;
+          width: 42px; height: 42px;
+          background: linear-gradient(135deg, #fde047, #f59e0b);
+          color: #2e1065;
           clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
           display: flex; align-items: center; justify-content: center;
           font-weight: 900;
-          font-size: 1.2rem;
+          font-size: 1.1rem;
+          flex-shrink: 0;
+          box-shadow: 0 4px 12px rgba(250, 204, 21, 0.35);
         }
         .lb-xp-track {
           flex: 1;
-          height: 12px;
-          background: rgba(255,255,255,0.1);
+          height: 11px;
+          background: rgba(255,255,255,0.14);
           border-radius: 999px;
           overflow: hidden;
           position: relative;
+          border: 1px solid rgba(255,255,255,0.12);
         }
         .lb-xp-fill {
           height: 100%;
-          background: #00c985;
+          background: linear-gradient(90deg, #10b981, #2dd4bf, #38bdf8);
           border-radius: 999px;
-          transition: width 1s;
+          transition: width 1s ease;
         }
         .lb-xp-text {
-          font-size: 0.8rem;
+          font-size: 0.78rem;
           font-weight: 800;
-          color: rgba(255,255,255,0.7);
+          color: rgba(255,255,255,0.88);
         }
       `}</style>
 
       {/* Fixed Background */}
-      <div className="lb-bg"></div>
+      <div className="lb-bg" aria-hidden="true"></div>
 
       {/* Decorative Shapes */}
-      <div className="lb-shape lb-circle-1"></div>
-      <div className="lb-shape lb-circle-2"></div>
-      <div className="lb-shape lb-rect-1"></div>
-      <div className="lb-shape lb-rect-2"></div>
-      <div className="lb-shape lb-confetti-1"></div>
-      <div className="lb-shape lb-confetti-2"></div>
-      <div className="lb-shape lb-confetti-3"></div>
-      <div className="lb-shape lb-confetti-4"></div>
-      <div className="lb-shape lb-star-1">⭐</div>
-      <div className="lb-shape lb-star-2">✨</div>
+      <div className="lb-shape lb-circle-1" aria-hidden="true"></div>
+      <div className="lb-shape lb-circle-2" aria-hidden="true"></div>
+      <div className="lb-shape lb-rect-1" aria-hidden="true"></div>
+      <div className="lb-shape lb-rect-2" aria-hidden="true"></div>
+      <div className="lb-shape lb-confetti-1" aria-hidden="true"></div>
+      <div className="lb-shape lb-confetti-2" aria-hidden="true"></div>
+      <div className="lb-shape lb-confetti-3" aria-hidden="true"></div>
+      <div className="lb-shape lb-confetti-4" aria-hidden="true"></div>
+      <div className="lb-shape lb-star-1" aria-hidden="true">
+        <Star className="w-6 h-6 fill-amber-300/80 text-amber-300" />
+      </div>
+      <div className="lb-shape lb-star-2" aria-hidden="true">
+        <Sparkles className="w-7 h-7 text-sky-300" />
+      </div>
 
       <div className="lb-container">
-        
         {/* Header Section */}
         <div className="lb-header">
-          <div>
+          <div className="min-w-0">
             <div className="lb-welcome-title">Welcome back,</div>
             <div className="lb-username">
-              {user?.display_name || user?.username || 'Player'} 
-              <span style={{ fontSize: '1.8rem' }}>🎉</span>
+              <span className="min-w-0 break-words">{user?.display_name || user?.username || 'Player'}</span>
+              <span className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-lg shrink-0">
+                <PartyPopper className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300" />
+              </span>
             </div>
             <div className="lb-chips">
-              <div className="lb-chip"><span style={{ color: '#ffcc00' }}>⭐</span> Level {xpInfo.level}</div>
-              <div className="lb-chip"><span style={{ color: '#00c985' }}>💎</span> {xpInfo.currentXP.toLocaleString()} XP</div>
-              <div className="lb-chip"><span style={{ color: '#1368ce' }}>🏆</span> Top 12%</div>
+              <div className="lb-chip">
+                <Star className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                <span>Level {xpInfo.level}</span>
+              </div>
+              <div className="lb-chip">
+                <Gem className="w-3.5 h-3.5 text-emerald-300" />
+                <span>{xpInfo.currentXP.toLocaleString()} XP</span>
+              </div>
+              <div className="lb-chip">
+                <Trophy className="w-3.5 h-3.5 text-sky-300" />
+                <span>Top 12%</span>
+              </div>
             </div>
           </div>
-          
-          <button 
-            className="btn-create-room"
+
+          <button
+            type="button"
+            className="btn-create-room focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
             onClick={handleOpenCreateRoom}
           >
-            <Plus size={20} strokeWidth={3}/> Create Room
+            <Plus size={18} strokeWidth={3} />
+            <span>Create Room</span>
           </button>
         </div>
 
         {/* Action Cards */}
         <div className="lb-actions">
           {/* Join Code */}
-          <div className="lb-action-card">
+          <form
+            className="lb-action-card"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (joinCode.trim()) handleJoinRoom(joinCode.trim());
+            }}
+          >
             <div className="lb-action-badge pink">
-              Join with Code 🎟️
+              <Ticket className="w-4 h-4" strokeWidth={2.5} />
+              <span>Join with Code</span>
             </div>
             <div className="lb-input-group">
-              <input 
-                type="text" 
-                className="lb-input" 
+              <input
+                type="text"
+                className="lb-input focus-visible:ring-2 focus-visible:ring-amber-300"
                 placeholder="Enter code (e.g. ABC123)"
+                aria-label="กรอกรหัสห้องสอบ"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               />
-              <button 
-                className="btn-join"
-                onClick={() => handleJoinRoom(joinCode)}
-                disabled={!joinCode}
-                style={{ opacity: joinCode ? 1 : 0.6 }}
+              <button
+                type="submit"
+                className="btn-join disabled:opacity-55 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                disabled={!joinCode.trim()}
               >
                 Join
               </button>
             </div>
-          </div>
+          </form>
 
           {/* Search Rooms */}
           <div className="lb-action-card">
             <div className="lb-action-badge blue">
-              <Search size={18} strokeWidth={3}/> Search Rooms
+              <Search size={16} strokeWidth={2.8} />
+              <span>Search Rooms</span>
             </div>
             <div className="lb-input-group">
-              <input 
-                type="text" 
-                className="lb-input" 
+              <input
+                type="text"
+                className="lb-input focus-visible:ring-2 focus-visible:ring-amber-300"
                 placeholder="Search by name, subject, or host..."
+                aria-label="ค้นหาห้องสอบด้วยชื่อ วิชา หรือโฮสต์"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -570,136 +678,211 @@ export default function Lobby() {
 
         {/* Popular Rooms */}
         <div className="lb-rooms-header">
-          <div style={{ fontSize: '1.2rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            🔥 Popular Rooms
+          <div className="text-lg sm:text-xl font-black flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shrink-0">
+              <Flame className="w-4 h-4" strokeWidth={2.5} />
+            </span>
+            <span>Popular Rooms</span>
           </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-            See all <ChevronRight size={16}/>
-          </div>
+          <button
+            type="button"
+            onClick={() => { setSearchTerm(''); fetchRooms(1); }}
+            className="text-sm font-bold text-white/85 hover:text-white inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 cursor-pointer"
+          >
+            <span>See all</span>
+            <ChevronRight size={16} />
+          </button>
         </div>
 
         <div className="lb-rooms-grid">
           {filteredRooms.map((room, i) => {
             const theme = getCardTheme(i);
-            const bgUrl = room.theme?.background_url 
+            const ThemeIcon = theme.Icon;
+            const bgUrl = room.theme?.background_url
               || (room.theme?.background_id ? getAssetUrl(room.theme.background_id, 'background') : null)
               || customAssets.find(a => a.id === room.theme?.background_id)?.url
               || null;
-            const frameUrl = room.theme?.frame_url 
+            const frameUrl = room.theme?.frame_url
               || (room.theme?.frame_id ? getAssetUrl(room.theme.frame_id, 'frame') : null)
               || customAssets.find(a => a.id === room.theme?.frame_id)?.url
               || null;
-            
+
             return (
-              <div key={room.id} className="lb-room-card relative" style={{ borderRadius: '20px' }}>
-                {/* Frame behind the card, scaled up to overflow */}
+              <div key={room.id} className="lb-room-card relative" style={{ borderRadius: '22px' }}>
+                {/* Frame behind the card */}
                 {frameUrl && (
-                  <div className="absolute z-0 pointer-events-none" style={{ top: '-15px', left: '-15px', width: 'calc(100% + 30px)', height: 'calc(100% + 30px)', borderRadius: '35px', overflow: 'hidden' }}>
+                  <div
+                    className="absolute z-0 pointer-events-none"
+                    style={{
+                      top: '-10px',
+                      left: '-10px',
+                      width: 'calc(100% + 20px)',
+                      height: 'calc(100% + 20px)',
+                      borderRadius: '30px',
+                      overflow: 'hidden'
+                    }}
+                  >
                     {frameUrl.endsWith('.json') ? (
-                      <LottieViewer 
-                        url={frameUrl} 
-                        className="w-full h-full" 
-                        preserveAspectRatio="none" 
+                      <LottieViewer
+                        url={frameUrl}
+                        className="w-full h-full"
+                        preserveAspectRatio="none"
                         style={{ filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.3))' }}
                       />
                     ) : (
-                      <div className="w-full h-full" style={{
-                        border: '10px solid transparent',
-                        borderImage: `url(${frameUrl}) 30% stretch`
-                      }} />
+                      <div
+                        className="w-full h-full"
+                        style={{
+                          border: '10px solid transparent',
+                          borderImage: `url(${frameUrl}) 30% stretch`
+                        }}
+                      />
                     )}
                   </div>
                 )}
 
-                {/* Solid Background to hide the inner part of the frame */}
-                <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: bgUrl ? '#1a1a2e' : theme.bg, borderRadius: '20px', boxShadow: frameUrl ? '0 0 0 2px rgba(0,0,0,0.5)' : 'none' }}></div>
+                {/* Solid/Glass Base Layer */}
+                <div
+                  className="absolute inset-0 z-10 pointer-events-none border border-white/25"
+                  style={{
+                    background: bgUrl ? '#1a1a2e' : theme.bg,
+                    borderRadius: '22px',
+                    boxShadow: frameUrl ? '0 0 0 2px rgba(0,0,0,0.5)' : 'none'
+                  }}
+                />
 
                 {/* Background image overlay */}
-                <div className="absolute inset-0 z-10 pointer-events-none" style={{ borderRadius: '20px', overflow: 'hidden' }}>
+                <div className="absolute inset-0 z-10 pointer-events-none" style={{ borderRadius: '22px', overflow: 'hidden' }}>
                   {bgUrl && (
                     bgUrl.endsWith('.json') ? (
-                        <LottieViewer url={bgUrl} className="w-full h-full object-cover opacity-60" />
+                      <LottieViewer url={bgUrl} className="w-full h-full object-cover opacity-60" />
                     ) : (
-                        <img src={bgUrl} alt="room bg" className="w-full h-full object-cover opacity-60" />
+                      <img src={bgUrl} alt="room bg" className="w-full h-full object-cover opacity-60" />
                     )
                   )}
                 </div>
 
-                <div className="lb-room-header relative z-20" style={{ background: bgUrl ? 'transparent' : theme.header, borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
+                <div
+                  className="lb-room-header relative z-20"
+                  style={{
+                    background: bgUrl ? 'transparent' : theme.header,
+                    borderTopLeftRadius: '22px',
+                    borderTopRightRadius: '22px'
+                  }}
+                >
                   <div className="lb-room-count relative z-30">
-                    <Users size={14} strokeWidth={3}/> {room.participant_count}
+                    <Users size={13} strokeWidth={2.8} />
+                    <span>{room.participant_count}</span>
                   </div>
                   <div className={`lb-room-mode ${room.mode === 'tutor' ? 'tutor' : 'exam'} relative z-30`}>
-                    {room.mode === 'tutor' ? '🎓 ติวเตอร์' : '🎮 แข่งขัน'}
+                    {room.mode === 'tutor' ? (
+                      <>
+                        <GraduationCap className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        <span>ติวเตอร์</span>
+                      </>
+                    ) : (
+                      <>
+                        <Gamepad2 className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        <span>แข่งขัน</span>
+                      </>
+                    )}
                   </div>
-                  <div className="lb-room-icon relative z-30">{theme.icon}</div>
-                  <h3 className="relative z-30" style={{ 
-                    display: 'inline-block',
-                    fontSize: '1.1rem', 
-                    fontWeight: 900, 
-                    marginBottom: '4px', 
-                    textShadow: bgUrl ? '0 2px 4px rgba(0,0,0,0.8)' : 'none',
-                    background: bgUrl ? 'rgba(0,0,0,0.5)' : 'none',
-                    padding: bgUrl ? '4px 16px' : '0',
-                    borderRadius: '12px',
-                    backdropFilter: bgUrl ? 'blur(4px)' : 'none'
-                  }}>{room.name}</h3>
+
+                  <div className="relative z-30 w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center mb-3 shadow-lg">
+                    <ThemeIcon className="w-7 h-7 text-white drop-shadow-sm" strokeWidth={2.2} />
+                  </div>
+
+                  <h3
+                    className="relative z-30 text-base sm:text-lg font-black leading-snug break-words max-w-full"
+                    style={{
+                      display: 'inline-block',
+                      textShadow: bgUrl ? '0 2px 4px rgba(0,0,0,0.85)' : '0 2px 4px rgba(0,0,0,0.2)',
+                      background: bgUrl ? 'rgba(15, 23, 42, 0.58)' : 'none',
+                      padding: bgUrl ? '4px 14px' : '0',
+                      borderRadius: '12px',
+                      backdropFilter: bgUrl ? 'blur(6px)' : 'none'
+                    }}
+                  >
+                    {room.name}
+                  </h3>
                 </div>
-                
-                <div className="lb-room-body relative z-20" style={{ borderBottomLeftRadius: '20px', borderBottomRightRadius: '20px' }}>
-                  <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 800, textShadow: bgUrl ? '0 1px 3px rgba(0,0,0,0.8)' : 'none' }}>{room.subject}</div>
-                    <div style={{ fontSize: '0.75rem', color: bgUrl ? '#ccc' : '#666', fontWeight: 700, marginTop: '2px', position: 'relative', zIndex: 10 }}>
+
+                <div
+                  className="lb-room-body relative z-20"
+                  style={{ borderBottomLeftRadius: '22px', borderBottomRightRadius: '22px' }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-extrabold text-slate-800 truncate">{room.subject || 'ทั่วไป'}</div>
+                    <div className="text-xs text-slate-600 font-bold mt-0.5 truncate">
                       By {room.host_name || room.Host?.display_name || 'Unknown'}
                     </div>
-                    {room.password && <Lock size={12} className="text-gray-400 mt-1" />}
+                    {room.password && (
+                      <div className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full mt-1">
+                        <Lock size={11} />
+                        <span>มีรหัสผ่าน</span>
+                      </div>
+                    )}
                   </div>
-                  
-                  <button 
-                    className="btn-play-circle" 
+
+                  <button
+                    type="button"
+                    className="btn-play-circle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     onClick={() => handleJoinRoom(room.code)}
+                    aria-label={`เข้าร่วมห้อง ${room.name}`}
                     style={{ background: theme.header, boxShadow: `0 4px 0 ${theme.bg}` }}
                   >
-                    <Play size={18} strokeWidth={3} fill="currentColor"/>
+                    <Play size={18} strokeWidth={3} fill="currentColor" />
                   </button>
                 </div>
               </div>
             );
           })}
-          
+
           {filteredRooms.length === 0 && !loading && (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.05)', borderRadius: '24px', border: '2px dashed rgba(255,255,255,0.2)' }}>
-              <div style={{ fontSize: '4rem', marginBottom: '16px', animation: 'float 3s ease-in-out infinite' }}>🙈</div>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '8px', color: 'white' }}>Oh no! It's so quiet here.</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, marginBottom: '20px' }}>No rooms found matching your search. Be the first to start the fun!</p>
-              <button 
-                className="btn-create-room"
-                style={{ margin: '0 auto', fontSize: '1.1rem', padding: '14px 32px' }}
+            <div className="col-span-full text-center py-12 px-5 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 shadow-xl">
+              <div className="w-20 h-20 rounded-3xl bg-white/15 border border-white/25 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Ghost className="w-10 h-10 text-amber-200 animate-bounce" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black mb-2 text-white">Oh no! It&apos;s so quiet here.</h3>
+              <p className="text-white/80 font-bold text-sm sm:text-base mb-6 max-w-md mx-auto">
+                No rooms found matching your search. Be the first to start the fun!
+              </p>
+              <button
+                type="button"
+                className="btn-create-room mx-auto text-base px-7 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                 onClick={handleOpenCreateRoom}
               >
-                <Plus size={24} strokeWidth={3}/> Create a Room Now 🚀
+                <Rocket size={20} strokeWidth={2.5} />
+                <span>Create a Room Now</span>
               </button>
             </div>
           )}
         </div>
-
       </div>
 
       {/* Bottom XP Bar */}
       <div className="lb-xp-bar-fixed">
         <div className="lb-xp-container">
-          <div className="lb-xp-badge">{xpInfo.level}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="lb-xp-text">XP to next level</span>
-              <span className="lb-xp-text">{xpInfo.currentXP.toLocaleString()} / {xpInfo.nextLevelXP.toLocaleString()} XP</span>
+          <div className="lb-xp-badge" aria-label={`Level ${xpInfo.level}`}>
+            {xpInfo.level}
+          </div>
+          <div className="flex flex-col flex-1 min-w-0 gap-1">
+            <div className="flex justify-between items-center gap-2">
+              <span className="lb-xp-text truncate">XP to next level</span>
+              <span className="lb-xp-text shrink-0">
+                {xpInfo.currentXP.toLocaleString()} / {xpInfo.nextLevelXP.toLocaleString()} XP
+              </span>
             </div>
             <div className="lb-xp-track">
               <div className="lb-xp-fill" style={{ width: `${xpInfo.percentage}%` }}></div>
             </div>
           </div>
-          <div style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-            🎁
+          <div
+            className="w-10 h-10 bg-white/12 border border-white/20 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+            aria-label="Level rewards"
+            title="ของรางวัลระดับเลเวล"
+          >
+            <Gift className="w-5 h-5 text-amber-300" />
           </div>
         </div>
       </div>
@@ -712,30 +895,53 @@ export default function Lobby() {
       />
 
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-sm p-6" style={{ color: '#333' }}>
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Lock size={20}/> Enter Room Password</h2>
+        <div
+          className="fixed inset-0 bg-slate-950/75 flex items-center justify-center z-[250] p-4 backdrop-blur-md"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="password-modal-title"
+        >
+          <div className="bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-slate-800 relative">
+            <button
+              type="button"
+              onClick={() => { setShowPasswordModal(false); setPasswordInput(''); setPendingRoomCode(null); }}
+              aria-label="ปิดหน้าต่างกรอกรหัสผ่าน"
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-center gap-3 mb-4 pr-8">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 id="password-modal-title" className="text-lg font-black text-slate-900 leading-tight">
+                  Enter Room Password
+                </h2>
+                <p className="text-xs font-semibold text-slate-600">กรอกรหัสผ่านเพื่อเข้าสู่ห้อง</p>
+              </div>
+            </div>
             <form onSubmit={handleSubmitPassword}>
               <input
                 type="password"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                className="lb-input w-full mb-4"
+                aria-label="รหัสผ่านห้อง"
+                className="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-3 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-400 mb-5"
                 placeholder="Password"
                 autoFocus
               />
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => { setShowPasswordModal(false); setPasswordInput(''); setPendingRoomCode(null); }}
-                  className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-xl"
+                  className="px-4 py-2.5 text-slate-700 font-bold hover:bg-slate-100 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="btn-join"
-                  style={{ padding: '10px 24px' }}
+                  className="btn-join px-5 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                 >
                   Join Room
                 </button>

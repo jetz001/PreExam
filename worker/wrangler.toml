@@ -26,3 +26,9 @@ new_sqlite_classes = ["RealtimeDO"]
 
 [triggers]
 crons = ["0 0 * * *"]
+
+[observability]
+enabled = true
+
+[observability.traces]
+enabled = true
