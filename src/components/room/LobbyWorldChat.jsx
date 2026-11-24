@@ -14,6 +14,8 @@ import {
   Sparkles,
   Play,
   Share2,
+  Minus,
+  ChevronUp,
 } from 'lucide-react';
 import api from '../../services/api';
 import roomService from '../../services/roomService';
@@ -59,14 +61,14 @@ function formatThaiTime(isoString) {
 }
 
 export default function LobbyWorldChat({
+  isOpen = false,
+  onOpenChange,
   user,
   xpLevel = 1,
   rooms = [],
   onJoinRoom,
   invitedRoom = null,
   onClearInvitedRoom,
-  onNewIncomingMessage,
-  isHiddenOnMobile = false,
 }) {
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
@@ -75,6 +77,7 @@ export default function LobbyWorldChat({
   const [sending, setSending] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineCount, setOnlineCount] = useState(1);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [showRoomPicker, setShowRoomPicker] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -82,21 +85,7 @@ export default function LobbyWorldChat({
   const listRef = useRef(null);
   const isNearBottomRef = useRef(true);
   const clientRef = useRef(null);
-  const isHiddenRef = useRef(isHiddenOnMobile);
-
-  useEffect(() => {
-    isHiddenRef.current = isHiddenOnMobile;
-  }, [isHiddenOnMobile]);
-
-  useEffect(() => {
-    if (invitedRoom?.code) {
-      setSelectedRoom({
-        code: invitedRoom.code,
-        name: invitedRoom.name || invitedRoom.code,
-      });
-      setShowRoomPicker(false);
-    }
-  }, [invitedRoom]);
+  const isOpenRef = useRef(isOpen);
 
   const scrollToBottom = useCallback((behavior = 'smooth') => {
     const el = listRef.current;
@@ -106,12 +95,42 @@ export default function LobbyWorldChat({
     setShowScrollBottom(false);
   }, []);
 
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    if (isOpen) {
+      setUnreadCount(0);
+      requestAnimationFrame(() => scrollToBottom('auto'));
+    }
+  }, [isOpen, scrollToBottom]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        onOpenChange?.(false);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isOpen, onOpenChange]);
+
+  useEffect(() => {
+    if (invitedRoom?.code) {
+      setSelectedRoom({
+        code: invitedRoom.code,
+        name: invitedRoom.name || invitedRoom.code,
+      });
+      setShowRoomPicker(false);
+      onOpenChange?.(true);
+    }
+  }, [invitedRoom, onOpenChange]);
+
   const fetchHistory = useCallback(async (initial = false) => {
     try {
       const res = await roomService.getWorldChatMessages(60);
       if (res?.success && Array.isArray(res.data)) {
         setMessages((prev) => mergeWorldMessages(initial ? [] : prev, res.data));
-        if (initial) {
+        if (initial && isOpenRef.current) {
           requestAnimationFrame(() => scrollToBottom('auto'));
         }
       }
@@ -174,10 +193,9 @@ export default function LobbyWorldChat({
         });
 
         const isMine = user?.id && String(msg.user_id) === String(user.id);
-        if (isHiddenRef.current && !isMine) {
-          onNewIncomingMessage?.();
-        }
-        if (isMine || isNearBottomRef.current) {
+        if (!isOpenRef.current && !isMine) {
+          setUnreadCount((c) => c + 1);
+        } else if (isMine || isNearBottomRef.current) {
           requestAnimationFrame(() => scrollToBottom('smooth'));
         } else {
           setShowScrollBottom(true);
@@ -215,7 +233,7 @@ export default function LobbyWorldChat({
         clientRef.current = null;
       }
     };
-  }, [user?.id, fetchHistory, onNewIncomingMessage, scrollToBottom]);
+  }, [user?.id, fetchHistory, scrollToBottom]);
 
   const handleScroll = () => {
     const el = listRef.current;
@@ -275,22 +293,54 @@ export default function LobbyWorldChat({
 
   const waitingRooms = rooms.filter((r) => String(r.status || 'waiting') === 'waiting');
 
+  if (!isOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpenChange?.(true)}
+        aria-label="เปิดแชทเวิลด์ ห้องสอบกลุ่ม"
+        className="fixed bottom-[76px] left-4 sm:left-6 z-[140] bg-[#160a33]/90 hover:bg-[#1e0f45]/95 backdrop-blur-xl border border-white/25 rounded-full shadow-[0_12px_32px_rgba(15,5,36,0.55)] px-3.5 py-2.5 flex items-center gap-2.5 text-white transition-all hover:scale-[1.03] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+      >
+        <span className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 to-indigo-600 flex items-center justify-center shadow-sm border border-white/20 shrink-0">
+          <Globe className="w-4 h-4 text-white" strokeWidth={2.4} />
+        </span>
+        <div className="text-left leading-tight pr-0.5">
+          <div className="text-sm font-black tracking-tight">แชทเวิลด์</div>
+          <div className="text-[11px] font-bold text-slate-300 flex items-center gap-1 mt-0.5">
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                isConnected ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-amber-400 animate-pulse'
+              }`}
+            />
+            <span>{isConnected ? `ออนไลน์ ${onlineCount}` : 'กำลังเชื่อมต่อ...'}</span>
+          </div>
+        </div>
+        <ChevronUp className="w-4 h-4 text-slate-300 shrink-0" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-2 -right-1.5 bg-rose-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full border-2 border-[#160a33] shadow-md leading-none">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </button>
+    );
+  }
+
   return (
     <section
       aria-label="แชทเวิลด์ ห้องสอบกลุ่ม"
-      className="flex flex-col bg-[#160a33]/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-[0_20px_50px_rgba(15,5,36,0.45)] overflow-hidden h-[540px] lg:h-[580px]"
+      className="fixed bottom-[76px] left-3 right-3 sm:left-6 sm:right-auto sm:w-[370px] z-[150] h-[460px] max-h-[calc(100vh-160px)] flex flex-col bg-[#160a33]/92 backdrop-blur-xl border border-white/25 rounded-3xl shadow-[0_24px_60px_rgba(10,3,26,0.65)] overflow-hidden"
     >
       {/* Header */}
-      <div className="px-4 py-3.5 bg-gradient-to-r from-violet-950/90 via-indigo-950/85 to-purple-950/90 border-b border-white/15 flex items-center justify-between gap-2 shrink-0">
+      <div className="px-4 py-3 bg-gradient-to-r from-violet-950/90 via-indigo-950/85 to-purple-950/90 border-b border-white/15 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="w-9 h-9 rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-600 text-white flex items-center justify-center shadow-md border border-white/20 shrink-0">
-            <Globe className="w-5 h-5" strokeWidth={2.3} />
+          <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-600 text-white flex items-center justify-center shadow-md border border-white/20 shrink-0">
+            <Globe className="w-4 h-4" strokeWidth={2.4} />
           </span>
           <div className="min-w-0">
-            <h2 className="text-base font-black text-white leading-tight truncate">
+            <h2 className="text-sm font-black text-white leading-tight truncate">
               แชทเวิลด์
             </h2>
-            <p className="text-xs font-bold text-slate-300 flex items-center gap-1.5 mt-0.5">
+            <p className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 mt-0.5">
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
                   isConnected ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-amber-400 animate-pulse'
@@ -302,9 +352,20 @@ export default function LobbyWorldChat({
             </p>
           </div>
         </div>
-        <span className="text-xs font-extrabold text-indigo-100 bg-white/12 border border-white/15 px-2.5 py-1 rounded-full shrink-0">
-          {messages.length} ข้อความ
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[11px] font-extrabold text-indigo-100 bg-white/12 border border-white/15 px-2 py-0.5 rounded-full">
+            {messages.length} ข้อความ
+          </span>
+          <button
+            type="button"
+            onClick={() => onOpenChange?.(false)}
+            aria-label="ย่อแชทเวิลด์"
+            title="ย่อแชทเวิลด์"
+            className="w-8 h-8 rounded-full bg-white/12 hover:bg-white/22 border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+          >
+            <Minus className="w-4 h-4" strokeWidth={2.6} />
+          </button>
+        </div>
       </div>
 
       {/* Message Feed */}
@@ -312,38 +373,38 @@ export default function LobbyWorldChat({
         <div
           ref={listRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto px-3.5 py-3.5 space-y-3 bg-slate-950/35"
+          className="flex-1 overflow-y-auto px-3.5 py-3 space-y-3 bg-slate-950/35"
         >
           {loading ? (
             <div className="space-y-3 animate-pulse">
-              {[0, 1, 2, 3].map((idx) => (
+              {[0, 1, 2].map((idx) => (
                 <div key={idx} className="flex items-start gap-2.5">
                   <div className="w-8 h-8 rounded-full bg-white/15 shrink-0" />
                   <div className="flex-1 space-y-1.5">
                     <div className="h-3 w-28 bg-white/15 rounded" />
-                    <div className="h-10 w-4/5 bg-white/10 rounded-2xl" />
+                    <div className="h-9 w-4/5 bg-white/10 rounded-2xl" />
                   </div>
                 </div>
               ))}
             </div>
           ) : messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-4 py-6">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-sky-300 mb-3">
-                <Sparkles className="w-6 h-6" />
+            <div className="h-full flex flex-col items-center justify-center text-center px-3 py-4">
+              <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-sky-300 mb-2.5">
+                <Sparkles className="w-5 h-5" />
               </div>
               <p className="text-sm font-black text-white">ยังไม่มีข้อความในแชทเวิลด์</p>
-              <p className="text-xs text-slate-300 mt-1 mb-4">
+              <p className="text-xs text-slate-300 mt-1 mb-3.5">
                 ทักทายเพื่อนๆ หรือกดแชร์ห้องสอบเพื่อหาคนร่วมแข่งขันได้เลย
               </p>
               {user && (
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap justify-center gap-1.5">
                   {QUICK_STARTERS.map((starter) => (
                     <button
                       key={starter}
                       type="button"
                       onClick={() => handleSubmit(null, starter)}
                       disabled={sending}
-                      className="text-xs font-bold px-3 py-1.5 rounded-full bg-white/12 hover:bg-white/22 text-sky-100 border border-white/20 transition-all cursor-pointer"
+                      className="text-xs font-bold px-2.5 py-1.5 rounded-full bg-white/12 hover:bg-white/22 text-sky-100 border border-white/20 transition-all cursor-pointer"
                     >
                       {starter}
                     </button>
@@ -383,14 +444,14 @@ export default function LobbyWorldChat({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span
-                        className={`text-xs font-extrabold truncate max-w-[135px] ${
+                        className={`text-xs font-extrabold truncate max-w-[130px] ${
                           isMe ? 'text-amber-300' : 'text-sky-200'
                         }`}
                       >
                         {msg.display_name}
                       </span>
                       <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-amber-400/15 text-amber-200 border border-amber-300/25 leading-none">
-                        Lv.{msg.level || 1}
+                        Lv.{msg.level || xpLevel || 1}
                       </span>
                       {isAdminMsg && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] font-black px-1.5 py-0.5 rounded-md bg-rose-500/25 text-rose-200 border border-rose-400/35 leading-none">
@@ -424,10 +485,10 @@ export default function LobbyWorldChat({
                       {msg.message}
 
                       {msg.room_code && (
-                        <div className="mt-2 p-2.5 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-400/35 flex items-center justify-between gap-2">
+                        <div className="mt-2 p-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-400/35 flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 text-[11px] font-black text-emerald-200">
-                              <Ticket className="w-3.5 h-3.5 shrink-0" />
+                            <div className="flex items-center gap-1 text-[11px] font-black text-emerald-200">
+                              <Ticket className="w-3 h-3 shrink-0" />
                               <span>รหัส {msg.room_code}</span>
                             </div>
                             <div className="text-xs font-extrabold text-white truncate mt-0.5">
@@ -437,7 +498,7 @@ export default function LobbyWorldChat({
                           <button
                             type="button"
                             onClick={() => onJoinRoom?.(msg.room_code)}
-                            className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                           >
                             <Play className="w-3 h-3 fill-current" />
                             <span>เข้าห้องเลย</span>
@@ -468,7 +529,7 @@ export default function LobbyWorldChat({
       {user ? (
         <div className="p-3 bg-slate-950/75 border-t border-white/15 shrink-0 space-y-2">
           {showRoomPicker && (
-            <div className="bg-slate-900/95 border border-white/20 rounded-2xl p-2.5 max-h-40 overflow-y-auto space-y-1.5">
+            <div className="bg-slate-900/95 border border-white/20 rounded-2xl p-2 max-h-36 overflow-y-auto space-y-1.5">
               <div className="flex items-center justify-between px-1 mb-1">
                 <span className="text-xs font-extrabold text-sky-200 flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5" />
@@ -496,7 +557,7 @@ export default function LobbyWorldChat({
                       setSelectedRoom({ code: r.code, name: r.name });
                       setShowRoomPicker(false);
                     }}
-                    className="w-full text-left px-2.5 py-2 rounded-xl bg-white/8 hover:bg-white/16 border border-white/10 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                    className="w-full text-left px-2.5 py-1.5 rounded-xl bg-white/8 hover:bg-white/16 border border-white/10 flex items-center justify-between gap-2 transition-colors cursor-pointer"
                   >
                     <span className="text-xs font-bold text-white truncate">{r.name}</span>
                     <span className="text-[11px] font-black text-emerald-300 bg-emerald-500/15 border border-emerald-400/25 px-2 py-0.5 rounded-md shrink-0">
@@ -545,7 +606,7 @@ export default function LobbyWorldChat({
               maxLength={300}
               placeholder={selectedRoom ? 'พิมพ์ข้อความชวนเพื่อนเข้าห้อง...' : 'พิมพ์คุยในแชทเวิลด์...'}
               aria-label="พิมพ์ข้อความแชทเวิลด์"
-              className="min-w-0 flex-1 bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:border-sky-400 focus-visible:ring-2 focus-visible:ring-sky-400"
+              className="min-w-0 flex-1 bg-white/10 border border-white/20 rounded-xl px-3.5 py-2 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:border-sky-400 focus-visible:ring-2 focus-visible:ring-sky-400"
             />
             <button
               type="submit"
@@ -564,14 +625,14 @@ export default function LobbyWorldChat({
           )}
         </div>
       ) : (
-        <div className="p-3.5 bg-slate-950/75 border-t border-white/15 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-3 bg-slate-950/75 border-t border-white/15 flex items-center justify-between gap-2.5 shrink-0">
           <p className="text-xs font-bold text-slate-300 leading-snug">
-            เข้าสู่ระบบเพื่อพิมพ์พูดคุยและชวนเพื่อนเข้าห้องสอบ
+            เข้าสู่ระบบเพื่อพิมพ์คุยและชวนเพื่อนเข้าห้อง
           </p>
           <button
             type="button"
             onClick={() => navigate('/login')}
-            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-md hover:brightness-105 transition-all cursor-pointer"
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-md hover:brightness-105 transition-all cursor-pointer"
           >
             <LogIn className="w-3.5 h-3.5" />
             <span>เข้าสู่ระบบ</span>

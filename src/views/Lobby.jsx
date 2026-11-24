@@ -29,7 +29,6 @@ import {
   PartyPopper,
   KeyRound,
   X,
-  Globe,
   Share2
 } from 'lucide-react';
 import CreateRoomModal from '../components/room/CreateRoomModal';
@@ -56,9 +55,8 @@ export default function Lobby() {
   const [passwordInput, setPasswordInput] = useState('');
   const [pendingRoomCode, setPendingRoomCode] = useState(null);
   const [customAssets, setCustomAssets] = useState(globalLobbyAssetsCache || []);
-  const [mobileTab, setMobileTab] = useState('rooms');
+  const [isWorldChatOpen, setIsWorldChatOpen] = useState(false);
   const [invitedRoom, setInvitedRoom] = useState(null);
-  const [unreadWorldCount, setUnreadWorldCount] = useState(0);
 
   const navigate = useNavigate();
 
@@ -174,8 +172,7 @@ export default function Lobby() {
 
   const handleShareRoomToWorld = (room) => {
     setInvitedRoom({ code: room.code, name: room.name });
-    setMobileTab('chat');
-    setUnreadWorldCount(0);
+    setIsWorldChatOpen(true);
   };
 
   const getCardTheme = (index) => {
@@ -202,7 +199,7 @@ export default function Lobby() {
           min-height: 100vh;
           width: 100%;
           padding-top: 28px;
-          padding-bottom: 124px;
+          padding-bottom: 112px;
           font-family: 'Nunito', 'Sarabun', sans-serif;
           position: relative;
           overflow-x: hidden;
@@ -247,7 +244,7 @@ export default function Lobby() {
         }
 
         .lb-container {
-          max-width: 1280px;
+          max-width: 1200px;
           margin: 0 auto;
           padding: 0 16px;
           position: relative;
@@ -336,8 +333,10 @@ export default function Lobby() {
           display: grid;
           grid-template-columns: 1fr;
           gap: 32px;
-          margin-bottom: 40px;
-          width: 100%;
+          margin-bottom: 48px;
+          max-width: 960px;
+          margin-left: auto;
+          margin-right: auto;
         }
         @media (min-width: 768px) {
           .lb-actions {
@@ -686,44 +685,6 @@ export default function Lobby() {
           </div>
         </div>
 
-        {/* Mobile Section Tabs (< lg) */}
-        <div className="flex lg:hidden items-center gap-2 p-1.5 mb-5 rounded-2xl bg-white/12 backdrop-blur-md border border-white/20">
-          <button
-            type="button"
-            onClick={() => setMobileTab('rooms')}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-black inline-flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              mobileTab === 'rooms'
-                ? 'bg-white text-indigo-950 shadow-md'
-                : 'text-white/85 hover:text-white'
-            }`}
-          >
-            <Flame className="w-4 h-4 text-orange-500" />
-            <span>ห้องสอบกลุ่ม ({filteredRooms.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMobileTab('chat');
-              setUnreadWorldCount(0);
-            }}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-black inline-flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              mobileTab === 'chat'
-                ? 'bg-white text-indigo-950 shadow-md'
-                : 'text-white/85 hover:text-white'
-            }`}
-          >
-            <Globe className="w-4 h-4 text-sky-500" />
-            <span>แชทเวิลด์</span>
-            {unreadWorldCount > 0 && mobileTab !== 'chat' && (
-              <span className="px-1.5 py-0.5 text-[11px] font-black rounded-full bg-rose-500 text-white leading-none">
-                {unreadWorldCount > 99 ? '99+' : unreadWorldCount}
-              </span>
-            )}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_390px] gap-6 xl:gap-8 items-start">
-          <div className={mobileTab === 'rooms' ? 'block' : 'hidden lg:block'}>
         {/* Popular Rooms */}
         <div className="lb-rooms-header">
           <div className="text-lg sm:text-xl font-black flex items-center gap-2.5">
@@ -919,22 +880,19 @@ export default function Lobby() {
             </div>
           )}
         </div>
-          </div>
-
-          <div className={`${mobileTab === 'chat' ? 'block' : 'hidden lg:block'} lg:sticky lg:top-6`}>
-            <LobbyWorldChat
-              user={user}
-              xpLevel={xpInfo.level}
-              rooms={rooms}
-              onJoinRoom={(code) => handleJoinRoom(code)}
-              invitedRoom={invitedRoom}
-              onClearInvitedRoom={() => setInvitedRoom(null)}
-              isHiddenOnMobile={mobileTab !== 'chat'}
-              onNewIncomingMessage={() => setUnreadWorldCount((c) => c + 1)}
-            />
-          </div>
-        </div>
       </div>
+
+      {/* Floating Collapsible World Chat Widget */}
+      <LobbyWorldChat
+        isOpen={isWorldChatOpen}
+        onOpenChange={setIsWorldChatOpen}
+        user={user}
+        xpLevel={xpInfo.level}
+        rooms={rooms}
+        onJoinRoom={(code) => handleJoinRoom(code)}
+        invitedRoom={invitedRoom}
+        onClearInvitedRoom={() => setInvitedRoom(null)}
+      />
 
       {/* Bottom XP Bar */}
       <div className="lb-xp-bar-fixed">
