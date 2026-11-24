@@ -7,6 +7,11 @@ const paymentService = {
         return response.data; // Expecting { url: '...' }
     },
 
+    verifyCheckoutSession: async (sessionId) => {
+        const response = await api.post('/payments/verify-session', { sessionId });
+        return response.data;
+    },
+
     getPlans: async () => {
         const response = await api.get('/payments/plans');
         return response.data;

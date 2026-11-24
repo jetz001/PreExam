@@ -130,30 +130,47 @@ export class RealtimeDO {
       return new Response(null, { status: 101, webSocket: client });
     }
 
+    if (url.hostname === "realtime.internal" && url.pathname === "/internal/broadcast" && request.method === "POST") {
+      return this.handleBroadcastPost(request);
+    }
+
     if (url.pathname.endsWith("/broadcast") && request.method === "POST") {
       const auth = request.headers.get("authorization") || "";
       const key = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "";
       if (!key || key !== this.env.INTERNAL_API_KEY) {
         return Response.json({ error: "unauthorized" }, { status: 401 });
       }
-
-      const body = await parseJson(request);
-      if (!body || typeof body !== "object") {
-        return Response.json({ error: "invalid_body" }, { status: 400 });
-      }
-
-      const event = (body as any).event;
-      const data = (body as any).data;
-      const room = toRoomKey((body as any).room);
-      if (typeof event !== "string" || !event) {
-        return Response.json({ error: "invalid_event" }, { status: 400 });
-      }
-
-      this.broadcast({ event, data }, room);
-      return Response.json({ ok: true });
+      return this.handleBroadcastPost(request);
     }
 
     return Response.json({ error: "not_found" }, { status: 404 });
+  }
+
+  private async handleBroadcastPost(request: Request) {
+    const body = await parseJson(request);
+    if (!body || typeof body !== "object") {
+      return Response.json({ error: "invalid_body" }, { status: 400 });
+    }
+
+    const event = (body as any).event;
+    const data = (body as any).data;
+    const room = toRoomKey((body as any).room);
+    if (typeof event !== "string" || !event) {
+      return Response.json({ error: "invalid_event" }, { status: 400 });
+    }
+
+    this.broadcast({ event, data }, room);
+    return Response.json({ ok: true });
+  }
+
+  private getRoomOnlineCount(room: string, excludeWs?: WebSocket) {
+    let count = 0;
+    for (const ws of this.state.getWebSockets()) {
+      if (excludeWs && ws === excludeWs) continue;
+      const rooms = this.getAttachment(ws)?.rooms || [];
+      if (rooms.includes(room)) count++;
+    }
+    return count;
   }
 
   private broadcast(msg: { event: string; data?: unknown }, room: string | null) {
@@ -165,7 +182,11 @@ export class RealtimeDO {
         const rooms = attachment?.rooms || [];
         if (!rooms.includes(room)) continue;
       }
-      ws.send(payload);
+      try {
+        ws.send(payload);
+      } catch {
+        // Ignore closed socket so one dead client never blocks broadcast.
+      }
     }
   }
 
@@ -278,6 +299,28 @@ export class RealtimeDO {
         attachment.rooms = Array.from(new Set([...(attachment.rooms || []), `group:${groupKey}`]));
         this.setAttachment(ws, attachment);
       }
+      return;
+    }
+
+    if (event === "join_world_chat") {
+      const userId = (data as any)?.userId;
+      attachment.rooms = Array.from(new Set([...(attachment.rooms || []), "world:lobby"]));
+      if (userId !== undefined && userId !== null) attachment.userId = String(userId);
+      this.setAttachment(ws, attachment);
+      this.broadcast(
+        { event: "world_presence", data: { onlineCount: this.getRoomOnlineCount("world:lobby") } },
+        "world:lobby"
+      );
+      return;
+    }
+
+    if (event === "leave_world_chat") {
+      attachment.rooms = (attachment.rooms || []).filter((r) => r !== "world:lobby");
+      this.setAttachment(ws, attachment);
+      this.broadcast(
+        { event: "world_presence", data: { onlineCount: this.getRoomOnlineCount("world:lobby") } },
+        "world:lobby"
+      );
       return;
     }
 
@@ -479,6 +522,24 @@ export class RealtimeDO {
         }
       }
       return;
+    }
+  }
+
+  async webSocketClose(ws: WebSocket) {
+    if (this.getAttachment(ws)?.rooms?.includes("world:lobby")) {
+      this.broadcast(
+        { event: "world_presence", data: { onlineCount: this.getRoomOnlineCount("world:lobby", ws) } },
+        "world:lobby"
+      );
+    }
+  }
+
+  async webSocketError(ws: WebSocket) {
+    if (this.getAttachment(ws)?.rooms?.includes("world:lobby")) {
+      this.broadcast(
+        { event: "world_presence", data: { onlineCount: this.getRoomOnlineCount("world:lobby", ws) } },
+        "world:lobby"
+      );
     }
   }
 }

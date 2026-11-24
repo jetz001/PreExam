@@ -184,7 +184,7 @@ const PremiumUpgrade = () => {
 
                     <div className="p-5 sm:p-8 md:p-10 flex flex-col items-center">
                         <p className="text-slate-200 mb-7 text-center max-w-xl text-sm sm:text-base leading-relaxed">
-                            เลือกแพ็กเกจเพื่อปลดล็อกฟีเจอร์พรีเมียม ชำระเงินง่ายและปลอดภัยผ่านบัตรเครดิตหรือ PromptPay อัปเกรดอัตโนมัติทันทีไม่ต้องแจ้งสลิป
+                            เลือกแพ็กเกจเพื่อปลดล็อกฟีเจอร์พรีเมียม ชำระเงินง่ายและปลอดภัยผ่าน PromptPay ผ่าน Stripe อัปเกรดอัตโนมัติทันทีไม่ต้องแจ้งสลิป
                         </p>
 
                         {errorMessage && (

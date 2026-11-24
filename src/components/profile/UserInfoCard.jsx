@@ -205,7 +205,7 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
                     {/* Membership - Green Block */}
                     <div className="flex flex-col items-center p-3 bg-[#26890c] rounded-2xl min-w-[85px] shadow-[0_4px_0_#1e6c09] text-white transform transition hover:-translate-y-1">
                         <div className="text-white mb-1 text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-1 rounded-lg">
-                            {user.plan_type || 'FREE'}
+                            {isPremiumUser(user) ? 'PREMIUM' : 'FREE'}
                         </div>
                         <span className="text-xl font-black mt-1">Plan</span>
                     </div>
@@ -234,7 +234,7 @@ const UserInfoCard = ({ user, isOwnProfile, onEditProfile, onUserUpdate }) => {
 
                 {isOwnProfile && (
                     <div className="mt-8 flex flex-col gap-3 w-full">
-                        {(!user.plan_type || user.plan_type === 'free') && (
+                        {!isPremiumUser(user) && (
                             <button
                                 onClick={() => navigate('/premium-upgrade')}
                                 className="w-full flex items-center justify-center gap-2 bg-[#ebbf00] text-white text-lg font-black uppercase tracking-wider py-4 rounded-2xl hover:bg-[#d4ac00] shadow-[0_6px_0_#b39100] active:translate-y-[6px] active:shadow-none transition-all"

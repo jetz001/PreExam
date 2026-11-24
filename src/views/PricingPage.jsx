@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Star, Shield, Zap, X, Sparkles, Crown, ArrowRight } from 'lucide-react';
+import { Check, Star, Shield, Zap, X, Sparkles, Crown, ArrowRight, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 import paymentService from '../services/paymentService';
 import SlipUploadModal from '../components/payment/SlipUploadModal';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
+import { isPremiumUser } from '../utils/userAccess';
 import '../assets/css/pricing.css';
 
 const PREDEFINED_FEATURES = {
@@ -22,12 +24,108 @@ const PricingPage = () => {
   const [transaction, setTransaction] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [checkoutPlanId, setCheckoutPlanId] = useState(null);
-  const { user } = useAuth();
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user, refreshUser, updateUser } = useAuth();
   const navigate = useNavigate();
+  const userIsPremium = isPremiumUser(user);
 
   useEffect(() => {
     fetchPlans();
   }, []);
+
+  useEffect(() => {
+    const isSuccess = searchParams.get('success') === 'true';
+    const isCanceled = searchParams.get('canceled') === 'true';
+    const sessionId = searchParams.get('session_id');
+
+    if (!isSuccess && !isCanceled) return undefined;
+
+    let cancelled = false;
+
+    if (isCanceled) {
+      setPaymentStatus({
+        state: 'canceled',
+        message: 'คุณได้ยกเลิกการชำระเงิน สามารถเลือกแพ็กเกจใหม่ได้ทุกเมื่อ',
+      });
+      toast('ยกเลิกการชำระเงินแล้ว');
+      setSearchParams({}, { replace: true });
+      return undefined;
+    }
+
+    const confirmPayment = async () => {
+      setPaymentStatus({
+        state: 'verifying',
+        message: 'กำลังตรวจสอบการชำระเงินและอัปเกรดบัญชีเป็น Premium...',
+      });
+
+      try {
+        if (sessionId) {
+          const res = await paymentService.verifyCheckoutSession(sessionId);
+          if (cancelled) return;
+          if (res?.paid && res?.user) {
+            updateUser(res.user);
+            setPaymentStatus({
+              state: 'success',
+              message: 'ชำระเงินสำเร็จ! บัญชีของคุณได้รับการอัปเกรดเป็น Premium เรียบร้อยแล้ว',
+            });
+            toast.success('อัปเกรดเป็น Premium สำเร็จ!');
+            setSearchParams({}, { replace: true });
+            return;
+          }
+        }
+
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+          if (cancelled) return;
+          const fresh = await refreshUser?.();
+          if (cancelled) return;
+          if (isPremiumUser(fresh)) {
+            setPaymentStatus({
+              state: 'success',
+              message: 'ชำระเงินสำเร็จ! บัญชีของคุณได้รับการอัปเกรดเป็น Premium เรียบร้อยแล้ว',
+            });
+            toast.success('อัปเกรดเป็น Premium สำเร็จ!');
+            setSearchParams({}, { replace: true });
+            return;
+          }
+          if (attempt < 3) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+          }
+        }
+
+        if (!cancelled) {
+          setPaymentStatus({
+            state: 'pending',
+            message: 'ระบบได้รับคำขอชำระเงินแล้ว กำลังรอการยืนยันจากธนาคาร กรุณารีเฟรชหน้านี้ในอีกสักครู่',
+          });
+          setSearchParams({}, { replace: true });
+        }
+      } catch (err) {
+        console.error('Failed to verify checkout session:', err);
+        if (!cancelled) {
+          const fresh = await refreshUser?.();
+          if (isPremiumUser(fresh)) {
+            setPaymentStatus({
+              state: 'success',
+              message: 'ชำระเงินสำเร็จ! บัญชีของคุณได้รับการอัปเกรดเป็น Premium เรียบร้อยแล้ว',
+            });
+            toast.success('อัปเกรดเป็น Premium สำเร็จ!');
+          } else {
+            setPaymentStatus({
+              state: 'pending',
+              message: 'กำลังตรวจสอบสถานะการชำระเงิน กรุณารอสักครู่แล้วรีเฟรชหน้านี้',
+            });
+          }
+          setSearchParams({}, { replace: true });
+        }
+      }
+    };
+
+    confirmPayment();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, setSearchParams, refreshUser, updateUser]);
 
   const fetchPlans = async () => {
     try {
@@ -111,7 +209,52 @@ const PricingPage = () => {
           <p className="text-lg md:text-xl text-slate-600 font-bold max-w-2xl mx-auto">
             เลือกแพ็กเกจที่เหมาะกับเป้าหมายการสอบของคุณ แล้วปลดล็อกฟีเจอร์พิเศษได้ทันที
           </p>
+          {userIsPremium && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-sm font-bold text-emerald-700 shadow-sm">
+              <Crown size={15} className="text-amber-500" />
+              <span>
+                คุณเป็นสมาชิก Premium อยู่แล้ว
+                {user?.premium_expiry
+                  ? ` (ใช้ได้ถึง ${new Date(user.premium_expiry).toLocaleDateString('th-TH')})`
+                  : ''}
+              </span>
+            </div>
+          )}
         </div>
+
+        {paymentStatus && (
+          <div
+            role="status"
+            className={`max-w-4xl mx-auto mb-8 rounded-2xl border p-4 sm:p-5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 backdrop-blur-md ${
+              paymentStatus.state === 'success'
+                ? 'bg-emerald-50/95 border-emerald-200 text-emerald-900'
+                : paymentStatus.state === 'canceled'
+                ? 'bg-amber-50/95 border-amber-200 text-amber-900'
+                : 'bg-indigo-50/95 border-indigo-200 text-indigo-900'
+            }`}
+          >
+            <div className="flex items-center gap-3 font-bold text-sm sm:text-base">
+              {paymentStatus.state === 'verifying' ? (
+                <Loader2 size={20} className="animate-spin text-indigo-600 shrink-0" />
+              ) : paymentStatus.state === 'success' ? (
+                <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle size={20} className="text-amber-600 shrink-0" />
+              )}
+              <span>{paymentStatus.message}</span>
+            </div>
+            {paymentStatus.state === 'success' && (
+              <button
+                type="button"
+                onClick={() => navigate('/profile')}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs sm:text-sm font-black text-white transition-colors"
+              >
+                <span>ไปที่โปรไฟล์</span>
+                <ArrowRight size={15} />
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-7 max-w-6xl mx-auto items-stretch">
           {/* Free Plan */}
@@ -167,7 +310,7 @@ const PricingPage = () => {
               className="w-full py-3.5 bg-slate-100 text-slate-500 font-black text-lg rounded-xl btn-kahoot border border-slate-200 border-b-4 border-b-slate-300 cursor-not-allowed uppercase"
               style={{ fontFamily: "'Nunito', 'Sarabun', sans-serif" }}
             >
-              Current Plan
+              {userIsPremium ? 'Free Tier' : 'Current Plan'}
             </button>
           </div>
 
@@ -266,7 +409,7 @@ const PricingPage = () => {
                     fontFamily: "'Nunito', 'Sarabun', sans-serif",
                   }}
                 >
-                  <span>{isSubmitting ? 'กำลังเปิดหน้าชำระเงิน...' : 'Get Premium'}</span>
+                  <span>{isSubmitting ? 'กำลังเปิดหน้าชำระเงิน...' : userIsPremium ? 'ต่ออายุ Premium' : 'Get Premium'}</span>
                   {!isSubmitting && <ArrowRight size={19} />}
                 </button>
               </div>

@@ -74,6 +74,21 @@ const roomService = {
     resetRoomExam: async (id) => {
         const response = await api.post(`/rooms/${id}/reset`);
         return response.data;
+    },
+
+    getWorldChatMessages: async (limit = 60) => {
+        const response = await api.get(`/lobby/world-chat?limit=${limit}`);
+        return response.data;
+    },
+
+    sendWorldChatMessage: async (data) => {
+        const response = await api.post('/lobby/world-chat', data);
+        return response.data;
+    },
+
+    deleteWorldChatMessage: async (id) => {
+        const response = await api.delete(`/lobby/world-chat/${id}`);
+        return response.data;
     }
 };
 

@@ -2,14 +2,36 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
 import BrandLogo from '../components/common/BrandLogo';
+import { useAuth } from '../context/AuthContext';
+import paymentService from '../services/paymentService';
 
 const PaymentSuccess = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const sessionId = searchParams.get('session_id');
     const [secondsLeft, setSecondsLeft] = useState(5);
+    const { refreshUser, updateUser } = useAuth();
 
     useEffect(() => {
+        let cancelled = false;
+        const syncSession = async () => {
+            try {
+                if (sessionId) {
+                    const res = await paymentService.verifyCheckoutSession(sessionId);
+                    if (!cancelled && res?.paid && res?.user) {
+                        updateUser(res.user);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.error('Session verify error:', err);
+            }
+            if (!cancelled) {
+                await refreshUser?.();
+            }
+        };
+        syncSession();
+
         const timer = setTimeout(() => {
             navigate('/profile');
         }, 5000);
@@ -19,10 +41,11 @@ const PaymentSuccess = () => {
         }, 1000);
 
         return () => {
+            cancelled = true;
             clearTimeout(timer);
             clearInterval(countdown);
         };
-    }, [navigate, sessionId]);
+    }, [navigate, sessionId, refreshUser, updateUser]);
 
     return (
         <div

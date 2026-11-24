@@ -311,6 +311,69 @@ export async function touchUserLastActive(db: D1Database, id: string, at = nowIs
     .run();
 }
 
+export async function activateUserPremium(db: D1Database, userId: string, durationDays: number) {
+  const days = Math.max(
+    1,
+    Number.isFinite(Number(durationDays)) && Number(durationDays) > 0
+      ? Math.floor(Number(durationDays))
+      : 30
+  );
+  const currentUser = await db
+    .prepare("SELECT plan_type, premium_start_date, premium_expiry FROM users WHERE id = ? LIMIT 1")
+    .bind(String(userId))
+    .first<{ plan_type?: string | null; premium_start_date?: string | null; premium_expiry?: string | null }>();
+
+  const now = new Date();
+  const nowIsoStr = now.toISOString();
+  const existingExpiry = currentUser?.premium_expiry ? new Date(String(currentUser.premium_expiry)) : null;
+  const hasActivePremium =
+    currentUser?.plan_type === "premium" &&
+    existingExpiry !== null &&
+    !Number.isNaN(existingExpiry.getTime()) &&
+    existingExpiry > now;
+
+  const startDate = hasActivePremium ? (currentUser?.premium_start_date || nowIsoStr) : nowIsoStr;
+  const baseTime = hasActivePremium && existingExpiry ? existingExpiry.getTime() : now.getTime();
+  const newExpiryIso = new Date(baseTime + days * 24 * 60 * 60 * 1000).toISOString();
+
+  await db
+    .prepare("UPDATE users SET plan_type = 'premium', premium_start_date = ?, premium_expiry = ?, updated_at = ? WHERE id = ?")
+    .bind(startDate, newExpiryIso, nowIsoStr, String(userId))
+    .run();
+
+  return {
+    premium_start_date: startDate,
+    premium_expiry: newExpiryIso,
+  };
+}
+
+export async function syncUserPremiumExpiry(db: D1Database, user: any) {
+  if (!user || user.plan_type !== "premium" || !user.premium_expiry) {
+    return user;
+  }
+
+  const expiry = new Date(String(user.premium_expiry));
+  if (Number.isNaN(expiry.getTime()) || expiry > new Date()) {
+    return user;
+  }
+
+  try {
+    await db
+      .prepare("UPDATE users SET plan_type = 'free', premium_expiry = NULL, premium_start_date = NULL, updated_at = ? WHERE id = ? AND plan_type = 'premium'")
+      .bind(nowIso(), String(user.id))
+      .run();
+  } catch (err) {
+    console.error("Failed to sync expired premium user:", err);
+  }
+
+  return {
+    ...user,
+    plan_type: "free",
+    premium_expiry: null,
+    premium_start_date: null,
+  };
+}
+
 export async function createSystemLog(
   db: D1Database,
   payload: { action: string; user_id?: string | null; details?: unknown; created_at?: string }
@@ -1295,7 +1358,7 @@ export async function adminGetDashboardStats(db: D1Database) {
 
   const [totalUsersRes, premiumUsersRes, paymentsRes, activeUsersRes, mauRes, ticketsRes, questionsRes, usersTrendRes, examsTrendRes] = await Promise.all([
     db.prepare("SELECT COUNT(*) as count FROM users").first<{count: number}>(),
-    db.prepare("SELECT COUNT(*) as count FROM users WHERE plan_type = 'premium'").first<{count: number}>(),
+    db.prepare("SELECT COUNT(*) as count FROM users WHERE plan_type = 'premium' AND (premium_expiry IS NULL OR premium_expiry = '' OR premium_expiry > ?)").bind(nowIso()).first<{count: number}>(),
     db.prepare("SELECT amount, status, created_at FROM transactions").all(),
     db.prepare("SELECT COUNT(*) as count FROM users WHERE last_active_at >= ?").bind(todayStartISO).first<{count: number}>(),
     db.prepare("SELECT COUNT(*) as count FROM users WHERE last_active_at >= datetime('now', '-30 day')").first<{count: number}>(),
@@ -1966,82 +2029,220 @@ export async function rejectPayment(db: D1Database, id: string, reason: string) 
   return { success: true };
 }
 
+async function resolvePlanDurationDays(db: D1Database, planId?: string | null) {
+  if (!planId) return 30;
+  try {
+    const plan: any = await getPaymentPlanById(db, String(planId));
+    const days = Number(plan?.duration_days);
+    return Number.isFinite(days) && days > 0 ? Math.floor(days) : 30;
+  } catch {
+    return 30;
+  }
+}
+
 export async function adminGetPayments(db: D1Database) {
   const sqlTransactions = `
-    SELECT t.id, t.user_id, t.amount, t.status, t.created_at, t.type, t.receipt_url as slip_url, 1 as is_stripe,
-           u.display_name as user_display_name, u.email as user_email
+    SELECT t.id, t.user_id, t.plan_id, t.amount, t.status, t.created_at, t.type, t.payment_method, t.session_id, t.receipt_url,
+           u.display_name as user_display_name, u.email as user_email,
+           pp.name as plan_name
     FROM transactions t
     LEFT JOIN users u ON t.user_id = u.id
+    LEFT JOIN payment_plans pp ON t.plan_id = pp.id
   `;
   const sqlPayments = `
-    SELECT p.id, p.user_id, p.amount, p.status, p.created_at, p.metadata, 0 as is_stripe,
-           u.display_name as user_display_name, u.email as user_email
+    SELECT p.id, p.user_id, p.plan_id, p.amount, p.status, p.created_at, p.type as raw_type, p.metadata,
+           u.display_name as user_display_name, u.email as user_email,
+           pp.name as plan_name
     FROM payments p
     LEFT JOIN users u ON p.user_id = u.id
+    LEFT JOIN payment_plans pp ON p.plan_id = pp.id
   `;
   const { results: tResults } = await db.prepare(sqlTransactions).all();
-  const { results: pResults } = await db.prepare(sqlPayments).all();
-  
-  const mappedP = (pResults || []).map((row: any) => {
-      let type = 'subscription';
-      let slip_url = null;
-      if (row.metadata) {
-          try {
-              const meta = JSON.parse(row.metadata);
-              type = meta.type === 'topup' ? 'topup' : 'subscription';
-              slip_url = meta.slip_url || null;
-          } catch(e){}
-      }
-      return {
-          id: row.id,
-          type,
-          amount: row.amount,
-          status: (row.status || 'unknown').toLowerCase(),
-          slip_url,
-          is_stripe: false,
-          created_at: row.created_at,
-          user_display_name: row.user_display_name || 'Unknown',
-          user_email: row.user_email || 'Unknown'
-      };
-  });
+  let pResults: any[] = [];
+  try {
+    const res = await db.prepare(sqlPayments).all();
+    pResults = (res.results || []) as any[];
+  } catch {
+    pResults = [];
+  }
 
-  const mappedT = (tResults || []).map((row: any) => ({
+  const mappedP = (pResults || []).map((row: any) => {
+    let type = row.raw_type === 'WALLET_TOPUP' || row.raw_type === 'topup' ? 'topup' : 'subscription';
+    let slip_url = null;
+    if (row.metadata) {
+      try {
+        const meta = JSON.parse(row.metadata);
+        if (meta.type === 'topup' || meta.type === 'WALLET_TOPUP') type = 'topup';
+        slip_url = meta.slip_url || null;
+      } catch {}
+    }
+    return {
       id: row.id,
-      type: row.type === 'PLAN_PURCHASE' ? 'subscription' : row.type,
+      user_id: row.user_id,
+      plan_id: row.plan_id || null,
+      plan_name: row.plan_name || null,
+      type,
       amount: row.amount,
       status: (row.status || 'unknown').toLowerCase(),
-      slip_url: row.slip_url || null,
-      is_stripe: true,
+      slip_url,
+      is_stripe: false,
       created_at: row.created_at,
       user_display_name: row.user_display_name || 'Unknown',
-      user_email: row.user_email || 'Unknown'
-  }));
+      user_email: row.user_email || 'Unknown',
+    };
+  });
+
+  const mappedT = (tResults || []).map((row: any) => {
+    const isStripe = Boolean(row.session_id && String(row.session_id).startsWith('cs_'));
+    let slip_url = row.receipt_url || null;
+    if (!slip_url && row.session_id && !isStripe) {
+      const parsedMeta = parseMaybeJson(row.session_id);
+      if (parsedMeta && typeof parsedMeta === 'object' && parsedMeta.slip_url) {
+        slip_url = parsedMeta.slip_url;
+      }
+    }
+    const normalizedType =
+      row.type === 'PLAN_PURCHASE' ? 'subscription' : row.type === 'WALLET_TOPUP' ? 'topup' : row.type;
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      plan_id: row.plan_id || null,
+      plan_name: row.plan_name || null,
+      payment_method: row.payment_method || null,
+      type: normalizedType,
+      amount: row.amount,
+      status: (row.status || 'unknown').toLowerCase(),
+      slip_url,
+      is_stripe: isStripe,
+      created_at: row.created_at,
+      user_display_name: row.user_display_name || 'Unknown',
+      user_email: row.user_email || 'Unknown',
+    };
+  });
 
   const combined = [...mappedT, ...mappedP];
   combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   return combined;
 }
 
-export async function adminApprovePayment(db: D1Database, id: string, type: string) {
-  const pDoc = await db.prepare("SELECT * FROM payments WHERE id = ?").bind(String(id)).first();
-  if (!pDoc) return null;
+export async function adminApprovePayment(db: D1Database, id: string, type?: string) {
+  const timestamp = nowIso();
+  const pDoc = await db.prepare("SELECT * FROM payments WHERE id = ? LIMIT 1").bind(String(id)).first<any>();
+  if (pDoc) {
+    if (String(pDoc.status || '').toLowerCase() === 'approved') {
+      return { success: true, alreadyApproved: true, userId: String(pDoc.user_id || '') };
+    }
+    const claimRes = await db
+      .prepare("UPDATE payments SET status = 'approved', updated_at = ? WHERE id = ? AND lower(COALESCE(status, '')) != 'approved'")
+      .bind(timestamp, String(id))
+      .run();
+    if ((claimRes.meta?.changes ?? 0) === 0) {
+      return { success: true, alreadyApproved: true, userId: String(pDoc.user_id || '') };
+    }
 
-  await db.prepare("UPDATE payments SET status = 'approved' WHERE id = ?").bind(String(id)).run();
+    let metaPlanId: string | null = null;
+    if (pDoc.metadata) {
+      try {
+        const meta = JSON.parse(String(pDoc.metadata));
+        metaPlanId = meta?.planId || meta?.plan_id || null;
+      } catch {}
+    }
 
-  if (type === 'topup' || pDoc.type === 'WALLET_TOPUP') {
-    await db.prepare("UPDATE users SET wallet_balance = coalesce(wallet_balance, 0) + ? WHERE id = ?").bind(Number(pDoc.amount) || 0, String(pDoc.user_id)).run();
-  } else {
-    const now = new Date();
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + 30);
-    await db.prepare("UPDATE users SET plan_type = 'premium', premium_start_date = ?, premium_expiry = ? WHERE id = ?").bind(now.toISOString(), expiry.toISOString(), String(pDoc.user_id)).run();
+    if (type === 'topup' || pDoc.type === 'WALLET_TOPUP' || pDoc.type === 'topup') {
+      await db
+        .prepare("UPDATE users SET wallet_balance = coalesce(wallet_balance, 0) + ?, updated_at = ? WHERE id = ?")
+        .bind(Number(pDoc.amount) || 0, timestamp, String(pDoc.user_id))
+        .run();
+    } else {
+      const durationDays = await resolvePlanDurationDays(db, pDoc.plan_id || metaPlanId);
+      await activateUserPremium(db, String(pDoc.user_id), durationDays);
+    }
+    return { success: true, alreadyApproved: false, userId: String(pDoc.user_id || '') };
   }
-  return true;
+
+  const tx = await db.prepare("SELECT * FROM transactions WHERE id = ? LIMIT 1").bind(String(id)).first<any>();
+  if (!tx) {
+    return { success: false, notFound: true };
+  }
+
+  if (String(tx.status || '').toLowerCase() === 'approved') {
+    return { success: true, alreadyApproved: true, userId: String(tx.user_id || '') };
+  }
+
+  const claimTxRes = await db
+    .prepare("UPDATE transactions SET status = 'approved', updated_at = ? WHERE id = ? AND lower(COALESCE(status, '')) != 'approved'")
+    .bind(timestamp, String(id))
+    .run();
+  if ((claimTxRes.meta?.changes ?? 0) === 0) {
+    return { success: true, alreadyApproved: true, userId: String(tx.user_id || '') };
+  }
+
+  if (type === 'topup' || tx.type === 'topup' || tx.type === 'WALLET_TOPUP') {
+    let businessUpdated = false;
+    try {
+      const busRes = await db
+        .prepare("UPDATE businesses SET balance = coalesce(balance, 0) + ? WHERE owner_uid = ?")
+        .bind(Number(tx.amount) || 0, String(tx.user_id))
+        .run();
+      businessUpdated = (busRes.meta?.changes ?? 0) > 0;
+      if (businessUpdated) {
+        await db
+          .prepare("INSERT INTO ad_transactions (id, business_id, amount, type, reason, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+          .bind(crypto.randomUUID(), String(tx.user_id), Number(tx.amount) || 0, 'topup', 'Wallet Top-up Approved', timestamp)
+          .run();
+      }
+    } catch {}
+    if (!businessUpdated) {
+      await db
+        .prepare("UPDATE users SET wallet_balance = coalesce(wallet_balance, 0) + ?, updated_at = ? WHERE id = ?")
+        .bind(Number(tx.amount) || 0, timestamp, String(tx.user_id))
+        .run();
+    }
+  } else {
+    const durationDays = await resolvePlanDurationDays(db, tx.plan_id);
+    await activateUserPremium(db, String(tx.user_id), durationDays);
+  }
+
+  return { success: true, alreadyApproved: false, userId: String(tx.user_id || '') };
 }
 
-export async function adminRejectPayment(db: D1Database, id: string) {
-  const result = await db.prepare("UPDATE payments SET status = 'rejected' WHERE id = ?").bind(String(id)).run();
-  return result.success;
+export async function adminRejectPayment(db: D1Database, id: string, reason?: string) {
+  const timestamp = nowIso();
+  const pDoc = await db.prepare("SELECT id, metadata FROM payments WHERE id = ? LIMIT 1").bind(String(id)).first<any>();
+  if (pDoc) {
+    let nextMetadata = pDoc.metadata ?? null;
+    if (reason) {
+      const parsed = parseMaybeJson(pDoc.metadata) || {};
+      if (typeof parsed === 'object') {
+        nextMetadata = JSON.stringify({ ...parsed, rejection_reason: reason });
+      }
+    }
+    await db
+      .prepare("UPDATE payments SET status = 'rejected', metadata = ?, updated_at = ? WHERE id = ?")
+      .bind(nextMetadata, timestamp, String(id))
+      .run();
+    return { success: true };
+  }
+
+  const tx = await db.prepare("SELECT id, session_id FROM transactions WHERE id = ? LIMIT 1").bind(String(id)).first<any>();
+  if (!tx) {
+    return { success: false, notFound: true };
+  }
+
+  let nextSessionId = tx.session_id ?? null;
+  const isStripe = Boolean(nextSessionId && String(nextSessionId).startsWith('cs_'));
+  if (reason && !isStripe) {
+    const parsed = parseMaybeJson(nextSessionId) || {};
+    if (typeof parsed === 'object') {
+      nextSessionId = JSON.stringify({ ...parsed, reason });
+    }
+  }
+
+  await db
+    .prepare("UPDATE transactions SET status = 'rejected', session_id = ?, updated_at = ? WHERE id = ?")
+    .bind(nextSessionId, timestamp, String(id))
+    .run();
+  return { success: true };
 }
 
 export async function adminGetUsers(db: D1Database, limit = 1000) {
@@ -2055,10 +2256,22 @@ export async function adminUpdateUser(db: D1Database, id: string, data: Partial<
   if (data.role) { updates.push("role = ?"); values.push(data.role); }
   if (data.plan_type) { updates.push("plan_type = ?"); values.push(data.plan_type); }
   if (data.status) { updates.push("status = ?"); values.push(data.status); }
-  if (data.premium_start_date !== undefined) { updates.push("premium_start_date = ?"); values.push(data.premium_start_date); }
-  if (data.premium_expiry !== undefined) { updates.push("premium_expiry = ?"); values.push(data.premium_expiry); }
-  
+  if (data.premium_start_date !== undefined) {
+    updates.push("premium_start_date = ?");
+    values.push(data.premium_start_date);
+  } else if (data.plan_type === "free") {
+    updates.push("premium_start_date = NULL");
+  }
+  if (data.premium_expiry !== undefined) {
+    updates.push("premium_expiry = ?");
+    values.push(data.premium_expiry);
+  } else if (data.plan_type === "free") {
+    updates.push("premium_expiry = NULL");
+  }
+
   if (updates.length > 0) {
+    updates.push("updated_at = ?");
+    values.push(nowIso());
     values.push(id);
     await db.prepare(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`).bind(...values).run();
   }
@@ -2241,4 +2454,125 @@ export async function adminUpdateArcadeGame(db: D1Database, id: string, data: an
 
 export async function adminDeleteArcadeGame(db: D1Database, id: string) {
   await db.prepare("DELETE FROM arcade_games WHERE id = ?").bind(id).run();
+}
+
+let lobbyWorldTableReady = false;
+
+/** Ensure the dedicated lobby_world_messages table and index exist once per worker isolate. */
+export async function ensureLobbyWorldMessagesTable(db: D1Database) {
+  if (lobbyWorldTableReady) return;
+  await db
+    .prepare(
+      "CREATE TABLE IF NOT EXISTS lobby_world_messages (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, display_name TEXT NOT NULL, avatar TEXT, level INTEGER DEFAULT 1, role TEXT DEFAULT 'user', message TEXT NOT NULL, room_code TEXT, room_name TEXT, created_at TEXT NOT NULL)"
+    )
+    .run();
+  await db
+    .prepare("CREATE INDEX IF NOT EXISTS idx_lobby_world_messages_created_at ON lobby_world_messages(created_at DESC)")
+    .run();
+  lobbyWorldTableReady = true;
+}
+
+const normalizeLobbyWorldRow = (row: any) =>
+  row
+    ? {
+        id: String(row.id),
+        user_id: String(row.user_id),
+        display_name: String(row.display_name || "ผู้เข้าสอบ"),
+        avatar: row.avatar ? String(row.avatar) : null,
+        level: Math.max(1, Number(row.level || 1)),
+        role: row.role ? String(row.role) : "user",
+        message: String(row.message || ""),
+        room_code: row.room_code ? String(row.room_code) : null,
+        room_name: row.room_name ? String(row.room_name) : null,
+        created_at: String(row.created_at),
+      }
+    : null;
+
+/** List the most recent World Chat messages in chronological ASC order. */
+export async function listLobbyWorldMessages(db: D1Database, limit = 60) {
+  await ensureLobbyWorldMessagesTable(db);
+  const safeLimit = Math.max(1, Math.min(100, Number(limit) || 60));
+  const { results } = await db
+    .prepare("SELECT * FROM lobby_world_messages ORDER BY datetime(created_at) DESC, rowid DESC LIMIT ?")
+    .bind(safeLimit)
+    .all();
+  return ((results || []) as any[]).reverse().map(normalizeLobbyWorldRow);
+}
+
+/** Return the most recent World Chat message posted by a given user for rate-limit checks. */
+export async function getLatestLobbyWorldMessageByUser(db: D1Database, userId: string) {
+  await ensureLobbyWorldMessagesTable(db);
+  const row = await db
+    .prepare("SELECT id, created_at FROM lobby_world_messages WHERE user_id = ? ORDER BY datetime(created_at) DESC, rowid DESC LIMIT 1")
+    .bind(String(userId))
+    .first();
+  return row ? { id: String((row as any).id), created_at: String((row as any).created_at) } : null;
+}
+
+/** Insert a new World Chat message and trim old history beyond the latest 300 rows. */
+export async function createLobbyWorldMessage(
+  db: D1Database,
+  data: {
+    user_id: string;
+    display_name: string;
+    avatar?: string | null;
+    level?: number;
+    role?: string;
+    message: string;
+    room_code?: string | null;
+    room_name?: string | null;
+  }
+) {
+  await ensureLobbyWorldMessagesTable(db);
+  const row = {
+    id: generateTextId(),
+    user_id: String(data.user_id),
+    display_name: String(data.display_name || "ผู้เข้าสอบ"),
+    avatar: data.avatar ? String(data.avatar) : null,
+    level: Math.max(1, Math.floor(Number(data.level || 1))),
+    role: data.role ? String(data.role) : "user",
+    message: String(data.message),
+    room_code: data.room_code ? String(data.room_code) : null,
+    room_name: data.room_name ? String(data.room_name) : null,
+    created_at: nowIso(),
+  };
+
+  await db
+    .prepare(
+      "INSERT INTO lobby_world_messages (id, user_id, display_name, avatar, level, role, message, room_code, room_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(
+      row.id,
+      row.user_id,
+      row.display_name,
+      row.avatar,
+      row.level,
+      row.role,
+      row.message,
+      row.room_code,
+      row.room_name,
+      row.created_at
+    )
+    .run();
+
+  await db
+    .prepare(
+      "DELETE FROM lobby_world_messages WHERE id NOT IN (SELECT id FROM lobby_world_messages ORDER BY datetime(created_at) DESC, rowid DESC LIMIT 300)"
+    )
+    .run();
+
+  return normalizeLobbyWorldRow(row);
+}
+
+/** Fetch a single World Chat message by ID for authorization checks. */
+export async function getLobbyWorldMessageById(db: D1Database, id: string) {
+  await ensureLobbyWorldMessagesTable(db);
+  const row = await db.prepare("SELECT * FROM lobby_world_messages WHERE id = ?").bind(String(id)).first();
+  return normalizeLobbyWorldRow(row);
+}
+
+/** Delete a World Chat message by ID. */
+export async function deleteLobbyWorldMessage(db: D1Database, id: string) {
+  await ensureLobbyWorldMessagesTable(db);
+  await db.prepare("DELETE FROM lobby_world_messages WHERE id = ?").bind(String(id)).run();
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import adminApi from '../../services/adminApi';
 import { Check, X, CreditCard, Clock, CheckCircle2, Eye, Loader2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -24,10 +25,8 @@ const PaymentVerifier = () => {
     const fetchTransactions = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/payments/pending');
-            if (res.data.success) {
-                setTransactions(res.data.transactions || []);
-            }
+            const pendingList = await adminApi.getPendingPayments();
+            setTransactions(Array.isArray(pendingList) ? pendingList : []);
         } catch (error) {
             console.error('Error fetching transactions:', error);
             toast.error('ไม่สามารถโหลดรายการรอตรวจสอบได้');
@@ -36,19 +35,20 @@ const PaymentVerifier = () => {
         }
     };
 
-    const handleReview = async (id, status, note = '') => {
+    const handleReview = async (tx, status, note = '') => {
         if (!window.confirm(`Are you sure you want to ${status} this transaction?`)) return;
 
         try {
-            const res = await api.post('/payments/review', {
-                transaction_id: id,
-                status,
-                admin_note: note
-            });
-            if (res.data.success) {
+            const res =
+                status === 'approved'
+                    ? await adminApi.approvePayment(tx.id, tx.type)
+                    : await adminApi.rejectPayment(tx.id, note, tx.type);
+            if (res?.success) {
                 toast.success(`Transaction ${status}`);
                 fetchTransactions();
                 setSelectedTx(null);
+            } else {
+                toast.error(res?.message || 'Operation failed');
             }
         } catch (error) {
             console.error('Review failed:', error);
@@ -58,7 +58,8 @@ const PaymentVerifier = () => {
 
     const getSlipSrc = (slipUrl) => {
         if (!slipUrl) return '';
-        return slipUrl.startsWith('http') ? slipUrl : `${api.defaults.baseURL}${slipUrl}`;
+        if (slipUrl.startsWith('http') || slipUrl.startsWith('/api')) return slipUrl;
+        return `${api.defaults.baseURL}${slipUrl.startsWith('/') ? '' : '/'}${slipUrl}`;
     };
 
     return (
@@ -119,17 +120,17 @@ const PaymentVerifier = () => {
                             <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
                                     <div className="font-bold text-lg text-slate-900">
-                                        {tx.user?.display_name || `User #${tx.user_id}`}
+                                        {tx.user?.display_name || tx.user_display_name || `User #${tx.user_id}`}
                                     </div>
-                                    {tx.user?.email && (
-                                        <div className="text-sm text-slate-500">{tx.user.email}</div>
+                                    {(tx.user?.email || tx.user_email) && (
+                                        <div className="text-sm text-slate-500">{tx.user?.email || tx.user_email}</div>
                                     )}
                                 </div>
                                 <div className="text-sm text-slate-600 flex flex-wrap items-center gap-2">
                                     <span>
                                         Plan:{' '}
                                         <span className="font-semibold text-indigo-600">
-                                            {tx.plan?.name || '-'}
+                                            {tx.plan?.name || tx.plan_name || (tx.type === 'topup' ? 'Wallet Top-up' : 'Premium Plan')}
                                         </span>
                                     </span>
                                     <span className="text-slate-400">•</span>
@@ -168,14 +169,14 @@ const PaymentVerifier = () => {
                                 <div className="flex flex-row md:flex-col gap-2">
                                     <button
                                         type="button"
-                                        onClick={() => handleReview(tx.id, 'approved')}
+                                        onClick={() => handleReview(tx, 'approved')}
                                         className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                     >
                                         <Check size={15} /> Approve
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => handleReview(tx.id, 'rejected')}
+                                        onClick={() => handleReview(tx, 'rejected')}
                                         className="px-4 py-2 bg-rose-50 text-rose-700 rounded-xl border border-rose-200 hover:bg-rose-100 flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
                                     >
                                         <X size={15} /> Reject

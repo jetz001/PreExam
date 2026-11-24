@@ -23,13 +23,22 @@ const MemberManager = () => {
         }
     };
 
-    const handleUpdateUser = async (id, data) => {
-        try {
-            await api.put(`/admin/users/${id}`, data);
-            fetchUsers();
-        } catch (error) {
-            alert('Failed to update user');
+    const handleTogglePremium = (targetUser) => {
+        if (isPremiumUser(targetUser)) {
+            handleUpdateUser(targetUser.id, {
+                plan_type: 'free',
+                premium_start_date: null,
+                premium_expiry: null
+            });
+            return;
         }
+        const now = new Date();
+        const expiry = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        handleUpdateUser(targetUser.id, {
+            plan_type: 'premium',
+            premium_start_date: now.toISOString(),
+            premium_expiry: expiry.toISOString()
+        });
     };
 
     return (
@@ -94,11 +103,11 @@ const MemberManager = () => {
                                         {user.role === 'admin' ? <ShieldOff className="h-5 w-5" /> : <Shield className="h-5 w-5" />}
                                     </button>
                                     <button
-                                        onClick={() => handleUpdateUser(user.id, { plan_type: user.plan_type === 'premium' ? 'free' : 'premium' })}
+                                        onClick={() => handleTogglePremium(user)}
                                         className="text-green-600 hover:text-green-900"
                                         title="Toggle Premium"
                                     >
-                                        {user.plan_type === 'premium' ? <Wallet className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
+                                        {isPremiumUser(user) ? <Wallet className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
                                     </button>
                                     <button
                                         onClick={() => handleUpdateUser(user.id, { status: user.status === 'active' ? 'banned' : 'active' })}

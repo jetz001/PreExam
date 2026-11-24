@@ -64,8 +64,8 @@ import {
   listNotificationsByUser,
   listPaymentPlans,
   listPayments,
-  approvePayment,
-  rejectPayment,
+  activateUserPremium,
+  syncUserPremiumExpiry,
   listReceivedMessages,
   listRankingsBySeason,
   listSeasons,
@@ -129,9 +129,28 @@ import {
   adminCreateArcadeGame,
   adminUpdateArcadeGame,
   adminDeleteArcadeGame,
+  listLobbyWorldMessages,
+  getLatestLobbyWorldMessageByUser,
+  createLobbyWorldMessage,
+  getLobbyWorldMessageById,
+  deleteLobbyWorldMessage,
 } from "./d1";
 
 export { RealtimeDO };
+
+async function broadcastRealtimeEvent(env: Env, event: string, data: unknown, room: string) {
+  try {
+    const id = env.REALTIME.idFromName("global");
+    const stub = env.REALTIME.get(id);
+    await stub.fetch("https://realtime.internal/internal/broadcast", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ event, data, room }),
+    });
+  } catch {
+    // Non-fatal: D1 write already succeeded; live sockets will sync on next reconnect.
+  }
+}
 
 const withCors = (res: Response) => {
   const headers = new Headers(res.headers);
@@ -383,14 +402,22 @@ const oneDayAgoIso = () => new Date(Date.now() - 24 * 60 * 60 * 1000).toISOStrin
 
 const sanitizeUser = (row: any) => {
   if (!row) return null;
+  const expiryDate = row.premium_expiry ? new Date(String(row.premium_expiry)) : null;
+  const isExpiredPremium =
+    row.plan_type === "premium" &&
+    expiryDate !== null &&
+    !Number.isNaN(expiryDate.getTime()) &&
+    expiryDate <= new Date();
+
   return {
     id: row.id,
     email: row.email,
     display_name: row.display_name,
     avatar: row.avatar || null,
     role: row.role,
-    plan_type: row.plan_type,
-    premium_expiry: row.premium_expiry || null,
+    plan_type: isExpiredPremium ? "free" : row.plan_type,
+    premium_start_date: isExpiredPremium ? null : (row.premium_start_date || null),
+    premium_expiry: isExpiredPremium ? null : (row.premium_expiry || null),
     status: row.status,
     guest_device_id: row.guest_device_id || null,
   };
@@ -604,6 +631,104 @@ const createTutorState = (settings: any = {}) => ({
   },
 });
 
+async function fulfillStripeCheckoutSession(env: Env, session: any, stripe: Stripe) {
+  if (!session || session.payment_status !== "paid") {
+    return { fulfilled: false, paid: false };
+  }
+
+  const metadata = session.metadata || {};
+  const userId = metadata.userId ? String(metadata.userId) : "";
+  if (!userId) {
+    return { fulfilled: false, paid: true, error: "missing_user_id" };
+  }
+
+  let receiptUrl: string | null = null;
+  try {
+    if (session.payment_intent) {
+      const piId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent.id;
+      if (piId) {
+        const pi = await stripe.paymentIntents.retrieve(piId);
+        if (pi.latest_charge) {
+          const chargeId = typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge.id;
+          if (chargeId) {
+            const charge = await stripe.charges.retrieve(chargeId);
+            receiptUrl = charge.receipt_url || null;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Error fetching receipt_url:", err);
+  }
+
+  const now = new Date().toISOString();
+  const updateRes = await env.DB
+    .prepare("UPDATE transactions SET status = 'approved', updated_at = ?, receipt_url = COALESCE(?, receipt_url) WHERE session_id = ? AND lower(COALESCE(status, '')) != 'approved'")
+    .bind(now, receiptUrl, session.id)
+    .run();
+
+  let claimed = (updateRes.meta?.changes ?? 0) > 0;
+
+  if (!claimed) {
+    const existing = await env.DB
+      .prepare("SELECT id, status, receipt_url FROM transactions WHERE session_id = ? LIMIT 1")
+      .bind(session.id)
+      .first<{ id: string; status?: string | null; receipt_url?: string | null }>();
+
+    if (existing) {
+      if (String(existing.status || "").toLowerCase() === "approved") {
+        if (receiptUrl && !existing.receipt_url) {
+          await env.DB
+            .prepare("UPDATE transactions SET receipt_url = ?, updated_at = ? WHERE id = ?")
+            .bind(receiptUrl, now, existing.id)
+            .run();
+        }
+        return { fulfilled: false, paid: true, duplicate: true, userId };
+      }
+      return { fulfilled: false, paid: true, duplicate: true, userId };
+    }
+
+    const insertRes = await env.DB
+      .prepare("INSERT OR IGNORE INTO transactions (id, user_id, plan_id, amount, status, session_id, created_at, updated_at, payment_method, type, receipt_url) VALUES (?, ?, ?, ?, 'approved', ?, ?, ?, 'promptpay', ?, ?)")
+      .bind(
+        `stripe_${session.id}`,
+        userId,
+        metadata.planId ? String(metadata.planId) : null,
+        Math.round((Number(session.amount_total) || 0) / 100),
+        session.id,
+        now,
+        now,
+        metadata.type ? String(metadata.type) : "PLAN_PURCHASE",
+        receiptUrl
+      )
+      .run();
+
+    claimed = (insertRes.meta?.changes ?? 0) > 0;
+    if (!claimed) {
+      return { fulfilled: false, paid: true, duplicate: true, userId };
+    }
+  }
+
+  let days = parseInt(String(metadata.durationDays || ""), 10);
+  if (!Number.isFinite(days) || days <= 0) {
+    if (metadata.planId) {
+      const planDoc: any = await getPaymentPlanById(env.DB, String(metadata.planId));
+      const planDays = Number(planDoc?.duration_days);
+      days = Number.isFinite(planDays) && planDays > 0 ? Math.floor(planDays) : 30;
+    } else {
+      days = 30;
+    }
+  }
+
+  const txType = metadata.type ? String(metadata.type) : "";
+  if (txType === "subscription" || txType === "PLAN_PURCHASE" || !txType) {
+    await activateUserPremium(env.DB, userId, days);
+    delete globalCache[`u_${userId}`];
+  }
+
+  return { fulfilled: true, paid: true, duplicate: false, userId };
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
@@ -632,40 +757,23 @@ export default {
             return new Response(`Webhook Error: ${err.message}`, { status: 400 });
           }
 
-          if (event.type === 'checkout.session.completed') {
-            const session = event.data.object as any;
-            const metadata = session.metadata;
-
-            let receiptUrl = null;
-            try {
-               if (session.payment_intent) {
-                 const pi = await stripe.paymentIntents.retrieve(session.payment_intent as string);
-                 if (pi.latest_charge) {
-                   const charge = await stripe.charges.retrieve(pi.latest_charge as string);
-                   receiptUrl = charge.receipt_url;
-                 }
-               }
-            } catch (err) {
-               console.error("Error fetching receipt_url:", err);
-            }
-
-            if (metadata && metadata.userId) {
-              const { userId, type, durationDays } = metadata;
-              const days = parseInt(durationDays || '30', 10);
-              
-              if (type === 'subscription' || type === 'PLAN_PURCHASE') {
-                 // Update premium status
-                 const expiryDate = new Date();
-                 expiryDate.setDate(expiryDate.getDate() + days);
-                 await env.DB.prepare("UPDATE users SET plan_type = 'premium', premium_start_date = ?, premium_expiry = ? WHERE id = ?")
-                   .bind(new Date().toISOString(), expiryDate.toISOString(), userId).run();
+          try {
+            if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
+              await fulfillStripeCheckoutSession(env, event.data.object as any, stripe);
+            } else if (event.type === "checkout.session.expired" || event.type === "checkout.session.async_payment_failed") {
+              const session = event.data.object as any;
+              if (session?.id) {
+                await env.DB
+                  .prepare("UPDATE transactions SET status = 'failed', updated_at = ? WHERE session_id = ? AND lower(COALESCE(status, '')) = 'pending'")
+                  .bind(new Date().toISOString(), session.id)
+                  .run();
               }
-              
-              // Update transaction
-              await env.DB.prepare("UPDATE transactions SET status = 'approved', updated_at = ?, receipt_url = ? WHERE session_id = ?")
-                .bind(new Date().toISOString(), receiptUrl, session.id).run();
             }
+          } catch (dbErr: any) {
+            console.error("Stripe webhook processing error:", dbErr);
+            return new Response(`Webhook Database Error: ${dbErr?.message || "unknown"}`, { status: 500 });
           }
+
           return new Response(JSON.stringify({ received: true }), { status: 200, headers: { "Content-Type": "application/json" } });
         }
 
@@ -685,6 +793,9 @@ export default {
     }
 
     if (url.pathname.startsWith("/api/ws") || url.pathname.startsWith("/api/realtime")) {
+      if (url.pathname.includes("/internal/")) {
+        return json({ error: "forbidden" }, { status: 403 });
+      }
       const id = env.REALTIME.idFromName("global");
       const stub = env.REALTIME.get(id);
       return stub.fetch(request);
@@ -849,6 +960,7 @@ export default {
           user = await updateUser(env.DB, user.id, updates); 
           user.last_active_at = updates.last_active_at; 
         } catch(e){}
+        user = await syncUserPremiumExpiry(env.DB, user);
       } else {
         user = await createUser(env.DB, {
           email,
@@ -898,10 +1010,11 @@ export default {
       const ok = await verifyPassword(password, String(user.password_hash));
       if (!ok) return json({ success: false, message: "Invalid credentials" }, { status: 401 });
 
-      try { await touchUserLastActive(env.DB, user.id, new Date().toISOString()); user.last_active_at = new Date().toISOString(); } catch(e){}
+      const syncedUser = await syncUserPremiumExpiry(env.DB, user);
+      try { await touchUserLastActive(env.DB, syncedUser.id, new Date().toISOString()); syncedUser.last_active_at = new Date().toISOString(); } catch(e){}
 
       const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
-      const token = await signJwtHs256({ id: user.id, exp }, secret);
+      const token = await signJwtHs256({ id: syncedUser.id, exp }, secret);
 
       try {
         await createSystemLog(env.DB, {
@@ -911,12 +1024,12 @@ export default {
             ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown",
             user_agent: request.headers.get("user-agent") || "unknown",
           },
-          user_id: user.id,
+          user_id: syncedUser.id,
           created_at: new Date().toISOString()
         });
       } catch (e) {}
 
-      return json({ success: true, token, user: sanitizeUser(user) });
+      return json({ success: true, token, user: sanitizeUser(syncedUser) });
     }
 
     if (url.pathname === "/api/auth/guest" && request.method === "POST") {
@@ -959,7 +1072,8 @@ export default {
 
       const user = await getUserById(env.DB, userId);
       if (!user) return json({ success: false, message: "Unauthorized" }, { status: 401 });
-      return json({ success: true, user: sanitizeUser(user) });
+      const syncedUser = await syncUserPremiumExpiry(env.DB, user);
+      return json({ success: true, user: sanitizeUser(syncedUser) });
     }
 
     if (url.pathname === "/api/rooms" && request.method === "GET") {
@@ -1418,6 +1532,89 @@ export default {
       });
 
       return json({ success: true });
+    }
+
+    if (url.pathname === "/api/lobby/world-chat" && request.method === "GET") {
+      try {
+        const limit = Math.max(1, Math.min(100, Number(url.searchParams.get("limit") || 60)));
+        const messages = await listLobbyWorldMessages(env.DB, limit);
+        return json({ success: true, data: messages });
+      } catch (err: any) {
+        return json({ success: false, message: "ไม่สามารถโหลดข้อความแชทเวิลด์ได้", details: err?.message }, { status: 500 });
+      }
+    }
+
+    if (url.pathname === "/api/lobby/world-chat" && request.method === "POST") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const body = await readJson(request);
+      const rawMessage = typeof (body as any)?.message === "string" ? (body as any).message.trim() : "";
+      if (!rawMessage || rawMessage.length > 300) {
+        return json({ success: false, message: "ข้อความต้องยาว 1–300 ตัวอักษร" }, { status: 400 });
+      }
+
+      const latest = await getLatestLobbyWorldMessageByUser(env.DB, auth.userId);
+      if (latest?.created_at) {
+        const elapsedMs = Date.now() - Date.parse(latest.created_at);
+        if (Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs < 1500) {
+          return json({ success: false, message: "ส่งข้อความเร็วเกินไป กรุณารอสักครู่" }, { status: 429 });
+        }
+      }
+
+      const user: any = await getUserById(env.DB, auth.userId);
+      const displayName = String(user?.display_name || user?.username || "ผู้เข้าสอบ").trim();
+      const avatar = user?.avatar ? String(user.avatar) : null;
+      const role = user?.role ? String(user.role) : "user";
+      const xpTotal = Number(user?.xp_points ?? user?.xp ?? 0);
+      const level = Math.max(1, Number(user?.level) || (Math.floor(xpTotal / 1000) + 1));
+
+      let roomCode: string | null = null;
+      let roomName: string | null = null;
+      const rawRoomCode = typeof (body as any)?.roomCode === "string" ? (body as any).roomCode.trim().toUpperCase() : "";
+      if (rawRoomCode) {
+        const targetRoom: any = await findExamRoomByCode(env.DB, rawRoomCode);
+        if (targetRoom && String(targetRoom.status) === "waiting") {
+          roomCode = String(targetRoom.code);
+          roomName = String(targetRoom.name || targetRoom.code);
+        }
+      }
+
+      const saved = await createLobbyWorldMessage(env.DB, {
+        user_id: auth.userId,
+        display_name: displayName,
+        avatar,
+        level,
+        role,
+        message: rawMessage,
+        room_code: roomCode,
+        room_name: roomName,
+      });
+
+      await broadcastRealtimeEvent(env, "world_chat_message", saved, "world:lobby");
+      return json({ success: true, data: saved }, { status: 201 });
+    }
+
+    const worldChatDeleteMatch = url.pathname.match(/^\/api\/lobby\/world-chat\/([a-zA-Z0-9_-]+)$/);
+    if (worldChatDeleteMatch && request.method === "DELETE") {
+      const auth = await requireAuthUserId(request, env);
+      if ("error" in auth) return auth.error;
+
+      const msgId = worldChatDeleteMatch[1];
+      const existing = await getLobbyWorldMessageById(env.DB, msgId);
+      if (!existing) {
+        return json({ success: false, message: "ไม่พบข้อความ" }, { status: 404 });
+      }
+
+      const user: any = await getUserById(env.DB, auth.userId);
+      const isAdmin = String(user?.role || "").toLowerCase() === "admin";
+      if (existing.user_id !== auth.userId && !isAdmin) {
+        return json({ success: false, message: "ไม่มีสิทธิ์ลบข้อความนี้" }, { status: 403 });
+      }
+
+      await deleteLobbyWorldMessage(env.DB, msgId);
+      await broadcastRealtimeEvent(env, "world_chat_deleted", { id: msgId }, "world:lobby");
+      return json({ success: true, id: msgId });
     }
 
     const roomTutorNavigateMatch = url.pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)\/tutor\/navigate$/);
@@ -2089,6 +2286,7 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           if ("error" in auth) return auth.error;
           const reqBody = await readJson(request);
           await adminUpdateUser(env.DB, adminUserIdMatch[1], reqBody || {});
+          delete globalCache[`u_${adminUserIdMatch[1]}`];
           return json({ success: true, message: "User updated" });
         }
 
@@ -2126,7 +2324,13 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           const auth = await requireAdmin(request, env);
           if ("error" in auth) return auth.error;
           const reqBody = await readJson(request);
-          await adminApprovePayment(env.DB, adminApprovePaymentMatch[1], reqBody?.type);
+          const result = await adminApprovePayment(env.DB, adminApprovePaymentMatch[1], reqBody?.type);
+          if (!result || result.notFound) {
+            return json({ success: false, message: "Payment not found" }, { status: 404 });
+          }
+          if (result.userId) {
+            delete globalCache[`u_${result.userId}`];
+          }
           return json({ success: true, message: "Payment approved" });
         }
 
@@ -2134,7 +2338,11 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
         if (adminRejectPaymentMatch && request.method === "POST") {
           const auth = await requireAdmin(request, env);
           if ("error" in auth) return auth.error;
-          await adminRejectPayment(env.DB, adminRejectPaymentMatch[1]);
+          const reqBody = await readJson(request);
+          const result = await adminRejectPayment(env.DB, adminRejectPaymentMatch[1], reqBody?.reason);
+          if (!result || result.notFound) {
+            return json({ success: false, message: "Payment not found" }, { status: 404 });
+          }
           return json({ success: true, message: "Payment rejected" });
         }
 
@@ -2715,11 +2923,13 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           allThreads = allThreads.map((t: any) => {
             const u = usersMap.get(String(t.user_id));
             if (u) {
+              const authorIsPremium = isPremiumUser(u);
               t.User = {
                 id: u.id,
                 display_name: u.display_name || "Unknown User",
                 avatar: u.avatar || null,
-                plan_type: u.plan_type || "free"
+                plan_type: authorIsPremium ? "premium" : "free",
+                premium_expiry: authorIsPremium ? (u.premium_expiry || null) : null
               };
             } else {
               t.User = { id: t.user_id, display_name: "Unknown User" };
@@ -2788,7 +2998,14 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           
           const u = await getUserById(env.DB, String(threadDoc.user_id));
           if (u) {
-            threadDoc.User = { id: u.id, display_name: u.display_name || "Unknown User", avatar: u.avatar || null, plan_type: u.plan_type || "free" };
+            const authorIsPremium = isPremiumUser(u);
+            threadDoc.User = {
+              id: u.id,
+              display_name: u.display_name || "Unknown User",
+              avatar: u.avatar || null,
+              plan_type: authorIsPremium ? "premium" : "free",
+              premium_expiry: authorIsPremium ? (u.premium_expiry || null) : null
+            };
           }
           
           return json(threadDoc); // Note: frontend expects raw thread data here
@@ -2840,7 +3057,14 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           comments = comments.map((c: any) => {
             const u = usersMap.get(String(c.user_id));
             if (u) {
-              c.User = { id: u.id, display_name: u.display_name || "Unknown User", avatar: u.avatar || null, plan_type: u.plan_type || "free" };
+              const authorIsPremium = isPremiumUser(u);
+              c.User = {
+                id: u.id,
+                display_name: u.display_name || "Unknown User",
+                avatar: u.avatar || null,
+                plan_type: authorIsPremium ? "premium" : "free",
+                premium_expiry: authorIsPremium ? (u.premium_expiry || null) : null
+              };
             } else {
               c.User = { id: c.user_id, display_name: "Unknown User" };
             }
@@ -3296,7 +3520,8 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
             const auth = await requireAuthUserId(request, env);
             if ("error" in auth) return auth.error;
             const user = await getUserById(env.DB, auth.userId);
-            return json({ success: true, data: sanitizeUser(user) });
+            const syncedUser = await syncUserPremiumExpiry(env.DB, user);
+            return json({ success: true, data: sanitizeUser(syncedUser) });
         }
 
         if (url.pathname === "/api/users/profile" && request.method === "PUT") {
@@ -3747,6 +3972,9 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
                 userEmail = `user_${auth.userId}@preexam.online`;
             }
 
+            const reqOrigin = request.headers.get("origin");
+            const safeOrigin = (reqOrigin && /^https?:\/\//i.test(reqOrigin) ? reqOrigin : url.origin).replace(/\/+$/, "");
+
             const session = await stripe.checkout.sessions.create({
               customer_email: userEmail,
               payment_method_types: ['promptpay'],
@@ -3764,8 +3992,8 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
                 },
               ],
               mode: 'payment',
-              success_url: `${url.origin}/pricing?success=true`,
-              cancel_url: `${url.origin}/pricing?canceled=true`,
+              success_url: `${safeOrigin}/pricing?success=true&session_id={CHECKOUT_SESSION_ID}`,
+              cancel_url: `${safeOrigin}/pricing?canceled=true`,
               metadata: {
                 userId: auth.userId,
                 planId: planId,
@@ -3792,6 +4020,45 @@ if (url.pathname === "/api/admin/users" && request.method === "GET") {
           } catch (e: any) {
             console.error("Stripe error:", e);
             return json({ success: false, message: e.message }, { status: 500 });
+          }
+        }
+
+        if (url.pathname === "/api/payments/verify-session" && request.method === "POST") {
+          const auth = await requireAuthUserId(request, env);
+          if ("error" in auth) return auth.error;
+
+          if (!env.STRIPE_SECRET_KEY) {
+            return json({ success: false, message: "Stripe not configured" }, { status: 500 });
+          }
+
+          try {
+            const body = await readJson(request) as any;
+            const sessionId = String(body?.sessionId || body?.session_id || "").trim();
+            if (!sessionId || !sessionId.startsWith("cs_")) {
+              return json({ success: false, message: "Invalid sessionId" }, { status: 400 });
+            }
+
+            const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+              apiVersion: "2024-04-10" as any
+            });
+
+            const session = await stripe.checkout.sessions.retrieve(sessionId);
+            const sessionUserId = String(session?.metadata?.userId || "");
+            if (!sessionUserId || sessionUserId !== String(auth.userId)) {
+              return json({ success: false, message: "Forbidden" }, { status: 403 });
+            }
+
+            if (session.payment_status === "paid") {
+              await fulfillStripeCheckoutSession(env, session, stripe);
+              const freshUser = await getUserById(env.DB, auth.userId);
+              const syncedUser = await syncUserPremiumExpiry(env.DB, freshUser);
+              return json({ success: true, paid: true, user: sanitizeUser(syncedUser) });
+            }
+
+            return json({ success: true, paid: false, payment_status: session.payment_status });
+          } catch (e: any) {
+            console.error("Verify session error:", e);
+            return json({ success: false, message: e.message || "Failed to verify session" }, { status: 500 });
           }
         }
 
@@ -4439,7 +4706,6 @@ if (url.pathname === "/api/legal/policy") {
                 return json({ success: false, message: "Failed to add message" }, { status: 500 });
             }
         }
-        if (url.pathname === "/api/admin/payments") return json(await listPayments(env.DB, undefined, 100));
         if (url.pathname === "/api/admin/ads/pending") return json([]);
         if (url.pathname === "/api/news/sources/all") {
             const { results } = await env.DB.prepare("SELECT * FROM news_sources ORDER BY name ASC").all();
@@ -4628,12 +4894,6 @@ if (url.pathname === "/api/legal/policy") {
           const businesses = await listBusinesses(env.DB, 100);
           businesses.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
           return json(businesses);
-        }
-        if (url.pathname === "/api/admin/payments" && request.method === "GET") {
-          const auth = await requireAuthUserId(request, env);
-          if ("error" in auth) return auth.error;
-          const payments = await listPayments(env.DB, undefined, 100);
-          return json(payments);
         }
         if (url.pathname === "/api/admin/threads" && request.method === "GET") {
           const auth = await requireAuthUserId(request, env);
@@ -5016,9 +5276,20 @@ async function cleanupExpiredRooms(env: Env) {
 
 
 async function cleanupExpiredPremium(env: Env) {
-  const now = new Date().toISOString();
-  // Set users back to free if their premium_expiry is in the past
-  await env.DB.prepare("UPDATE users SET plan_type = 'free', premium_expiry = NULL, premium_start_date = NULL WHERE plan_type = 'premium' AND premium_expiry < ?").bind(now).run();
+  try {
+    const now = new Date().toISOString();
+    // Set users back to free if their premium_expiry has passed
+    const res = await env.DB
+      .prepare("UPDATE users SET plan_type = 'free', premium_expiry = NULL, premium_start_date = NULL, updated_at = ? WHERE plan_type = 'premium' AND premium_expiry IS NOT NULL AND premium_expiry != '' AND premium_expiry <= ?")
+      .bind(now, now)
+      .run();
+    const downgradedCount = res.meta?.changes ?? 0;
+    console.log(`Premium expiry cleanup completed. Downgraded ${downgradedCount} expired users.`);
+    return downgradedCount;
+  } catch (e) {
+    console.error("Scheduled premium cleanup failed", e);
+    return 0;
+  }
 }
 
 

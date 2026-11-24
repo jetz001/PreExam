@@ -228,7 +228,11 @@ const SettingsTabs = () => {
                                     <h2 className="text-2xl font-bold uppercase">{isPremiumUser(user) ? 'PREMIUM' : user.plan_type === 'premium' ? 'EXPIRED' : user.plan_type || 'FREE'} PLAN</h2>
                                 </div>
                                 {isPremiumUser(user) ? (
-                                    <p className="opacity-90">Valid until: {new Date(user.premium_expiry).toLocaleDateString()}</p>
+                                    <p className="opacity-90">
+                                        {user.premium_expiry
+                                            ? `Valid until: ${new Date(user.premium_expiry).toLocaleDateString()}`
+                                            : 'Unlimited Access'}
+                                    </p>
                                 ) : (
                                     <p className="opacity-90">{user.plan_type === 'premium' ? 'หมดอายุแล้ว กรุณาต่ออายุ' : 'อัปเกรดเพื่อปลดล็อกขีดความสามารถสูงสุด'}</p>
                                 )}
