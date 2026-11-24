@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Gamepad2,
@@ -26,18 +26,72 @@ import notificationApi from '../services/notificationApi';
 import useUserRole from '../hooks/useUserRole';
 import BrandLogo from '../components/common/BrandLogo';
 
+/**
+ * Derive level, level XP bounds, and progress percentage consistently from raw XP.
+ * Matches worker/src/index.ts level formula: Math.floor((1 + Math.sqrt(1 + 4 * (xp / 1000))) / 2)
+ */
+const computeXpInfo = (rawXP = 0) => {
+  const currentXP = Math.max(0, Number(rawXP) || 0);
+  const level = Math.max(1, Math.floor((1 + Math.sqrt(1 + 4 * (currentXP / 1000))) / 2));
+  const prevLevelReq = 1000 * level * (level - 1);
+  const nextLevelXP = 1000 * (level + 1) * level;
+  const xpIntoLevel = Math.max(0, currentXP - prevLevelReq);
+  const xpForThisLevel = Math.max(1, nextLevelXP - prevLevelReq);
+  const percentage = Math.max(0, Math.min(100, (xpIntoLevel / xpForThisLevel) * 100));
+  return { currentXP, prevLevelReq, nextLevelXP, level, percentage };
+};
+
 const ProfileLayout = () => {
   const navigate = useNavigate();
   const { isPremium } = useUserRole();
   const [xpWidth, setXpWidth] = useState(0);
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
-  const [xpInfo, setXpInfo] = useState({ currentXP: 0, nextLevelXP: 1000, level: 1, percentage: 0 });
+  const [xpInfo, setXpInfo] = useState(() => computeXpInfo(0));
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const notifRef = useRef(null);
+
+  const loadData = useCallback(async () => {
+    const cachedUser = authService.getCurrentUser();
+    if (cachedUser) setUser(cachedUser);
+
+    try {
+      const [resProfile, resStats, resRanking] = await Promise.all([
+        userService.getProfile().catch(() => null),
+        userService.getStats().catch(() => null),
+        userService.getMyRanking().catch(() => ({ success: true, data: { total_score: 0 } })),
+      ]);
+
+      const freshUser = resProfile?.success && resProfile?.data ? resProfile.data : cachedUser;
+      if (resProfile?.success && resProfile?.data) {
+        setUser(resProfile.data);
+        authService.updateCurrentUser(resProfile.data);
+      }
+
+      if (resStats?.success && resStats?.data) {
+        setStats({ ...resStats.data, ranking: resRanking?.data || { total_score: 0 } });
+      }
+
+      let rawXP = 0;
+      if (freshUser && freshUser.xp !== undefined && freshUser.xp !== null) {
+        rawXP = Number(freshUser.xp) || 0;
+      } else if (resStats?.success && resStats?.data) {
+        rawXP = (resStats.data.totalExams || 0) * 50 + (resStats.data.totalQuestions || 0) * 10;
+      }
+
+      const computed = computeXpInfo(rawXP);
+      setXpInfo(computed);
+      setTimeout(() => setXpWidth(computed.percentage), 80);
+    } catch (err) {
+      console.error('Error fetching profile data', err);
+      const computed = computeXpInfo(cachedUser?.xp || 0);
+      setXpInfo(computed);
+      setTimeout(() => setXpWidth(computed.percentage), 80);
+    }
+  }, []);
 
   useEffect(() => {
     const linkId = 'profile-fonts';
@@ -53,74 +107,23 @@ const ProfileLayout = () => {
       try {
         const currentUser = authService.getCurrentUser();
         if (!currentUser) return;
-        const msgCount = await chatApi.getUnreadCount();
-        const notifCount = await notificationApi.getUnreadCount();
+        const [msgCount, notifCount] = await Promise.all([
+          chatApi.getUnreadCount(),
+          notificationApi.getUnreadCount(),
+        ]);
         setUnreadMessages(msgCount || 0);
         setUnreadNotifications(notifCount || 0);
       } catch (err) {
         console.error('Error fetching unread counts', err);
       }
     };
+
     fetchCounts();
     const countInterval = setInterval(fetchCounts, 30000);
-
-    const loadData = async () => {
-      try {
-        const currentUser = authService.getCurrentUser();
-        if (currentUser) setUser(currentUser);
-
-        const [resStats, resRanking] = await Promise.all([
-          userService.getStats(),
-          userService.getMyRanking().catch(() => ({ success: true, data: { total_score: 0 } })),
-        ]);
-
-        if (resStats.success && resStats.data) {
-          setStats({ ...resStats.data, ranking: resRanking?.data || { total_score: 0 } });
-          let currentXP = 0;
-          let level = 1;
-
-          if (currentUser && currentUser.xp !== undefined) {
-            currentXP = currentUser.xp;
-            level = currentUser.level || 1;
-          } else if (resStats.success && resStats.data) {
-            currentXP = resStats.data.totalExams * 50 + resStats.data.totalQuestions * 10;
-            level = Math.floor((1 + Math.sqrt(1 + 4 * (currentXP / 500))) / 2);
-          }
-
-          const prevLevelReq = 500 * level * (level - 1);
-          const nextLevelXP = 500 * (level + 1) * level;
-
-          const xpIntoLevel = currentXP - prevLevelReq;
-          const xpForThisLevel = nextLevelXP - prevLevelReq;
-          const percentage = Math.max(0, Math.min(100, (xpIntoLevel / xpForThisLevel) * 100));
-
-          setXpInfo({ currentXP, nextLevelXP, level, percentage });
-          setTimeout(() => setXpWidth(percentage), 100);
-        } else {
-          const currentXP = currentUser?.xp || 0;
-          const level = currentUser?.level || 1;
-          const prevLevelReq = 500 * level * (level - 1);
-          const nextLevelXP = 500 * (level + 1) * level;
-
-          const xpIntoLevel = currentXP - prevLevelReq;
-          const xpForThisLevel = nextLevelXP - prevLevelReq;
-          const percentage = Math.max(0, Math.min(100, (xpIntoLevel / xpForThisLevel) * 100));
-          setXpInfo({ currentXP, nextLevelXP, level, percentage });
-          setTimeout(() => setXpWidth(percentage), 100);
-        }
-      } catch (err) {
-        console.error('Error fetching profile data', err);
-        const currentUser = authService.getCurrentUser();
-        const currentXP = currentUser?.xp || 0;
-        const level = currentUser?.level || 1;
-        const nextLevelXP = 500 * (level + 1) * level;
-        setXpInfo({ currentXP, nextLevelXP, level, percentage: 0 });
-      }
-    };
-
     loadData();
+
     return () => clearInterval(countInterval);
-  }, []);
+  }, [loadData]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -284,129 +287,139 @@ const ProfileLayout = () => {
       <div className="main">
         {/* Topbar */}
         <header className="topbar">
-          <div className="topbar-title">
-            <span className="topbar-title-badge" aria-hidden="true">
-              <Gamepad2 size={18} strokeWidth={2.3} />
-            </span>
-            <span>ProPlay Dashboard</span>
-          </div>
-
-          <div className="topbar-right">
-            <div className="xp-bar-wrap" aria-label={`Level ${xpInfo.level}, ${xpInfo.currentXP} จาก ${xpInfo.nextLevelXP} XP`}>
-              <span className="xp-label">
-                <Sparkles size={11} />
-                LV. {xpInfo.level}
+          <div className="topbar-inner">
+            <div className="topbar-title">
+              <span className="topbar-title-badge" aria-hidden="true">
+                <Gamepad2 size={18} strokeWidth={2.3} />
               </span>
-              <div className="xp-bar">
-                <div className="xp-fill" style={{ width: `${xpWidth}%` }} />
-              </div>
-              <span className="xp-text">
-                {xpInfo.currentXP.toLocaleString()} / {xpInfo.nextLevelXP.toLocaleString()} XP
-              </span>
+              <span>PreExam Dashboard</span>
             </div>
 
-            <div ref={notifRef} style={{ position: 'relative' }}>
+            <div className="topbar-right">
+              <div
+                className="xp-bar-wrap"
+                role="progressbar"
+                aria-valuenow={Math.round(xpInfo.percentage)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Level ${xpInfo.level}, ${xpInfo.currentXP.toLocaleString()} จาก ${xpInfo.nextLevelXP.toLocaleString()} XP`}
+                title={`${xpInfo.currentXP.toLocaleString()} / ${xpInfo.nextLevelXP.toLocaleString()} XP (${Math.round(xpInfo.percentage)}%)`}
+              >
+                <span className="xp-label">
+                  <Sparkles size={11} />
+                  LV. {xpInfo.level}
+                </span>
+                <div className="xp-bar">
+                  <div className="xp-fill" style={{ width: `${xpWidth}%` }} />
+                </div>
+                <span className="xp-text">
+                  {xpInfo.currentXP.toLocaleString()} / {xpInfo.nextLevelXP.toLocaleString()} XP
+                </span>
+              </div>
+
+              <div ref={notifRef} style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  className="notif-btn"
+                  title="การแจ้งเตือน"
+                  aria-label="การแจ้งเตือน"
+                  aria-expanded={showNotifDropdown}
+                  onClick={handleToggleNotifications}
+                >
+                  <Bell size={18} strokeWidth={2.2} />
+                  {unreadNotifications > 0 && (
+                    <span className="notif-count-badge">{unreadNotifications}</span>
+                  )}
+                </button>
+
+                {showNotifDropdown && (
+                  <div className="notif-dropdown-panel">
+                    <div className="notif-dropdown-header">
+                      <span className="inline-flex items-center gap-2">
+                        <Bell size={15} className="text-amber-300" />
+                        <span>การแจ้งเตือน</span>
+                      </span>
+                      {unreadNotifications > 0 && (
+                        <span className="notif-unread-pill">{unreadNotifications} ใหม่</span>
+                      )}
+                    </div>
+                    <div className="notif-dropdown-body">
+                      {notifications.length === 0 ? (
+                        <div className="notif-empty">
+                          <CheckCheck size={24} className="mx-auto mb-2 opacity-60" />
+                          <span>ไม่มีการแจ้งเตือนใหม่</span>
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <button
+                            type="button"
+                            key={n.id}
+                            onClick={() => {
+                              if (!n.is_read) handleMarkNotificationRead(n.id);
+                            }}
+                            className={`notif-item ${n.is_read ? 'read' : 'unread'}`}
+                          >
+                            <span className={`notif-item-dot ${n.is_read ? 'read' : 'unread'}`} />
+                            <div className="min-w-0 flex-1 text-left">
+                              <div className="notif-item-text">
+                                {n.message || n.content || 'มีแจ้งเตือนใหม่'}
+                              </div>
+                              <div className="notif-item-time">
+                                {new Date(n.created_at).toLocaleDateString('th-TH')}{' '}
+                                {new Date(n.created_at).toLocaleTimeString('th-TH', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 type="button"
-                className="notif-btn"
-                title="การแจ้งเตือน"
-                aria-label="การแจ้งเตือน"
-                aria-expanded={showNotifDropdown}
-                onClick={handleToggleNotifications}
+                className="avatar-btn"
+                onClick={() => navigate('/profile/settings')}
+                aria-label="ตั้งค่าโปรไฟล์"
+                title="ตั้งค่าโปรไฟล์"
+                style={{ position: 'relative' }}
               >
-                <Bell size={18} strokeWidth={2.2} />
-                {unreadNotifications > 0 && (
-                  <span className="notif-count-badge">{unreadNotifications}</span>
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user?.display_name || 'Avatar'}
+                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <User size={19} strokeWidth={2.3} />
+                )}
+                {isPremium && (
+                  <div className="avatar-premium-crown" title="สมาชิกพรีเมียม">
+                    <Crown size={10} strokeWidth={2.8} />
+                  </div>
                 )}
               </button>
 
-              {showNotifDropdown && (
-                <div className="notif-dropdown-panel">
-                  <div className="notif-dropdown-header">
-                    <span className="inline-flex items-center gap-2">
-                      <Bell size={15} className="text-amber-300" />
-                      <span>การแจ้งเตือน</span>
-                    </span>
-                    {unreadNotifications > 0 && (
-                      <span className="notif-unread-pill">{unreadNotifications} ใหม่</span>
-                    )}
-                  </div>
-                  <div className="notif-dropdown-body">
-                    {notifications.length === 0 ? (
-                      <div className="notif-empty">
-                        <CheckCheck size={24} className="mx-auto mb-2 opacity-60" />
-                        <span>ไม่มีการแจ้งเตือนใหม่</span>
-                      </div>
-                    ) : (
-                      notifications.map((n) => (
-                        <button
-                          type="button"
-                          key={n.id}
-                          onClick={() => {
-                            if (!n.is_read) handleMarkNotificationRead(n.id);
-                          }}
-                          className={`notif-item ${n.is_read ? 'read' : 'unread'}`}
-                        >
-                          <span className={`notif-item-dot ${n.is_read ? 'read' : 'unread'}`} />
-                          <div className="min-w-0 flex-1 text-left">
-                            <div className="notif-item-text">
-                              {n.message || n.content || 'มีแจ้งเตือนใหม่'}
-                            </div>
-                            <div className="notif-item-time">
-                              {new Date(n.created_at).toLocaleDateString('th-TH')}{' '}
-                              {new Date(n.created_at).toLocaleTimeString('th-TH', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </div>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
+              <button
+                type="button"
+                className="notif-btn"
+                onClick={() => navigate('/')}
+                aria-label="กลับหน้าหลัก"
+                title="กลับหน้าหลัก"
+              >
+                <X size={18} strokeWidth={2.3} />
+              </button>
             </div>
-
-            <button
-              type="button"
-              className="avatar-btn"
-              onClick={() => navigate('/profile/settings')}
-              aria-label="ตั้งค่าโปรไฟล์"
-              title="ตั้งค่าโปรไฟล์"
-              style={{ position: 'relative' }}
-            >
-              {user?.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={user?.display_name || 'Avatar'}
-                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                />
-              ) : (
-                <User size={19} strokeWidth={2.3} />
-              )}
-              {isPremium && (
-                <div className="avatar-premium-crown" title="สมาชิกพรีเมียม">
-                  <Crown size={10} strokeWidth={2.8} />
-                </div>
-              )}
-            </button>
-
-            <button
-              type="button"
-              className="notif-btn"
-              onClick={() => navigate('/')}
-              aria-label="กลับหน้าหลัก"
-              title="กลับหน้าหลัก"
-            >
-              <X size={18} strokeWidth={2.3} />
-            </button>
           </div>
         </header>
 
         {/* Dynamic View Content */}
         <main className="content">
-          <Outlet context={{ user, stats, xpInfo }} />
+          <Outlet context={{ user, stats, xpInfo, refreshProfile: loadData }} />
         </main>
       </div>
     </div>
